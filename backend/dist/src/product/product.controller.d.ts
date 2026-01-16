@@ -109,8 +109,8 @@ export declare class ProductController {
         blockchain: {
             policyId: string;
             assetName: string;
-            assetInfo: null;
-            onChainMetadata: null;
+            assetInfo: any;
+            onChainMetadata: any;
         };
     }>;
     getHistory(id: string): Promise<{

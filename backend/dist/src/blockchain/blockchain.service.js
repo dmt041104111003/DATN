@@ -64,10 +64,11 @@ let BlockchainService = class BlockchainService {
             };
         }
         catch (error) {
-            if (error.status_code === 404) {
+            const bfError = error;
+            if (bfError.status_code === 404) {
                 return { valid: false, message: 'Transaction not found' };
             }
-            throw new common_1.BadRequestException(`Failed to verify transaction: ${error.message}`);
+            throw new common_1.BadRequestException(`Failed to verify transaction: ${bfError.message || 'Unknown error'}`);
         }
     }
     async getTransactionInfo(txHash) {
@@ -93,7 +94,8 @@ let BlockchainService = class BlockchainService {
             return assetInfo;
         }
         catch (error) {
-            if (error.status_code === 404) {
+            const bfError = error;
+            if (bfError.status_code === 404) {
                 return null;
             }
             throw error;
@@ -128,7 +130,8 @@ let BlockchainService = class BlockchainService {
             return historyWithDetails;
         }
         catch (error) {
-            if (error.status_code === 404) {
+            const bfError = error;
+            if (bfError.status_code === 404) {
                 return [];
             }
             throw error;
@@ -163,7 +166,8 @@ let BlockchainService = class BlockchainService {
             return null;
         }
         catch (error) {
-            if (error.status_code === 404) {
+            const bfError = error;
+            if (bfError.status_code === 404) {
                 return null;
             }
             throw error;

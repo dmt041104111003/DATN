@@ -5,10 +5,10 @@ export declare class ContractService {
     private blockfrostProvider;
     constructor();
     private createWalletFromAddress;
-    getPolicyId(walletAddress: string): Promise<{
+    getPolicyId(walletAddress: string): {
         policyId: string;
         storeAddress: string;
-    }>;
+    };
     createMint(walletAddress: string, params: MintDto[]): Promise<{
         result: boolean;
         data: string;

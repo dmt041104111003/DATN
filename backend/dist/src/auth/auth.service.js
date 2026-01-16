@@ -38,7 +38,7 @@ let AuthService = class AuthService {
         if (!walletNonce) {
             throw new common_1.UnauthorizedException('Nonce not found. Get nonce first.');
         }
-        const isValid = await this.verifySignature(walletNonce.nonce, signature, key, address);
+        const isValid = this.verifySignature(walletNonce.nonce, signature, key, address);
         if (!isValid) {
             throw new common_1.UnauthorizedException('Invalid signature');
         }
@@ -59,9 +59,9 @@ let AuthService = class AuthService {
             },
         };
     }
-    async verifySignature(nonce, signature, key, address) {
+    verifySignature(nonce, signature, key, address) {
         try {
-            return await (0, core_1.checkSignature)(nonce, { signature, key }, address);
+            return (0, core_1.checkSignature)(nonce, { signature, key }, address);
         }
         catch (error) {
             console.error('Signature verification failed:', error);

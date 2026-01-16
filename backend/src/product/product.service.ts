@@ -114,8 +114,8 @@ export class ProductService {
       },
     });
 
-    let assetInfo = null;
-    let onChainMetadata = null;
+    let assetInfo: any = null;
+    let onChainMetadata: any = null;
 
     try {
       [assetInfo, onChainMetadata] = await Promise.all([

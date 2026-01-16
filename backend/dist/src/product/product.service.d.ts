@@ -158,8 +158,8 @@ export declare class ProductService {
         blockchain: {
             policyId: string;
             assetName: string;
-            assetInfo: null;
-            onChainMetadata: null;
+            assetInfo: any;
+            onChainMetadata: any;
         };
     }>;
     getHistory(productId: string): Promise<{
