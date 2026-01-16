@@ -32,9 +32,9 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         txHash: string;
         amount: number;
+        userId: string;
         subscriptionId: string;
         currency: string;
     })[]>;
@@ -64,9 +64,9 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         txHash: string;
         amount: number;
+        userId: string;
         subscriptionId: string;
         currency: string;
     }>;
@@ -78,9 +78,9 @@ export declare class PaymentService {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                userId: string;
                 txHash: string;
                 amount: number;
+                userId: string;
                 subscriptionId: string;
                 currency: string;
             };
@@ -100,9 +100,9 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         txHash: string;
         amount: number;
+        userId: string;
         subscriptionId: string;
         currency: string;
     }>;
@@ -110,9 +110,9 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         txHash: string;
         amount: number;
+        userId: string;
         subscriptionId: string;
         currency: string;
     }>;

@@ -12,10 +12,10 @@ export declare class ProductService {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }[]>;
     findAllByUser(userId: string): Promise<{
@@ -24,10 +24,10 @@ export declare class ProductService {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }[]>;
     findOne(id: string): Promise<{
@@ -36,10 +36,10 @@ export declare class ProductService {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     private findOneOwned;
@@ -51,10 +51,10 @@ export declare class ProductService {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
@@ -63,10 +63,10 @@ export declare class ProductService {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
@@ -75,10 +75,10 @@ export declare class ProductService {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     getQuota(userId: string): Promise<{
@@ -94,12 +94,12 @@ export declare class ProductService {
             description: string | null;
             imageUrl: string | null;
             documents: {
+                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
-                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {

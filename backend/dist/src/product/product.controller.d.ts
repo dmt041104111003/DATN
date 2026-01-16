@@ -10,10 +10,10 @@ export declare class ProductController {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }[]>;
     findMy(user: {
@@ -24,10 +24,10 @@ export declare class ProductController {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }[]>;
     getQuota(user: {
@@ -45,12 +45,12 @@ export declare class ProductController {
             description: string | null;
             imageUrl: string | null;
             documents: {
+                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
-                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -174,10 +174,10 @@ export declare class ProductController {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     create(user: {
@@ -188,10 +188,10 @@ export declare class ProductController {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     update(user: {
@@ -202,10 +202,10 @@ export declare class ProductController {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
     remove(user: {
@@ -216,10 +216,10 @@ export declare class ProductController {
         description: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
         userId: string;
         policyId: string | null;
-        assetName: string | null;
-        imageUrl: string | null;
         historyHash: string | null;
     }>;
 }
