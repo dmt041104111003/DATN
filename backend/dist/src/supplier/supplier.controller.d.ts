@@ -4,54 +4,64 @@ import { UpdateSupplierDto } from './dto/update-supplier.dto';
 export declare class SupplierController {
     private supplierService;
     constructor(supplierService: SupplierService);
-    findAll(): Promise<{
+    findAll(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }): Promise<{
+        id: string;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, id: string): Promise<{
+        id: string;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
-    create(dto: CreateSupplierDto): Promise<{
+    create(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, dto: CreateSupplierDto): Promise<{
+        id: string;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
-    update(id: string, dto: UpdateSupplierDto): Promise<{
+    update(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, id: string, dto: UpdateSupplierDto): Promise<{
+        id: string;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, id: string): Promise<{
+        id: string;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
 }

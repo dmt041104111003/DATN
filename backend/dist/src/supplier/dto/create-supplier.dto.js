@@ -14,7 +14,8 @@ const class_validator_1 = require("class-validator");
 class CreateSupplierDto {
     name;
     location;
-    userId;
+    gpsCoordinates;
+    contactInfo;
 }
 exports.CreateSupplierDto = CreateSupplierDto;
 __decorate([
@@ -28,6 +29,12 @@ __decorate([
 ], CreateSupplierDto.prototype, "location", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateSupplierDto.prototype, "userId", void 0);
+], CreateSupplierDto.prototype, "gpsCoordinates", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateSupplierDto.prototype, "contactInfo", void 0);
 //# sourceMappingURL=create-supplier.dto.js.map

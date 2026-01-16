@@ -4,54 +4,54 @@ import { UpdateSupplierDto } from './dto/update-supplier.dto';
 export declare class SupplierService {
     private prisma;
     constructor(prisma: PrismaService);
-    findAll(): Promise<{
+    findAllByUser(userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
-    create(dto: CreateSupplierDto): Promise<{
+    create(userId: string, dto: CreateSupplierDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
-    update(id: string, dto: UpdateSupplierDto): Promise<{
+    update(id: string, userId: string, dto: UpdateSupplierDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
-        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }>;
 }

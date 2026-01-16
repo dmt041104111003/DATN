@@ -2,33 +2,38 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { SupplierService } from './supplier.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
 
-@Controller('suppliers')  // Route: /suppliers
+@Controller('suppliers')
 export class SupplierController {
   constructor(private supplierService: SupplierService) {}
 
-  @Get()  // GET /users
-  findAll() {
-    return this.supplierService.findAll();
+  @Get()
+  findAll(@CurrentUser() user: { id: string }) {
+    return this.supplierService.findAllByUser(user.id);
   }
 
-  @Get(':id')  // GET /users/:id
-  findOne(@Param('id') id: string) {
-    return this.supplierService.findOne(id);
+  @Get(':id')
+  findOne(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.supplierService.findOne(id, user.id);
   }
 
-  @Post()  // POST /users
-  create(@Body() dto: CreateSupplierDto) {
-    return this.supplierService.create(dto);
+  @Post()
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateSupplierDto) {
+    return this.supplierService.create(user.id, dto);
   }
 
-  @Patch(':id')  // PATCH /users/:id
-  update(@Param('id') id: string, @Body() dto: UpdateSupplierDto) {
-    return this.supplierService.update(id, dto);
+  @Patch(':id')
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateSupplierDto,
+  ) {
+    return this.supplierService.update(id, user.id, dto);
   }
 
-  @Delete(':id')  // DELETE /users/:id
-  remove(@Param('id') id: string) {
-    return this.supplierService.remove(id);
+  @Delete(':id')
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.supplierService.remove(id, user.id);
   }
 }

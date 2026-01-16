@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class CreateSupplierDto {
     @IsString()
@@ -9,5 +9,10 @@ export class CreateSupplierDto {
     location?: string;
   
     @IsString()
-    userId: string;  // Supplier thuộc về user nào
+    @IsOptional()
+    gpsCoordinates?: string;
+  
+    @IsString()
+    @IsOptional()
+    contactInfo?: string;
   }

@@ -17,61 +17,67 @@ const common_1 = require("@nestjs/common");
 const supplier_service_1 = require("./supplier.service");
 const create_supplier_dto_1 = require("./dto/create-supplier.dto");
 const update_supplier_dto_1 = require("./dto/update-supplier.dto");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let SupplierController = class SupplierController {
     supplierService;
     constructor(supplierService) {
         this.supplierService = supplierService;
     }
-    findAll() {
-        return this.supplierService.findAll();
+    findAll(user) {
+        return this.supplierService.findAllByUser(user.id);
     }
-    findOne(id) {
-        return this.supplierService.findOne(id);
+    findOne(user, id) {
+        return this.supplierService.findOne(id, user.id);
     }
-    create(dto) {
-        return this.supplierService.create(dto);
+    create(user, dto) {
+        return this.supplierService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.supplierService.update(id, dto);
+    update(user, id, dto) {
+        return this.supplierService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.supplierService.remove(id);
+    remove(user, id) {
+        return this.supplierService.remove(id, user.id);
     }
 };
 exports.SupplierController = SupplierController;
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], SupplierController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], SupplierController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_supplier_dto_1.CreateSupplierDto]),
+    __metadata("design:paramtypes", [Object, create_supplier_dto_1.CreateSupplierDto]),
     __metadata("design:returntype", void 0)
 ], SupplierController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_supplier_dto_1.UpdateSupplierDto]),
+    __metadata("design:paramtypes", [Object, String, update_supplier_dto_1.UpdateSupplierDto]),
     __metadata("design:returntype", void 0)
 ], SupplierController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], SupplierController.prototype, "remove", null);
 exports.SupplierController = SupplierController = __decorate([

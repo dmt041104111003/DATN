@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
@@ -7,32 +7,31 @@ import { UpdateSupplierDto } from './dto/update-supplier.dto';
 export class SupplierService {
   constructor(private prisma: PrismaService) {}
 
-  // Lấy tất cả users
-  async findAll() {
-    return this.prisma.supplier.findMany();
+  async findAllByUser(userId: string) {
+    return this.prisma.supplier.findMany({ where: { userId } });
   }
 
-  // Lấy 1 user theo ID
-  async findOne(id: string) {
+  async findOne(id: string, userId: string) {
     const supplier = await this.prisma.supplier.findUnique({ where: { id } });
     if (!supplier) throw new NotFoundException('Supplier not found');
+    if (supplier.userId !== userId) throw new ForbiddenException('Not your supplier');
     return supplier;
   }
 
-  // Tạo user mới
-  async create(dto: CreateSupplierDto) {
-    return this.prisma.supplier.create({ data: dto });
+  async create(userId: string, dto: CreateSupplierDto) {
+    return this.prisma.supplier.create({
+      data: { ...dto, userId },
+    });
   }
 
-  // Cập nhật user
-  async update(id: string, dto: UpdateSupplierDto) {
-    await this.findOne(id);  // Kiểm tra tồn tại
+  async update(id: string, userId: string, dto: UpdateSupplierDto) {
+    await this.findOne(id, userId);
     return this.prisma.supplier.update({ where: { id }, data: dto });
   }
 
   // Xóa user
-  async remove(id: string) {
-    await this.findOne(id);  // Kiểm tra tồn tại
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId);
     return this.prisma.supplier.delete({ where: { id } });
   }
 }

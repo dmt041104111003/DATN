@@ -17,17 +17,11 @@ let UserService = class UserService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll() {
-        return this.prisma.user.findMany();
-    }
     async findOne(id) {
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user)
             throw new common_1.NotFoundException('User not found');
         return user;
-    }
-    async create(dto) {
-        return this.prisma.user.create({ data: dto });
     }
     async update(id, dto) {
         await this.findOne(id);

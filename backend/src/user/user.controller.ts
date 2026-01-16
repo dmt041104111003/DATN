@@ -1,34 +1,27 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Body } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
 
-@Controller('users')  // Route: /users
+@Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Get()  // GET /users
-  findAll() {
-    return this.userService.findAll();
+  @Get('me')
+  getMe(@CurrentUser() user: { id: string; address: string }) {
+    return this.userService.findOne(user.id);
   }
 
-  @Get(':id')  // GET /users/:id
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  @Patch('me')
+  updateMe(
+    @CurrentUser() user: { id: string; address: string },
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.userService.update(user.id, dto);
   }
 
-  @Post()  // POST /users
-  create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto);
-  }
-
-  @Patch(':id')  // PATCH /users/:id
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(id, dto);
-  }
-
-  @Delete(':id')  // DELETE /users/:id
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  @Delete('me')
+  deleteMe(@CurrentUser() user: { id: string; address: string }) {
+    return this.userService.remove(user.id);
   }
 }

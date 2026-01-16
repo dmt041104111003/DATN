@@ -24,12 +24,9 @@ describe('AppController (e2e)', () => {
     await app.close();
   });
 
-  it('/ (GET) tra ve danh sach users', () => {
+  it('/ (GET) chua login', () => {
     return request(app.getHttpServer())
       .get('/')
-      .expect(200)
-      .expect((res) => {
-        expect(Array.isArray(res.body)).toBe(true);
-      });
+      .expect(401);
   });
 });

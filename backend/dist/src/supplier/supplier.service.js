@@ -17,24 +17,28 @@ let SupplierService = class SupplierService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll() {
-        return this.prisma.supplier.findMany();
+    async findAllByUser(userId) {
+        return this.prisma.supplier.findMany({ where: { userId } });
     }
-    async findOne(id) {
+    async findOne(id, userId) {
         const supplier = await this.prisma.supplier.findUnique({ where: { id } });
         if (!supplier)
             throw new common_1.NotFoundException('Supplier not found');
+        if (supplier.userId !== userId)
+            throw new common_1.ForbiddenException('Not your supplier');
         return supplier;
     }
-    async create(dto) {
-        return this.prisma.supplier.create({ data: dto });
+    async create(userId, dto) {
+        return this.prisma.supplier.create({
+            data: { ...dto, userId },
+        });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOne(id, userId);
         return this.prisma.supplier.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOne(id, userId);
         return this.prisma.supplier.delete({ where: { id } });
     }
 };
