@@ -6,47 +6,47 @@ export declare class FeedbackController {
     constructor(feedbackService: FeedbackService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(dto: CreateFeedbackDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, dto: UpdateFeedbackDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

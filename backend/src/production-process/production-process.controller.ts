@@ -2,16 +2,19 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { ProductionProcessService } from './production-process.service';
 import { CreateProductionProcessDto } from './dto/create-production-process.dto';
 import { UpdateProductionProcessDto } from './dto/update-production-process.dto';
+import { Public } from '../auth/public.decorator';
 
 @Controller('production-processes')
 export class ProductionProcessController {
   constructor(private productionProcessService: ProductionProcessService) {}
 
+  @Public()
   @Get()
   findAll() {
     return this.productionProcessService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productionProcessService.findOne(id);

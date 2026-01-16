@@ -15,6 +15,8 @@ import { WarehouseStorageModule } from './warehouse-storage/warehouse-storage.mo
 import { ServiceModule } from './service/service.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 @Module({
   imports: [
     UserModule, PrismaModule,
@@ -32,6 +34,9 @@ import { AuthModule } from './auth/auth.module';
     SubscriptionModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, {
+    provide: APP_GUARD,
+    useClass: JwtAuthGuard,
+  }],
 })
 export class AppModule {}

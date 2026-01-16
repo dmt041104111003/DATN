@@ -24,6 +24,8 @@ const warehouse_storage_module_1 = require("./warehouse-storage/warehouse-storag
 const service_module_1 = require("./service/service.module");
 const subscription_module_1 = require("./subscription/subscription.module");
 const auth_module_1 = require("./auth/auth.module");
+const core_1 = require("@nestjs/core");
+const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,7 +47,10 @@ exports.AppModule = AppModule = __decorate([
             subscription_module_1.SubscriptionModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
+        providers: [app_service_1.AppService, {
+                provide: core_1.APP_GUARD,
+                useClass: jwt_auth_guard_1.JwtAuthGuard,
+            }],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

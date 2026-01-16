@@ -2,17 +2,20 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { Public } from '../auth/public.decorator';
 
-@Controller('products')  // Route: /products
+@Controller('products')
 export class ProductController {
   constructor(private productService: ProductService) {}
 
-  @Get()  // GET /users
+  @Public()
+  @Get()
   findAll() {
     return this.productService.findAll();
   }
 
-  @Get(':id')  // GET /users/:id
+  @Public()
+  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }

@@ -2,16 +2,19 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { CollectionService } from './collection.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
+import { Public } from '../auth/public.decorator';
 
 @Controller('collections')
 export class CollectionController {
   constructor(private collectionService: CollectionService) {}
 
+  @Public()
   @Get()
   findAll() {
     return this.collectionService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.collectionService.findOne(id);

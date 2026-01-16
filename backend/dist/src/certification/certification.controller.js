@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const certification_service_1 = require("./certification.service");
 const create_certification_dto_1 = require("./dto/create-certification.dto");
 const update_certification_dto_1 = require("./dto/update-certification.dto");
+const public_decorator_1 = require("../auth/public.decorator");
 let CertificationController = class CertificationController {
     certificationService;
     constructor(certificationService) {
@@ -40,12 +41,14 @@ let CertificationController = class CertificationController {
 };
 exports.CertificationController = CertificationController;
 __decorate([
+    (0, public_decorator_1.Public)(),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], CertificationController.prototype, "findAll", null);
 __decorate([
+    (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

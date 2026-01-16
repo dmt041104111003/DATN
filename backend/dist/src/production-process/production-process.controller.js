@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const production_process_service_1 = require("./production-process.service");
 const create_production_process_dto_1 = require("./dto/create-production-process.dto");
 const update_production_process_dto_1 = require("./dto/update-production-process.dto");
+const public_decorator_1 = require("../auth/public.decorator");
 let ProductionProcessController = class ProductionProcessController {
     productionProcessService;
     constructor(productionProcessService) {
@@ -40,12 +41,14 @@ let ProductionProcessController = class ProductionProcessController {
 };
 exports.ProductionProcessController = ProductionProcessController;
 __decorate([
+    (0, public_decorator_1.Public)(),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ProductionProcessController.prototype, "findAll", null);
 __decorate([
+    (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

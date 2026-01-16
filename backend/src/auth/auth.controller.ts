@@ -2,16 +2,19 @@ import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { GetNonceDto, VerifyWalletDto } from './dto/verify-wallet.dto';
+import { Public } from './public.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Public()
   @Get('nonce')
   getNonce(@Query() dto: GetNonceDto) {
     return this.authService.getNonce(dto.address);
   }
 
+  @Public()
   @Post('verify')
   async verifyWallet(
     @Body() dto: VerifyWalletDto,

@@ -2,16 +2,19 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { CertificationService } from './certification.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
+import { Public } from '../auth/public.decorator';
 
 @Controller('certifications')
 export class CertificationController {
   constructor(private certificationService: CertificationService) {}
 
+  @Public()
   @Get()
   findAll() {
     return this.certificationService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.certificationService.findOne(id);
