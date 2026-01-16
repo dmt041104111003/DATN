@@ -1,6 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
 
+interface BlockfrostError {
+  status_code?: number;
+  message?: string;
+}
+
 @Injectable()
 export class BlockchainService {
   private blockfrost: BlockFrostAPI;
@@ -64,11 +69,12 @@ export class BlockchainService {
         message: 'Payment verified successfully',
         confirmedAmount: receivedADA,
       };
-    } catch (error: any) {
-      if (error.status_code === 404) {
+    } catch (error: unknown) {
+      const bfError = error as BlockfrostError;
+      if (bfError.status_code === 404) {
         return { valid: false, message: 'Transaction not found' };
       }
-      throw new BadRequestException(`Failed to verify transaction: ${error.message}`);
+      throw new BadRequestException(`Failed to verify transaction: ${bfError.message || 'Unknown error'}`);
     }
   }
 
@@ -95,8 +101,9 @@ export class BlockchainService {
       const asset = `${policyId}${assetNameHex}`;
       const assetInfo = await this.blockfrost.assetsById(asset);
       return assetInfo;
-    } catch (error: any) {
-      if (error.status_code === 404) {
+    } catch (error: unknown) {
+      const bfError = error as BlockfrostError;
+      if (bfError.status_code === 404) {
         return null;
       }
       throw error;
@@ -133,8 +140,9 @@ export class BlockchainService {
       );
 
       return historyWithDetails;
-    } catch (error: any) {
-      if (error.status_code === 404) {
+    } catch (error: unknown) {
+      const bfError = error as BlockfrostError;
+      if (bfError.status_code === 404) {
         return [];
       }
       throw error;
@@ -154,7 +162,7 @@ export class BlockchainService {
         return null;
       }
 
-      const refAssetNameHex = '000643b0' + assetNameHex.slice(8); // Replace prefix
+      const refAssetNameHex = '000643b0' + assetNameHex.slice(8);
       const refAsset = `${policyId}${refAssetNameHex}`;
       
       try {
@@ -172,11 +180,13 @@ export class BlockchainService {
           }
         }
       } catch {
+        // Reference asset not found - continue
       }
 
       return null;
-    } catch (error: any) {
-      if (error.status_code === 404) {
+    } catch (error: unknown) {
+      const bfError = error as BlockfrostError;
+      if (bfError.status_code === 404) {
         return null;
       }
       throw error;

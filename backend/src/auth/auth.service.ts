@@ -31,7 +31,7 @@ export class AuthService {
       throw new UnauthorizedException('Nonce not found. Get nonce first.');
     }
 
-    const isValid = await this.verifySignature(walletNonce.nonce, signature, key, address);
+    const isValid = this.verifySignature(walletNonce.nonce, signature, key, address);
 
     if (!isValid) {
       throw new UnauthorizedException('Invalid signature');
@@ -60,14 +60,14 @@ export class AuthService {
     };
   }
 
-  private async verifySignature(
+  private verifySignature(
     nonce: string,
     signature: string,
     key: string,
     address: string,
-  ): Promise<boolean> {
+  ): boolean {
     try {
-      return await checkSignature(nonce, { signature, key }, address);
+      return checkSignature(nonce, { signature, key }, address);
     } catch (error) {
       console.error('Signature verification failed:', error);
       return false;

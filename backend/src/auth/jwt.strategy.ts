@@ -3,13 +3,17 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
+
+interface CookieRequest extends Request {
+  cookies: { access_token?: string };
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
-      // token từ cookie
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => {
+        (req: CookieRequest): string | null => {
           return req?.cookies?.access_token || null;
         },
       ]),

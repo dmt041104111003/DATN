@@ -30,7 +30,7 @@ export class ContractService {
     });
   }
 
-  async getPolicyId(walletAddress: string) {
+  getPolicyId(walletAddress: string) {
     const wallet = this.createWalletFromAddress(walletAddress);
     const contract = new Cip68Contract({ wallet });
     return {

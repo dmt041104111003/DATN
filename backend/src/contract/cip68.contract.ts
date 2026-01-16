@@ -15,7 +15,7 @@ import {
   mConStr1,
   metadataToCip68,
 } from '@meshsdk/core';
-import type { UTxO, PlutusScript, IFetcher } from '@meshsdk/core';
+import type { PlutusScript, IFetcher } from '@meshsdk/core';
 import type { Plutus } from './types';
 import {
   APP_WALLET_ADDRESS,
