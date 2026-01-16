@@ -4,49 +4,92 @@ import { UpdateMaterialDto } from './dto/update-material.dto';
 export declare class MaterialController {
     private materialService;
     constructor(materialService: MaterialService);
-    findAll(): Promise<{
+    findAll(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
+    }): Promise<({
+        supplier: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            location: string | null;
+            gpsCoordinates: string | null;
+            contactInfo: string | null;
+            userId: string;
+        };
+    } & {
+        id: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
+    })[]>;
+    findBySupplier(user: {
+        id: string;
+    }, supplierId: string): Promise<{
+        id: string;
+        supplierId: string;
+        name: string;
+        harvestDate: Date | null;
+        quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
+    }, id: string): Promise<{
+        supplier: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            location: string | null;
+            gpsCoordinates: string | null;
+            contactInfo: string | null;
+            userId: string;
+        };
+    } & {
+        id: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateMaterialDto): Promise<{
+    create(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
+    }, dto: CreateMaterialDto): Promise<{
+        id: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateMaterialDto): Promise<{
+    update(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
+    }, id: string, dto: UpdateMaterialDto): Promise<{
+        id: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
+    }, id: string): Promise<{
+        id: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

@@ -18,6 +18,7 @@ const production_process_service_1 = require("./production-process.service");
 const create_production_process_dto_1 = require("./dto/create-production-process.dto");
 const update_production_process_dto_1 = require("./dto/update-production-process.dto");
 const public_decorator_1 = require("../auth/public.decorator");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let ProductionProcessController = class ProductionProcessController {
     productionProcessService;
     constructor(productionProcessService) {
@@ -29,14 +30,14 @@ let ProductionProcessController = class ProductionProcessController {
     findOne(id) {
         return this.productionProcessService.findOne(id);
     }
-    create(dto) {
-        return this.productionProcessService.create(dto);
+    create(user, dto) {
+        return this.productionProcessService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.productionProcessService.update(id, dto);
+    update(user, id, dto) {
+        return this.productionProcessService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.productionProcessService.remove(id);
+    remove(user, id) {
+        return this.productionProcessService.remove(id, user.id);
     }
 };
 exports.ProductionProcessController = ProductionProcessController;
@@ -57,24 +58,27 @@ __decorate([
 ], ProductionProcessController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_production_process_dto_1.CreateProductionProcessDto]),
+    __metadata("design:paramtypes", [Object, create_production_process_dto_1.CreateProductionProcessDto]),
     __metadata("design:returntype", void 0)
 ], ProductionProcessController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_production_process_dto_1.UpdateProductionProcessDto]),
+    __metadata("design:paramtypes", [Object, String, update_production_process_dto_1.UpdateProductionProcessDto]),
     __metadata("design:returntype", void 0)
 ], ProductionProcessController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], ProductionProcessController.prototype, "remove", null);
 exports.ProductionProcessController = ProductionProcessController = __decorate([

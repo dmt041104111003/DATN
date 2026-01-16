@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
@@ -17,17 +17,31 @@ export class CertificationService {
     return item;
   }
 
-  async create(dto: CreateCertificationDto) {
+  private async findOneOwned(id: string, userId: string) {
+    const item = await this.prisma.certification.findUnique({
+      where: { id },
+      include: { product: true },
+    });
+    if (!item) throw new NotFoundException('Certification not found');
+    if (item.product.userId !== userId) throw new ForbiddenException('Access denied');
+    return item;
+  }
+
+  async create(userId: string, dto: CreateCertificationDto) {
+    const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+    if (!product) throw new NotFoundException('Product not found');
+    if (product.userId !== userId) throw new ForbiddenException('Not your product');
+    
     return this.prisma.certification.create({ data: dto });
   }
 
-  async update(id: string, dto: UpdateCertificationDto) {
-    await this.findOne(id);
+  async update(id: string, userId: string, dto: UpdateCertificationDto) {
+    await this.findOneOwned(id, userId);
     return this.prisma.certification.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId: string) {
+    await this.findOneOwned(id, userId);
     return this.prisma.certification.delete({ where: { id } });
   }
 }

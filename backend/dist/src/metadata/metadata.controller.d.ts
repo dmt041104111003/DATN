@@ -22,7 +22,9 @@ export declare class MetadataController {
         content: string;
         nftReference: string[];
     }>;
-    create(dto: CreateMetadataDto): Promise<{
+    create(user: {
+        id: string;
+    }, dto: CreateMetadataDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -31,7 +33,9 @@ export declare class MetadataController {
         content: string;
         nftReference: string[];
     }>;
-    update(id: string, dto: UpdateMetadataDto): Promise<{
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateMetadataDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -40,7 +44,9 @@ export declare class MetadataController {
         content: string;
         nftReference: string[];
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
+        id: string;
+    }, id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;

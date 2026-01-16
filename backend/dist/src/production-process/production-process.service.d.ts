@@ -6,52 +6,53 @@ export declare class ProductionProcessService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateProductionProcessDto): Promise<{
+    private findOneOwned;
+    create(userId: string, dto: CreateProductionProcessDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateProductionProcessDto): Promise<{
+    update(id: string, userId: string, dto: UpdateProductionProcessDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

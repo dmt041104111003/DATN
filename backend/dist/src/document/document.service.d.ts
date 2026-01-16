@@ -5,48 +5,49 @@ export declare class DocumentService {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
-        url: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         docType: string;
+        url: string;
         hash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
-        url: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         docType: string;
+        url: string;
         hash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateDocumentDto): Promise<{
-        url: string;
+    private findOneOwned;
+    create(userId: string, dto: CreateDocumentDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         docType: string;
+        url: string;
         hash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateDocumentDto): Promise<{
-        url: string;
+    update(id: string, userId: string, dto: UpdateDocumentDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         docType: string;
+        url: string;
         hash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
-        url: string;
+    remove(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         docType: string;
+        url: string;
         hash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

@@ -17,24 +17,47 @@ let MaterialService = class MaterialService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll() {
-        return this.prisma.material.findMany();
+    async findAllByUser(userId) {
+        return this.prisma.material.findMany({
+            where: {
+                supplier: { userId },
+            },
+            include: { supplier: true },
+        });
     }
-    async findOne(id) {
-        const item = await this.prisma.material.findUnique({ where: { id } });
+    async findBySupplier(supplierId, userId) {
+        const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
+        if (!supplier)
+            throw new common_1.NotFoundException('Supplier not found');
+        if (supplier.userId !== userId)
+            throw new common_1.ForbiddenException('Not your supplier');
+        return this.prisma.material.findMany({ where: { supplierId } });
+    }
+    async findOne(id, userId) {
+        const item = await this.prisma.material.findUnique({
+            where: { id },
+            include: { supplier: true },
+        });
         if (!item)
             throw new common_1.NotFoundException('Material not found');
+        if (item.supplier.userId !== userId)
+            throw new common_1.ForbiddenException('Access denied');
         return item;
     }
-    async create(dto) {
+    async create(userId, dto) {
+        const supplier = await this.prisma.supplier.findUnique({ where: { id: dto.supplierId } });
+        if (!supplier)
+            throw new common_1.NotFoundException('Supplier not found');
+        if (supplier.userId !== userId)
+            throw new common_1.ForbiddenException('Not your supplier');
         return this.prisma.material.create({ data: dto });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOne(id, userId);
         return this.prisma.material.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOne(id, userId);
         return this.prisma.material.delete({ where: { id } });
     }
 };

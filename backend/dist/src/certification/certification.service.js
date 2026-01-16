@@ -26,15 +26,31 @@ let CertificationService = class CertificationService {
             throw new common_1.NotFoundException('Certification not found');
         return item;
     }
-    async create(dto) {
+    async findOneOwned(id, userId) {
+        const item = await this.prisma.certification.findUnique({
+            where: { id },
+            include: { product: true },
+        });
+        if (!item)
+            throw new common_1.NotFoundException('Certification not found');
+        if (item.product.userId !== userId)
+            throw new common_1.ForbiddenException('Access denied');
+        return item;
+    }
+    async create(userId, dto) {
+        const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+        if (!product)
+            throw new common_1.NotFoundException('Product not found');
+        if (product.userId !== userId)
+            throw new common_1.ForbiddenException('Not your product');
         return this.prisma.certification.create({ data: dto });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.certification.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.certification.delete({ where: { id } });
     }
 };

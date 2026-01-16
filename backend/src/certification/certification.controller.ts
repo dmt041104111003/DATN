@@ -3,6 +3,7 @@ import { CertificationService } from './certification.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
 import { Public } from '../auth/public.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('certifications')
 export class CertificationController {
@@ -21,17 +22,21 @@ export class CertificationController {
   }
 
   @Post()
-  create(@Body() dto: CreateCertificationDto) {
-    return this.certificationService.create(dto);
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateCertificationDto) {
+    return this.certificationService.create(user.id, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCertificationDto) {
-    return this.certificationService.update(id, dto);
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateCertificationDto,
+  ) {
+    return this.certificationService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.certificationService.remove(id);
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.certificationService.remove(id, user.id);
   }
 }

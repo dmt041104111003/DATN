@@ -15,8 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ServiceController = void 0;
 const common_1 = require("@nestjs/common");
 const service_service_1 = require("./service.service");
-const create_service_dto_1 = require("./dto/create-service.dto");
-const update_service_dto_1 = require("./dto/update-service.dto");
 const public_decorator_1 = require("../auth/public.decorator");
 let ServiceController = class ServiceController {
     serviceService;
@@ -28,15 +26,6 @@ let ServiceController = class ServiceController {
     }
     findOne(id) {
         return this.serviceService.findOne(id);
-    }
-    create(dto) {
-        return this.serviceService.create(dto);
-    }
-    update(id, dto) {
-        return this.serviceService.update(id, dto);
-    }
-    remove(id) {
-        return this.serviceService.remove(id);
     }
 };
 exports.ServiceController = ServiceController;
@@ -55,28 +44,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ServiceController.prototype, "findOne", null);
-__decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_service_dto_1.CreateServiceDto]),
-    __metadata("design:returntype", void 0)
-], ServiceController.prototype, "create", null);
-__decorate([
-    (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_service_dto_1.UpdateServiceDto]),
-    __metadata("design:returntype", void 0)
-], ServiceController.prototype, "update", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ServiceController.prototype, "remove", null);
 exports.ServiceController = ServiceController = __decorate([
     (0, common_1.Controller)('services'),
     __metadata("design:paramtypes", [service_service_1.ServiceService])

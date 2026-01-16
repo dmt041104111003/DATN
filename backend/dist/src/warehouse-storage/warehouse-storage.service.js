@@ -26,15 +26,34 @@ let WarehouseStorageService = class WarehouseStorageService {
             throw new common_1.NotFoundException('WarehouseStorage not found');
         return item;
     }
-    async create(dto) {
+    async findOneOwned(id, userId) {
+        const item = await this.prisma.warehouseStorage.findUnique({
+            where: { id },
+            include: { product: true },
+        });
+        if (!item)
+            throw new common_1.NotFoundException('WarehouseStorage not found');
+        if (item.product.userId !== userId)
+            throw new common_1.ForbiddenException('Access denied');
+        return item;
+    }
+    async create(userId, dto) {
+        const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+        if (!product)
+            throw new common_1.NotFoundException('Product not found');
+        if (product.userId !== userId)
+            throw new common_1.ForbiddenException('Not your product');
+        const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
+        if (!warehouse)
+            throw new common_1.NotFoundException('Warehouse not found');
         return this.prisma.warehouseStorage.create({ data: dto });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.warehouseStorage.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.warehouseStorage.delete({ where: { id } });
     }
 };

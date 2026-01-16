@@ -6,52 +6,58 @@ export declare class WarehouseStorageController {
     constructor(warehouseStorageService: WarehouseStorageService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateWarehouseStorageDto): Promise<{
+    create(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, dto: CreateWarehouseStorageDto): Promise<{
+        id: string;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateWarehouseStorageDto): Promise<{
+    update(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, id: string, dto: UpdateWarehouseStorageDto): Promise<{
+        id: string;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    }, id: string): Promise<{
+        id: string;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

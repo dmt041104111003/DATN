@@ -4,49 +4,80 @@ import { UpdateMaterialDto } from './dto/update-material.dto';
 export declare class MaterialService {
     private prisma;
     constructor(prisma: PrismaService);
-    findAll(): Promise<{
+    findAllByUser(userId: string): Promise<({
+        supplier: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            location: string | null;
+            gpsCoordinates: string | null;
+            contactInfo: string | null;
+            userId: string;
+        };
+    } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
+    })[]>;
+    findBySupplier(supplierId: string, userId: string): Promise<{
+        id: string;
+        supplierId: string;
+        name: string;
+        harvestDate: Date | null;
+        quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string, userId: string): Promise<{
+        supplier: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            location: string | null;
+            gpsCoordinates: string | null;
+            contactInfo: string | null;
+            userId: string;
+        };
+    } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateMaterialDto): Promise<{
+    create(userId: string, dto: CreateMaterialDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateMaterialDto): Promise<{
+    update(id: string, userId: string, dto: UpdateMaterialDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
         supplierId: string;
+        name: string;
         harvestDate: Date | null;
         quantity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

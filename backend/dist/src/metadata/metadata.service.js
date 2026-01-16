@@ -26,15 +26,31 @@ let MetadataService = class MetadataService {
             throw new common_1.NotFoundException('Metadata not found');
         return item;
     }
-    async create(dto) {
+    async findOneOwned(id, userId) {
+        const item = await this.prisma.metadata.findUnique({
+            where: { id },
+            include: { collection: true },
+        });
+        if (!item)
+            throw new common_1.NotFoundException('Metadata not found');
+        if (item.collection.userId !== userId)
+            throw new common_1.ForbiddenException('Access denied');
+        return item;
+    }
+    async create(userId, dto) {
+        const collection = await this.prisma.collection.findUnique({ where: { id: dto.collectionId } });
+        if (!collection)
+            throw new common_1.NotFoundException('Collection not found');
+        if (collection.userId !== userId)
+            throw new common_1.ForbiddenException('Not your collection');
         return this.prisma.metadata.create({ data: dto });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.metadata.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.metadata.delete({ where: { id } });
     }
 };

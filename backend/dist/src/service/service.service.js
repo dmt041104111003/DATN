@@ -26,17 +26,6 @@ let ServiceService = class ServiceService {
             throw new common_1.NotFoundException('Service not found');
         return item;
     }
-    async create(dto) {
-        return this.prisma.service.create({ data: dto });
-    }
-    async update(id, dto) {
-        await this.findOne(id);
-        return this.prisma.service.update({ where: { id }, data: dto });
-    }
-    async remove(id) {
-        await this.findOne(id);
-        return this.prisma.service.delete({ where: { id } });
-    }
 };
 exports.ServiceService = ServiceService;
 exports.ServiceService = ServiceService = __decorate([

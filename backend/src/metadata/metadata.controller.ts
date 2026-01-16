@@ -3,6 +3,7 @@ import { MetadataService } from './metadata.service';
 import { CreateMetadataDto } from './dto/create-metadata.dto';
 import { UpdateMetadataDto } from './dto/update-metadata.dto';
 import { Public } from '../auth/public.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('metadata')
 export class MetadataController {
@@ -21,17 +22,21 @@ export class MetadataController {
   }
 
   @Post()
-  create(@Body() dto: CreateMetadataDto) {
-    return this.metadataService.create(dto);
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateMetadataDto) {
+    return this.metadataService.create(user.id, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateMetadataDto) {
-    return this.metadataService.update(id, dto);
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateMetadataDto,
+  ) {
+    return this.metadataService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.metadataService.remove(id);
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.metadataService.remove(id, user.id);
   }
 }

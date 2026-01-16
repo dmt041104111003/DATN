@@ -24,7 +24,9 @@ export declare class ProductionProcessController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    create(dto: CreateProductionProcessDto): Promise<{
+    create(user: {
+        id: string;
+    }, dto: CreateProductionProcessDto): Promise<{
         id: string;
         productId: string;
         stepName: string;
@@ -34,7 +36,9 @@ export declare class ProductionProcessController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateProductionProcessDto): Promise<{
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateProductionProcessDto): Promise<{
         id: string;
         productId: string;
         stepName: string;
@@ -44,7 +48,9 @@ export declare class ProductionProcessController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
+        id: string;
+    }, id: string): Promise<{
         id: string;
         productId: string;
         stepName: string;

@@ -18,6 +18,7 @@ const metadata_service_1 = require("./metadata.service");
 const create_metadata_dto_1 = require("./dto/create-metadata.dto");
 const update_metadata_dto_1 = require("./dto/update-metadata.dto");
 const public_decorator_1 = require("../auth/public.decorator");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let MetadataController = class MetadataController {
     metadataService;
     constructor(metadataService) {
@@ -29,14 +30,14 @@ let MetadataController = class MetadataController {
     findOne(id) {
         return this.metadataService.findOne(id);
     }
-    create(dto) {
-        return this.metadataService.create(dto);
+    create(user, dto) {
+        return this.metadataService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.metadataService.update(id, dto);
+    update(user, id, dto) {
+        return this.metadataService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.metadataService.remove(id);
+    remove(user, id) {
+        return this.metadataService.remove(id, user.id);
     }
 };
 exports.MetadataController = MetadataController;
@@ -57,24 +58,27 @@ __decorate([
 ], MetadataController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_metadata_dto_1.CreateMetadataDto]),
+    __metadata("design:paramtypes", [Object, create_metadata_dto_1.CreateMetadataDto]),
     __metadata("design:returntype", void 0)
 ], MetadataController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_metadata_dto_1.UpdateMetadataDto]),
+    __metadata("design:paramtypes", [Object, String, update_metadata_dto_1.UpdateMetadataDto]),
     __metadata("design:returntype", void 0)
 ], MetadataController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], MetadataController.prototype, "remove", null);
 exports.MetadataController = MetadataController = __decorate([

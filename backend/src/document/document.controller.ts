@@ -2,33 +2,41 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
+import { Public } from '../auth/public.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('documents')
 export class DocumentController {
   constructor(private documentService: DocumentService) {}
 
+  @Public()
   @Get()
   findAll() {
     return this.documentService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.documentService.findOne(id);
   }
 
   @Post()
-  create(@Body() dto: CreateDocumentDto) {
-    return this.documentService.create(dto);
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateDocumentDto) {
+    return this.documentService.create(user.id, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateDocumentDto) {
-    return this.documentService.update(id, dto);
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateDocumentDto,
+  ) {
+    return this.documentService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.documentService.remove(id);
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.documentService.remove(id, user.id);
   }
 }

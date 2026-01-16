@@ -3,6 +3,7 @@ import { ProductionProcessService } from './production-process.service';
 import { CreateProductionProcessDto } from './dto/create-production-process.dto';
 import { UpdateProductionProcessDto } from './dto/update-production-process.dto';
 import { Public } from '../auth/public.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('production-processes')
 export class ProductionProcessController {
@@ -21,17 +22,21 @@ export class ProductionProcessController {
   }
 
   @Post()
-  create(@Body() dto: CreateProductionProcessDto) {
-    return this.productionProcessService.create(dto);
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateProductionProcessDto) {
+    return this.productionProcessService.create(user.id, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductionProcessDto) {
-    return this.productionProcessService.update(id, dto);
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateProductionProcessDto,
+  ) {
+    return this.productionProcessService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productionProcessService.remove(id);
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.productionProcessService.remove(id, user.id);
   }
 }

@@ -26,15 +26,31 @@ let ProductionProcessService = class ProductionProcessService {
             throw new common_1.NotFoundException('ProductionProcess not found');
         return item;
     }
-    async create(dto) {
+    async findOneOwned(id, userId) {
+        const item = await this.prisma.productionProcess.findUnique({
+            where: { id },
+            include: { product: true },
+        });
+        if (!item)
+            throw new common_1.NotFoundException('ProductionProcess not found');
+        if (item.product.userId !== userId)
+            throw new common_1.ForbiddenException('Access denied');
+        return item;
+    }
+    async create(userId, dto) {
+        const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+        if (!product)
+            throw new common_1.NotFoundException('Product not found');
+        if (product.userId !== userId)
+            throw new common_1.ForbiddenException('Not your product');
         return this.prisma.productionProcess.create({ data: dto });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.productionProcess.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.productionProcess.delete({ where: { id } });
     }
 };

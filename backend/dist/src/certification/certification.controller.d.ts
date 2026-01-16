@@ -24,7 +24,9 @@ export declare class CertificationController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    create(dto: CreateCertificationDto): Promise<{
+    create(user: {
+        id: string;
+    }, dto: CreateCertificationDto): Promise<{
         id: string;
         productId: string;
         certName: string;
@@ -34,7 +36,9 @@ export declare class CertificationController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateCertificationDto): Promise<{
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateCertificationDto): Promise<{
         id: string;
         productId: string;
         certName: string;
@@ -44,7 +48,9 @@ export declare class CertificationController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
+        id: string;
+    }, id: string): Promise<{
         id: string;
         productId: string;
         certName: string;

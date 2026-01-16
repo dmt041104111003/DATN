@@ -18,6 +18,7 @@ const certification_service_1 = require("./certification.service");
 const create_certification_dto_1 = require("./dto/create-certification.dto");
 const update_certification_dto_1 = require("./dto/update-certification.dto");
 const public_decorator_1 = require("../auth/public.decorator");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let CertificationController = class CertificationController {
     certificationService;
     constructor(certificationService) {
@@ -29,14 +30,14 @@ let CertificationController = class CertificationController {
     findOne(id) {
         return this.certificationService.findOne(id);
     }
-    create(dto) {
-        return this.certificationService.create(dto);
+    create(user, dto) {
+        return this.certificationService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.certificationService.update(id, dto);
+    update(user, id, dto) {
+        return this.certificationService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.certificationService.remove(id);
+    remove(user, id) {
+        return this.certificationService.remove(id, user.id);
     }
 };
 exports.CertificationController = CertificationController;
@@ -57,24 +58,27 @@ __decorate([
 ], CertificationController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_certification_dto_1.CreateCertificationDto]),
+    __metadata("design:paramtypes", [Object, create_certification_dto_1.CreateCertificationDto]),
     __metadata("design:returntype", void 0)
 ], CertificationController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_certification_dto_1.UpdateCertificationDto]),
+    __metadata("design:paramtypes", [Object, String, update_certification_dto_1.UpdateCertificationDto]),
     __metadata("design:returntype", void 0)
 ], CertificationController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], CertificationController.prototype, "remove", null);
 exports.CertificationController = CertificationController = __decorate([
