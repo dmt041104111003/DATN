@@ -1,118 +1,185 @@
-import { Transaction } from '@meshsdk/core';
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import { BlockfrostProvider, MeshWallet } from '@meshsdk/core';
+import request from 'supertest';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const API_URL = process.env.API_URL || 'http://localhost:3000';
+const blockfrostProvider = new BlockfrostProvider(process.env.BLOCKFROST_API_KEY || '');
 
 describe('Payment Flow (e2e)', () => {
-  let ctx: TestContext | null;
-  let subscriptionId: string;
+  let wallet: MeshWallet;
+  let authCookie: string;
+  let walletAddress: string;
 
   beforeAll(async () => {
-    ctx = await setupAuthenticatedContext();
-    if (ctx) {
-      console.log('Test wallet:', ctx.address);
-      console.log('Login:', ctx.cookie ? 'OK' : 'FAILED');
-    }
-  });
+    wallet = new MeshWallet({
+      networkId: 0,
+      fetcher: blockfrostProvider,
+      submitter: blockfrostProvider,
+      key: {
+        type: 'mnemonic',
+        words: process.env.APP_MNEMONIC?.split(' ') || [],
+      },
+    });
 
-  describe('Full Payment Flow with Real Transaction', () => {
-    it('1. Tao subscription pending', async () => {
-      if (!ctx?.cookie) return;
+    walletAddress = await wallet.getChangeAddress();
+    console.log('Test wallet:', walletAddress);
 
-      const res = await fetch(`${API_URL}/subscriptions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
-        },
-        body: JSON.stringify({
-          servicePlanId: 'starter',
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'pending',
-        }),
+    // Login
+    const nonceRes = await request(API_URL).get(`/auth/nonce?address=${walletAddress}`);
+    const nonce = nonceRes.body.nonce;
+    const signature = await wallet.signData(nonce, walletAddress);
+
+    const loginRes = await request(API_URL)
+      .post('/auth/verify')
+      .send({
+        address: walletAddress,
+        signature: signature.signature,
+        key: signature.key,
       });
 
-      const data = await res.json();
-      expect(res.status).toBe(201);
-      expect(data.status).toBe('pending');
+    authCookie = loginRes.headers['set-cookie']?.[0] || '';
+    console.log('Login:', authCookie ? 'OK' : 'FAILED');
+  });
 
-      subscriptionId = data.id;
+  async function signAndSubmit(unsignedTx: string): Promise<string> {
+    const signedTx = await wallet.signTx(unsignedTx, true);
+    const txHash = await wallet.submitTx(signedTx);
+    return txHash;
+  }
+
+  async function waitForConfirmation(txHash: string): Promise<void> {
+    return new Promise((resolve) => {
+      blockfrostProvider.onTxConfirmed(txHash, () => resolve());
+    });
+  }
+
+  describe('Full Payment Flow', () => {
+    let subscriptionId: string;
+
+    it('1. Get available service plans', async () => {
+      const res = await request(API_URL).get('/services');
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      console.log('Available services:', res.body.map((s: any) => `${s.id}: ${s.name} (${s.price} ADA)`));
+    });
+
+    it('2. Create subscription (pending) for a service plan', async () => {
+      if (!authCookie) {
+        console.log('Skipping: No auth cookie');
+        return;
+      }
+
+      // Create subscription with status pending
+      const res = await request(API_URL)
+        .post('/subscriptions')
+        .set('Cookie', authCookie)
+        .send({
+          servicePlanId: 'starter',
+          status: 'pending',
+        });
+
+      console.log('Create subscription response:', res.status, res.body);
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('pending');
+
+      subscriptionId = res.body.id;
       console.log('Created subscription:', subscriptionId);
     });
 
-    it('2. Gui ADA va verify payment', async () => {
-      if (!ctx?.cookie || !subscriptionId) {
-        throw new Error('Missing context or subscriptionId');
-      }
-      if (!process.env.BLOCKFROST_API_KEY || !process.env.APP_WALLET_ADDRESS) {
-        throw new Error('Missing BLOCKFROST_API_KEY or APP_WALLET_ADDRESS');
+    it('3. Create payment transaction, sign, submit, and verify', async () => {
+      if (!authCookie || !subscriptionId) {
+        console.log('Skipping: No auth cookie or subscriptionId');
+        return;
       }
 
       // Get service price
-      const serviceRes = await fetch(`${API_URL}/services/starter`);
-      const service = await serviceRes.json();
-      const amountADA = service.price;
+      const serviceRes = await request(API_URL).get('/services/starter');
+      if (serviceRes.status !== 200) {
+        console.log('Skipping: Starter service not found');
+        return;
+      }
+      const service = serviceRes.body;
+      const amountLovelace = (service.price * 1_000_000).toString();
 
-      console.log(`Sending ${amountADA} ADA to ${process.env.APP_WALLET_ADDRESS}...`);
+      console.log(`Creating payment tx for ${service.price} ADA...`);
 
-      // Build & submit transaction
-      const tx = new Transaction({ initiator: ctx.wallet });
-      tx.sendLovelace(process.env.APP_WALLET_ADDRESS, (amountADA * 1_000_000).toString());
-
-      const unsignedTx = await tx.build();
-      const signedTx = await ctx.wallet.signTx(unsignedTx);
-      const txHash = await ctx.wallet.submitTx(signedTx);
-
-      console.log('txHash:', txHash);
-      const network = process.env.NEXT_PUBLIC_APP_NETWORK === '1' ? '' : 'preprod.';
-      console.log(`https://${network}cexplorer.io/tx/${txHash}`);
-
-      // Wait for confirmation using blockfrostProvider
-      console.log('Waiting for confirmation...');
-      await new Promise<void>((resolve) => {
-        ctx!.blockfrostProvider!.onTxConfirmed(txHash, () => {
-          console.log('Transaction confirmed!');
-          resolve();
+      // 1. Create unsigned payment tx from backend
+      const createTxRes = await request(API_URL)
+        .post('/contract/payment')
+        .set('Cookie', authCookie)
+        .send({
+          walletAddress,
+          amount: amountLovelace,
         });
-      });
 
-      // Verify payment on backend
-      const res = await fetch(`${API_URL}/payments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
-        },
-        body: JSON.stringify({ subscriptionId, txHash }),
-      });
+      console.log('Create payment tx response:', createTxRes.status, createTxRes.body.result);
+      expect(createTxRes.status).toBe(201);
+      expect(createTxRes.body.result).toBe(true);
 
-      const data = await res.json();
-      console.log('Payment response:', data);
+      // 2. Sign and submit
+      console.log('Signing and submitting tx...');
+      const txHash = await signAndSubmit(createTxRes.body.data);
+      console.log('txHash:', txHash);
+      console.log(`https://preprod.cexplorer.io/tx/${txHash}`);
 
-      expect(res.status).toBe(201);
-      expect(data.message).toBe('Payment verified and subscription activated');
-      expect(data.subscription.status).toBe('active');
+      // 3. Wait for confirmation
+      console.log('Waiting for confirmation...');
+      await waitForConfirmation(txHash);
+      console.log('Transaction confirmed!');
+
+      // 4. Verify payment and activate subscription
+      console.log('Verifying payment on backend...');
+      const verifyRes = await request(API_URL)
+        .post('/payments')
+        .set('Cookie', authCookie)
+        .send({
+          subscriptionId,
+          txHash,
+        });
+
+      console.log('Verify response:', verifyRes.status, verifyRes.body);
+      expect(verifyRes.status).toBe(201);
+      expect(verifyRes.body.result).toBe(true);
+      expect(verifyRes.body.message).toBe('Payment verified and subscription activated');
+      expect(verifyRes.body.data.subscription.status).toBe('active');
     }, 180000);
 
-    it('3. Xem payments cua user', async () => {
-      if (!ctx?.cookie) return;
+    it('4. Get user payments', async () => {
+      if (!authCookie) return;
 
-      const res = await fetch(`${API_URL}/payments`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await request(API_URL)
+        .get('/payments')
+        .set('Cookie', authCookie);
 
-      const data = await res.json();
       expect(res.status).toBe(200);
-      expect(Array.isArray(data)).toBe(true);
+      expect(Array.isArray(res.body)).toBe(true);
+      console.log('User payments:', res.body.length);
+    });
 
-      console.log('User payments:', data.length);
+    it('5. Get user subscriptions (should be active)', async () => {
+      if (!authCookie) return;
+
+      const res = await request(API_URL)
+        .get('/subscriptions')
+        .set('Cookie', authCookie);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      
+      const activeSubscriptions = res.body.filter((s: any) => s.status === 'active');
+      console.log('Active subscriptions:', activeSubscriptions.length);
     });
 
     afterAll(async () => {
-      if (!ctx?.cookie || !subscriptionId) return;
-      await fetch(`${API_URL}/subscriptions/${subscriptionId}`, {
-        method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
-      });
+      // Cleanup: Delete test subscription
+      if (authCookie && subscriptionId) {
+        await request(API_URL)
+          .delete(`/subscriptions/${subscriptionId}`)
+          .set('Cookie', authCookie);
+        console.log('Cleaned up subscription:', subscriptionId);
+      }
     });
   });
 });

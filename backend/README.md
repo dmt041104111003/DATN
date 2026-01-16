@@ -131,4 +131,6 @@ npm install -D @types/cookie-parser
 
 npm install @blockfrost/blockfrost-js
 
+npm run test:e2e -- --testNamePattern="Payment"
+
 ```

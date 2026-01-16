@@ -1,6 +1,6 @@
 export declare class CreateSubscriptionDto {
     servicePlanId: string;
-    startDate: string;
-    endDate: string;
+    startDate?: string;
+    endDate?: string;
     status?: string;
 }

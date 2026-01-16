@@ -8,25 +8,45 @@ export class SubscriptionService {
   constructor(private prisma: PrismaService) {}
 
   async findAllByUser(userId: string) {
-    return this.prisma.subscription.findMany({ where: { userId } });
+    return this.prisma.subscription.findMany({
+      where: { userId },
+      include: { service: true },
+    });
   }
 
   async findOne(id: string, userId: string) {
-    const item = await this.prisma.subscription.findUnique({ where: { id } });
+    const item = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: { service: true },
+    });
     if (!item) throw new NotFoundException('Subscription not found');
     if (item.userId !== userId) throw new ForbiddenException('Not your subscription');
     return item;
   }
 
   async create(userId: string, dto: CreateSubscriptionDto) {
+    const now = new Date();
+    const data = {
+      userId,
+      servicePlanId: dto.servicePlanId,
+      startDate: dto.startDate ? new Date(dto.startDate) : now,
+      endDate: dto.endDate ? new Date(dto.endDate) : now, // Will be updated when payment verified
+      status: dto.status || 'pending',
+    };
+
     return this.prisma.subscription.create({
-      data: { ...dto, userId },
+      data,
+      include: { service: true },
     });
   }
 
   async update(id: string, userId: string, dto: UpdateSubscriptionDto) {
     await this.findOne(id, userId);
-    return this.prisma.subscription.update({ where: { id }, data: dto });
+    return this.prisma.subscription.update({
+      where: { id },
+      data: dto,
+      include: { service: true },
+    });
   }
 
   async remove(id: string, userId: string) {

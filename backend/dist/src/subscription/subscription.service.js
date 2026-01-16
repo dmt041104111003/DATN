@@ -18,10 +18,16 @@ let SubscriptionService = class SubscriptionService {
         this.prisma = prisma;
     }
     async findAllByUser(userId) {
-        return this.prisma.subscription.findMany({ where: { userId } });
+        return this.prisma.subscription.findMany({
+            where: { userId },
+            include: { service: true },
+        });
     }
     async findOne(id, userId) {
-        const item = await this.prisma.subscription.findUnique({ where: { id } });
+        const item = await this.prisma.subscription.findUnique({
+            where: { id },
+            include: { service: true },
+        });
         if (!item)
             throw new common_1.NotFoundException('Subscription not found');
         if (item.userId !== userId)
@@ -29,13 +35,26 @@ let SubscriptionService = class SubscriptionService {
         return item;
     }
     async create(userId, dto) {
+        const now = new Date();
+        const data = {
+            userId,
+            servicePlanId: dto.servicePlanId,
+            startDate: dto.startDate ? new Date(dto.startDate) : now,
+            endDate: dto.endDate ? new Date(dto.endDate) : now,
+            status: dto.status || 'pending',
+        };
         return this.prisma.subscription.create({
-            data: { ...dto, userId },
+            data,
+            include: { service: true },
         });
     }
     async update(id, userId, dto) {
         await this.findOne(id, userId);
-        return this.prisma.subscription.update({ where: { id }, data: dto });
+        return this.prisma.subscription.update({
+            where: { id },
+            data: dto,
+            include: { service: true },
+        });
     }
     async remove(id, userId) {
         await this.findOne(id, userId);

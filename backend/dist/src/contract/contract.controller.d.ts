@@ -3,28 +3,46 @@ import { MintDto } from './dto/mint.dto';
 import { BurnDto } from './dto/burn.dto';
 import { UpdateMetadataDto } from './dto/update-metadata.dto';
 export declare class ContractController {
-    private contractService;
+    private readonly contractService;
     constructor(contractService: ContractService);
-    getInfo(): Promise<{
-        policyId: string | undefined;
-        storeAddress: string | undefined;
+    getInfo(walletAddress: string): Promise<{
+        policyId: string;
+        storeAddress: string;
     }>;
-    mint(user: {
-        id: string;
-        address: string;
-    }, dto: MintDto[]): Promise<{
-        txHash: string;
+    createMint(walletAddress: string, assets: MintDto[]): Promise<{
+        result: boolean;
+        data: string;
+        message: string;
+    } | {
+        result: boolean;
+        data: null;
+        message: string;
     }>;
-    burn(user: {
-        id: string;
-        address: string;
-    }, dto: BurnDto[]): Promise<{
-        txHash: string;
+    createBurn(walletAddress: string, assets: BurnDto[]): Promise<{
+        result: boolean;
+        data: string;
+        message: string;
+    } | {
+        result: boolean;
+        data: null;
+        message: string;
     }>;
-    update(user: {
-        id: string;
-        address: string;
-    }, dto: UpdateMetadataDto[]): Promise<{
-        txHash: string;
+    createUpdate(walletAddress: string, assets: UpdateMetadataDto[]): Promise<{
+        result: boolean;
+        data: string;
+        message: string;
+    } | {
+        result: boolean;
+        data: null;
+        message: string;
+    }>;
+    createPayment(walletAddress: string, amount: string): Promise<{
+        result: boolean;
+        data: string;
+        message: string;
+    } | {
+        result: boolean;
+        data: null;
+        message: string;
     }>;
 }

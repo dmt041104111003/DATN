@@ -2,7 +2,6 @@ import type { Network } from '@meshsdk/core';
 
 export const BLOCKFROST_API_KEY = process.env.BLOCKFROST_API_KEY || '';
 export const APP_WALLET_ADDRESS = process.env.APP_WALLET_ADDRESS || '';
-export const APP_MNEMONIC = process.env.APP_MNEMONIC || '';
 
 export const appNetwork: Network =
   (process.env.NEXT_PUBLIC_APP_NETWORK?.toLowerCase() as Network) || 'preprod';

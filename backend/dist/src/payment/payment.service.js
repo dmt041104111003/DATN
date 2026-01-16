@@ -62,35 +62,34 @@ let PaymentService = class PaymentService {
         if (!verification.confirmedAmount) {
             throw new common_1.BadRequestException('Could not confirm payment amount from blockchain');
         }
-        const payment = await this.prisma.payment.create({
-            data: {
-                userId,
-                subscriptionId: dto.subscriptionId,
-                amount: verification.confirmedAmount,
-                currency: dto.currency || 'ADA',
-                txHash: dto.txHash,
-                paymentDate: new Date(),
-            },
-        });
         const now = new Date();
         const endDate = new Date(now);
         endDate.setDate(endDate.getDate() + subscription.service.duration);
-        await this.prisma.subscription.update({
-            where: { id: dto.subscriptionId },
-            data: {
-                status: 'active',
-                startDate: now,
-                endDate: endDate,
-            },
+        const result = await this.prisma.$transaction(async (prisma) => {
+            const payment = await prisma.payment.create({
+                data: {
+                    userId,
+                    subscriptionId: dto.subscriptionId,
+                    amount: verification.confirmedAmount,
+                    currency: dto.currency || 'ADA',
+                    txHash: dto.txHash,
+                    paymentDate: now,
+                },
+            });
+            const updatedSubscription = await prisma.subscription.update({
+                where: { id: dto.subscriptionId },
+                data: {
+                    status: 'active',
+                    startDate: now,
+                    endDate: endDate,
+                },
+            });
+            return { payment, subscription: updatedSubscription };
         });
         return {
-            payment,
+            result: true,
             message: 'Payment verified and subscription activated',
-            subscription: {
-                status: 'active',
-                startDate: now,
-                endDate: endDate,
-            },
+            data: result,
         };
     }
     async update(id, userId, dto) {

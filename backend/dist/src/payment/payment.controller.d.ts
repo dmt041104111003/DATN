@@ -10,19 +10,19 @@ export declare class PaymentController {
         subscription: {
             service: {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
                 description: string | null;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
             servicePlanId: string;
             startDate: Date;
             endDate: Date;
@@ -30,14 +30,14 @@ export declare class PaymentController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         subscriptionId: string;
-        txHash: string;
         amount: number;
         currency: string;
+        txHash: string;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     })[]>;
     findOne(user: {
         id: string;
@@ -45,19 +45,19 @@ export declare class PaymentController {
         subscription: {
             service: {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
                 description: string | null;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
             servicePlanId: string;
             startDate: Date;
             endDate: Date;
@@ -65,60 +65,68 @@ export declare class PaymentController {
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         subscriptionId: string;
-        txHash: string;
         amount: number;
         currency: string;
+        txHash: string;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreatePaymentDto): Promise<{
-        payment: {
-            id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            userId: string;
-            subscriptionId: string;
-            txHash: string;
-            amount: number;
-            currency: string;
-            paymentDate: Date;
-        };
+        result: boolean;
         message: string;
-        subscription: {
-            status: string;
-            startDate: Date;
-            endDate: Date;
+        data: {
+            payment: {
+                id: string;
+                userId: string;
+                subscriptionId: string;
+                amount: number;
+                currency: string;
+                txHash: string;
+                paymentDate: Date;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            subscription: {
+                id: string;
+                userId: string;
+                createdAt: Date;
+                updatedAt: Date;
+                servicePlanId: string;
+                startDate: Date;
+                endDate: Date;
+                status: string;
+            };
         };
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdatePaymentDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         subscriptionId: string;
-        txHash: string;
         amount: number;
         currency: string;
+        txHash: string;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         subscriptionId: string;
-        txHash: string;
         amount: number;
         currency: string;
+        txHash: string;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

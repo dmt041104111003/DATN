@@ -4,13 +4,15 @@ export class CreateSubscriptionDto {
   @IsString()
   servicePlanId: string;
 
+  @IsOptional()
   @IsDateString()
-  startDate: string;
+  startDate?: string;
 
+  @IsOptional()
   @IsDateString()
-  endDate: string;
+  endDate?: string;
 
   @IsString()
   @IsOptional()
-  status?: string;
+  status?: string; // 'pending' | 'active' | 'expired' | 'cancelled'
 }
