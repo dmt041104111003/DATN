@@ -19,6 +19,7 @@ async function main() {
       description: 'Best option for personal use & your next project.',
       price: 29,
       duration: 30,
+      maxProducts: 20,
     },
     {
       id: 'company',
@@ -26,6 +27,7 @@ async function main() {
       description: 'Relevant for multiple users, extended & premium support.',
       price: 99,
       duration: 90,
+      maxProducts: 100,
     },
     {
       id: 'enterprise',
@@ -33,6 +35,7 @@ async function main() {
       description: 'Best for large scale uses and extended redistribution rights.',
       price: 499,
       duration: 365,
+      maxProducts: null, 
     },
   ];
 

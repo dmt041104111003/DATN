@@ -136,4 +136,22 @@ describe('Products (e2e)', () => {
       expect(res.status).toBe(200);
     });
   });
+
+  describe('GET /products/quota (protected)', () => {
+    it('tra ve quota cua user', async () => {
+      if (!TEST_MNEMONIC || !cookie) return;
+
+      const res = await fetch(`${API_URL}/products/quota`, {
+        headers: { 'Cookie': cookie },
+      });
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.tier).toBeDefined();
+      expect(data.maxProducts).toBeDefined();
+      expect(data.usedProducts).toBeDefined();
+      expect(data.remainingProducts).toBeDefined();
+      
+      console.log('Quota:', data);
+    });
+  });
 });

@@ -30,6 +30,9 @@ let ProductController = class ProductController {
     findMy(user) {
         return this.productService.findAllByUser(user.id);
     }
+    getQuota(user) {
+        return this.productService.getQuota(user.id);
+    }
     findOne(id) {
         return this.productService.findOne(id);
     }
@@ -58,6 +61,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "findMy", null);
+__decorate([
+    (0, common_1.Get)('quota'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], ProductController.prototype, "getQuota", null);
 __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),

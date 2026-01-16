@@ -30,6 +30,14 @@ export declare class ProductController {
         policyId: string | null;
         historyHash: string | null;
     }[]>;
+    getQuota(user: {
+        id: string;
+    }): Promise<{
+        tier: string;
+        maxProducts: number;
+        usedProducts: number;
+        remainingProducts: string | number;
+    }>;
     findOne(id: string): Promise<{
         id: string;
         name: string;

@@ -41,6 +41,8 @@ export declare class ProductService {
         historyHash: string | null;
     }>;
     private findOneOwned;
+    private getActiveSubscription;
+    private checkProductLimit;
     create(userId: string, dto: CreateProductDto): Promise<{
         id: string;
         name: string;
@@ -76,5 +78,11 @@ export declare class ProductService {
         userId: string;
         policyId: string | null;
         historyHash: string | null;
+    }>;
+    getQuota(userId: string): Promise<{
+        tier: string;
+        maxProducts: number;
+        usedProducts: number;
+        remainingProducts: string | number;
     }>;
 }

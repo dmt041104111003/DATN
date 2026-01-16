@@ -8,6 +8,7 @@ export declare class ServiceController {
         description: string | null;
         price: number;
         duration: number;
+        maxProducts: number | null;
         createdAt: Date;
         updatedAt: Date;
     }[]>;
@@ -17,6 +18,7 @@ export declare class ServiceController {
         description: string | null;
         price: number;
         duration: number;
+        maxProducts: number | null;
         createdAt: Date;
         updatedAt: Date;
     }>;

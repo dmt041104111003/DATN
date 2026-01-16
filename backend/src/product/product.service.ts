@@ -27,7 +27,35 @@ export class ProductService {
     return product;
   }
 
+  private async getActiveSubscription(userId: string) {
+    const now = new Date();
+    return this.prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: 'active',
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      include: { service: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  private async checkProductLimit(userId: string) {
+    const subscription = await this.getActiveSubscription(userId);
+    const maxProducts = subscription?.service.maxProducts ?? 5;
+    if (maxProducts === null) return;
+    const currentCount = await this.prisma.product.count({ where: { userId } });
+    if (currentCount >= maxProducts) {
+      const tierName = subscription?.service.name ?? 'Free';
+      throw new ForbiddenException(
+        `Bạn đã đạt giới hạn ${maxProducts} sản phẩm của gói ${tierName}. Nâng cấp gói để tạo thêm.`
+      );
+    }
+  }
+
   async create(userId: string, dto: CreateProductDto) {
+    await this.checkProductLimit(userId);
     return this.prisma.product.create({
       data: { ...dto, userId },
     });
@@ -41,5 +69,18 @@ export class ProductService {
   async remove(id: string, userId: string) {
     await this.findOneOwned(id, userId);
     return this.prisma.product.delete({ where: { id } });
+  }
+
+  async getQuota(userId: string) {
+    const subscription = await this.getActiveSubscription(userId);
+    const maxProducts = subscription?.service.maxProducts ?? 5;
+    const currentCount = await this.prisma.product.count({ where: { userId } });
+    
+    return {
+      tier: subscription?.service.name ?? 'Free',
+      maxProducts: maxProducts,
+      usedProducts: currentCount,
+      remainingProducts: maxProducts === null ? 'unlimited' : maxProducts - currentCount,
+    };
   }
 }

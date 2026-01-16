@@ -35,7 +35,32 @@ let ProductService = class ProductService {
             throw new common_1.ForbiddenException('Not your product');
         return product;
     }
+    async getActiveSubscription(userId) {
+        const now = new Date();
+        return this.prisma.subscription.findFirst({
+            where: {
+                userId,
+                status: 'active',
+                startDate: { lte: now },
+                endDate: { gte: now },
+            },
+            include: { service: true },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+    async checkProductLimit(userId) {
+        const subscription = await this.getActiveSubscription(userId);
+        const maxProducts = subscription?.service.maxProducts ?? 5;
+        if (maxProducts === null)
+            return;
+        const currentCount = await this.prisma.product.count({ where: { userId } });
+        if (currentCount >= maxProducts) {
+            const tierName = subscription?.service.name ?? 'Free';
+            throw new common_1.ForbiddenException(`Bạn đã đạt giới hạn ${maxProducts} sản phẩm của gói ${tierName}. Nâng cấp gói để tạo thêm.`);
+        }
+    }
     async create(userId, dto) {
+        await this.checkProductLimit(userId);
         return this.prisma.product.create({
             data: { ...dto, userId },
         });
@@ -47,6 +72,17 @@ let ProductService = class ProductService {
     async remove(id, userId) {
         await this.findOneOwned(id, userId);
         return this.prisma.product.delete({ where: { id } });
+    }
+    async getQuota(userId) {
+        const subscription = await this.getActiveSubscription(userId);
+        const maxProducts = subscription?.service.maxProducts ?? 5;
+        const currentCount = await this.prisma.product.count({ where: { userId } });
+        return {
+            tier: subscription?.service.name ?? 'Free',
+            maxProducts: maxProducts,
+            usedProducts: currentCount,
+            remainingProducts: maxProducts === null ? 'unlimited' : maxProducts - currentCount,
+        };
     }
 };
 exports.ProductService = ProductService;

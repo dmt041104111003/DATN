@@ -157,6 +157,7 @@ model Service {
   description  String?        @map("description")
   price        Float
   duration     Int
+  maxProducts  Int?           @map("max_products") // null = unlimited
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
   subscriptions Subscription[]

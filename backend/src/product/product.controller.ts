@@ -20,6 +20,10 @@ export class ProductController {
     return this.productService.findAllByUser(user.id);
   }
 
+  @Get('quota')
+  getQuota(@CurrentUser() user: { id: string }) {
+    return this.productService.getQuota(user.id);
+  }
   @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
