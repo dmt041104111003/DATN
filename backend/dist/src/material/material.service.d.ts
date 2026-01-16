@@ -20,18 +20,18 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     })[]>;
     findBySupplier(supplierId: string, userId: string): Promise<{
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         supplier: {
@@ -49,35 +49,35 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
     create(userId: string, dto: CreateMaterialDto): Promise<{
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
     update(id: string, userId: string, dto: UpdateMaterialDto): Promise<{
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
 }

@@ -22,9 +22,9 @@ export declare class MaterialController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     })[]>;
     findBySupplier(user: {
         id: string;
@@ -33,9 +33,9 @@ export declare class MaterialController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }[]>;
     findOne(user: {
         id: string;
@@ -55,9 +55,9 @@ export declare class MaterialController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
     create(user: {
         id: string;
@@ -66,9 +66,9 @@ export declare class MaterialController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
     update(user: {
         id: string;
@@ -77,9 +77,9 @@ export declare class MaterialController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
     remove(user: {
         id: string;
@@ -88,8 +88,8 @@ export declare class MaterialController {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
-        quantity: number;
     }>;
 }

@@ -22,6 +22,7 @@ import { IpfsModule } from './ipfs/ipfs.module';
 import { MediaModule } from './media/media.module';
 import { MetadataModule } from './metadata/metadata.module';
 import { DocumentModule } from './document/document.module';
+import { ProductMaterialModule } from './product-material/product-material.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 @Module({
@@ -31,6 +32,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     AuthModule,
     UserModule,
     ProductModule,
+    ProductMaterialModule,
     CollectionModule,
     MetadataModule,
     MediaModule,

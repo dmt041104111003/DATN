@@ -6,29 +6,29 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<{
         id: string;
+        name: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
-        name: string;
         imageUrl: string | null;
-        description: string | null;
         historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<{
         id: string;
+        name: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
-        name: string;
         imageUrl: string | null;
-        description: string | null;
         historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     getQuota(user: {
         id: string;
@@ -92,6 +92,16 @@ export declare class ProductController {
                 exitTime: Date | null;
                 conditions: string | null;
             })[];
+            materials: {
+                name: string;
+                quantity: number;
+                unit: string | null;
+                harvestDate: Date | null;
+                supplier: {
+                    name: string;
+                    location: string | null;
+                };
+            }[];
             owner: string;
             createdAt: Date;
             updatedAt: Date;
@@ -160,56 +170,56 @@ export declare class ProductController {
     }>;
     findOne(id: string): Promise<{
         id: string;
+        name: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
-        name: string;
         imageUrl: string | null;
-        description: string | null;
         historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreateProductDto): Promise<{
         id: string;
+        name: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
-        name: string;
         imageUrl: string | null;
-        description: string | null;
         historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
+        name: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
-        name: string;
         imageUrl: string | null;
-        description: string | null;
         historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
+        name: string;
+        description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
-        name: string;
         imageUrl: string | null;
-        description: string | null;
         historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

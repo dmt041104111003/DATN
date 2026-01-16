@@ -12,29 +12,29 @@ export declare class PaymentController {
                 id: string;
                 name: string;
                 description: string | null;
-                createdAt: Date;
-                updatedAt: Date;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
+                createdAt: Date;
+                updatedAt: Date;
             };
         } & {
             id: string;
-            userId: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             servicePlanId: string;
             startDate: Date;
             endDate: Date;
             status: string;
         };
     } & {
-        txHash: string;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        txHash: string;
+        amount: number;
         subscriptionId: string;
         currency: string;
     })[]>;
@@ -46,29 +46,29 @@ export declare class PaymentController {
                 id: string;
                 name: string;
                 description: string | null;
-                createdAt: Date;
-                updatedAt: Date;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
+                createdAt: Date;
+                updatedAt: Date;
             };
         } & {
             id: string;
-            userId: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             servicePlanId: string;
             startDate: Date;
             endDate: Date;
             status: string;
         };
     } & {
-        txHash: string;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        txHash: string;
+        amount: number;
         subscriptionId: string;
         currency: string;
     }>;
@@ -79,20 +79,20 @@ export declare class PaymentController {
         message: string;
         data: {
             payment: {
-                txHash: string;
-                amount: number;
                 id: string;
-                userId: string;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
+                txHash: string;
+                amount: number;
                 subscriptionId: string;
                 currency: string;
             };
             subscription: {
                 id: string;
-                userId: string;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
                 servicePlanId: string;
                 startDate: Date;
                 endDate: Date;
@@ -103,24 +103,24 @@ export declare class PaymentController {
     update(user: {
         id: string;
     }, id: string, dto: UpdatePaymentDto): Promise<{
-        txHash: string;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        txHash: string;
+        amount: number;
         subscriptionId: string;
         currency: string;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
-        txHash: string;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        txHash: string;
+        amount: number;
         subscriptionId: string;
         currency: string;
     }>;

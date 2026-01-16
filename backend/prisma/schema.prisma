@@ -86,22 +86,23 @@ model Media {
 
 // 6. Product - Sản phẩm (tokenize thành NFT)
 model Product {
-  id                String              @id @default(cuid())
-  userId            String              @map("user_id")
-  policyId          String?             @map("policy_id")
-  assetName         String?             @map("asset_name")
-  name              String              @map("name")
-  imageUrl          String?             @map("image_url")
-  description       String?             @map("description")
-  historyHash       String?             @map("history_hash")
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  user              User                @relation(fields: [userId], references: [id])
-  documents         Document[]
+  id                  String              @id @default(cuid())
+  userId              String              @map("user_id")
+  policyId            String?             @map("policy_id")
+  assetName           String?             @map("asset_name")
+  name                String              @map("name")
+  imageUrl            String?             @map("image_url")
+  description         String?             @map("description")
+  historyHash         String?             @map("history_hash")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  user                User                @relation(fields: [userId], references: [id])
+  documents           Document[]
   productionProcesses ProductionProcess[]
-  warehouseStorages WarehouseStorage[]
-  feedbacks         Feedback[]
-  certifications    Certification[]
+  warehouseStorages   WarehouseStorage[]
+  feedbacks           Feedback[]
+  certifications      Certification[]
+  productMaterials    ProductMaterial[]
 
   @@map("product")
 }
@@ -124,16 +125,33 @@ model Supplier {
 
 // 8. Material - Nguyên liệu thô
 model Material {
-  id          String    @id @default(cuid())
-  supplierId  String    @map("supplier_id")
-  name        String
-  harvestDate DateTime? @map("harvest_date")
-  quantity    Float     @default(0)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  id               String            @id @default(cuid())
+  supplierId       String            @map("supplier_id")
+  name             String
+  harvestDate      DateTime?         @map("harvest_date")
+  quantity         Float             @default(0)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  supplier         Supplier          @relation(fields: [supplierId], references: [id])
+  productMaterials ProductMaterial[]
 
   @@map("raw_material")
+}
+
+// 8.1. ProductMaterial - Nguyên liệu sử dụng trong sản phẩm
+model ProductMaterial {
+  id          String   @id @default(cuid())
+  productId   String   @map("product_id")
+  materialId  String   @map("material_id")
+  quantity    Float    @default(0)
+  unit        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  material    Material @relation(fields: [materialId], references: [id])
+
+  @@unique([productId, materialId])
+  @@map("product_material")
 }
 
 // 9. Document - Tài liệu bổ sung

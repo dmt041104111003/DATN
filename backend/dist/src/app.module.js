@@ -31,6 +31,7 @@ const ipfs_module_1 = require("./ipfs/ipfs.module");
 const media_module_1 = require("./media/media.module");
 const metadata_module_1 = require("./metadata/metadata.module");
 const document_module_1 = require("./document/document.module");
+const product_material_module_1 = require("./product-material/product-material.module");
 const core_1 = require("@nestjs/core");
 const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
 let AppModule = class AppModule {
@@ -44,6 +45,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             user_module_1.UserModule,
             product_module_1.ProductModule,
+            product_material_module_1.ProductMaterialModule,
             collection_module_1.CollectionModule,
             metadata_module_1.MetadataModule,
             media_module_1.MediaModule,

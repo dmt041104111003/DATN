@@ -99,6 +99,15 @@ export class ProductService {
         warehouseStorages: {
           include: { warehouse: true },
         },
+        productMaterials: {
+          include: {
+            material: {
+              include: {
+                supplier: true,
+              },
+            },
+          },
+        },
         user: {
           select: { id: true, address: true },
         },
@@ -124,6 +133,16 @@ export class ProductService {
         productionProcesses: product.productionProcesses,
         certifications: product.certifications,
         warehouseStorages: product.warehouseStorages,
+        materials: product.productMaterials.map((pm) => ({
+          name: pm.material.name,
+          quantity: pm.quantity,
+          unit: pm.unit,
+          harvestDate: pm.material.harvestDate,
+          supplier: {
+            name: pm.material.supplier.name,
+            location: pm.material.supplier.location,
+          },
+        })),
         owner: product.user.address,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
