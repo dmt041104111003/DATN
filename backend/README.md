@@ -103,7 +103,10 @@ npx -y @nestjs/cli new backend --package-manager npm --skip-git
 npm install @prisma/client
 npm install -D prisma
 npx prisma init
+
+npx prisma generate
 npx prisma migrate dev --name init
+
 
 wsl
 docker run \
