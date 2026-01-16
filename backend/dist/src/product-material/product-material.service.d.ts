@@ -8,9 +8,9 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
                 location: string | null;
                 gpsCoordinates: string | null;
@@ -18,9 +18,9 @@ export declare class ProductMaterialService {
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -37,10 +37,10 @@ export declare class ProductMaterialService {
     findOne(id: string, userId: string): Promise<{
         product: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             imageUrl: string | null;
             assetName: string | null;
             userId: string;
@@ -50,9 +50,9 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
                 location: string | null;
                 gpsCoordinates: string | null;
@@ -60,9 +60,9 @@ export declare class ProductMaterialService {
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -80,9 +80,9 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
                 location: string | null;
                 gpsCoordinates: string | null;
@@ -90,9 +90,9 @@ export declare class ProductMaterialService {
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -110,9 +110,9 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
                 location: string | null;
                 gpsCoordinates: string | null;
@@ -120,9 +120,9 @@ export declare class ProductMaterialService {
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;

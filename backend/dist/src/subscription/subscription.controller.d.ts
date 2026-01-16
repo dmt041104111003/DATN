@@ -9,13 +9,13 @@ export declare class SubscriptionController {
     }): Promise<({
         service: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
         id: string;
@@ -32,13 +32,13 @@ export declare class SubscriptionController {
     }, id: string): Promise<{
         service: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
         id: string;
@@ -55,13 +55,13 @@ export declare class SubscriptionController {
     }, dto: CreateSubscriptionDto): Promise<{
         service: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
         id: string;
@@ -78,13 +78,13 @@ export declare class SubscriptionController {
     }, id: string, dto: UpdateSubscriptionDto): Promise<{
         service: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
         id: string;
@@ -99,6 +99,29 @@ export declare class SubscriptionController {
     remove(user: {
         id: string;
     }, id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        servicePlanId: string;
+        startDate: Date;
+        endDate: Date;
+        status: string;
+    }>;
+    cancel(user: {
+        id: string;
+    }, id: string): Promise<{
+        service: {
+            id: string;
+            name: string;
+            description: string | null;
+            price: number;
+            duration: number;
+            maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;

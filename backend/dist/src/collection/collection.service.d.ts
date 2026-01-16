@@ -6,56 +6,56 @@ export declare class CollectionService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         thumbnail: string | null;
     }[]>;
     findAllByUser(userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         thumbnail: string | null;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         thumbnail: string | null;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateCollectionDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         thumbnail: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateCollectionDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         thumbnail: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         thumbnail: string | null;
     }>;

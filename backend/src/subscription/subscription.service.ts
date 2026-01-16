@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -56,6 +57,26 @@ export class SubscriptionService {
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
+    const paymentCount = await this.prisma.payment.count({
+      where: { subscriptionId: id },
+    });
+
+    if (paymentCount > 0) {
+      return this.prisma.subscription.update({
+        where: { id },
+        data: { status: 'cancelled' },
+        include: { service: true },
+      });
+    }
+
     return this.prisma.subscription.delete({ where: { id } });
+  }
+  async cancel(id: string, userId: string) {
+    await this.findOne(id, userId);
+    return this.prisma.subscription.update({
+      where: { id },
+      data: { status: 'cancelled' },
+      include: { service: true },
+    });
   }
 }

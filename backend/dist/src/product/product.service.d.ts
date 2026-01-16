@@ -8,10 +8,10 @@ export declare class ProductService {
     constructor(prisma: PrismaService, blockchain: BlockchainService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -20,10 +20,10 @@ export declare class ProductService {
     }[]>;
     findAllByUser(userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -32,10 +32,10 @@ export declare class ProductService {
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -47,10 +47,10 @@ export declare class ProductService {
     private checkProductLimit;
     create(userId: string, dto: CreateProductDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -59,10 +59,10 @@ export declare class ProductService {
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -71,10 +71,10 @@ export declare class ProductService {
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -94,12 +94,12 @@ export declare class ProductService {
             description: string | null;
             imageUrl: string | null;
             documents: {
+                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
-                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -125,9 +125,9 @@ export declare class ProductService {
             warehouseStorages: ({
                 warehouse: {
                     id: string;
+                    name: string;
                     createdAt: Date;
                     updatedAt: Date;
-                    name: string;
                     location: string | null;
                     capacity: number;
                 };

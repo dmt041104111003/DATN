@@ -5,20 +5,20 @@ export declare class UserService {
     constructor(prisma: PrismaService);
     findOne(id: string): Promise<{
         id: string;
-        address: string;
         createdAt: Date;
         updatedAt: Date;
+        address: string;
     }>;
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
-        address: string;
         createdAt: Date;
         updatedAt: Date;
+        address: string;
     }>;
     remove(id: string): Promise<{
         id: string;
-        address: string;
         createdAt: Date;
         updatedAt: Date;
+        address: string;
     }>;
 }

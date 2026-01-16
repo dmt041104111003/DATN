@@ -47,4 +47,9 @@ export class SubscriptionController {
   remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
     return this.subscriptionService.remove(id, user.id);
   }
+
+  @Post(':id/cancel')
+  cancel(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.subscriptionService.cancel(id, user.id);
+  }
 }

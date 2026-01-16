@@ -58,7 +58,25 @@ let SubscriptionService = class SubscriptionService {
     }
     async remove(id, userId) {
         await this.findOne(id, userId);
+        const paymentCount = await this.prisma.payment.count({
+            where: { subscriptionId: id },
+        });
+        if (paymentCount > 0) {
+            return this.prisma.subscription.update({
+                where: { id },
+                data: { status: 'cancelled' },
+                include: { service: true },
+            });
+        }
         return this.prisma.subscription.delete({ where: { id } });
+    }
+    async cancel(id, userId) {
+        await this.findOne(id, userId);
+        return this.prisma.subscription.update({
+            where: { id },
+            data: { status: 'cancelled' },
+            include: { service: true },
+        });
     }
 };
 exports.SubscriptionService = SubscriptionService;

@@ -6,10 +6,10 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -20,10 +20,10 @@ export declare class ProductController {
         id: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -45,12 +45,12 @@ export declare class ProductController {
             description: string | null;
             imageUrl: string | null;
             documents: {
+                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
-                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -76,9 +76,9 @@ export declare class ProductController {
             warehouseStorages: ({
                 warehouse: {
                     id: string;
+                    name: string;
                     createdAt: Date;
                     updatedAt: Date;
-                    name: string;
                     location: string | null;
                     capacity: number;
                 };
@@ -146,10 +146,10 @@ export declare class ProductController {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -160,10 +160,10 @@ export declare class ProductController {
         id: string;
     }, dto: CreateProductDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -174,10 +174,10 @@ export declare class ProductController {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;
@@ -188,10 +188,10 @@ export declare class ProductController {
         id: string;
     }, id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         imageUrl: string | null;
         assetName: string | null;
         userId: string;

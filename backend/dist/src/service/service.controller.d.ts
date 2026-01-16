@@ -4,22 +4,22 @@ export declare class ServiceController {
     constructor(serviceService: ServiceService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
         price: number;
         duration: number;
         maxProducts: number | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
         price: number;
         duration: number;
         maxProducts: number | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

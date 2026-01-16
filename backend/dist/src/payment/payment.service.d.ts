@@ -10,13 +10,13 @@ export declare class PaymentService {
         subscription: {
             service: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 description: string | null;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
+                createdAt: Date;
+                updatedAt: Date;
             };
         } & {
             id: string;
@@ -35,20 +35,20 @@ export declare class PaymentService {
         txHash: string;
         amount: number;
         userId: string;
-        currency: string;
         subscriptionId: string;
+        currency: string;
     })[]>;
     findOne(id: string, userId: string): Promise<{
         subscription: {
             service: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 description: string | null;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
+                createdAt: Date;
+                updatedAt: Date;
             };
         } & {
             id: string;
@@ -67,8 +67,8 @@ export declare class PaymentService {
         txHash: string;
         amount: number;
         userId: string;
-        currency: string;
         subscriptionId: string;
+        currency: string;
     }>;
     create(userId: string, dto: CreatePaymentDto): Promise<{
         result: boolean;
@@ -81,8 +81,8 @@ export declare class PaymentService {
                 txHash: string;
                 amount: number;
                 userId: string;
-                currency: string;
                 subscriptionId: string;
+                currency: string;
             };
             subscription: {
                 id: string;
@@ -103,8 +103,8 @@ export declare class PaymentService {
         txHash: string;
         amount: number;
         userId: string;
-        currency: string;
         subscriptionId: string;
+        currency: string;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
@@ -113,7 +113,7 @@ export declare class PaymentService {
         txHash: string;
         amount: number;
         userId: string;
-        currency: string;
         subscriptionId: string;
+        currency: string;
     }>;
 }

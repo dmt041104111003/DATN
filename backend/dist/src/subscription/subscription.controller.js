@@ -38,6 +38,9 @@ let SubscriptionController = class SubscriptionController {
     remove(user, id) {
         return this.subscriptionService.remove(id, user.id);
     }
+    cancel(user, id) {
+        return this.subscriptionService.cancel(id, user.id);
+    }
 };
 exports.SubscriptionController = SubscriptionController;
 __decorate([
@@ -80,6 +83,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], SubscriptionController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/cancel'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], SubscriptionController.prototype, "cancel", null);
 exports.SubscriptionController = SubscriptionController = __decorate([
     (0, common_1.Controller)('subscriptions'),
     __metadata("design:paramtypes", [subscription_service_1.SubscriptionService])
