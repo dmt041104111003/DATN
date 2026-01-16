@@ -66,4 +66,43 @@ export declare class BlockchainService {
             }[];
         };
     } | null>;
+    getAssetInfo(policyId: string, assetNameHex: string): Promise<{
+        asset: string;
+        policy_id: string;
+        asset_name: string | null;
+        fingerprint: string;
+        quantity: string;
+        initial_mint_tx_hash: string;
+        mint_or_burn_count: number;
+        onchain_metadata: {
+            [key: string]: unknown;
+        } | null;
+        onchain_metadata_standard?: "CIP25v1" | "CIP25v2" | "CIP68v1" | "CIP68v2" | "CIP68v3" | null;
+        onchain_metadata_extra?: string | null;
+        metadata: {
+            name: string;
+            description: string;
+            ticker: string | null;
+            url: string | null;
+            logo: string | null;
+            decimals: number | null;
+        } | null;
+    } | null>;
+    getAssetHistory(policyId: string, assetNameHex: string): Promise<({
+        txHash: string;
+        action: "minted" | "burned";
+        amount: string;
+        blockTime: number;
+        blockHeight: number;
+    } | {
+        txHash: string;
+        action: "minted" | "burned";
+        amount: string;
+        blockTime?: undefined;
+        blockHeight?: undefined;
+    })[]>;
+    getAssetMetadata(policyId: string, assetNameHex: string): Promise<{
+        datum: string;
+        address: string;
+    } | null>;
 }

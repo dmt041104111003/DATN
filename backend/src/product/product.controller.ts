@@ -24,6 +24,22 @@ export class ProductController {
   getQuota(@CurrentUser() user: { id: string }) {
     return this.productService.getQuota(user.id);
   }
+
+  @Public()
+  @Get('trace/:policyId/:assetName')
+  trace(
+    @Param('policyId') policyId: string,
+    @Param('assetName') assetName: string,
+  ) {
+    return this.productService.traceByNft(policyId, assetName);
+  }
+
+  @Public()
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.productService.getHistory(id);
+  }
+
   @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {

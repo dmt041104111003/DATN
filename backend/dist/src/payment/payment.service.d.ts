@@ -10,10 +10,10 @@ export declare class PaymentService {
         subscription: {
             service: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
@@ -29,24 +29,23 @@ export declare class PaymentService {
             status: string;
         };
     } & {
+        txHash: string;
+        amount: number;
         id: string;
         userId: string;
-        subscriptionId: string;
-        amount: number;
-        currency: string;
-        txHash: string;
-        paymentDate: Date;
         createdAt: Date;
         updatedAt: Date;
+        subscriptionId: string;
+        currency: string;
     })[]>;
     findOne(id: string, userId: string): Promise<{
         subscription: {
             service: {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
                 name: string;
                 description: string | null;
+                createdAt: Date;
+                updatedAt: Date;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
@@ -62,30 +61,28 @@ export declare class PaymentService {
             status: string;
         };
     } & {
+        txHash: string;
+        amount: number;
         id: string;
         userId: string;
-        subscriptionId: string;
-        amount: number;
-        currency: string;
-        txHash: string;
-        paymentDate: Date;
         createdAt: Date;
         updatedAt: Date;
+        subscriptionId: string;
+        currency: string;
     }>;
     create(userId: string, dto: CreatePaymentDto): Promise<{
         result: boolean;
         message: string;
         data: {
             payment: {
+                txHash: string;
+                amount: number;
                 id: string;
                 userId: string;
-                subscriptionId: string;
-                amount: number;
-                currency: string;
-                txHash: string;
-                paymentDate: Date;
                 createdAt: Date;
                 updatedAt: Date;
+                subscriptionId: string;
+                currency: string;
             };
             subscription: {
                 id: string;
@@ -100,25 +97,23 @@ export declare class PaymentService {
         };
     }>;
     update(id: string, userId: string, dto: UpdatePaymentDto): Promise<{
+        txHash: string;
+        amount: number;
         id: string;
         userId: string;
-        subscriptionId: string;
-        amount: number;
-        currency: string;
-        txHash: string;
-        paymentDate: Date;
         createdAt: Date;
         updatedAt: Date;
+        subscriptionId: string;
+        currency: string;
     }>;
     remove(id: string, userId: string): Promise<{
+        txHash: string;
+        amount: number;
         id: string;
         userId: string;
-        subscriptionId: string;
-        amount: number;
-        currency: string;
-        txHash: string;
-        paymentDate: Date;
         createdAt: Date;
         updatedAt: Date;
+        subscriptionId: string;
+        currency: string;
     }>;
 }

@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, jest } from '@jest/globals';
-import { deserializeAddress, MeshWallet, BlockfrostProvider } from '@meshsdk/core';
+import { MeshWallet, BlockfrostProvider } from '@meshsdk/core';
 import request from 'supertest';
 import dotenv from 'dotenv';
 
@@ -10,9 +10,7 @@ const blockfrostProvider = new BlockfrostProvider(process.env.BLOCKFROST_API_KEY
 
 describe('Contract API - Mint, Burn, Update CIP68', () => {
   let wallet: MeshWallet;
-  let authCookie: string;
   let walletAddress: string;
-  let pubKeyHash: string;
 
   beforeAll(async () => {
     wallet = new MeshWallet({
@@ -26,22 +24,7 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     });
 
     walletAddress = await wallet.getChangeAddress();
-    pubKeyHash = deserializeAddress(walletAddress).pubKeyHash;
-
-    // Login
-    const nonceRes = await request(API_URL).get(`/auth/nonce?address=${walletAddress}`);
-    const nonce = nonceRes.body.nonce;
-    const signature = await wallet.signData(nonce, walletAddress);
-
-    const loginRes = await request(API_URL)
-      .post('/auth/verify')
-      .send({
-        address: walletAddress,
-        signature: signature.signature,
-        key: signature.key,
-      });
-
-    authCookie = loginRes.headers['set-cookie']?.[0] || '';
+    console.log('Wallet:', walletAddress);
   });
 
   jest.setTimeout(180000);
@@ -58,7 +41,7 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     });
   }
 
-  test('Get contract info (public)', async () => {
+  test('Get contract info', async () => {
     const res = await request(API_URL).get(`/contract/info?walletAddress=${walletAddress}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('policyId');
@@ -73,7 +56,6 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
 
     const res = await request(API_URL)
       .post('/contract/mint')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{
@@ -93,24 +75,21 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     expect(res.body.result).toBe(true);
     expect(res.body.data).toBeDefined();
 
-    // 2. Sign and submit
     const txHash = await signAndSubmit(res.body.data);
     expect(txHash).toHaveLength(64);
     console.log('https://preprod.cexplorer.io/tx/' + txHash);
 
-    // 3. Wait for confirmation
     await waitForConfirmation(txHash);
     console.log('Mint confirmed!');
   });
 
   test('Update', async () => {
-    return; // Skip for now
+    return; 
     const assetName = `Upd${Date.now()}`;
 
     // Mint first
     const mintRes = await request(API_URL)
       .post('/contract/mint')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{ assetName, metadata: { name: assetName }, quantity: '1' }],
@@ -122,7 +101,6 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     // Update
     const res = await request(API_URL)
       .post('/contract/update')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{
@@ -142,13 +120,12 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   });
 
   test('Burn', async () => {
-    return; // Skip for now
+    return; 
     const assetName = `Burn${Date.now()}`;
 
     // Mint first
     const mintRes = await request(API_URL)
       .post('/contract/mint')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{ assetName, metadata: { name: assetName }, quantity: '1' }],
@@ -160,7 +137,6 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     // Burn
     const res = await request(API_URL)
       .post('/contract/burn')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{ assetName, quantity: '-1' }],
@@ -174,30 +150,30 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   });
 
   test('Payment', async () => {
-    return; // Skip for now
+    return; 
     const res = await request(API_URL)
       .post('/contract/payment')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         amount: '5000000', // 5 ADA
       });
 
+    console.log('Payment response:', res.status, res.body);
     expect(res.status).toBe(201);
     expect(res.body.result).toBe(true);
+    expect(res.body.data).toBeDefined();
 
     const txHash = await signAndSubmit(res.body.data);
     console.log('Payment tx:', txHash);
   });
 
-  test('[TC1]: Full lifecycle - Mint, Update, Burn', async () => {
-    return; // Skip for now
-    const assetName = `TC1${Date.now()}`;
+  test('Full lifecycle - Mint, Update, Burn', async () => {
+    return; 
+    const assetName = `LC${Date.now()}`;
 
     // 1. Mint
     const mintRes = await request(API_URL)
       .post('/contract/mint')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{
@@ -214,7 +190,6 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     // 2. Update
     const updateRes = await request(API_URL)
       .post('/contract/update')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{
@@ -230,7 +205,6 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
     // 3. Burn
     const burnRes = await request(API_URL)
       .post('/contract/burn')
-      .set('Cookie', authCookie)
       .send({
         walletAddress,
         assets: [{ assetName, quantity: '-1' }],

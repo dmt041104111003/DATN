@@ -33,6 +33,12 @@ let ProductController = class ProductController {
     getQuota(user) {
         return this.productService.getQuota(user.id);
     }
+    trace(policyId, assetName) {
+        return this.productService.traceByNft(policyId, assetName);
+    }
+    getHistory(id) {
+        return this.productService.getHistory(id);
+    }
     findOne(id) {
         return this.productService.findOne(id);
     }
@@ -68,6 +74,23 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "getQuota", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('trace/:policyId/:assetName'),
+    __param(0, (0, common_1.Param)('policyId')),
+    __param(1, (0, common_1.Param)('assetName')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ProductController.prototype, "trace", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)(':id/history'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ProductController.prototype, "getHistory", null);
 __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),

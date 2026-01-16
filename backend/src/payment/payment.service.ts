@@ -77,7 +77,6 @@ export class PaymentService {
           amount: verification.confirmedAmount!,
           currency: dto.currency || 'ADA',
           txHash: dto.txHash,
-          paymentDate: now,
         },
       });
 

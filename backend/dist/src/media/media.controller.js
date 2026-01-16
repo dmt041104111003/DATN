@@ -14,8 +14,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const media_service_1 = require("./media.service");
-const create_media_dto_1 = require("./dto/create-media.dto");
 const update_media_dto_1 = require("./dto/update-media.dto");
 const current_user_decorator_1 = require("../auth/current-user.decorator");
 let MediaController = class MediaController {
@@ -29,8 +29,17 @@ let MediaController = class MediaController {
     findOne(user, id) {
         return this.mediaService.findOne(id, user.id);
     }
-    create(user, dto) {
-        return this.mediaService.create(user.id, dto);
+    async uploadFile(user, file) {
+        if (!file) {
+            throw new common_1.BadRequestException('No file provided');
+        }
+        return this.mediaService.uploadToIpfs(user.id, file);
+    }
+    async uploadFiles(user, files) {
+        if (!files || files.length === 0) {
+            throw new common_1.BadRequestException('No files provided');
+        }
+        return this.mediaService.uploadBatchToIpfs(user.id, files);
     }
     update(user, id, dto) {
         return this.mediaService.update(id, user.id, dto);
@@ -56,13 +65,59 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MediaController.prototype, "findOne", null);
 __decorate([
-    (0, common_1.Post)(),
+    (0, common_1.Post)('upload'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        limits: { fileSize: 10 * 1024 * 1024 },
+        fileFilter: (req, file, cb) => {
+            const allowedMimes = [
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+                'video/mp4',
+            ];
+            if (allowedMimes.includes(file.mimetype)) {
+                cb(null, true);
+            }
+            else {
+                cb(new common_1.BadRequestException('Invalid file type'), false);
+            }
+        },
+    })),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, create_media_dto_1.CreateMediaDto]),
-    __metadata("design:returntype", void 0)
-], MediaController.prototype, "create", null);
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], MediaController.prototype, "uploadFile", null);
+__decorate([
+    (0, common_1.Post)('upload/batch'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('files', 10, {
+        limits: { fileSize: 10 * 1024 * 1024 },
+        fileFilter: (req, file, cb) => {
+            const allowedMimes = [
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+                'video/mp4',
+            ];
+            if (allowedMimes.includes(file.mimetype)) {
+                cb(null, true);
+            }
+            else {
+                cb(new common_1.BadRequestException('Invalid file type'), false);
+            }
+        },
+    })),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.UploadedFiles)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Array]),
+    __metadata("design:returntype", Promise)
+], MediaController.prototype, "uploadFiles", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),

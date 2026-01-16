@@ -119,4 +119,47 @@ describe('Products (e2e)', () => {
       console.log('Quota:', data);
     });
   });
+
+  describe('GET /products/trace/:policyId/:assetName (public)', () => {
+    it('tra ve 404 khi khong tim thay', async () => {
+      const res = await fetch(`${API_URL}/products/trace/fakepolicy123/fakeasset123`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /products/:id/history (public)', () => {
+    it('tra ve 404 khi khong tim thay product', async () => {
+      const res = await fetch(`${API_URL}/products/nonexistent123/history`);
+      expect(res.status).toBe(404);
+    });
+
+    it('tra ve history rong khi chua mint NFT', async () => {
+      if (!ctx?.cookie) return;
+
+      const createRes = await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': ctx.cookie,
+        },
+        body: JSON.stringify({ name: 'History Test Product' }),
+      });
+      const product = await createRes.json();
+
+      // history
+      const res = await fetch(`${API_URL}/products/${product.id}/history`);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.product.id).toBe(product.id);
+      expect(data.history).toEqual([]);
+      expect(data.message).toBe('Product has not been minted as NFT yet');
+
+      // Cleanup
+      await fetch(`${API_URL}/products/${product.id}`, {
+        method: 'DELETE',
+        headers: { 'Cookie': ctx.cookie },
+      });
+    });
+  });
 });

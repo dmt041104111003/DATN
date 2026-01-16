@@ -73,7 +73,6 @@ let PaymentService = class PaymentService {
                     amount: verification.confirmedAmount,
                     currency: dto.currency || 'ADA',
                     txHash: dto.txHash,
-                    paymentDate: now,
                 },
             });
             const updatedSubscription = await prisma.subscription.update({

@@ -6,29 +6,29 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     getQuota(user: {
         id: string;
@@ -38,58 +38,178 @@ export declare class ProductController {
         usedProducts: number;
         remainingProducts: string | number;
     }>;
+    trace(policyId: string, assetName: string): Promise<{
+        product: {
+            id: string;
+            name: string;
+            description: string | null;
+            imageUrl: string | null;
+            documents: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                docType: string;
+                url: string;
+                hash: string | null;
+            }[];
+            productionProcesses: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                stepName: string;
+                startTime: Date;
+                endTime: Date | null;
+                location: string | null;
+            }[];
+            certifications: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                certName: string;
+                issueDate: Date;
+                expiryDate: Date | null;
+                certHash: string | null;
+            }[];
+            warehouseStorages: ({
+                warehouse: {
+                    id: string;
+                    name: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    location: string | null;
+                    capacity: number;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                productId: string;
+                warehouseId: string;
+                entryTime: Date;
+                exitTime: Date | null;
+                conditions: string | null;
+            })[];
+            owner: string;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        blockchain: {
+            policyId: string;
+            assetName: string;
+            assetInfo: {
+                asset: string;
+                policy_id: string;
+                asset_name: string | null;
+                fingerprint: string;
+                quantity: string;
+                initial_mint_tx_hash: string;
+                mint_or_burn_count: number;
+                onchain_metadata: {
+                    [key: string]: unknown;
+                } | null;
+                onchain_metadata_standard?: "CIP25v1" | "CIP25v2" | "CIP68v1" | "CIP68v2" | "CIP68v3" | null;
+                onchain_metadata_extra?: string | null;
+                metadata: {
+                    name: string;
+                    description: string;
+                    ticker: string | null;
+                    url: string | null;
+                    logo: string | null;
+                    decimals: number | null;
+                } | null;
+            } | null;
+            onChainMetadata: {
+                datum: string;
+                address: string;
+            } | null;
+        };
+    }>;
+    getHistory(id: string): Promise<{
+        product: {
+            id: string;
+            name: string;
+            policyId?: undefined;
+            assetName?: undefined;
+        };
+        history: never[];
+        message: string;
+    } | {
+        product: {
+            id: string;
+            name: string;
+            policyId: string;
+            assetName: string;
+        };
+        history: ({
+            txHash: string;
+            action: "minted" | "burned";
+            amount: string;
+            blockTime: number;
+            blockHeight: number;
+        } | {
+            txHash: string;
+            action: "minted" | "burned";
+            amount: string;
+            blockTime?: undefined;
+            blockHeight?: undefined;
+        })[];
+        message?: undefined;
+    }>;
     findOne(id: string): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreateProductDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

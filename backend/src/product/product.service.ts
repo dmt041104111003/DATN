@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private blockchain: BlockchainService,
+  ) {}
 
   async findAll() {
     return this.prisma.product.findMany();
@@ -82,5 +86,95 @@ export class ProductService {
       usedProducts: currentCount,
       remainingProducts: maxProducts === null ? 'unlimited' : maxProducts - currentCount,
     };
+  }
+
+  async traceByNft(policyId: string, assetName: string) {
+    const assetNameHex = this.toHex(assetName);
+    const product = await this.prisma.product.findFirst({
+      where: { policyId, assetName },
+      include: {
+        documents: true,
+        productionProcesses: true,
+        certifications: true,
+        warehouseStorages: {
+          include: { warehouse: true },
+        },
+        user: {
+          select: { id: true, address: true },
+        },
+      },
+    });
+
+    const [assetInfo, onChainMetadata] = await Promise.all([
+      this.blockchain.getAssetInfo(policyId, assetNameHex),
+      this.blockchain.getAssetMetadata(policyId, assetNameHex),
+    ]);
+
+    if (!product && !assetInfo) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return {
+      product: product ? {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        imageUrl: product.imageUrl,
+        documents: product.documents,
+        productionProcesses: product.productionProcesses,
+        certifications: product.certifications,
+        warehouseStorages: product.warehouseStorages,
+        owner: product.user.address,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      } : null,
+      blockchain: {
+        policyId,
+        assetName,
+        assetInfo,
+        onChainMetadata,
+      },
+    };
+  }
+
+  async getHistory(productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    if (!product.policyId || !product.assetName) {
+      return {
+        product: { id: product.id, name: product.name },
+        history: [],
+        message: 'Product has not been minted as NFT yet',
+      };
+    }
+
+    const assetNameHex = this.toHex(product.assetName);
+    const history = await this.blockchain.getAssetHistory(
+      product.policyId,
+      assetNameHex,
+    );
+
+    return {
+      product: {
+        id: product.id,
+        name: product.name,
+        policyId: product.policyId,
+        assetName: product.assetName,
+      },
+      history,
+    };
+  }
+
+  private toHex(str: string): string {
+    if (/^[0-9a-fA-F]+$/.test(str)) {
+      return str;
+    }
+    return Buffer.from(str, 'utf8').toString('hex');
   }
 }

@@ -27,6 +27,10 @@ const subscription_module_1 = require("./subscription/subscription.module");
 const auth_module_1 = require("./auth/auth.module");
 const blockchain_module_1 = require("./blockchain/blockchain.module");
 const contract_module_1 = require("./contract/contract.module");
+const ipfs_module_1 = require("./ipfs/ipfs.module");
+const media_module_1 = require("./media/media.module");
+const metadata_module_1 = require("./metadata/metadata.module");
+const document_module_1 = require("./document/document.module");
 const core_1 = require("@nestjs/core");
 const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
 let AppModule = class AppModule {
@@ -35,10 +39,15 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            user_module_1.UserModule, prisma_module_1.PrismaModule,
+            prisma_module_1.PrismaModule,
+            ipfs_module_1.IpfsModule,
             auth_module_1.AuthModule,
+            user_module_1.UserModule,
             product_module_1.ProductModule,
             collection_module_1.CollectionModule,
+            metadata_module_1.MetadataModule,
+            media_module_1.MediaModule,
+            document_module_1.DocumentModule,
             production_process_module_1.ProductionProcessModule,
             certification_module_1.CertificationModule,
             material_module_1.MaterialModule,

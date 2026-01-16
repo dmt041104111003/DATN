@@ -190,9 +190,6 @@ model Payment {
   amount         Float
   currency       String       @default("ADA")
   txHash         String       @unique @map("tx_hash")
-  status         String       @default("pending") // pending, confirmed, failed
-  retryCount     Int          @default(0) @map("retry_count")
-  paymentDate    DateTime?    @map("payment_date")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
   user           User         @relation(fields: [userId], references: [id])

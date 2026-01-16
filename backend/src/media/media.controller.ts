@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UploadedFile,
+  UploadedFiles,
+  UseInterceptors,
+  BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
-import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 
@@ -18,9 +30,66 @@ export class MediaController {
     return this.mediaService.findOne(id, user.id);
   }
 
-  @Post()
-  create(@CurrentUser() user: { id: string }, @Body() dto: CreateMediaDto) {
-    return this.mediaService.create(user.id, dto);
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+          'video/mp4',
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Invalid file type'), false);
+        }
+      },
+    }),
+  )
+  async uploadFile(
+    @CurrentUser() user: { id: string },
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    return this.mediaService.uploadToIpfs(user.id, file);
+  }
+
+  @Post('upload/batch')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+          'image/jpeg',
+          'image/png',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+          'video/mp4',
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Invalid file type'), false);
+        }
+      },
+    }),
+  )
+  async uploadFiles(
+    @CurrentUser() user: { id: string },
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+    return this.mediaService.uploadBatchToIpfs(user.id, files);
   }
 
   @Patch(':id')
