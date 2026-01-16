@@ -6,5 +6,6 @@ export declare class AppController {
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }[]>;
 }

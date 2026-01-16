@@ -6,5 +6,6 @@ export declare class AppService {
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }[]>;
 }

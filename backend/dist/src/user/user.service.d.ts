@@ -8,25 +8,30 @@ export declare class UserService {
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }>;
     create(dto: CreateUserDto): Promise<{
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
         address: string;
         createdAt: Date;
+        updatedAt: Date;
     }>;
 }
