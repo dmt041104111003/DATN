@@ -17,6 +17,7 @@ import { ServiceModule } from './service/service.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { ContractModule } from './contract/contract.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 @Module({
@@ -36,6 +37,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     PaymentModule,
     SubscriptionModule,
     BlockchainModule,
+    ContractModule,
   ],
   controllers: [AppController],
   providers: [AppService, {

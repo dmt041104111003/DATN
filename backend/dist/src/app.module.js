@@ -26,6 +26,7 @@ const service_module_1 = require("./service/service.module");
 const subscription_module_1 = require("./subscription/subscription.module");
 const auth_module_1 = require("./auth/auth.module");
 const blockchain_module_1 = require("./blockchain/blockchain.module");
+const contract_module_1 = require("./contract/contract.module");
 const core_1 = require("@nestjs/core");
 const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
 let AppModule = class AppModule {
@@ -49,6 +50,7 @@ exports.AppModule = AppModule = __decorate([
             payment_module_1.PaymentModule,
             subscription_module_1.SubscriptionModule,
             blockchain_module_1.BlockchainModule,
+            contract_module_1.ContractModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, {

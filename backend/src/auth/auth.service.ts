@@ -10,11 +10,9 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // Tạo nonce cho address
   async getNonce(address: string) {
     const nonce = randomBytes(32).toString('hex');
 
-    // Lưu hoặc update nonce
     await this.prisma.walletNonce.upsert({
       where: { address },
       update: { nonce },
@@ -24,9 +22,7 @@ export class AuthService {
     return { nonce };
   }
 
-  // Verify signature và tạo JWT
   async verifyWallet(address: string, signature: string, key: string) {
-    // Lấy nonce từ DB
     const walletNonce = await this.prisma.walletNonce.findUnique({
       where: { address },
     });
@@ -35,21 +31,18 @@ export class AuthService {
       throw new UnauthorizedException('Nonce not found. Get nonce first.');
     }
 
-    // Verify signature (dùng thư viện Cardano)
     const isValid = await this.verifySignature(walletNonce.nonce, signature, key, address);
 
     if (!isValid) {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    // Tạo hoặc lấy user
     let user = await this.prisma.user.findUnique({ where: { address } });
     
     if (!user) {
       user = await this.prisma.user.create({ data: { address } });
     }
 
-    // Xóa nonce đã dùng
     await this.prisma.walletNonce.delete({ where: { address } });
 
     // Tạo JWT
@@ -67,7 +60,6 @@ export class AuthService {
     };
   }
 
-  // Verify Cardano signature
   private async verifySignature(
     nonce: string,
     signature: string,
