@@ -12,16 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateFeedbackDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateFeedbackDto {
-    userId;
     productId;
     content;
     rating;
 }
 exports.CreateFeedbackDto = CreateFeedbackDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateFeedbackDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

@@ -17,24 +17,28 @@ let MediaService = class MediaService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll() {
-        return this.prisma.media.findMany();
+    async findAllByUser(userId) {
+        return this.prisma.media.findMany({ where: { userId } });
     }
-    async findOne(id) {
+    async findOne(id, userId) {
         const item = await this.prisma.media.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Media not found');
+        if (item.userId !== userId)
+            throw new common_1.ForbiddenException('Not your media');
         return item;
     }
-    async create(dto) {
-        return this.prisma.media.create({ data: dto });
+    async create(userId, dto) {
+        return this.prisma.media.create({
+            data: { ...dto, userId },
+        });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOne(id, userId);
         return this.prisma.media.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOne(id, userId);
         return this.prisma.media.delete({ where: { id } });
     }
 };

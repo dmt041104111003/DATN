@@ -12,16 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateCollectionDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateCollectionDto {
-    userId;
     name;
     thumbnail;
     description;
 }
 exports.CreateCollectionDto = CreateCollectionDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateCollectionDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

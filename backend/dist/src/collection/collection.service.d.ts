@@ -5,48 +5,58 @@ export declare class CollectionService {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
         userId: string;
+    }[]>;
+    findAllByUser(userId: string): Promise<{
+        name: string;
         thumbnail: string | null;
+        description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }[]>;
     findOne(id: string): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
         userId: string;
-        thumbnail: string | null;
     }>;
-    create(dto: CreateCollectionDto): Promise<{
+    private findOneOwned;
+    create(userId: string, dto: CreateCollectionDto): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
         userId: string;
-        thumbnail: string | null;
     }>;
-    update(id: string, dto: UpdateCollectionDto): Promise<{
+    update(id: string, userId: string, dto: UpdateCollectionDto): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
         userId: string;
-        thumbnail: string | null;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, userId: string): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
-        description: string | null;
         userId: string;
-        thumbnail: string | null;
     }>;
 }

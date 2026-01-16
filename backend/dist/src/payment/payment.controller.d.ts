@@ -4,59 +4,69 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 export declare class PaymentController {
     private paymentService;
     constructor(paymentService: PaymentService);
-    findAll(): Promise<{
+    findAll(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }): Promise<{
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, id: string): Promise<{
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreatePaymentDto): Promise<{
+    create(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, dto: CreatePaymentDto): Promise<{
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdatePaymentDto): Promise<{
+    update(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, id: string, dto: UpdatePaymentDto): Promise<{
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, id: string): Promise<{
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

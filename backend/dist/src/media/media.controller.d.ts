@@ -4,49 +4,59 @@ import { UpdateMediaDto } from './dto/update-media.dto';
 export declare class MediaController {
     private mediaService;
     constructor(mediaService: MediaService);
-    findAll(): Promise<{
+    findAll(user: {
+        id: string;
+    }): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(user: {
+        id: string;
+    }, id: string): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
-    create(dto: CreateMediaDto): Promise<{
+    create(user: {
+        id: string;
+    }, dto: CreateMediaDto): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
-    update(id: string, dto: UpdateMediaDto): Promise<{
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateMediaDto): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
+        id: string;
+    }, id: string): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
 }

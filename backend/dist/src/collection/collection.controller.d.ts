@@ -5,48 +5,65 @@ export declare class CollectionController {
     private collectionService;
     constructor(collectionService: CollectionService);
     findAll(): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+    }[]>;
+    findMy(user: {
+        id: string;
+    }): Promise<{
         name: string;
         thumbnail: string | null;
         description: string | null;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
     }[]>;
     findOne(id: string): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
     }>;
-    create(dto: CreateCollectionDto): Promise<{
+    create(user: {
+        id: string;
+    }, dto: CreateCollectionDto): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
     }>;
-    update(id: string, dto: UpdateCollectionDto): Promise<{
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateCollectionDto): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
+        id: string;
+    }, id: string): Promise<{
+        name: string;
+        thumbnail: string | null;
+        description: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
     }>;
 }

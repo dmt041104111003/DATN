@@ -18,6 +18,7 @@ const feedback_service_1 = require("./feedback.service");
 const create_feedback_dto_1 = require("./dto/create-feedback.dto");
 const update_feedback_dto_1 = require("./dto/update-feedback.dto");
 const public_decorator_1 = require("../auth/public.decorator");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let FeedbackController = class FeedbackController {
     feedbackService;
     constructor(feedbackService) {
@@ -29,14 +30,14 @@ let FeedbackController = class FeedbackController {
     findOne(id) {
         return this.feedbackService.findOne(id);
     }
-    create(dto) {
-        return this.feedbackService.create(dto);
+    create(user, dto) {
+        return this.feedbackService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.feedbackService.update(id, dto);
+    update(user, id, dto) {
+        return this.feedbackService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.feedbackService.remove(id);
+    remove(user, id) {
+        return this.feedbackService.remove(id, user.id);
     }
 };
 exports.FeedbackController = FeedbackController;
@@ -57,24 +58,27 @@ __decorate([
 ], FeedbackController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_feedback_dto_1.CreateFeedbackDto]),
+    __metadata("design:paramtypes", [Object, create_feedback_dto_1.CreateFeedbackDto]),
     __metadata("design:returntype", void 0)
 ], FeedbackController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_feedback_dto_1.UpdateFeedbackDto]),
+    __metadata("design:paramtypes", [Object, String, update_feedback_dto_1.UpdateFeedbackDto]),
     __metadata("design:returntype", void 0)
 ], FeedbackController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], FeedbackController.prototype, "remove", null);
 exports.FeedbackController = FeedbackController = __decorate([

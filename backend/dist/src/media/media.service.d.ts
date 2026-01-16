@@ -4,49 +4,49 @@ import { UpdateMediaDto } from './dto/update-media.dto';
 export declare class MediaService {
     private prisma;
     constructor(prisma: PrismaService);
-    findAll(): Promise<{
+    findAllByUser(userId: string): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string, userId: string): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
-    create(dto: CreateMediaDto): Promise<{
+    create(userId: string, dto: CreateMediaDto): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
-    update(id: string, dto: UpdateMediaDto): Promise<{
+    update(id: string, userId: string, dto: UpdateMediaDto): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, userId: string): Promise<{
+        name: string;
+        type: string;
         url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         userId: string;
-        type: string;
     }>;
 }

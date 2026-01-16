@@ -12,16 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateMediaDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateMediaDto {
-    userId;
     name;
     type;
     url;
 }
 exports.CreateMediaDto = CreateMediaDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateMediaDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

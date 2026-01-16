@@ -26,15 +26,23 @@ let FeedbackService = class FeedbackService {
             throw new common_1.NotFoundException('Feedback not found');
         return item;
     }
-    async create(dto) {
-        return this.prisma.feedback.create({ data: dto });
+    async findOneOwned(id, userId) {
+        const item = await this.findOne(id);
+        if (item.userId !== userId)
+            throw new common_1.ForbiddenException('Not your feedback');
+        return item;
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async create(userId, dto) {
+        return this.prisma.feedback.create({
+            data: { ...dto, userId },
+        });
+    }
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.feedback.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.feedback.delete({ where: { id } });
     }
 };

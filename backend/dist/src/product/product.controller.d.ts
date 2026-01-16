@@ -16,6 +16,20 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
+    findMy(user: {
+        id: string;
+    }): Promise<{
+        id: string;
+        userId: string;
+        policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
+        historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
     findOne(id: string): Promise<{
         id: string;
         userId: string;
@@ -28,7 +42,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    create(dto: CreateProductDto): Promise<{
+    create(user: {
+        id: string;
+    }, dto: CreateProductDto): Promise<{
         id: string;
         userId: string;
         policyId: string | null;
@@ -40,7 +56,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateProductDto): Promise<{
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
         userId: string;
         policyId: string | null;
@@ -52,7 +70,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
+        id: string;
+    }, id: string): Promise<{
         id: string;
         userId: string;
         policyId: string | null;

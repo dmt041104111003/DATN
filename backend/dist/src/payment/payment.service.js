@@ -17,24 +17,28 @@ let PaymentService = class PaymentService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async findAll() {
-        return this.prisma.payment.findMany();
+    async findAllByUser(userId) {
+        return this.prisma.payment.findMany({ where: { userId } });
     }
-    async findOne(id) {
+    async findOne(id, userId) {
         const item = await this.prisma.payment.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Payment not found');
+        if (item.userId !== userId)
+            throw new common_1.ForbiddenException('Not your payment');
         return item;
     }
-    async create(dto) {
-        return this.prisma.payment.create({ data: dto });
+    async create(userId, dto) {
+        return this.prisma.payment.create({
+            data: { ...dto, userId },
+        });
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.findOne(id, userId);
         return this.prisma.payment.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOne(id, userId);
         return this.prisma.payment.delete({ where: { id } });
     }
 };

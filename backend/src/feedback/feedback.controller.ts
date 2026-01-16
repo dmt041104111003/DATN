@@ -3,6 +3,7 @@ import { FeedbackService } from './feedback.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { Public } from '../auth/public.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('feedbacks')
 export class FeedbackController {
@@ -21,17 +22,21 @@ export class FeedbackController {
   }
 
   @Post()
-  create(@Body() dto: CreateFeedbackDto) {
-    return this.feedbackService.create(dto);
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateFeedbackDto) {
+    return this.feedbackService.create(user.id, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateFeedbackDto) {
-    return this.feedbackService.update(id, dto);
+  update(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: UpdateFeedbackDto,
+  ) {
+    return this.feedbackService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.feedbackService.remove(id);
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.feedbackService.remove(id, user.id);
   }
 }

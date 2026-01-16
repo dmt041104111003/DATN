@@ -18,6 +18,7 @@ const product_service_1 = require("./product.service");
 const create_product_dto_1 = require("./dto/create-product.dto");
 const update_product_dto_1 = require("./dto/update-product.dto");
 const public_decorator_1 = require("../auth/public.decorator");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let ProductController = class ProductController {
     productService;
     constructor(productService) {
@@ -26,17 +27,20 @@ let ProductController = class ProductController {
     findAll() {
         return this.productService.findAll();
     }
+    findMy(user) {
+        return this.productService.findAllByUser(user.id);
+    }
     findOne(id) {
         return this.productService.findOne(id);
     }
-    create(dto) {
-        return this.productService.create(dto);
+    create(user, dto) {
+        return this.productService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.productService.update(id, dto);
+    update(user, id, dto) {
+        return this.productService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.productService.remove(id);
+    remove(user, id) {
+        return this.productService.remove(id, user.id);
     }
 };
 exports.ProductController = ProductController;
@@ -48,6 +52,13 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('my'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], ProductController.prototype, "findMy", null);
+__decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -57,24 +68,27 @@ __decorate([
 ], ProductController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_product_dto_1.CreateProductDto]),
+    __metadata("design:paramtypes", [Object, create_product_dto_1.CreateProductDto]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_product_dto_1.UpdateProductDto]),
+    __metadata("design:paramtypes", [Object, String, update_product_dto_1.UpdateProductDto]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "remove", null);
 exports.ProductController = ProductController = __decorate([

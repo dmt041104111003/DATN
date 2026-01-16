@@ -5,48 +5,49 @@ export declare class FeedbackService {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
         productId: string;
         content: string;
         rating: number;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
         productId: string;
         content: string;
         rating: number;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateFeedbackDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    private findOneOwned;
+    create(userId: string, dto: CreateFeedbackDto): Promise<{
         productId: string;
         content: string;
         rating: number;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateFeedbackDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    update(id: string, userId: string, dto: UpdateFeedbackDto): Promise<{
         productId: string;
         content: string;
         rating: number;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    remove(id: string, userId: string): Promise<{
         productId: string;
         content: string;
         rating: number;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

@@ -18,6 +18,7 @@ const collection_service_1 = require("./collection.service");
 const create_collection_dto_1 = require("./dto/create-collection.dto");
 const update_collection_dto_1 = require("./dto/update-collection.dto");
 const public_decorator_1 = require("../auth/public.decorator");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let CollectionController = class CollectionController {
     collectionService;
     constructor(collectionService) {
@@ -26,17 +27,20 @@ let CollectionController = class CollectionController {
     findAll() {
         return this.collectionService.findAll();
     }
+    findMy(user) {
+        return this.collectionService.findAllByUser(user.id);
+    }
     findOne(id) {
         return this.collectionService.findOne(id);
     }
-    create(dto) {
-        return this.collectionService.create(dto);
+    create(user, dto) {
+        return this.collectionService.create(user.id, dto);
     }
-    update(id, dto) {
-        return this.collectionService.update(id, dto);
+    update(user, id, dto) {
+        return this.collectionService.update(id, user.id, dto);
     }
-    remove(id) {
-        return this.collectionService.remove(id);
+    remove(user, id) {
+        return this.collectionService.remove(id, user.id);
     }
 };
 exports.CollectionController = CollectionController;
@@ -48,6 +52,13 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], CollectionController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('my'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], CollectionController.prototype, "findMy", null);
+__decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -57,24 +68,27 @@ __decorate([
 ], CollectionController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_collection_dto_1.CreateCollectionDto]),
+    __metadata("design:paramtypes", [Object, create_collection_dto_1.CreateCollectionDto]),
     __metadata("design:returntype", void 0)
 ], CollectionController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_collection_dto_1.UpdateCollectionDto]),
+    __metadata("design:paramtypes", [Object, String, update_collection_dto_1.UpdateCollectionDto]),
     __metadata("design:returntype", void 0)
 ], CollectionController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], CollectionController.prototype, "remove", null);
 exports.CollectionController = CollectionController = __decorate([

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
@@ -17,17 +17,25 @@ export class FeedbackService {
     return item;
   }
 
-  async create(dto: CreateFeedbackDto) {
-    return this.prisma.feedback.create({ data: dto });
+  private async findOneOwned(id: string, userId: string) {
+    const item = await this.findOne(id);
+    if (item.userId !== userId) throw new ForbiddenException('Not your feedback');
+    return item;
   }
 
-  async update(id: string, dto: UpdateFeedbackDto) {
-    await this.findOne(id);
+  async create(userId: string, dto: CreateFeedbackDto) {
+    return this.prisma.feedback.create({
+      data: { ...dto, userId },
+    });
+  }
+
+  async update(id: string, userId: string, dto: UpdateFeedbackDto) {
+    await this.findOneOwned(id, userId);
     return this.prisma.feedback.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId: string) {
+    await this.findOneOwned(id, userId);
     return this.prisma.feedback.delete({ where: { id } });
   }
 }

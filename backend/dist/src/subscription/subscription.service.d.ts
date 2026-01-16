@@ -4,54 +4,54 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 export declare class SubscriptionService {
     private prisma;
     constructor(prisma: PrismaService);
-    findAll(): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    findAllByUser(userId: string): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    findOne(id: string, userId: string): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateSubscriptionDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    create(userId: string, dto: CreateSubscriptionDto): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateSubscriptionDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    update(id: string, userId: string, dto: UpdateSubscriptionDto): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    remove(id: string, userId: string): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

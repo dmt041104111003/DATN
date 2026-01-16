@@ -20,21 +20,32 @@ let ProductService = class ProductService {
     async findAll() {
         return this.prisma.product.findMany();
     }
+    async findAllByUser(userId) {
+        return this.prisma.product.findMany({ where: { userId } });
+    }
     async findOne(id) {
         const product = await this.prisma.product.findUnique({ where: { id } });
         if (!product)
             throw new common_1.NotFoundException('Product not found');
         return product;
     }
-    async create(dto) {
-        return this.prisma.product.create({ data: dto });
+    async findOneOwned(id, userId) {
+        const product = await this.findOne(id);
+        if (product.userId !== userId)
+            throw new common_1.ForbiddenException('Not your product');
+        return product;
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async create(userId, dto) {
+        return this.prisma.product.create({
+            data: { ...dto, userId },
+        });
+    }
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.product.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.product.delete({ where: { id } });
     }
 };

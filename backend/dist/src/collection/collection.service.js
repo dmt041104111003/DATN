@@ -20,21 +20,32 @@ let CollectionService = class CollectionService {
     async findAll() {
         return this.prisma.collection.findMany();
     }
+    async findAllByUser(userId) {
+        return this.prisma.collection.findMany({ where: { userId } });
+    }
     async findOne(id) {
         const item = await this.prisma.collection.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Collection not found');
         return item;
     }
-    async create(dto) {
-        return this.prisma.collection.create({ data: dto });
+    async findOneOwned(id, userId) {
+        const item = await this.findOne(id);
+        if (item.userId !== userId)
+            throw new common_1.ForbiddenException('Not your collection');
+        return item;
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async create(userId, dto) {
+        return this.prisma.collection.create({
+            data: { ...dto, userId },
+        });
+    }
+    async update(id, userId, dto) {
+        await this.findOneOwned(id, userId);
         return this.prisma.collection.update({ where: { id }, data: dto });
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOneOwned(id, userId);
         return this.prisma.collection.delete({ where: { id } });
     }
 };

@@ -12,17 +12,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSubscriptionDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateSubscriptionDto {
-    userId;
     servicePlanId;
     startDate;
     endDate;
     status;
 }
 exports.CreateSubscriptionDto = CreateSubscriptionDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateSubscriptionDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

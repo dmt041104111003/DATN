@@ -1,5 +1,4 @@
 export declare class CreatePaymentDto {
-    userId: string;
     subscriptionId: string;
     amount: number;
     currency?: string;

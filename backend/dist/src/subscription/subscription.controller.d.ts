@@ -4,54 +4,64 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 export declare class SubscriptionController {
     private subscriptionService;
     constructor(subscriptionService: SubscriptionService);
-    findAll(): Promise<{
+    findAll(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, id: string): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateSubscriptionDto): Promise<{
+    create(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, dto: CreateSubscriptionDto): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateSubscriptionDto): Promise<{
+    update(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, id: string, dto: UpdateSubscriptionDto): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
+    remove(user: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
+    }, id: string): Promise<{
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
+        id: string;
+        userId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

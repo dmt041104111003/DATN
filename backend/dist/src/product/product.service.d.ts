@@ -5,63 +5,76 @@ export declare class ProductService {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
-        userId: string;
-        assetName: string | null;
         imageUrl: string | null;
+        id: string;
+        userId: string;
         policyId: string | null;
+        assetName: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    findAllByUser(userId: string): Promise<{
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        id: string;
+        userId: string;
+        policyId: string | null;
+        assetName: string | null;
+        historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
         name: string;
         description: string | null;
-        userId: string;
-        assetName: string | null;
         imageUrl: string | null;
+        id: string;
+        userId: string;
         policyId: string | null;
+        assetName: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    create(dto: CreateProductDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    private findOneOwned;
+    create(userId: string, dto: CreateProductDto): Promise<{
         name: string;
         description: string | null;
-        userId: string;
-        assetName: string | null;
         imageUrl: string | null;
+        id: string;
+        userId: string;
         policyId: string | null;
+        assetName: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    update(id: string, dto: UpdateProductDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         name: string;
         description: string | null;
-        userId: string;
-        assetName: string | null;
         imageUrl: string | null;
+        id: string;
+        userId: string;
         policyId: string | null;
+        assetName: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
+    remove(id: string, userId: string): Promise<{
         name: string;
         description: string | null;
-        userId: string;
-        assetName: string | null;
         imageUrl: string | null;
+        id: string;
+        userId: string;
         policyId: string | null;
+        assetName: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

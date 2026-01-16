@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatePaymentDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreatePaymentDto {
-    userId;
     subscriptionId;
     amount;
     currency;
@@ -20,10 +19,6 @@ class CreatePaymentDto {
     paymentDate;
 }
 exports.CreatePaymentDto = CreatePaymentDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreatePaymentDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

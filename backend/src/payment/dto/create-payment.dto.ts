@@ -2,9 +2,6 @@ import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsString()
-  userId: string;
-
-  @IsString()
   subscriptionId: string;
 
   @IsNumber()
