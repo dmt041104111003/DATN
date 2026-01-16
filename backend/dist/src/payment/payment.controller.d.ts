@@ -6,57 +6,57 @@ export declare class PaymentController {
     constructor(paymentService: PaymentService);
     findAll(): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(dto: CreatePaymentDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, dto: UpdatePaymentDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

@@ -6,47 +6,47 @@ export declare class MaterialService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        quantity: number;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        quantity: number;
     }>;
     create(dto: CreateMaterialDto): Promise<{
         id: string;
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        quantity: number;
     }>;
     update(id: string, dto: UpdateMaterialDto): Promise<{
         id: string;
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        quantity: number;
     }>;
     remove(id: string): Promise<{
         id: string;
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        quantity: number;
     }>;
 }

@@ -23,6 +23,7 @@ const warehouse_module_1 = require("./warehouse/warehouse.module");
 const warehouse_storage_module_1 = require("./warehouse-storage/warehouse-storage.module");
 const service_module_1 = require("./service/service.module");
 const subscription_module_1 = require("./subscription/subscription.module");
+const auth_module_1 = require("./auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -30,6 +31,7 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             user_module_1.UserModule, prisma_module_1.PrismaModule,
+            auth_module_1.AuthModule,
             product_module_1.ProductModule,
             collection_module_1.CollectionModule,
             production_process_module_1.ProductionProcessModule,

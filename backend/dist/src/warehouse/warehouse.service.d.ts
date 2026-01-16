@@ -6,42 +6,42 @@ export declare class WarehouseService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         location: string | null;
         capacity: number;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         location: string | null;
         capacity: number;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(dto: CreateWarehouseDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         location: string | null;
         capacity: number;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, dto: UpdateWarehouseDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         location: string | null;
         capacity: number;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         name: string;
         location: string | null;
         capacity: number;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

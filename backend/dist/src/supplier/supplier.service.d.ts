@@ -9,8 +9,8 @@ export declare class SupplierService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        location: string | null;
         userId: string;
+        location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }[]>;
@@ -19,8 +19,8 @@ export declare class SupplierService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        location: string | null;
         userId: string;
+        location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;
@@ -29,8 +29,8 @@ export declare class SupplierService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        location: string | null;
         userId: string;
+        location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;
@@ -39,8 +39,8 @@ export declare class SupplierService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        location: string | null;
         userId: string;
+        location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;
@@ -49,8 +49,8 @@ export declare class SupplierService {
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        location: string | null;
         userId: string;
+        location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;

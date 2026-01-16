@@ -6,52 +6,52 @@ export declare class CertificationService {
     constructor(prisma: PrismaService);
     findAll(): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(dto: CreateCertificationDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, dto: UpdateCertificationDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

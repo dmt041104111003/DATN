@@ -9,25 +9,32 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateSupplierDto = void 0;
+exports.VerifyWalletDto = exports.GetNonceDto = void 0;
 const class_validator_1 = require("class-validator");
-class CreateSupplierDto {
-    name;
-    location;
-    userId;
+class GetNonceDto {
+    address;
 }
-exports.CreateSupplierDto = CreateSupplierDto;
+exports.GetNonceDto = GetNonceDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateSupplierDto.prototype, "name", void 0);
+], GetNonceDto.prototype, "address", void 0);
+class VerifyWalletDto {
+    address;
+    signature;
+    key;
+}
+exports.VerifyWalletDto = VerifyWalletDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateSupplierDto.prototype, "location", void 0);
+], VerifyWalletDto.prototype, "address", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateSupplierDto.prototype, "userId", void 0);
-//# sourceMappingURL=create-supplier.dto.js.map
+], VerifyWalletDto.prototype, "signature", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], VerifyWalletDto.prototype, "key", void 0);
+//# sourceMappingURL=verify-wallet.dto.js.map

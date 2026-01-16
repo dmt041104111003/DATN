@@ -14,9 +14,11 @@ import { WarehouseModule } from './warehouse/warehouse.module';
 import { WarehouseStorageModule } from './warehouse-storage/warehouse-storage.module';
 import { ServiceModule } from './service/service.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
     UserModule, PrismaModule,
+    AuthModule,
     ProductModule,
     CollectionModule,
     ProductionProcessModule,

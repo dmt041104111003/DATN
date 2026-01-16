@@ -120,4 +120,12 @@ docker run \
 npm install @prisma/adapter-pg pg
 npx prisma generate
 npm install class-validator class-transformer
+
+
+npm install @nestjs/jwt @nestjs/passport passport passport-jwt
+npm install -D @types/passport-jwt
+npm install @meshsdk/core
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+npm install cookie-parser
+npm install -D @types/cookie-parser
 ```

@@ -6,52 +6,52 @@ export declare class SubscriptionController {
     constructor(subscriptionService: SubscriptionService);
     findAll(): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(dto: CreateSubscriptionDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, dto: UpdateSubscriptionDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

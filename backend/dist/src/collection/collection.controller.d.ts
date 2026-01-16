@@ -8,45 +8,45 @@ export declare class CollectionController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
-        thumbnail: string | null;
         description: string | null;
+        userId: string;
+        thumbnail: string | null;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
-        thumbnail: string | null;
         description: string | null;
+        userId: string;
+        thumbnail: string | null;
     }>;
     create(dto: CreateCollectionDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
-        thumbnail: string | null;
         description: string | null;
+        userId: string;
+        thumbnail: string | null;
     }>;
     update(id: string, dto: UpdateCollectionDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
-        thumbnail: string | null;
         description: string | null;
+        userId: string;
+        thumbnail: string | null;
     }>;
     remove(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
-        thumbnail: string | null;
         description: string | null;
+        userId: string;
+        thumbnail: string | null;
     }>;
 }

@@ -5,48 +5,48 @@ export declare class MediaService {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
+        url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         type: string;
-        url: string;
     }[]>;
     findOne(id: string): Promise<{
+        url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         type: string;
-        url: string;
     }>;
     create(dto: CreateMediaDto): Promise<{
+        url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         type: string;
-        url: string;
     }>;
     update(id: string, dto: UpdateMediaDto): Promise<{
+        url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         type: string;
-        url: string;
     }>;
     remove(id: string): Promise<{
+        url: string;
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         name: string;
+        userId: string;
         type: string;
-        url: string;
     }>;
 }
