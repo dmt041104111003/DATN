@@ -112,10 +112,16 @@ let ProductService = class ProductService {
                 },
             },
         });
-        const [assetInfo, onChainMetadata] = await Promise.all([
-            this.blockchain.getAssetInfo(policyId, assetNameHex),
-            this.blockchain.getAssetMetadata(policyId, assetNameHex),
-        ]);
+        let assetInfo = null;
+        let onChainMetadata = null;
+        try {
+            [assetInfo, onChainMetadata] = await Promise.all([
+                this.blockchain.getAssetInfo(policyId, assetNameHex),
+                this.blockchain.getAssetMetadata(policyId, assetNameHex),
+            ]);
+        }
+        catch (error) {
+        }
         if (!product && !assetInfo) {
             throw new common_1.NotFoundException('Product not found');
         }

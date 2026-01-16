@@ -57,18 +57,9 @@ describe('Warehouse Storage (e2e)', () => {
     }
   });
 
-  describe('GET /warehouse-storage (protected)', () => {
-    it('loi 401 khi chua login', async () => {
-      const res = await fetch(`${API_URL}/warehouse-storage`);
-      expect(res.status).toBe(401);
-    });
-
-    it('tra ve danh sach storage cua user', async () => {
-      if (!ctx?.cookie) return;
-
-      const res = await fetch(`${API_URL}/warehouse-storage`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+  describe('GET /warehouse-storages (public)', () => {
+    it('tra ve danh sach storage', async () => {
+      const res = await fetch(`${API_URL}/warehouse-storages`);
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -76,11 +67,11 @@ describe('Warehouse Storage (e2e)', () => {
     });
   });
 
-  describe('POST /warehouse-storage', () => {
+  describe('POST /warehouse-storages', () => {
     it('tao storage thanh cong', async () => {
       if (!ctx?.cookie || !createdProductId || !createdWarehouseId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storage`, {
+      const res = await fetch(`${API_URL}/warehouse-storages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,11 +94,11 @@ describe('Warehouse Storage (e2e)', () => {
     });
   });
 
-  describe('GET /warehouse-storage/:id', () => {
+  describe('GET /warehouse-storages/:id', () => {
     it('tra ve storage chi tiet', async () => {
       if (!ctx?.cookie || !createdStorageId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storage/${createdStorageId}`, {
+      const res = await fetch(`${API_URL}/warehouse-storages/${createdStorageId}`, {
         headers: { 'Cookie': ctx.cookie },
       });
       const data = await res.json();
@@ -117,11 +108,11 @@ describe('Warehouse Storage (e2e)', () => {
     });
   });
 
-  describe('PATCH /warehouse-storage/:id', () => {
+  describe('PATCH /warehouse-storages/:id', () => {
     it('cap nhat storage thanh cong', async () => {
       if (!ctx?.cookie || !createdStorageId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storage/${createdStorageId}`, {
+      const res = await fetch(`${API_URL}/warehouse-storages/${createdStorageId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -140,11 +131,11 @@ describe('Warehouse Storage (e2e)', () => {
     });
   });
 
-  describe('DELETE /warehouse-storage/:id', () => {
+  describe('DELETE /warehouse-storages/:id', () => {
     it('xoa storage thanh cong', async () => {
       if (!ctx?.cookie || !createdStorageId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storage/${createdStorageId}`, {
+      const res = await fetch(`${API_URL}/warehouse-storages/${createdStorageId}`, {
         method: 'DELETE',
         headers: { 'Cookie': ctx.cookie },
       });

@@ -19,6 +19,21 @@ export class ProductMaterialService {
     });
   }
 
+  async findOne(id: string, userId: string) {
+    const pm = await this.prisma.productMaterial.findUnique({
+      where: { id },
+      include: {
+        product: true,
+        material: {
+          include: { supplier: true },
+        },
+      },
+    });
+    if (!pm) throw new NotFoundException('ProductMaterial not found');
+    if (pm.product.userId !== userId) throw new ForbiddenException('Not your product');
+    return pm;
+  }
+
   async create(userId: string, dto: CreateProductMaterialDto) {
     await this.checkProductOwnership(dto.productId, userId);
     await this.checkMaterialOwnership(dto.materialId, userId);

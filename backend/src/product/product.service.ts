@@ -114,10 +114,16 @@ export class ProductService {
       },
     });
 
-    const [assetInfo, onChainMetadata] = await Promise.all([
-      this.blockchain.getAssetInfo(policyId, assetNameHex),
-      this.blockchain.getAssetMetadata(policyId, assetNameHex),
-    ]);
+    let assetInfo = null;
+    let onChainMetadata = null;
+
+    try {
+      [assetInfo, onChainMetadata] = await Promise.all([
+        this.blockchain.getAssetInfo(policyId, assetNameHex),
+        this.blockchain.getAssetMetadata(policyId, assetNameHex),
+      ]);
+    } catch (error) {
+    }
 
     if (!product && !assetInfo) {
       throw new NotFoundException('Product not found');

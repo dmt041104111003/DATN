@@ -26,6 +26,9 @@ let ProductMaterialController = class ProductMaterialController {
     findByProduct(user, productId) {
         return this.service.findByProduct(productId, user.id);
     }
+    findOne(user, id) {
+        return this.service.findOne(id, user.id);
+    }
     create(user, dto) {
         return this.service.create(user.id, dto);
     }
@@ -45,6 +48,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], ProductMaterialController.prototype, "findByProduct", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], ProductMaterialController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),

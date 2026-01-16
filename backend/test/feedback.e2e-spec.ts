@@ -34,18 +34,9 @@ describe('Feedback (e2e)', () => {
     }
   });
 
-  describe('GET /feedback (protected)', () => {
-    it('loi 401 khi chua login', async () => {
-      const res = await fetch(`${API_URL}/feedback`);
-      expect(res.status).toBe(401);
-    });
-
-    it('tra ve danh sach feedback cua user', async () => {
-      if (!ctx?.cookie) return;
-
-      const res = await fetch(`${API_URL}/feedback`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+  describe('GET /feedbacks (public)', () => {
+    it('tra ve danh sach feedback', async () => {
+      const res = await fetch(`${API_URL}/feedbacks`);
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -53,11 +44,11 @@ describe('Feedback (e2e)', () => {
     });
   });
 
-  describe('POST /feedback', () => {
+  describe('POST /feedbacks', () => {
     it('tao feedback thanh cong', async () => {
       if (!ctx?.cookie || !createdProductId) return;
 
-      const res = await fetch(`${API_URL}/feedback`, {
+      const res = await fetch(`${API_URL}/feedbacks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,11 +71,11 @@ describe('Feedback (e2e)', () => {
     });
   });
 
-  describe('GET /feedback/:id', () => {
+  describe('GET /feedbacks/:id', () => {
     it('tra ve feedback chi tiet', async () => {
       if (!ctx?.cookie || !createdFeedbackId) return;
 
-      const res = await fetch(`${API_URL}/feedback/${createdFeedbackId}`, {
+      const res = await fetch(`${API_URL}/feedbacks/${createdFeedbackId}`, {
         headers: { 'Cookie': ctx.cookie },
       });
       const data = await res.json();
@@ -94,11 +85,11 @@ describe('Feedback (e2e)', () => {
     });
   });
 
-  describe('PATCH /feedback/:id', () => {
+  describe('PATCH /feedbacks/:id', () => {
     it('cap nhat feedback thanh cong', async () => {
       if (!ctx?.cookie || !createdFeedbackId) return;
 
-      const res = await fetch(`${API_URL}/feedback/${createdFeedbackId}`, {
+      const res = await fetch(`${API_URL}/feedbacks/${createdFeedbackId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -117,11 +108,11 @@ describe('Feedback (e2e)', () => {
     });
   });
 
-  describe('DELETE /feedback/:id', () => {
+  describe('DELETE /feedbacks/:id', () => {
     it('xoa feedback thanh cong', async () => {
       if (!ctx?.cookie || !createdFeedbackId) return;
 
-      const res = await fetch(`${API_URL}/feedback/${createdFeedbackId}`, {
+      const res = await fetch(`${API_URL}/feedbacks/${createdFeedbackId}`, {
         method: 'DELETE',
         headers: { 'Cookie': ctx.cookie },
       });

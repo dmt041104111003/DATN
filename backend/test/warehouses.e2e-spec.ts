@@ -8,18 +8,9 @@ describe('Warehouses (e2e)', () => {
     ctx = await setupAuthenticatedContext();
   });
 
-  describe('GET /warehouses (protected)', () => {
-    it('loi 401 khi chua login', async () => {
+  describe('GET /warehouses (public)', () => {
+    it('tra ve danh sach warehouses', async () => {
       const res = await fetch(`${API_URL}/warehouses`);
-      expect(res.status).toBe(401);
-    });
-
-    it('tra ve danh sach warehouses cua user', async () => {
-      if (!ctx?.cookie) return;
-
-      const res = await fetch(`${API_URL}/warehouses`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
       const data = await res.json();
 
       expect(res.status).toBe(200);

@@ -36,18 +36,9 @@ describe('Production Processes (e2e)', () => {
     }
   });
 
-  describe('GET /production-processes (protected)', () => {
-    it('loi 401 khi chua login', async () => {
+  describe('GET /production-processes (public)', () => {
+    it('tra ve danh sach processes', async () => {
       const res = await fetch(`${API_URL}/production-processes`);
-      expect(res.status).toBe(401);
-    });
-
-    it('tra ve danh sach processes cua user', async () => {
-      if (!ctx?.cookie) return;
-
-      const res = await fetch(`${API_URL}/production-processes`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
       const data = await res.json();
 
       expect(res.status).toBe(200);

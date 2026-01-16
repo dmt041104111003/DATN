@@ -34,6 +34,48 @@ export declare class ProductMaterialService {
         quantity: number;
         unit: string | null;
     })[]>;
+    findOne(id: string, userId: string): Promise<{
+        product: {
+            id: string;
+            name: string;
+            description: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            imageUrl: string | null;
+            assetName: string | null;
+            userId: string;
+            policyId: string | null;
+            historyHash: string | null;
+        };
+        material: {
+            supplier: {
+                id: string;
+                name: string;
+                createdAt: Date;
+                updatedAt: Date;
+                userId: string;
+                location: string | null;
+                gpsCoordinates: string | null;
+                contactInfo: string | null;
+            };
+        } & {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            quantity: number;
+            supplierId: string;
+            harvestDate: Date | null;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        materialId: string;
+        quantity: number;
+        unit: string | null;
+    }>;
     create(userId: string, dto: CreateProductMaterialDto): Promise<{
         material: {
             supplier: {

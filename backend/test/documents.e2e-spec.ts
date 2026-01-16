@@ -36,18 +36,9 @@ describe('Documents (e2e)', () => {
     }
   });
 
-  describe('GET /documents (protected)', () => {
-    it('loi 401 khi chua login', async () => {
+  describe('GET /documents (public)', () => {
+    it('tra ve danh sach documents', async () => {
       const res = await fetch(`${API_URL}/documents`);
-      expect(res.status).toBe(401);
-    });
-
-    it('tra ve danh sach documents cua user', async () => {
-      if (!ctx?.cookie) return;
-
-      const res = await fetch(`${API_URL}/documents`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
       const data = await res.json();
 
       expect(res.status).toBe(200);

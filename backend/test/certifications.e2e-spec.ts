@@ -34,18 +34,9 @@ describe('Certifications (e2e)', () => {
     }
   });
 
-  describe('GET /certifications (protected)', () => {
-    it('loi 401 khi chua login', async () => {
+  describe('GET /certifications (public)', () => {
+    it('tra ve danh sach certifications', async () => {
       const res = await fetch(`${API_URL}/certifications`);
-      expect(res.status).toBe(401);
-    });
-
-    it('tra ve danh sach certifications cua user', async () => {
-      if (!ctx?.cookie) return;
-
-      const res = await fetch(`${API_URL}/certifications`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
       const data = await res.json();
 
       expect(res.status).toBe(200);

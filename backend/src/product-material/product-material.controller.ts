@@ -16,6 +16,11 @@ export class ProductMaterialController {
     return this.service.findByProduct(productId, user.id);
   }
 
+  @Get(':id')
+  findOne(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.service.findOne(id, user.id);
+  }
+
   @Post()
   create(
     @CurrentUser() user: { id: string },

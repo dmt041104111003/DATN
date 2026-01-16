@@ -8,78 +8,78 @@ export declare class ProductService {
     constructor(prisma: PrismaService, blockchain: BlockchainService);
     findAll(): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findAllByUser(userId: string): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     private findOneOwned;
     private getActiveSubscription;
     private checkProductLimit;
     create(userId: string, dto: CreateProductDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        imageUrl: string | null;
-        assetName: string | null;
         userId: string;
         policyId: string | null;
+        assetName: string | null;
+        name: string;
+        imageUrl: string | null;
+        description: string | null;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getQuota(userId: string): Promise<{
         tier: string;
@@ -94,12 +94,12 @@ export declare class ProductService {
             description: string | null;
             imageUrl: string | null;
             documents: {
-                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
+                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -158,32 +158,8 @@ export declare class ProductService {
         blockchain: {
             policyId: string;
             assetName: string;
-            assetInfo: {
-                asset: string;
-                policy_id: string;
-                asset_name: string | null;
-                fingerprint: string;
-                quantity: string;
-                initial_mint_tx_hash: string;
-                mint_or_burn_count: number;
-                onchain_metadata: {
-                    [key: string]: unknown;
-                } | null;
-                onchain_metadata_standard?: "CIP25v1" | "CIP25v2" | "CIP68v1" | "CIP68v2" | "CIP68v3" | null;
-                onchain_metadata_extra?: string | null;
-                metadata: {
-                    name: string;
-                    description: string;
-                    ticker: string | null;
-                    url: string | null;
-                    logo: string | null;
-                    decimals: number | null;
-                } | null;
-            } | null;
-            onChainMetadata: {
-                datum: string;
-                address: string;
-            } | null;
+            assetInfo: null;
+            onChainMetadata: null;
         };
     }>;
     getHistory(productId: string): Promise<{
