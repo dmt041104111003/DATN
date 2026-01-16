@@ -103,4 +103,17 @@ npx -y @nestjs/cli new backend --package-manager npm --skip-git
 npm install @prisma/client
 npm install -D prisma
 npx prisma init
+npx prisma migrate dev --name init
+
+wsl
+docker run \
+  --name chain-db \
+  -e POSTGRES_PASSWORD=12345 \
+  -e POSTGRES_DB=chain \
+  -p 5432:5432 \
+  -d postgres:16
+
+
+npm install @prisma/adapter-pg pg
+npx prisma generate
 ```
