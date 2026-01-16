@@ -5,58 +5,58 @@ export declare class CollectionService {
     private prisma;
     constructor(prisma: PrismaService);
     findAll(): Promise<{
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
         id: string;
+        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        thumbnail: string | null;
     }[]>;
     findAllByUser(userId: string): Promise<{
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
         id: string;
+        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        thumbnail: string | null;
     }[]>;
     findOne(id: string): Promise<{
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
         id: string;
+        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        thumbnail: string | null;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateCollectionDto): Promise<{
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
         id: string;
+        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        thumbnail: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateCollectionDto): Promise<{
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
         id: string;
+        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        thumbnail: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
-        name: string;
-        thumbnail: string | null;
-        description: string | null;
         id: string;
+        name: string;
+        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        thumbnail: string | null;
     }>;
 }

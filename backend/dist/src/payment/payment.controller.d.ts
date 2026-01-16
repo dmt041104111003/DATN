@@ -7,66 +7,66 @@ export declare class PaymentController {
     findAll(user: {
         id: string;
     }): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(user: {
         id: string;
     }, id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreatePaymentDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdatePaymentDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

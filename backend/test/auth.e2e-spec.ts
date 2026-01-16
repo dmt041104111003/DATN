@@ -29,7 +29,6 @@ describe('Auth Flow (e2e)', () => {
   });
 
   describe('GET /auth/nonce', () => {
-    return;
     it('tra ve nonce khi co address hop le', async () => {
       if (!TEST_MNEMONIC) return;
 
@@ -50,7 +49,6 @@ describe('Auth Flow (e2e)', () => {
   });
 
   describe('POST /auth/verify', () => {
-    return;
     it('login thanh cong voi signature hop le', async () => {
       if (!TEST_MNEMONIC) {
         return;
@@ -115,7 +113,6 @@ describe('Auth Flow (e2e)', () => {
   });
 
   describe('POST /auth/logout', () => {
-    return;
     it('xoa cookie thanh cong', async () => {
       const res = await fetch(`${API_URL}/auth/logout`, {
         method: 'POST',

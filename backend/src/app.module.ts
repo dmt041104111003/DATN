@@ -8,6 +8,7 @@ import { CollectionModule } from './collection/collection.module';
 import { ProductionProcessModule } from './production-process/production-process.module';
 import { CertificationModule } from './certification/certification.module';
 import { MaterialModule } from './material/material.module';
+import { SupplierModule } from './supplier/supplier.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { PaymentModule } from './payment/payment.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     ProductionProcessModule,
     CertificationModule,
     MaterialModule,
+    SupplierModule,
     WarehouseModule,
     WarehouseStorageModule,
     FeedbackModule,

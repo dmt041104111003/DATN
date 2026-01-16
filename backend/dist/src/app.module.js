@@ -17,6 +17,7 @@ const collection_module_1 = require("./collection/collection.module");
 const production_process_module_1 = require("./production-process/production-process.module");
 const certification_module_1 = require("./certification/certification.module");
 const material_module_1 = require("./material/material.module");
+const supplier_module_1 = require("./supplier/supplier.module");
 const feedback_module_1 = require("./feedback/feedback.module");
 const payment_module_1 = require("./payment/payment.module");
 const warehouse_module_1 = require("./warehouse/warehouse.module");
@@ -39,6 +40,7 @@ exports.AppModule = AppModule = __decorate([
             production_process_module_1.ProductionProcessModule,
             certification_module_1.CertificationModule,
             material_module_1.MaterialModule,
+            supplier_module_1.SupplierModule,
             warehouse_module_1.WarehouseModule,
             warehouse_storage_module_1.WarehouseStorageModule,
             feedback_module_1.FeedbackModule,

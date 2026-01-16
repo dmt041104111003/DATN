@@ -5,58 +5,58 @@ export declare class PaymentService {
     private prisma;
     constructor(prisma: PrismaService);
     findAllByUser(userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string, userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(userId: string, dto: CreatePaymentDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdatePaymentDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         subscriptionId: string;
         amount: number;
         currency: string;
         txHash: string;
         paymentDate: Date;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

@@ -17,8 +17,8 @@ export declare class AuthService {
     private verifySignature;
     validateUser(userId: string): Promise<{
         id: string;
-        address: string;
         createdAt: Date;
         updatedAt: Date;
+        address: string;
     } | null>;
 }

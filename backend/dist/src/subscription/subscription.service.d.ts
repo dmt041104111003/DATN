@@ -5,53 +5,53 @@ export declare class SubscriptionService {
     private prisma;
     constructor(prisma: PrismaService);
     findAllByUser(userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string, userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(userId: string, dto: CreateSubscriptionDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateSubscriptionDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: string;
-        id: string;
-        userId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

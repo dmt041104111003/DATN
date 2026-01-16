@@ -8,18 +8,18 @@ export declare class MetadataService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        collectionId: string;
         assetName: string | null;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }[]>;
     findOne(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        collectionId: string;
         assetName: string | null;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
     private findOneOwned;
@@ -27,27 +27,27 @@ export declare class MetadataService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        collectionId: string;
         assetName: string | null;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
     update(id: string, userId: string, dto: UpdateMetadataDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        collectionId: string;
         assetName: string | null;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        collectionId: string;
         assetName: string | null;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
 }

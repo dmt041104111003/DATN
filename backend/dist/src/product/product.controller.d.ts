@@ -6,82 +6,82 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        imageUrl: string | null;
         description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        imageUrl: string | null;
         description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        imageUrl: string | null;
         description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
     create(user: {
         id: string;
     }, dto: CreateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        imageUrl: string | null;
         description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        imageUrl: string | null;
         description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        imageUrl: string | null;
         description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
 }

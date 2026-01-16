@@ -7,51 +7,51 @@ export declare class SupplierService {
     findAllByUser(userId: string): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
     create(userId: string, dto: CreateSupplierDto): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateSupplierDto): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
 }

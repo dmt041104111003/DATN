@@ -7,56 +7,56 @@ export declare class MediaController {
     findAll(user: {
         id: string;
     }): Promise<{
-        name: string;
-        type: string;
         url: string;
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        type: string;
     }[]>;
     findOne(user: {
         id: string;
     }, id: string): Promise<{
-        name: string;
-        type: string;
         url: string;
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        type: string;
     }>;
     create(user: {
         id: string;
     }, dto: CreateMediaDto): Promise<{
-        name: string;
-        type: string;
         url: string;
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        type: string;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateMediaDto): Promise<{
-        name: string;
-        type: string;
         url: string;
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        type: string;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
-        name: string;
-        type: string;
         url: string;
         id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        type: string;
     }>;
 }

@@ -4,8 +4,8 @@ export declare class AppService {
     constructor(prisma: PrismaService);
     getUsers(): Promise<{
         id: string;
-        address: string;
         createdAt: Date;
         updatedAt: Date;
+        address: string;
     }[]>;
 }
