@@ -38,7 +38,9 @@ let MetadataService = class MetadataService {
         return item;
     }
     async create(userId, dto) {
-        const collection = await this.prisma.collection.findUnique({ where: { id: dto.collectionId } });
+        const collection = await this.prisma.collection.findUnique({
+            where: { id: dto.collectionId },
+        });
         if (!collection)
             throw new common_1.NotFoundException('Collection not found');
         if (collection.userId !== userId)

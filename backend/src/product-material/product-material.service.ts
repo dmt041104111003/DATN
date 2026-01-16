@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateProductMaterialDto } from './dto/create-product-material.dto';
 import { UpdateProductMaterialDto } from './dto/update-product-material.dto';
@@ -30,7 +34,8 @@ export class ProductMaterialService {
       },
     });
     if (!pm) throw new NotFoundException('ProductMaterial not found');
-    if (pm.product.userId !== userId) throw new ForbiddenException('Not your product');
+    if (pm.product.userId !== userId)
+      throw new ForbiddenException('Not your product');
     return pm;
   }
 
@@ -49,7 +54,7 @@ export class ProductMaterialService {
   }
 
   async update(id: string, userId: string, dto: UpdateProductMaterialDto) {
-    const pm = await this.findOneOwned(id, userId);
+    await this.findOneOwned(id, userId);
     return this.prisma.productMaterial.update({
       where: { id },
       data: dto,
@@ -72,7 +77,8 @@ export class ProductMaterialService {
       include: { product: true },
     });
     if (!pm) throw new NotFoundException('ProductMaterial not found');
-    if (pm.product.userId !== userId) throw new ForbiddenException('Not your product');
+    if (pm.product.userId !== userId)
+      throw new ForbiddenException('Not your product');
     return pm;
   }
 
@@ -81,7 +87,8 @@ export class ProductMaterialService {
       where: { id: productId },
     });
     if (!product) throw new NotFoundException('Product not found');
-    if (product.userId !== userId) throw new ForbiddenException('Not your product');
+    if (product.userId !== userId)
+      throw new ForbiddenException('Not your product');
   }
 
   private async checkMaterialOwnership(materialId: string, userId: string) {
@@ -90,6 +97,7 @@ export class ProductMaterialService {
       include: { supplier: true },
     });
     if (!material) throw new NotFoundException('Material not found');
-    if (material.supplier.userId !== userId) throw new ForbiddenException('Not your material');
+    if (material.supplier.userId !== userId)
+      throw new ForbiddenException('Not your material');
   }
 }

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+} from '@nestjs/common';
 import { WarehouseStorageService } from './warehouse-storage.service';
 import { CreateWarehouseStorageDto } from './dto/create-warehouse-storage.dto';
 import { UpdateWarehouseStorageDto } from './dto/update-warehouse-storage.dto';
@@ -22,7 +30,10 @@ export class WarehouseStorageController {
   }
 
   @Post()
-  create(@CurrentUser() user: { id: string }, @Body() dto: CreateWarehouseStorageDto) {
+  create(
+    @CurrentUser() user: { id: string },
+    @Body() dto: CreateWarehouseStorageDto,
+  ) {
     return this.warehouseStorageService.create(user.id, dto);
   }
 

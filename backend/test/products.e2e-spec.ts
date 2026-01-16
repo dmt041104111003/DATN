@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Products (e2e)', () => {
   let ctx: TestContext | null;
@@ -36,7 +40,7 @@ describe('Products (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Test Product E2E',
@@ -74,7 +78,7 @@ describe('Products (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Updated Product E2E',
@@ -94,7 +98,7 @@ describe('Products (e2e)', () => {
 
       const res = await fetch(`${API_URL}/products/${createdProductId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);
@@ -106,7 +110,7 @@ describe('Products (e2e)', () => {
       if (!ctx?.cookie) return;
 
       const res = await fetch(`${API_URL}/products/quota`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -122,7 +126,9 @@ describe('Products (e2e)', () => {
 
   describe('GET /products/trace/:policyId/:assetName (public)', () => {
     it('tra ve 404 khi khong tim thay', async () => {
-      const res = await fetch(`${API_URL}/products/trace/fakepolicy123/fakeasset123`);
+      const res = await fetch(
+        `${API_URL}/products/trace/fakepolicy123/fakeasset123`,
+      );
       expect(res.status).toBe(404);
     });
   });
@@ -140,7 +146,7 @@ describe('Products (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({ name: 'History Test Product' }),
       });
@@ -158,7 +164,7 @@ describe('Products (e2e)', () => {
       // Cleanup
       await fetch(`${API_URL}/products/${product.id}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
     });
   });

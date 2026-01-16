@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Subscriptions (e2e)', () => {
   let ctx: TestContext | null;
@@ -18,7 +22,7 @@ describe('Subscriptions (e2e)', () => {
       if (!ctx?.cookie) return;
 
       const res = await fetch(`${API_URL}/subscriptions`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -32,13 +36,15 @@ describe('Subscriptions (e2e)', () => {
       if (!ctx?.cookie) return;
 
       const startDate = new Date().toISOString();
-      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const endDate = new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
 
       const res = await fetch(`${API_URL}/subscriptions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           servicePlanId: 'starter',
@@ -62,16 +68,19 @@ describe('Subscriptions (e2e)', () => {
     it('cap nhat subscription thanh cong', async () => {
       if (!ctx?.cookie || !createdSubscriptionId) return;
 
-      const res = await fetch(`${API_URL}/subscriptions/${createdSubscriptionId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+      const res = await fetch(
+        `${API_URL}/subscriptions/${createdSubscriptionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: ctx.cookie,
+          },
+          body: JSON.stringify({
+            status: 'active',
+          }),
         },
-        body: JSON.stringify({
-          status: 'active',
-        }),
-      });
+      );
 
       const data = await res.json();
 
@@ -84,10 +93,13 @@ describe('Subscriptions (e2e)', () => {
     it('xoa subscription thanh cong', async () => {
       if (!ctx?.cookie || !createdSubscriptionId) return;
 
-      const res = await fetch(`${API_URL}/subscriptions/${createdSubscriptionId}`, {
-        method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/subscriptions/${createdSubscriptionId}`,
+        {
+          method: 'DELETE',
+          headers: { Cookie: ctx.cookie },
+        },
+      );
 
       expect(res.status).toBe(200);
     });

@@ -8,26 +8,26 @@ export declare class UserController {
         address: string;
     }): Promise<{
         id: string;
+        address: string;
         createdAt: Date;
         updatedAt: Date;
-        address: string;
     }>;
     updateMe(user: {
         id: string;
         address: string;
     }, dto: UpdateUserDto): Promise<{
         id: string;
+        address: string;
         createdAt: Date;
         updatedAt: Date;
-        address: string;
     }>;
     deleteMe(user: {
         id: string;
         address: string;
     }): Promise<{
         id: string;
+        address: string;
         createdAt: Date;
         updatedAt: Date;
-        address: string;
     }>;
 }

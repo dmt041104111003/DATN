@@ -7,9 +7,9 @@ export declare class MaterialService {
     findAllByUser(userId: string): Promise<({
         supplier: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             userId: string;
             location: string | null;
             gpsCoordinates: string | null;
@@ -17,18 +17,18 @@ export declare class MaterialService {
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
     })[]>;
     findBySupplier(supplierId: string, userId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -36,9 +36,9 @@ export declare class MaterialService {
     findOne(id: string, userId: string): Promise<{
         supplier: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             userId: string;
             location: string | null;
             gpsCoordinates: string | null;
@@ -46,36 +46,36 @@ export declare class MaterialService {
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
     }>;
     create(userId: string, dto: CreateMaterialDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
     }>;
     update(id: string, userId: string, dto: UpdateMaterialDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;

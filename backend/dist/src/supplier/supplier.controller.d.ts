@@ -8,9 +8,9 @@ export declare class SupplierController {
         id: string;
     }): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -20,9 +20,9 @@ export declare class SupplierController {
         id: string;
     }, id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -32,9 +32,9 @@ export declare class SupplierController {
         id: string;
     }, dto: CreateSupplierDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -44,9 +44,9 @@ export declare class SupplierController {
         id: string;
     }, id: string, dto: UpdateSupplierDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -56,9 +56,9 @@ export declare class SupplierController {
         id: string;
     }, id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;

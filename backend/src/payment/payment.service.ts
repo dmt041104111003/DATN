@@ -29,7 +29,8 @@ export class PaymentService {
       include: { subscription: { include: { service: true } } },
     });
     if (!item) throw new NotFoundException('Payment not found');
-    if (item.userId !== userId) throw new ForbiddenException('Not your payment');
+    if (item.userId !== userId)
+      throw new ForbiddenException('Not your payment');
     return item;
   }
 

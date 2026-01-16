@@ -6,9 +6,9 @@ export declare class SupplierService {
     constructor(prisma: PrismaService);
     findAllByUser(userId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -16,9 +16,9 @@ export declare class SupplierService {
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -26,9 +26,9 @@ export declare class SupplierService {
     }>;
     create(userId: string, dto: CreateSupplierDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -36,9 +36,9 @@ export declare class SupplierService {
     }>;
     update(id: string, userId: string, dto: UpdateSupplierDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;
@@ -46,9 +46,9 @@ export declare class SupplierService {
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         userId: string;
         location: string | null;
         gpsCoordinates: string | null;

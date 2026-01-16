@@ -64,10 +64,13 @@ exports.AppModule = AppModule = __decorate([
             contract_module_1.ContractModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService, {
+        providers: [
+            app_service_1.AppService,
+            {
                 provide: core_1.APP_GUARD,
                 useClass: jwt_auth_guard_1.JwtAuthGuard,
-            }],
+            },
+        ],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

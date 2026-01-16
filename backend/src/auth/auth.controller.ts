@@ -28,10 +28,10 @@ export class AuthController {
 
     // Set cookie HTTP-only
     res.cookie('access_token', result.access_token, {
-      httpOnly: true,      // JS không đọc được
-      secure: process.env.NODE_ENV === 'production', 
-      sameSite: 'lax',     // Chống CSRF
-      maxAge: 7 * 24 * 60 * 60 * 1000, 
+      httpOnly: true, // JS không đọc được
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // Chống CSRF
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     // Trả về user info (không trả token)

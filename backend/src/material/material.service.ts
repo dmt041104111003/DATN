@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
@@ -17,10 +21,13 @@ export class MaterialService {
   }
 
   async findBySupplier(supplierId: string, userId: string) {
-    const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id: supplierId },
+    });
     if (!supplier) throw new NotFoundException('Supplier not found');
-    if (supplier.userId !== userId) throw new ForbiddenException('Not your supplier');
-    
+    if (supplier.userId !== userId)
+      throw new ForbiddenException('Not your supplier');
+
     return this.prisma.material.findMany({ where: { supplierId } });
   }
 
@@ -30,14 +37,18 @@ export class MaterialService {
       include: { supplier: true },
     });
     if (!item) throw new NotFoundException('Material not found');
-    if (item.supplier.userId !== userId) throw new ForbiddenException('Access denied');
+    if (item.supplier.userId !== userId)
+      throw new ForbiddenException('Access denied');
     return item;
   }
 
   async create(userId: string, dto: CreateMaterialDto) {
-    const supplier = await this.prisma.supplier.findUnique({ where: { id: dto.supplierId } });
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id: dto.supplierId },
+    });
     if (!supplier) throw new NotFoundException('Supplier not found');
-    if (supplier.userId !== userId) throw new ForbiddenException('Not your supplier');
+    if (supplier.userId !== userId)
+      throw new ForbiddenException('Not your supplier');
     return this.prisma.material.create({ data: dto });
   }
 

@@ -50,7 +50,9 @@ export class Cip68Contract {
       evaluator: this.blockfrostProvider,
     });
 
-    this.pubKeyIssuer = deserializeAddress(this.wallet.getChangeAddress()).pubKeyHash;
+    this.pubKeyIssuer = deserializeAddress(
+      this.wallet.getChangeAddress(),
+    ).pubKeyHash;
     this.pubKeyExchange = deserializeAddress(APP_WALLET_ADDRESS).pubKeyHash;
 
     const mintCompileCode = this.readValidator(plutus as Plutus, title.mint);
@@ -62,12 +64,16 @@ export class Cip68Contract {
       this.pubKeyIssuer,
     ]);
 
-    const storeScript: PlutusScript = { code: this.storeScriptCbor, version: 'V3' };
+    const storeScript: PlutusScript = {
+      code: this.storeScriptCbor,
+      version: 'V3',
+    };
 
     this.storeAddress = serializeAddressObj(
       scriptAddress(
         deserializeAddress(
-          serializePlutusScript(storeScript, undefined, appNetworkId, false).address,
+          serializePlutusScript(storeScript, undefined, appNetworkId, false)
+            .address,
         ).scriptHash,
         deserializeAddress(APP_WALLET_ADDRESS).stakeCredentialHash,
         false,
@@ -105,12 +111,15 @@ export class Cip68Contract {
     if (!collaterals || collaterals.length === 0) {
       const suitableUtxo = utxos.find((utxo) => {
         const hasOnlyLovelace =
-          utxo.output.amount.length === 1 && utxo.output.amount[0].unit === 'lovelace';
+          utxo.output.amount.length === 1 &&
+          utxo.output.amount[0].unit === 'lovelace';
         const lovelace = BigInt(utxo.output.amount[0].quantity);
         return hasOnlyLovelace && lovelace >= 5_000_000n;
       });
       if (!suitableUtxo) {
-        throw new Error('No suitable UTxO for collateral (need >= 5 ADA with no tokens)');
+        throw new Error(
+          'No suitable UTxO for collateral (need >= 5 ADA with no tokens)',
+        );
       }
       collaterals = [suitableUtxo];
     }
@@ -158,7 +167,10 @@ export class Cip68Contract {
     });
 
     const unsignedTx = this.meshTxBuilder.mintPlutusScriptV3();
-    const txOutReceiverMap = new Map<string, { unit: string; quantity: string }[]>();
+    const txOutReceiverMap = new Map<
+      string,
+      { unit: string; quantity: string }[]
+    >();
 
     for (const { assetName, metadata, quantity = '1', receiver } of params) {
       const receiverAddress = receiver || walletAddress;
@@ -193,7 +205,10 @@ export class Cip68Contract {
         .mintingScript(this.mintScriptCbor)
         .mintRedeemerValue(mConStr0([]))
         .txOut(this.storeAddress, [
-          { unit: this.policyId + CIP68_100(stringToHex(assetName)), quantity: '1' },
+          {
+            unit: this.policyId + CIP68_100(stringToHex(assetName)),
+            quantity: '1',
+          },
         ])
         .txOutInlineDatumValue(metadataToCip68(metadata));
     }
@@ -203,7 +218,9 @@ export class Cip68Contract {
     });
 
     unsignedTx
-      .txOut(APP_WALLET_ADDRESS, [{ unit: 'lovelace', quantity: EXCHANGE_FEE_PRICE }])
+      .txOut(APP_WALLET_ADDRESS, [
+        { unit: 'lovelace', quantity: EXCHANGE_FEE_PRICE },
+      ])
       .changeAddress(walletAddress)
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .selectUtxosFrom(utxos)
@@ -253,7 +270,9 @@ export class Cip68Contract {
     }
 
     unsignedTx
-      .txOut(APP_WALLET_ADDRESS, [{ unit: 'lovelace', quantity: EXCHANGE_FEE_PRICE }])
+      .txOut(APP_WALLET_ADDRESS, [
+        { unit: 'lovelace', quantity: EXCHANGE_FEE_PRICE },
+      ])
       .changeAddress(walletAddress)
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .selectUtxosFrom(utxos)
@@ -268,7 +287,9 @@ export class Cip68Contract {
     return await unsignedTx.complete();
   }
 
-  async update(params: { assetName: string; metadata: Record<string, string> }[]) {
+  async update(
+    params: { assetName: string; metadata: Record<string, string> }[],
+  ) {
     const { utxos, walletAddress, collateral } = await this.getWalletForTx();
 
     this.meshTxBuilder = new MeshTxBuilder({
@@ -293,13 +314,18 @@ export class Cip68Contract {
         .txInRedeemerValue(mConStr0([]))
         .txInScript(this.storeScriptCbor)
         .txOut(this.storeAddress, [
-          { unit: this.policyId + CIP68_100(stringToHex(assetName)), quantity: '1' },
+          {
+            unit: this.policyId + CIP68_100(stringToHex(assetName)),
+            quantity: '1',
+          },
         ])
         .txOutInlineDatumValue(metadataToCip68(metadata));
     }
 
     unsignedTx
-      .txOut(APP_WALLET_ADDRESS, [{ unit: 'lovelace', quantity: EXCHANGE_FEE_PRICE }])
+      .txOut(APP_WALLET_ADDRESS, [
+        { unit: 'lovelace', quantity: EXCHANGE_FEE_PRICE },
+      ])
       .changeAddress(walletAddress)
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .selectUtxosFrom(utxos)

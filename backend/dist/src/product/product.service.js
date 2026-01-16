@@ -120,35 +120,36 @@ let ProductService = class ProductService {
                 this.blockchain.getAssetMetadata(policyId, assetNameHex),
             ]);
         }
-        catch (error) {
-        }
+        catch { }
         if (!product && !assetInfo) {
             throw new common_1.NotFoundException('Product not found');
         }
         return {
-            product: product ? {
-                id: product.id,
-                name: product.name,
-                description: product.description,
-                imageUrl: product.imageUrl,
-                documents: product.documents,
-                productionProcesses: product.productionProcesses,
-                certifications: product.certifications,
-                warehouseStorages: product.warehouseStorages,
-                materials: product.productMaterials.map((pm) => ({
-                    name: pm.material.name,
-                    quantity: pm.quantity,
-                    unit: pm.unit,
-                    harvestDate: pm.material.harvestDate,
-                    supplier: {
-                        name: pm.material.supplier.name,
-                        location: pm.material.supplier.location,
-                    },
-                })),
-                owner: product.user.address,
-                createdAt: product.createdAt,
-                updatedAt: product.updatedAt,
-            } : null,
+            product: product
+                ? {
+                    id: product.id,
+                    name: product.name,
+                    description: product.description,
+                    imageUrl: product.imageUrl,
+                    documents: product.documents,
+                    productionProcesses: product.productionProcesses,
+                    certifications: product.certifications,
+                    warehouseStorages: product.warehouseStorages,
+                    materials: product.productMaterials.map((pm) => ({
+                        name: pm.material.name,
+                        quantity: pm.quantity,
+                        unit: pm.unit,
+                        harvestDate: pm.material.harvestDate,
+                        supplier: {
+                            name: pm.material.supplier.name,
+                            location: pm.material.supplier.location,
+                        },
+                    })),
+                    owner: product.user.address,
+                    createdAt: product.createdAt,
+                    updatedAt: product.updatedAt,
+                }
+                : null,
             blockchain: {
                 policyId,
                 assetName,

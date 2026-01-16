@@ -9,9 +9,9 @@ export declare class MaterialController {
     }): Promise<({
         supplier: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             userId: string;
             location: string | null;
             gpsCoordinates: string | null;
@@ -19,9 +19,9 @@ export declare class MaterialController {
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -30,9 +30,9 @@ export declare class MaterialController {
         id: string;
     }, supplierId: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -42,9 +42,9 @@ export declare class MaterialController {
     }, id: string): Promise<{
         supplier: {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
             userId: string;
             location: string | null;
             gpsCoordinates: string | null;
@@ -52,9 +52,9 @@ export declare class MaterialController {
         };
     } & {
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -63,9 +63,9 @@ export declare class MaterialController {
         id: string;
     }, dto: CreateMaterialDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -74,9 +74,9 @@ export declare class MaterialController {
         id: string;
     }, id: string, dto: UpdateMaterialDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -85,9 +85,9 @@ export declare class MaterialController {
         id: string;
     }, id: string): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;

@@ -31,14 +31,19 @@ export class AuthService {
       throw new UnauthorizedException('Nonce not found. Get nonce first.');
     }
 
-    const isValid = this.verifySignature(walletNonce.nonce, signature, key, address);
+    const isValid = this.verifySignature(
+      walletNonce.nonce,
+      signature,
+      key,
+      address,
+    );
 
     if (!isValid) {
       throw new UnauthorizedException('Invalid signature');
     }
 
     let user = await this.prisma.user.findUnique({ where: { address } });
-    
+
     if (!user) {
       user = await this.prisma.user.create({ data: { address } });
     }

@@ -14,5 +14,4 @@ export class ServiceService {
     if (!item) throw new NotFoundException('Service not found');
     return item;
   }
-
 }

@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Certifications (e2e)', () => {
   let ctx: TestContext | null;
@@ -7,13 +11,13 @@ describe('Certifications (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     if (ctx?.cookie) {
       const productRes = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Product for Certification Test',
@@ -29,7 +33,7 @@ describe('Certifications (e2e)', () => {
     if (ctx?.cookie && createdProductId) {
       await fetch(`${API_URL}/products/${createdProductId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
     }
   });
@@ -52,13 +56,15 @@ describe('Certifications (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           productId: createdProductId,
           certName: 'ISO 9001',
           issueDate: new Date().toISOString(),
-          expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          expiryDate: new Date(
+            Date.now() + 365 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
           certHash: 'certHashTest123',
         }),
       });
@@ -76,9 +82,12 @@ describe('Certifications (e2e)', () => {
     it('tra ve certification chi tiet', async () => {
       if (!ctx?.cookie || !createdCertificationId) return;
 
-      const res = await fetch(`${API_URL}/certifications/${createdCertificationId}`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/certifications/${createdCertificationId}`,
+        {
+          headers: { Cookie: ctx.cookie },
+        },
+      );
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -90,16 +99,19 @@ describe('Certifications (e2e)', () => {
     it('cap nhat certification thanh cong', async () => {
       if (!ctx?.cookie || !createdCertificationId) return;
 
-      const res = await fetch(`${API_URL}/certifications/${createdCertificationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+      const res = await fetch(
+        `${API_URL}/certifications/${createdCertificationId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: ctx.cookie,
+          },
+          body: JSON.stringify({
+            certName: 'ISO 14001',
+          }),
         },
-        body: JSON.stringify({
-          certName: 'ISO 14001',
-        }),
-      });
+      );
 
       const data = await res.json();
 
@@ -112,10 +124,13 @@ describe('Certifications (e2e)', () => {
     it('xoa certification thanh cong', async () => {
       if (!ctx?.cookie || !createdCertificationId) return;
 
-      const res = await fetch(`${API_URL}/certifications/${createdCertificationId}`, {
-        method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/certifications/${createdCertificationId}`,
+        {
+          method: 'DELETE',
+          headers: { Cookie: ctx.cookie },
+        },
+      );
 
       expect(res.status).toBe(200);
     });

@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Warehouses (e2e)', () => {
   let ctx: TestContext | null;
@@ -26,7 +30,7 @@ describe('Warehouses (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Test Warehouse E2E',
@@ -49,7 +53,7 @@ describe('Warehouses (e2e)', () => {
       if (!ctx?.cookie || !createdWarehouseId) return;
 
       const res = await fetch(`${API_URL}/warehouses/${createdWarehouseId}`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -66,7 +70,7 @@ describe('Warehouses (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Updated Warehouse E2E',
@@ -87,7 +91,7 @@ describe('Warehouses (e2e)', () => {
 
       const res = await fetch(`${API_URL}/warehouses/${createdWarehouseId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);

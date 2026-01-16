@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Product Materials (e2e)', () => {
   let ctx: TestContext | null;
@@ -9,13 +13,13 @@ describe('Product Materials (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     if (ctx?.cookie) {
       const productRes = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Product for Material Link Test',
@@ -29,7 +33,7 @@ describe('Product Materials (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Supplier for Material Link Test',
@@ -43,7 +47,7 @@ describe('Product Materials (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           supplierId: createdSupplierId,
@@ -61,19 +65,19 @@ describe('Product Materials (e2e)', () => {
       if (createdMaterialId) {
         await fetch(`${API_URL}/materials/${createdMaterialId}`, {
           method: 'DELETE',
-          headers: { 'Cookie': ctx.cookie },
+          headers: { Cookie: ctx.cookie },
         });
       }
       if (createdSupplierId) {
         await fetch(`${API_URL}/suppliers/${createdSupplierId}`, {
           method: 'DELETE',
-          headers: { 'Cookie': ctx.cookie },
+          headers: { Cookie: ctx.cookie },
         });
       }
       if (createdProductId) {
         await fetch(`${API_URL}/products/${createdProductId}`, {
           method: 'DELETE',
-          headers: { 'Cookie': ctx.cookie },
+          headers: { Cookie: ctx.cookie },
         });
       }
     }
@@ -88,9 +92,12 @@ describe('Product Materials (e2e)', () => {
     it('tra ve danh sach product-materials theo productId', async () => {
       if (!ctx?.cookie || !createdProductId) return;
 
-      const res = await fetch(`${API_URL}/product-materials?productId=${createdProductId}`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/product-materials?productId=${createdProductId}`,
+        {
+          headers: { Cookie: ctx.cookie },
+        },
+      );
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -106,7 +113,7 @@ describe('Product Materials (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           productId: createdProductId,
@@ -130,9 +137,12 @@ describe('Product Materials (e2e)', () => {
     it('tra ve product-material chi tiet', async () => {
       if (!ctx?.cookie || !createdProductMaterialId) return;
 
-      const res = await fetch(`${API_URL}/product-materials/${createdProductMaterialId}`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/product-materials/${createdProductMaterialId}`,
+        {
+          headers: { Cookie: ctx.cookie },
+        },
+      );
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -146,16 +156,19 @@ describe('Product Materials (e2e)', () => {
     it('cap nhat product-material thanh cong', async () => {
       if (!ctx?.cookie || !createdProductMaterialId) return;
 
-      const res = await fetch(`${API_URL}/product-materials/${createdProductMaterialId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+      const res = await fetch(
+        `${API_URL}/product-materials/${createdProductMaterialId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: ctx.cookie,
+          },
+          body: JSON.stringify({
+            quantity: 75,
+          }),
         },
-        body: JSON.stringify({
-          quantity: 75,
-        }),
-      });
+      );
 
       const data = await res.json();
 
@@ -168,10 +181,13 @@ describe('Product Materials (e2e)', () => {
     it('xoa product-material thanh cong', async () => {
       if (!ctx?.cookie || !createdProductMaterialId) return;
 
-      const res = await fetch(`${API_URL}/product-materials/${createdProductMaterialId}`, {
-        method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/product-materials/${createdProductMaterialId}`,
+        {
+          method: 'DELETE',
+          headers: { Cookie: ctx.cookie },
+        },
+      );
 
       expect(res.status).toBe(200);
     });

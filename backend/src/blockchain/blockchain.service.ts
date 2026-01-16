@@ -14,24 +14,34 @@ export class BlockchainService {
   constructor() {
     const projectId = process.env.BLOCKFROST_API_KEY;
     if (!projectId) {
-      console.warn('BLOCKFROST_API_KEY not set - payment verification disabled');
+      console.warn(
+        'BLOCKFROST_API_KEY not set - payment verification disabled',
+      );
     }
 
     this.blockfrost = new BlockFrostAPI({
       projectId: projectId || 'dummy',
-      network: process.env.NEXT_PUBLIC_APP_NETWORK === 'mainnet' ? 'mainnet' : 'preprod',
+      network:
+        process.env.NEXT_PUBLIC_APP_NETWORK === 'mainnet'
+          ? 'mainnet'
+          : 'preprod',
     });
 
     this.platformWallet = process.env.APP_WALLET_ADDRESS || '';
   }
 
-  async verifyPayment(txHash: string, expectedAmount: number): Promise<{
+  async verifyPayment(
+    txHash: string,
+    expectedAmount: number,
+  ): Promise<{
     valid: boolean;
     message: string;
     confirmedAmount?: number;
   }> {
     if (!process.env.BLOCKFROST_API_KEY) {
-      console.warn('Skipping payment verification - BLOCKFROST_API_KEY not set');
+      console.warn(
+        'Skipping payment verification - BLOCKFROST_API_KEY not set',
+      );
       return { valid: true, message: 'Verification skipped (dev mode)' };
     }
 
@@ -48,7 +58,7 @@ export class BlockchainService {
       let receivedAmount = 0;
       for (const output of utxos.outputs) {
         if (output.address === this.platformWallet) {
-          const lovelace = output.amount.find(a => a.unit === 'lovelace');
+          const lovelace = output.amount.find((a) => a.unit === 'lovelace');
           if (lovelace) {
             receivedAmount += parseInt(lovelace.quantity);
           }
@@ -74,7 +84,9 @@ export class BlockchainService {
       if (bfError.status_code === 404) {
         return { valid: false, message: 'Transaction not found' };
       }
-      throw new BadRequestException(`Failed to verify transaction: ${bfError.message || 'Unknown error'}`);
+      throw new BadRequestException(
+        `Failed to verify transaction: ${bfError.message || 'Unknown error'}`,
+      );
     }
   }
 
@@ -157,14 +169,14 @@ export class BlockchainService {
     try {
       const asset = `${policyId}${assetNameHex}`;
       const addresses = await this.blockfrost.assetsAddresses(asset);
-      
+
       if (addresses.length === 0) {
         return null;
       }
 
       const refAssetNameHex = '000643b0' + assetNameHex.slice(8);
       const refAsset = `${policyId}${refAssetNameHex}`;
-      
+
       try {
         const refAddresses = await this.blockfrost.assetsAddresses(refAsset);
         if (refAddresses.length > 0) {

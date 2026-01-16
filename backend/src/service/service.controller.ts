@@ -17,5 +17,4 @@ export class ServiceController {
   findOne(@Param('id') id: string) {
     return this.serviceService.findOne(id);
   }
-
 }

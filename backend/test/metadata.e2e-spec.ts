@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Metadata (e2e)', () => {
   let ctx: TestContext | null;
@@ -7,13 +11,13 @@ describe('Metadata (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     if (ctx?.cookie) {
       const collectionRes = await fetch(`${API_URL}/collections`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Collection for Metadata Test',
@@ -30,7 +34,7 @@ describe('Metadata (e2e)', () => {
     if (ctx?.cookie && createdCollectionId) {
       await fetch(`${API_URL}/collections/${createdCollectionId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
     }
   });
@@ -53,12 +57,15 @@ describe('Metadata (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           collectionId: createdCollectionId,
           assetName: 'TestAsset001',
-          content: JSON.stringify({ name: 'Test NFT', description: 'Test metadata' }),
+          content: JSON.stringify({
+            name: 'Test NFT',
+            description: 'Test metadata',
+          }),
           nftReference: ['ipfs://QmTest123'],
         }),
       });
@@ -77,7 +84,7 @@ describe('Metadata (e2e)', () => {
       if (!ctx?.cookie || !createdMetadataId) return;
 
       const res = await fetch(`${API_URL}/metadata/${createdMetadataId}`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -94,10 +101,13 @@ describe('Metadata (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
-          content: JSON.stringify({ name: 'Updated NFT', description: 'Updated metadata' }),
+          content: JSON.stringify({
+            name: 'Updated NFT',
+            description: 'Updated metadata',
+          }),
         }),
       });
 
@@ -114,7 +124,7 @@ describe('Metadata (e2e)', () => {
 
       const res = await fetch(`${API_URL}/metadata/${createdMetadataId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);

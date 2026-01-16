@@ -6,7 +6,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const API_URL = process.env.API_URL || 'http://localhost:3000'; //BE
-const blockfrostProvider = new BlockfrostProvider(process.env.BLOCKFROST_API_KEY || '');
+const blockfrostProvider = new BlockfrostProvider(
+  process.env.BLOCKFROST_API_KEY || '',
+);
 
 describe('Contract API - Mint, Burn, Update CIP68', () => {
   let wallet: MeshWallet;
@@ -42,7 +44,9 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   }
 
   test('Get contract info', async () => {
-    const res = await request(API_URL).get(`/contract/info?walletAddress=${walletAddress}`);
+    const res = await request(API_URL).get(
+      `/contract/info?walletAddress=${walletAddress}`,
+    );
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('policyId');
     expect(res.body).toHaveProperty('storeAddress');
@@ -58,16 +62,18 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
       .post('/contract/mint')
       .send({
         walletAddress,
-        assets: [{
-          assetName,
-          metadata: {
-            name: assetName,
-            image: 'ipfs://QmRzicpReutwCkM6aotuKjErFCUD213DpwPq6ByuzMJaua',
-            mediaType: 'image/jpg',
-            description: 'Test NFT',
+        assets: [
+          {
+            assetName,
+            metadata: {
+              name: assetName,
+              image: 'ipfs://QmRzicpReutwCkM6aotuKjErFCUD213DpwPq6ByuzMJaua',
+              mediaType: 'image/jpg',
+              description: 'Test NFT',
+            },
+            quantity: '1',
           },
-          quantity: '1',
-        }],
+        ],
       });
 
     console.log('Mint response:', res.status, res.body);
@@ -84,7 +90,7 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   });
 
   test('Update', async () => {
-    return; 
+    return;
     const assetName = `Upd${Date.now()}`;
 
     // Mint first
@@ -103,13 +109,15 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
       .post('/contract/update')
       .send({
         walletAddress,
-        assets: [{
-          assetName,
-          metadata: {
-            name: 'Updated Name',
-            description: 'Updated description',
+        assets: [
+          {
+            assetName,
+            metadata: {
+              name: 'Updated Name',
+              description: 'Updated description',
+            },
           },
-        }],
+        ],
       });
 
     expect(res.status).toBe(201);
@@ -120,7 +128,7 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   });
 
   test('Burn', async () => {
-    return; 
+    return;
     const assetName = `Burn${Date.now()}`;
 
     // Mint first
@@ -150,13 +158,11 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   });
 
   test('Payment', async () => {
-    return; 
-    const res = await request(API_URL)
-      .post('/contract/payment')
-      .send({
-        walletAddress,
-        amount: '5000000', // 5 ADA
-      });
+    return;
+    const res = await request(API_URL).post('/contract/payment').send({
+      walletAddress,
+      amount: '5000000', // 5 ADA
+    });
 
     console.log('Payment response:', res.status, res.body);
     expect(res.status).toBe(201);
@@ -168,7 +174,7 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
   });
 
   test('Full lifecycle - Mint, Update, Burn', async () => {
-    return; 
+    return;
     const assetName = `LC${Date.now()}`;
 
     // 1. Mint
@@ -176,11 +182,13 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
       .post('/contract/mint')
       .send({
         walletAddress,
-        assets: [{
-          assetName,
-          metadata: { name: assetName, version: '1' },
-          quantity: '1',
-        }],
+        assets: [
+          {
+            assetName,
+            metadata: { name: assetName, version: '1' },
+            quantity: '1',
+          },
+        ],
       });
 
     const mintTxHash = await signAndSubmit(mintRes.body.data);
@@ -192,10 +200,12 @@ describe('Contract API - Mint, Burn, Update CIP68', () => {
       .post('/contract/update')
       .send({
         walletAddress,
-        assets: [{
-          assetName,
-          metadata: { name: assetName, version: '2', updated: 'true' },
-        }],
+        assets: [
+          {
+            assetName,
+            metadata: { name: assetName, version: '2', updated: 'true' },
+          },
+        ],
       });
 
     const updateTxHash = await signAndSubmit(updateRes.body.data);

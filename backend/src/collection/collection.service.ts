@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
@@ -23,7 +27,8 @@ export class CollectionService {
 
   private async findOneOwned(id: string, userId: string) {
     const item = await this.findOne(id);
-    if (item.userId !== userId) throw new ForbiddenException('Not your collection');
+    if (item.userId !== userId)
+      throw new ForbiddenException('Not your collection');
     return item;
   }
 

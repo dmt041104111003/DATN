@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+} from '@nestjs/common';
 import { CertificationService } from './certification.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
@@ -22,7 +30,10 @@ export class CertificationController {
   }
 
   @Post()
-  create(@CurrentUser() user: { id: string }, @Body() dto: CreateCertificationDto) {
+  create(
+    @CurrentUser() user: { id: string },
+    @Body() dto: CreateCertificationDto,
+  ) {
     return this.certificationService.create(user.id, dto);
   }
 

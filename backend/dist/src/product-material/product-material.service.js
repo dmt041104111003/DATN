@@ -57,7 +57,7 @@ let ProductMaterialService = class ProductMaterialService {
         });
     }
     async update(id, userId, dto) {
-        const pm = await this.findOneOwned(id, userId);
+        await this.findOneOwned(id, userId);
         return this.prisma.productMaterial.update({
             where: { id },
             data: dto,

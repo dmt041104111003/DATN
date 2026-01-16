@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateMetadataDto } from './dto/create-metadata.dto';
 import { UpdateMetadataDto } from './dto/update-metadata.dto';
@@ -23,14 +27,18 @@ export class MetadataService {
       include: { collection: true },
     });
     if (!item) throw new NotFoundException('Metadata not found');
-    if (item.collection.userId !== userId) throw new ForbiddenException('Access denied');
+    if (item.collection.userId !== userId)
+      throw new ForbiddenException('Access denied');
     return item;
   }
   async create(userId: string, dto: CreateMetadataDto) {
-    const collection = await this.prisma.collection.findUnique({ where: { id: dto.collectionId } });
+    const collection = await this.prisma.collection.findUnique({
+      where: { id: dto.collectionId },
+    });
     if (!collection) throw new NotFoundException('Collection not found');
-    if (collection.userId !== userId) throw new ForbiddenException('Not your collection');
-    
+    if (collection.userId !== userId)
+      throw new ForbiddenException('Not your collection');
+
     return this.prisma.metadata.create({ data: dto });
   }
 

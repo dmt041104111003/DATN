@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+} from '@nestjs/common';
 import { ProductionProcessService } from './production-process.service';
 import { CreateProductionProcessDto } from './dto/create-production-process.dto';
 import { UpdateProductionProcessDto } from './dto/update-production-process.dto';
@@ -22,7 +30,10 @@ export class ProductionProcessController {
   }
 
   @Post()
-  create(@CurrentUser() user: { id: string }, @Body() dto: CreateProductionProcessDto) {
+  create(
+    @CurrentUser() user: { id: string },
+    @Body() dto: CreateProductionProcessDto,
+  ) {
     return this.productionProcessService.create(user.id, dto);
   }
 

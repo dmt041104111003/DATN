@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Users (e2e)', () => {
   let ctx: TestContext | null;
@@ -17,7 +21,7 @@ describe('Users (e2e)', () => {
       if (!ctx?.cookie) return;
 
       const res = await fetch(`${API_URL}/users/me`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -35,7 +39,7 @@ describe('Users (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({}),
       });

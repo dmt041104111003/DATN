@@ -10,13 +10,13 @@ export declare class PaymentController {
         subscription: {
             service: {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
                 description: string | null;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
@@ -35,8 +35,8 @@ export declare class PaymentController {
         txHash: string;
         amount: number;
         userId: string;
-        subscriptionId: string;
         currency: string;
+        subscriptionId: string;
     })[]>;
     findOne(user: {
         id: string;
@@ -44,13 +44,13 @@ export declare class PaymentController {
         subscription: {
             service: {
                 id: string;
+                createdAt: Date;
+                updatedAt: Date;
                 name: string;
                 description: string | null;
                 price: number;
                 duration: number;
                 maxProducts: number | null;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
@@ -69,8 +69,8 @@ export declare class PaymentController {
         txHash: string;
         amount: number;
         userId: string;
-        subscriptionId: string;
         currency: string;
+        subscriptionId: string;
     }>;
     create(user: {
         id: string;
@@ -85,8 +85,8 @@ export declare class PaymentController {
                 txHash: string;
                 amount: number;
                 userId: string;
-                subscriptionId: string;
                 currency: string;
+                subscriptionId: string;
             };
             subscription: {
                 id: string;
@@ -109,8 +109,8 @@ export declare class PaymentController {
         txHash: string;
         amount: number;
         userId: string;
-        subscriptionId: string;
         currency: string;
+        subscriptionId: string;
     }>;
     remove(user: {
         id: string;
@@ -121,7 +121,7 @@ export declare class PaymentController {
         txHash: string;
         amount: number;
         userId: string;
-        subscriptionId: string;
         currency: string;
+        subscriptionId: string;
     }>;
 }

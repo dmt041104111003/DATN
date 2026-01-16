@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateWarehouseStorageDto } from './dto/create-warehouse-storage.dto';
 import { UpdateWarehouseStorageDto } from './dto/update-warehouse-storage.dto';
@@ -12,7 +16,9 @@ export class WarehouseStorageService {
   }
 
   async findOne(id: string) {
-    const item = await this.prisma.warehouseStorage.findUnique({ where: { id } });
+    const item = await this.prisma.warehouseStorage.findUnique({
+      where: { id },
+    });
     if (!item) throw new NotFoundException('WarehouseStorage not found');
     return item;
   }
@@ -23,17 +29,23 @@ export class WarehouseStorageService {
       include: { product: true },
     });
     if (!item) throw new NotFoundException('WarehouseStorage not found');
-    if (item.product.userId !== userId) throw new ForbiddenException('Access denied');
+    if (item.product.userId !== userId)
+      throw new ForbiddenException('Access denied');
     return item;
   }
 
   async create(userId: string, dto: CreateWarehouseStorageDto) {
-    const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+    const product = await this.prisma.product.findUnique({
+      where: { id: dto.productId },
+    });
     if (!product) throw new NotFoundException('Product not found');
-    if (product.userId !== userId) throw new ForbiddenException('Not your product');
-    const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
+    if (product.userId !== userId)
+      throw new ForbiddenException('Not your product');
+    const warehouse = await this.prisma.warehouse.findUnique({
+      where: { id: dto.warehouseId },
+    });
     if (!warehouse) throw new NotFoundException('Warehouse not found');
-    
+
     return this.prisma.warehouseStorage.create({ data: dto });
   }
 

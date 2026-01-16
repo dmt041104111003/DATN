@@ -1,4 +1,9 @@
-import { setupTestWallet, login, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupTestWallet,
+  login,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Auth Flow (e2e)', () => {
   let ctx: TestContext | null;

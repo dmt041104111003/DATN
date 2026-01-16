@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
@@ -14,7 +18,8 @@ export class SupplierService {
   async findOne(id: string, userId: string) {
     const supplier = await this.prisma.supplier.findUnique({ where: { id } });
     if (!supplier) throw new NotFoundException('Supplier not found');
-    if (supplier.userId !== userId) throw new ForbiddenException('Not your supplier');
+    if (supplier.userId !== userId)
+      throw new ForbiddenException('Not your supplier');
     return supplier;
   }
 

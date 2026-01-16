@@ -5,7 +5,9 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const API_URL = process.env.API_URL || 'http://localhost:3000';
-const blockfrostProvider = new BlockfrostProvider(process.env.BLOCKFROST_API_KEY || '');
+const blockfrostProvider = new BlockfrostProvider(
+  process.env.BLOCKFROST_API_KEY || '',
+);
 
 describe('Payment Flow (e2e)', () => {
   let wallet: MeshWallet;
@@ -27,17 +29,17 @@ describe('Payment Flow (e2e)', () => {
     console.log('Test wallet:', walletAddress);
 
     // Login
-    const nonceRes = await request(API_URL).get(`/auth/nonce?address=${walletAddress}`);
+    const nonceRes = await request(API_URL).get(
+      `/auth/nonce?address=${walletAddress}`,
+    );
     const nonce = nonceRes.body.nonce;
     const signature = await wallet.signData(nonce, walletAddress);
 
-    const loginRes = await request(API_URL)
-      .post('/auth/verify')
-      .send({
-        address: walletAddress,
-        signature: signature.signature,
-        key: signature.key,
-      });
+    const loginRes = await request(API_URL).post('/auth/verify').send({
+      address: walletAddress,
+      signature: signature.signature,
+      key: signature.key,
+    });
 
     authCookie = loginRes.headers['set-cookie']?.[0] || '';
     console.log('Login:', authCookie ? 'OK' : 'FAILED');
@@ -62,7 +64,10 @@ describe('Payment Flow (e2e)', () => {
       const res = await request(API_URL).get('/services');
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      console.log('Available services:', res.body.map((s: any) => `${s.id}: ${s.name} (${s.price} ADA)`));
+      console.log(
+        'Available services:',
+        res.body.map((s: any) => `${s.id}: ${s.name} (${s.price} ADA)`),
+      );
     });
 
     it('2. Create subscription (pending) for a service plan', async () => {
@@ -114,7 +119,11 @@ describe('Payment Flow (e2e)', () => {
           amount: amountLovelace,
         });
 
-      console.log('Create payment tx response:', createTxRes.status, createTxRes.body.result);
+      console.log(
+        'Create payment tx response:',
+        createTxRes.status,
+        createTxRes.body.result,
+      );
       expect(createTxRes.status).toBe(201);
       expect(createTxRes.body.result).toBe(true);
 
@@ -142,7 +151,9 @@ describe('Payment Flow (e2e)', () => {
       console.log('Verify response:', verifyRes.status, verifyRes.body);
       expect(verifyRes.status).toBe(201);
       expect(verifyRes.body.result).toBe(true);
-      expect(verifyRes.body.message).toBe('Payment verified and subscription activated');
+      expect(verifyRes.body.message).toBe(
+        'Payment verified and subscription activated',
+      );
       expect(verifyRes.body.data.subscription.status).toBe('active');
     }, 180000);
 
@@ -167,8 +178,10 @@ describe('Payment Flow (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      
-      const activeSubscriptions = res.body.filter((s: any) => s.status === 'active');
+
+      const activeSubscriptions = res.body.filter(
+        (s: any) => s.status === 'active',
+      );
       console.log('Active subscriptions:', activeSubscriptions.length);
     });
 

@@ -31,7 +31,7 @@ export async function setupTestWallet(): Promise<TestContext | null> {
   });
 
   const address = (await wallet.getChangeAddress()).toString();
-  
+
   return { wallet, address, cookie: '', blockfrostProvider };
 }
 
@@ -61,7 +61,7 @@ export async function login(ctx: TestContext): Promise<string> {
 
   const cookie = verifyRes.headers.get('set-cookie') || '';
   ctx.cookie = cookie;
-  
+
   return cookie;
 }
 

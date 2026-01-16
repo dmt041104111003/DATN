@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Documents (e2e)', () => {
   let ctx: TestContext | null;
@@ -7,14 +11,14 @@ describe('Documents (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     // Tạo product trước để có productId
     if (ctx?.cookie) {
       const productRes = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Product for Document Test',
@@ -31,7 +35,7 @@ describe('Documents (e2e)', () => {
     if (ctx?.cookie && createdProductId) {
       await fetch(`${API_URL}/products/${createdProductId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
     }
   });
@@ -54,7 +58,7 @@ describe('Documents (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           productId: createdProductId,
@@ -78,7 +82,7 @@ describe('Documents (e2e)', () => {
       if (!ctx?.cookie || !createdDocumentId) return;
 
       const res = await fetch(`${API_URL}/documents/${createdDocumentId}`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -95,7 +99,7 @@ describe('Documents (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           docType: 'manual',
@@ -115,7 +119,7 @@ describe('Documents (e2e)', () => {
 
       const res = await fetch(`${API_URL}/documents/${createdDocumentId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);

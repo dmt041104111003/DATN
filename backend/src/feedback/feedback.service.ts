@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
@@ -19,7 +23,8 @@ export class FeedbackService {
 
   private async findOneOwned(id: string, userId: string) {
     const item = await this.findOne(id);
-    if (item.userId !== userId) throw new ForbiddenException('Not your feedback');
+    if (item.userId !== userId)
+      throw new ForbiddenException('Not your feedback');
     return item;
   }
 

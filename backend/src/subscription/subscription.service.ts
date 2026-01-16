@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
@@ -20,7 +24,8 @@ export class SubscriptionService {
       include: { service: true },
     });
     if (!item) throw new NotFoundException('Subscription not found');
-    if (item.userId !== userId) throw new ForbiddenException('Not your subscription');
+    if (item.userId !== userId)
+      throw new ForbiddenException('Not your subscription');
     return item;
   }
 

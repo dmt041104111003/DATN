@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Materials (e2e)', () => {
   let ctx: TestContext | null;
@@ -7,14 +11,14 @@ describe('Materials (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     // Tạo supplier trước để có supplierId
     if (ctx?.cookie) {
       const supplierRes = await fetch(`${API_URL}/suppliers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Supplier for Material Test',
@@ -30,7 +34,7 @@ describe('Materials (e2e)', () => {
     if (ctx?.cookie && createdSupplierId) {
       await fetch(`${API_URL}/suppliers/${createdSupplierId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
     }
   });
@@ -45,7 +49,7 @@ describe('Materials (e2e)', () => {
       if (!ctx?.cookie) return;
 
       const res = await fetch(`${API_URL}/materials`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -62,7 +66,7 @@ describe('Materials (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           supplierId: createdSupplierId,
@@ -86,7 +90,7 @@ describe('Materials (e2e)', () => {
       if (!ctx?.cookie || !createdMaterialId) return;
 
       const res = await fetch(`${API_URL}/materials/${createdMaterialId}`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -103,7 +107,7 @@ describe('Materials (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Updated Material E2E',
@@ -124,7 +128,7 @@ describe('Materials (e2e)', () => {
 
       const res = await fetch(`${API_URL}/materials/${createdMaterialId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);

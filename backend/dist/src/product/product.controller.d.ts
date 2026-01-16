@@ -6,29 +6,29 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        imageUrl: string | null;
-        description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        imageUrl: string | null;
-        description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }[]>;
     getQuota(user: {
         id: string;
@@ -76,9 +76,9 @@ export declare class ProductController {
             warehouseStorages: ({
                 warehouse: {
                     id: string;
-                    name: string;
                     createdAt: Date;
                     updatedAt: Date;
+                    name: string;
                     location: string | null;
                     capacity: number;
                 };
@@ -146,56 +146,56 @@ export declare class ProductController {
     }>;
     findOne(id: string): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        imageUrl: string | null;
-        description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
     create(user: {
         id: string;
     }, dto: CreateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        imageUrl: string | null;
-        description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        imageUrl: string | null;
-        description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        imageUrl: string | null;
-        description: string | null;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
+        description: string | null;
+        imageUrl: string | null;
+        assetName: string | null;
+        userId: string;
+        policyId: string | null;
+        historyHash: string | null;
     }>;
 }

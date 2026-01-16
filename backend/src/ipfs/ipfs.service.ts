@@ -10,7 +10,9 @@ export class IpfsService {
     const secretKey = process.env.PINATA_SECRET_KEY;
 
     if (!apiKey || !secretKey) {
-      console.warn('PINATA_API_KEY or PINATA_SECRET_KEY not set. IPFS upload will be disabled.');
+      console.warn(
+        'PINATA_API_KEY or PINATA_SECRET_KEY not set. IPFS upload will be disabled.',
+      );
     } else {
       this.pinata = new PinataClient(apiKey, secretKey);
     }
@@ -21,7 +23,9 @@ export class IpfsService {
     metadata?: { name?: string },
   ): Promise<{ cid: string; url: string }> {
     if (!this.pinata) {
-      throw new BadRequestException('IPFS service not configured. Set PINATA_API_KEY and PINATA_SECRET_KEY.');
+      throw new BadRequestException(
+        'IPFS service not configured. Set PINATA_API_KEY and PINATA_SECRET_KEY.',
+      );
     }
 
     try {

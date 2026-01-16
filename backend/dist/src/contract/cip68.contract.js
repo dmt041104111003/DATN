@@ -35,8 +35,12 @@ class Cip68Contract {
             BigInt(1),
             this.pubKeyIssuer,
         ]);
-        const storeScript = { code: this.storeScriptCbor, version: 'V3' };
-        this.storeAddress = (0, core_1.serializeAddressObj)((0, core_1.scriptAddress)((0, core_1.deserializeAddress)((0, core_1.serializePlutusScript)(storeScript, undefined, constants_1.appNetworkId, false).address).scriptHash, (0, core_1.deserializeAddress)(constants_1.APP_WALLET_ADDRESS).stakeCredentialHash, false), constants_1.appNetworkId);
+        const storeScript = {
+            code: this.storeScriptCbor,
+            version: 'V3',
+        };
+        this.storeAddress = (0, core_1.serializeAddressObj)((0, core_1.scriptAddress)((0, core_1.deserializeAddress)((0, core_1.serializePlutusScript)(storeScript, undefined, constants_1.appNetworkId, false)
+            .address).scriptHash, (0, core_1.deserializeAddress)(constants_1.APP_WALLET_ADDRESS).stakeCredentialHash, false), constants_1.appNetworkId);
         const storeScriptHash = (0, core_1.deserializeAddress)(this.storeAddress).scriptHash;
         this.mintScriptCbor = (0, core_1.applyParamsToScript)(mintCompileCode, [
             this.pubKeyExchange,
@@ -63,7 +67,8 @@ class Cip68Contract {
         let collaterals = await this.wallet.getCollateral();
         if (!collaterals || collaterals.length === 0) {
             const suitableUtxo = utxos.find((utxo) => {
-                const hasOnlyLovelace = utxo.output.amount.length === 1 && utxo.output.amount[0].unit === 'lovelace';
+                const hasOnlyLovelace = utxo.output.amount.length === 1 &&
+                    utxo.output.amount[0].unit === 'lovelace';
                 const lovelace = BigInt(utxo.output.amount[0].quantity);
                 return hasOnlyLovelace && lovelace >= 5000000n;
             });
@@ -124,7 +129,10 @@ class Cip68Contract {
                 .mintingScript(this.mintScriptCbor)
                 .mintRedeemerValue((0, core_1.mConStr0)([]))
                 .txOut(this.storeAddress, [
-                { unit: this.policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(assetName)), quantity: '1' },
+                {
+                    unit: this.policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(assetName)),
+                    quantity: '1',
+                },
             ])
                 .txOutInlineDatumValue((0, core_1.metadataToCip68)(metadata));
         }
@@ -132,7 +140,9 @@ class Cip68Contract {
             unsignedTx.txOut(receiver, assets);
         });
         unsignedTx
-            .txOut(constants_1.APP_WALLET_ADDRESS, [{ unit: 'lovelace', quantity: constants_1.EXCHANGE_FEE_PRICE }])
+            .txOut(constants_1.APP_WALLET_ADDRESS, [
+            { unit: 'lovelace', quantity: constants_1.EXCHANGE_FEE_PRICE },
+        ])
             .changeAddress(walletAddress)
             .requiredSignerHash((0, core_1.deserializeAddress)(walletAddress).pubKeyHash)
             .selectUtxosFrom(utxos)
@@ -167,7 +177,9 @@ class Cip68Contract {
                 .txInScript(this.storeScriptCbor);
         }
         unsignedTx
-            .txOut(constants_1.APP_WALLET_ADDRESS, [{ unit: 'lovelace', quantity: constants_1.EXCHANGE_FEE_PRICE }])
+            .txOut(constants_1.APP_WALLET_ADDRESS, [
+            { unit: 'lovelace', quantity: constants_1.EXCHANGE_FEE_PRICE },
+        ])
             .changeAddress(walletAddress)
             .requiredSignerHash((0, core_1.deserializeAddress)(walletAddress).pubKeyHash)
             .selectUtxosFrom(utxos)
@@ -193,12 +205,17 @@ class Cip68Contract {
                 .txInRedeemerValue((0, core_1.mConStr0)([]))
                 .txInScript(this.storeScriptCbor)
                 .txOut(this.storeAddress, [
-                { unit: this.policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(assetName)), quantity: '1' },
+                {
+                    unit: this.policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(assetName)),
+                    quantity: '1',
+                },
             ])
                 .txOutInlineDatumValue((0, core_1.metadataToCip68)(metadata));
         }
         unsignedTx
-            .txOut(constants_1.APP_WALLET_ADDRESS, [{ unit: 'lovelace', quantity: constants_1.EXCHANGE_FEE_PRICE }])
+            .txOut(constants_1.APP_WALLET_ADDRESS, [
+            { unit: 'lovelace', quantity: constants_1.EXCHANGE_FEE_PRICE },
+        ])
             .changeAddress(walletAddress)
             .requiredSignerHash((0, core_1.deserializeAddress)(walletAddress).pubKeyHash)
             .selectUtxosFrom(utxos)

@@ -26,7 +26,9 @@ let MaterialService = class MaterialService {
         });
     }
     async findBySupplier(supplierId, userId) {
-        const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
+        const supplier = await this.prisma.supplier.findUnique({
+            where: { id: supplierId },
+        });
         if (!supplier)
             throw new common_1.NotFoundException('Supplier not found');
         if (supplier.userId !== userId)
@@ -45,7 +47,9 @@ let MaterialService = class MaterialService {
         return item;
     }
     async create(userId, dto) {
-        const supplier = await this.prisma.supplier.findUnique({ where: { id: dto.supplierId } });
+        const supplier = await this.prisma.supplier.findUnique({
+            where: { id: dto.supplierId },
+        });
         if (!supplier)
             throw new common_1.NotFoundException('Supplier not found');
         if (supplier.userId !== userId)

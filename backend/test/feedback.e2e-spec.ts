@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Feedback (e2e)', () => {
   let ctx: TestContext | null;
@@ -7,13 +11,13 @@ describe('Feedback (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     if (ctx?.cookie) {
       const productRes = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Product for Feedback Test',
@@ -29,7 +33,7 @@ describe('Feedback (e2e)', () => {
     if (ctx?.cookie && createdProductId) {
       await fetch(`${API_URL}/products/${createdProductId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
     }
   });
@@ -52,7 +56,7 @@ describe('Feedback (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           productId: createdProductId,
@@ -76,7 +80,7 @@ describe('Feedback (e2e)', () => {
       if (!ctx?.cookie || !createdFeedbackId) return;
 
       const res = await fetch(`${API_URL}/feedbacks/${createdFeedbackId}`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -93,7 +97,7 @@ describe('Feedback (e2e)', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           content: 'San pham tuyet voi!',
@@ -114,7 +118,7 @@ describe('Feedback (e2e)', () => {
 
       const res = await fetch(`${API_URL}/feedbacks/${createdFeedbackId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);

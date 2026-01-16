@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -20,7 +24,7 @@ describe('Media (e2e)', () => {
       if (!ctx?.cookie) return;
 
       const res = await fetch(`${API_URL}/media`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -47,7 +51,7 @@ describe('Media (e2e)', () => {
 
       const res = await fetch(`${API_URL}/media/upload`, {
         method: 'POST',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(400);
@@ -64,11 +68,15 @@ describe('Media (e2e)', () => {
       const fileBuffer = fs.readFileSync(filePath);
 
       const formData = new FormData();
-      formData.append('file', new Blob([fileBuffer], { type: 'image/png' }), 'demo.png');
+      formData.append(
+        'file',
+        new Blob([fileBuffer], { type: 'image/png' }),
+        'demo.png',
+      );
 
       const res = await fetch(`${API_URL}/media/upload`, {
         method: 'POST',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
         body: formData,
       });
 
@@ -90,7 +98,7 @@ describe('Media (e2e)', () => {
       if (!ctx?.cookie || !createdMediaId) return;
 
       const res = await fetch(`${API_URL}/media/${createdMediaId}`, {
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
       const data = await res.json();
 
@@ -106,7 +114,7 @@ describe('Media (e2e)', () => {
 
       const res = await fetch(`${API_URL}/media/${createdMediaId}`, {
         method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
+        headers: { Cookie: ctx.cookie },
       });
 
       expect(res.status).toBe(200);

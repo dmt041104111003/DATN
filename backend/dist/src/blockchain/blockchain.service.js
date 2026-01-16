@@ -22,7 +22,9 @@ let BlockchainService = class BlockchainService {
         }
         this.blockfrost = new blockfrost_js_1.BlockFrostAPI({
             projectId: projectId || 'dummy',
-            network: process.env.NEXT_PUBLIC_APP_NETWORK === 'mainnet' ? 'mainnet' : 'preprod',
+            network: process.env.NEXT_PUBLIC_APP_NETWORK === 'mainnet'
+                ? 'mainnet'
+                : 'preprod',
         });
         this.platformWallet = process.env.APP_WALLET_ADDRESS || '';
     }
@@ -43,7 +45,7 @@ let BlockchainService = class BlockchainService {
             let receivedAmount = 0;
             for (const output of utxos.outputs) {
                 if (output.address === this.platformWallet) {
-                    const lovelace = output.amount.find(a => a.unit === 'lovelace');
+                    const lovelace = output.amount.find((a) => a.unit === 'lovelace');
                     if (lovelace) {
                         receivedAmount += parseInt(lovelace.quantity);
                     }

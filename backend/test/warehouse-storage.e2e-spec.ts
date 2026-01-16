@@ -1,4 +1,8 @@
-import { setupAuthenticatedContext, TestContext, API_URL } from './helpers/auth.helper';
+import {
+  setupAuthenticatedContext,
+  TestContext,
+  API_URL,
+} from './helpers/auth.helper';
 
 describe('Warehouse Storage (e2e)', () => {
   let ctx: TestContext | null;
@@ -8,13 +12,13 @@ describe('Warehouse Storage (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await setupAuthenticatedContext();
-    
+
     if (ctx?.cookie) {
       const productRes = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Product for Storage Test',
@@ -28,7 +32,7 @@ describe('Warehouse Storage (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           name: 'Warehouse for Storage Test',
@@ -45,13 +49,13 @@ describe('Warehouse Storage (e2e)', () => {
       if (createdProductId) {
         await fetch(`${API_URL}/products/${createdProductId}`, {
           method: 'DELETE',
-          headers: { 'Cookie': ctx.cookie },
+          headers: { Cookie: ctx.cookie },
         });
       }
       if (createdWarehouseId) {
         await fetch(`${API_URL}/warehouses/${createdWarehouseId}`, {
           method: 'DELETE',
-          headers: { 'Cookie': ctx.cookie },
+          headers: { Cookie: ctx.cookie },
         });
       }
     }
@@ -75,7 +79,7 @@ describe('Warehouse Storage (e2e)', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+          Cookie: ctx.cookie,
         },
         body: JSON.stringify({
           productId: createdProductId,
@@ -98,9 +102,12 @@ describe('Warehouse Storage (e2e)', () => {
     it('tra ve storage chi tiet', async () => {
       if (!ctx?.cookie || !createdStorageId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storages/${createdStorageId}`, {
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/warehouse-storages/${createdStorageId}`,
+        {
+          headers: { Cookie: ctx.cookie },
+        },
+      );
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -112,17 +119,20 @@ describe('Warehouse Storage (e2e)', () => {
     it('cap nhat storage thanh cong', async () => {
       if (!ctx?.cookie || !createdStorageId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storages/${createdStorageId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': ctx.cookie,
+      const res = await fetch(
+        `${API_URL}/warehouse-storages/${createdStorageId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: ctx.cookie,
+          },
+          body: JSON.stringify({
+            exitTime: new Date().toISOString(),
+            conditions: 'Da xuat kho',
+          }),
         },
-        body: JSON.stringify({
-          exitTime: new Date().toISOString(),
-          conditions: 'Da xuat kho',
-        }),
-      });
+      );
 
       const data = await res.json();
 
@@ -135,10 +145,13 @@ describe('Warehouse Storage (e2e)', () => {
     it('xoa storage thanh cong', async () => {
       if (!ctx?.cookie || !createdStorageId) return;
 
-      const res = await fetch(`${API_URL}/warehouse-storages/${createdStorageId}`, {
-        method: 'DELETE',
-        headers: { 'Cookie': ctx.cookie },
-      });
+      const res = await fetch(
+        `${API_URL}/warehouse-storages/${createdStorageId}`,
+        {
+          method: 'DELETE',
+          headers: { Cookie: ctx.cookie },
+        },
+      );
 
       expect(res.status).toBe(200);
     });

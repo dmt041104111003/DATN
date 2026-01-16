@@ -21,7 +21,9 @@ let ProductionProcessService = class ProductionProcessService {
         return this.prisma.productionProcess.findMany();
     }
     async findOne(id) {
-        const item = await this.prisma.productionProcess.findUnique({ where: { id } });
+        const item = await this.prisma.productionProcess.findUnique({
+            where: { id },
+        });
         if (!item)
             throw new common_1.NotFoundException('ProductionProcess not found');
         return item;
@@ -38,7 +40,9 @@ let ProductionProcessService = class ProductionProcessService {
         return item;
     }
     async create(userId, dto) {
-        const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+        const product = await this.prisma.product.findUnique({
+            where: { id: dto.productId },
+        });
         if (!product)
             throw new common_1.NotFoundException('Product not found');
         if (product.userId !== userId)

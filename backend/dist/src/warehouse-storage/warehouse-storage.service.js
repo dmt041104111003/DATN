@@ -21,7 +21,9 @@ let WarehouseStorageService = class WarehouseStorageService {
         return this.prisma.warehouseStorage.findMany();
     }
     async findOne(id) {
-        const item = await this.prisma.warehouseStorage.findUnique({ where: { id } });
+        const item = await this.prisma.warehouseStorage.findUnique({
+            where: { id },
+        });
         if (!item)
             throw new common_1.NotFoundException('WarehouseStorage not found');
         return item;
@@ -38,12 +40,16 @@ let WarehouseStorageService = class WarehouseStorageService {
         return item;
     }
     async create(userId, dto) {
-        const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+        const product = await this.prisma.product.findUnique({
+            where: { id: dto.productId },
+        });
         if (!product)
             throw new common_1.NotFoundException('Product not found');
         if (product.userId !== userId)
             throw new common_1.ForbiddenException('Not your product');
-        const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
+        const warehouse = await this.prisma.warehouse.findUnique({
+            where: { id: dto.warehouseId },
+        });
         if (!warehouse)
             throw new common_1.NotFoundException('Warehouse not found');
         return this.prisma.warehouseStorage.create({ data: dto });

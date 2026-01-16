@@ -7,6 +7,6 @@ export class AppController {
 
   @Get()
   getUsers() {
-  return this.appService.getUsers();
+    return this.appService.getUsers();
   }
 }
