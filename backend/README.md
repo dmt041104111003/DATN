@@ -128,4 +128,7 @@ npm install @meshsdk/core
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 npm install cookie-parser
 npm install -D @types/cookie-parser
+
+npm install @blockfrost/blockfrost-js
+
 ```

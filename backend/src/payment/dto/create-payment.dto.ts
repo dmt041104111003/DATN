@@ -1,19 +1,17 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsString()
   subscriptionId: string;
 
-  @IsNumber()
-  amount: number;
-
-  @IsString()
-  @IsOptional()
-  currency?: string;
-
   @IsString()
   txHash: string;
 
-  @IsDateString()
-  paymentDate: string;
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
+
+  @IsOptional()
+  @IsString()
+  currency?: string; // ADA
 }

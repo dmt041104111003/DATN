@@ -12,16 +12,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const blockchain_service_1 = require("../blockchain/blockchain.service");
 let PaymentService = class PaymentService {
     prisma;
-    constructor(prisma) {
+    blockchain;
+    constructor(prisma, blockchain) {
         this.prisma = prisma;
+        this.blockchain = blockchain;
     }
     async findAllByUser(userId) {
-        return this.prisma.payment.findMany({ where: { userId } });
+        return this.prisma.payment.findMany({
+            where: { userId },
+            include: { subscription: { include: { service: true } } },
+        });
     }
     async findOne(id, userId) {
-        const item = await this.prisma.payment.findUnique({ where: { id } });
+        const item = await this.prisma.payment.findUnique({
+            where: { id },
+            include: { subscription: { include: { service: true } } },
+        });
         if (!item)
             throw new common_1.NotFoundException('Payment not found');
         if (item.userId !== userId)
@@ -29,9 +38,60 @@ let PaymentService = class PaymentService {
         return item;
     }
     async create(userId, dto) {
-        return this.prisma.payment.create({
-            data: { ...dto, userId },
+        const existingPayment = await this.prisma.payment.findUnique({
+            where: { txHash: dto.txHash },
         });
+        if (existingPayment) {
+            throw new common_1.BadRequestException('Transaction hash already used');
+        }
+        const subscription = await this.prisma.subscription.findUnique({
+            where: { id: dto.subscriptionId },
+            include: { service: true },
+        });
+        if (!subscription) {
+            throw new common_1.NotFoundException('Subscription not found');
+        }
+        if (subscription.userId !== userId) {
+            throw new common_1.ForbiddenException('Not your subscription');
+        }
+        const expectedAmount = subscription.service.price;
+        const verification = await this.blockchain.verifyPayment(dto.txHash, expectedAmount);
+        if (!verification.valid) {
+            throw new common_1.BadRequestException(verification.message);
+        }
+        if (!verification.confirmedAmount) {
+            throw new common_1.BadRequestException('Could not confirm payment amount from blockchain');
+        }
+        const payment = await this.prisma.payment.create({
+            data: {
+                userId,
+                subscriptionId: dto.subscriptionId,
+                amount: verification.confirmedAmount,
+                currency: dto.currency || 'ADA',
+                txHash: dto.txHash,
+                paymentDate: new Date(),
+            },
+        });
+        const now = new Date();
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + subscription.service.duration);
+        await this.prisma.subscription.update({
+            where: { id: dto.subscriptionId },
+            data: {
+                status: 'active',
+                startDate: now,
+                endDate: endDate,
+            },
+        });
+        return {
+            payment,
+            message: 'Payment verified and subscription activated',
+            subscription: {
+                status: 'active',
+                startDate: now,
+                endDate: endDate,
+            },
+        };
     }
     async update(id, userId, dto) {
         await this.findOne(id, userId);
@@ -45,6 +105,7 @@ let PaymentService = class PaymentService {
 exports.PaymentService = PaymentService;
 exports.PaymentService = PaymentService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        blockchain_service_1.BlockchainService])
 ], PaymentService);
 //# sourceMappingURL=payment.service.js.map

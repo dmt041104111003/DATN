@@ -1,44 +1,26 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-config({ path: resolve(__dirname, '../.env') });
-
-import { MeshWallet } from '@meshsdk/core';
-
-const TEST_MNEMONIC = process.env.APP_MNEMONIC || '';
-const API_URL = 'http://localhost:3000';
+import { setupTestWallet, login, TestContext, API_URL } from './helpers/auth.helper';
 
 describe('Auth Flow (e2e)', () => {
-  let wallet: MeshWallet;
-  let address: string;
+  let ctx: TestContext | null;
 
   beforeAll(async () => {
-    if (!TEST_MNEMONIC) {
-      return;
+    ctx = await setupTestWallet();
+    if (ctx) {
+      console.log('address:', ctx.address);
     }
-
-    wallet = new MeshWallet({
-      networkId: (Number(process.env.NEXT_PUBLIC_APP_NETWORK) || 0) as 0 | 1,
-      key: {
-        type: 'mnemonic',
-        words: TEST_MNEMONIC.split(' '),
-      },
-    });
-
-    address = (await wallet.getChangeAddress()).toString();
-    console.log('address:', address);
   });
 
   describe('GET /auth/nonce', () => {
     it('tra ve nonce khi co address hop le', async () => {
-      if (!TEST_MNEMONIC) return;
+      if (!ctx) return;
 
-      const res = await fetch(`${API_URL}/auth/nonce?address=${address}`);
+      const res = await fetch(`${API_URL}/auth/nonce?address=${ctx.address}`);
       const data = await res.json();
 
       expect(res.status).toBe(200);
       expect(data.nonce).toBeDefined();
       expect(typeof data.nonce).toBe('string');
-      
+
       console.log('nonce:', data.nonce);
     });
 
@@ -50,37 +32,15 @@ describe('Auth Flow (e2e)', () => {
 
   describe('POST /auth/verify', () => {
     it('login thanh cong voi signature hop le', async () => {
-      if (!TEST_MNEMONIC) {
-        return;
-      }
+      if (!ctx) return;
 
-      // Buoc 1: Lay nonce
-      const nonceRes = await fetch(`${API_URL}/auth/nonce?address=${address}`);
-      const { nonce } = await nonceRes.json();
-      console.log('nonce:', nonce);
+      // Login using helper
+      const cookie = await login(ctx);
 
-      // Buoc 2: Ky nonce
-      const signedData = await wallet.signData(nonce, address);
-      console.log('signedData:', signedData);
+      expect(cookie).toBeDefined();
+      expect(cookie.length).toBeGreaterThan(0);
 
-      // Buoc 3: Verify
-      const verifyRes = await fetch(`${API_URL}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address,
-          signature: signedData.signature,
-          key: signedData.key,
-        }),
-      });
-
-      const result = await verifyRes.json();
-
-      expect(verifyRes.status).toBe(201);
-      expect(result.user).toBeDefined();
-      expect(result.user.address).toBe(address);
-      
-      console.log('result:', result);
+      console.log('Login successful, cookie set');
     });
 
     it('loi 401 khi signature khong hop le', async () => {
@@ -119,7 +79,7 @@ describe('Auth Flow (e2e)', () => {
       });
 
       const data = await res.json();
-      
+
       expect(res.status).toBe(201);
       expect(data.message).toBe('Logged out');
     });

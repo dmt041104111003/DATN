@@ -1,32 +1,8 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-config({ path: resolve(__dirname, '../.env') });
-
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { API_URL } from './helpers/auth.helper';
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
-
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  it('/ (GET) chua login', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(401);
+  it('/ (GET) chua login tra ve 401', async () => {
+    const res = await fetch(`${API_URL}/`);
+    expect(res.status).toBe(401);
   });
 });

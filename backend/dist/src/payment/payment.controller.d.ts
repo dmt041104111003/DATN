@@ -6,42 +6,94 @@ export declare class PaymentController {
     constructor(paymentService: PaymentService);
     findAll(user: {
         id: string;
-    }): Promise<{
+    }): Promise<({
+        subscription: {
+            service: {
+                id: string;
+                name: string;
+                description: string | null;
+                price: number;
+                duration: number;
+                maxProducts: number | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: string;
+            servicePlanId: string;
+            startDate: Date;
+            endDate: Date;
+            status: string;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
         subscriptionId: string;
+        txHash: string;
         amount: number;
         currency: string;
-        txHash: string;
         paymentDate: Date;
-    }[]>;
+    })[]>;
     findOne(user: {
         id: string;
     }, id: string): Promise<{
+        subscription: {
+            service: {
+                id: string;
+                name: string;
+                description: string | null;
+                price: number;
+                duration: number;
+                maxProducts: number | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: string;
+            servicePlanId: string;
+            startDate: Date;
+            endDate: Date;
+            status: string;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
         subscriptionId: string;
+        txHash: string;
         amount: number;
         currency: string;
-        txHash: string;
         paymentDate: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreatePaymentDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        subscriptionId: string;
-        amount: number;
-        currency: string;
-        txHash: string;
-        paymentDate: Date;
+        payment: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: string;
+            subscriptionId: string;
+            txHash: string;
+            amount: number;
+            currency: string;
+            paymentDate: Date;
+        };
+        message: string;
+        subscription: {
+            status: string;
+            startDate: Date;
+            endDate: Date;
+        };
     }>;
     update(user: {
         id: string;
@@ -51,9 +103,9 @@ export declare class PaymentController {
         updatedAt: Date;
         userId: string;
         subscriptionId: string;
+        txHash: string;
         amount: number;
         currency: string;
-        txHash: string;
         paymentDate: Date;
     }>;
     remove(user: {
@@ -64,9 +116,9 @@ export declare class PaymentController {
         updatedAt: Date;
         userId: string;
         subscriptionId: string;
+        txHash: string;
         amount: number;
         currency: string;
-        txHash: string;
         paymentDate: Date;
     }>;
 }

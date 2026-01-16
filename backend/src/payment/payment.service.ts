@@ -1,27 +1,91 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 
 @Injectable()
 export class PaymentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private blockchain: BlockchainService,
+  ) {}
 
   async findAllByUser(userId: string) {
-    return this.prisma.payment.findMany({ where: { userId } });
+    return this.prisma.payment.findMany({ 
+      where: { userId },
+      include: { subscription: { include: { service: true } } },
+    });
   }
 
   async findOne(id: string, userId: string) {
-    const item = await this.prisma.payment.findUnique({ where: { id } });
+    const item = await this.prisma.payment.findUnique({ 
+      where: { id },
+      include: { subscription: { include: { service: true } } },
+    });
     if (!item) throw new NotFoundException('Payment not found');
     if (item.userId !== userId) throw new ForbiddenException('Not your payment');
     return item;
   }
 
   async create(userId: string, dto: CreatePaymentDto) {
-    return this.prisma.payment.create({
-      data: { ...dto, userId },
+    const existingPayment = await this.prisma.payment.findUnique({
+      where: { txHash: dto.txHash },
     });
+    if (existingPayment) {
+      throw new BadRequestException('Transaction hash already used');
+    }
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id: dto.subscriptionId },
+      include: { service: true },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.userId !== userId) {
+      throw new ForbiddenException('Not your subscription');
+    }
+    const expectedAmount = subscription.service.price;
+    const verification = await this.blockchain.verifyPayment(dto.txHash, expectedAmount);
+    
+    if (!verification.valid) {
+      throw new BadRequestException(verification.message);
+    }
+    if (!verification.confirmedAmount) {
+      throw new BadRequestException('Could not confirm payment amount from blockchain');
+    }
+    const payment = await this.prisma.payment.create({
+      data: {
+        userId,
+        subscriptionId: dto.subscriptionId,
+        amount: verification.confirmedAmount,
+        currency: dto.currency || 'ADA',
+        txHash: dto.txHash,
+        paymentDate: new Date(),
+      },
+    });
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + subscription.service.duration);
+
+    await this.prisma.subscription.update({
+      where: { id: dto.subscriptionId },
+      data: {
+        status: 'active',
+        startDate: now,
+        endDate: endDate,
+      },
+    });
+
+    return {
+      payment,
+      message: 'Payment verified and subscription activated',
+      subscription: {
+        status: 'active',
+        startDate: now,
+        endDate: endDate,
+      },
+    };
   }
 
   async update(id: string, userId: string, dto: UpdatePaymentDto) {

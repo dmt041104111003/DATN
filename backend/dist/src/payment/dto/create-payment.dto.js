@@ -13,10 +13,9 @@ exports.CreatePaymentDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreatePaymentDto {
     subscriptionId;
+    txHash;
     amount;
     currency;
-    txHash;
-    paymentDate;
 }
 exports.CreatePaymentDto = CreatePaymentDto;
 __decorate([
@@ -24,20 +23,17 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "subscriptionId", void 0);
 __decorate([
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreatePaymentDto.prototype, "amount", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreatePaymentDto.prototype, "currency", void 0);
-__decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "txHash", void 0);
 __decorate([
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreatePaymentDto.prototype, "amount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreatePaymentDto.prototype, "paymentDate", void 0);
+], CreatePaymentDto.prototype, "currency", void 0);
 //# sourceMappingURL=create-payment.dto.js.map

@@ -1,8 +1,4 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-config({ path: resolve(__dirname, '../.env') });
-
-const API_URL = 'http://localhost:3000';
+import { API_URL } from './helpers/auth.helper';
 
 describe('Services (e2e)', () => {
   describe('GET /services', () => {
@@ -19,7 +15,7 @@ describe('Services (e2e)', () => {
       const data = await res.json();
 
       expect(data.length).toBeGreaterThanOrEqual(3);
-      
+
       const names = data.map((s: any) => s.name);
       expect(names).toContain('Starter');
       expect(names).toContain('Company');

@@ -16,6 +16,7 @@ import { WarehouseStorageModule } from './warehouse-storage/warehouse-storage.mo
 import { ServiceModule } from './service/service.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 @Module({
@@ -34,6 +35,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     ServiceModule,
     PaymentModule,
     SubscriptionModule,
+    BlockchainModule,
   ],
   controllers: [AppController],
   providers: [AppService, {
