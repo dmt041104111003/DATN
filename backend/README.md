@@ -99,6 +99,8 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 
 ```sh
-npx -y @nestjs/cli new backend --package-manager npm --skip-git --skip-install
-npm install @prisma/client class-validator class-transformer @nestjs/config @nestjs/swagger swagger-ui-express ; npm install -D prisma
+npx -y @nestjs/cli new backend --package-manager npm --skip-git
+npm install @prisma/client
+npm install -D prisma
+npx prisma init
 ```
