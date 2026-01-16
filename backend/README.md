@@ -116,4 +116,5 @@ docker run \
 
 npm install @prisma/adapter-pg pg
 npx prisma generate
+npm install class-validator class-transformer
 ```
