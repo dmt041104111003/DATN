@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Public } from './auth/public.decorator';
 
 @Controller()
 export class AppController {
@@ -8,5 +9,11 @@ export class AppController {
   @Get()
   getUsers() {
     return this.appService.getUsers();
+  }
+
+  @Public()
+  @Get('health')
+  health() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
   }
 }
