@@ -22,11 +22,13 @@ import { MediaModule } from './media/media.module';
 import { MetadataModule } from './metadata/metadata.module';
 import { DocumentModule } from './document/document.module';
 import { ProductMaterialModule } from './product-material/product-material.module';
+import { RedisModule } from './redis/redis.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards';
 @Module({
   imports: [
     PrismaModule,
+    RedisModule,
     IpfsModule,
     AuthModule,
     UserModule,

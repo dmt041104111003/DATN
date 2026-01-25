@@ -31,6 +31,7 @@ const media_module_1 = require("./media/media.module");
 const metadata_module_1 = require("./metadata/metadata.module");
 const document_module_1 = require("./document/document.module");
 const product_material_module_1 = require("./product-material/product-material.module");
+const redis_module_1 = require("./redis/redis.module");
 const core_1 = require("@nestjs/core");
 const guards_1 = require("./auth/guards");
 let AppModule = class AppModule {
@@ -40,6 +41,7 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             prisma_module_1.PrismaModule,
+            redis_module_1.RedisModule,
             ipfs_module_1.IpfsModule,
             auth_module_1.AuthModule,
             user_module_1.UserModule,

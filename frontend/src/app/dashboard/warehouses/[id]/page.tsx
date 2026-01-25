@@ -68,7 +68,6 @@ export default function WarehouseDetailPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
     )
   }
 
