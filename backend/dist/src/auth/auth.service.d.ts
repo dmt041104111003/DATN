@@ -17,9 +17,9 @@ export declare class AuthService {
     }>;
     validateUser(userId: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         address: string;
         walletName: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     } | null>;
 }

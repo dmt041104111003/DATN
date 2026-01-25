@@ -6,14 +6,12 @@ import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Service, Subscription } from '@/types/api'
 import { useAuth } from '@/contexts/auth-context'
-import { useWallet } from '@/hooks/use-wallet'
 import { cn } from '@/lib/utils'
 
 type Tab = 'services' | 'subscriptions'
 
 export default function BillingPage() {
   const { user } = useAuth()
-  const { connectWallet } = useWallet()
   const [activeTab, setActiveTab] = useState<Tab>('services')
   const [services, setServices] = useState<Service[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
@@ -32,8 +30,7 @@ export default function BillingPage() {
       ])
       setServices(servicesData || [])
       setSubscriptions(subsData || [])
-    } catch {
-    } finally {
+    } catch {} finally {
       setLoading(false)
     }
   }
@@ -70,12 +67,30 @@ export default function BillingPage() {
         txHash
       })
 
-      alert('Subscription successful!')
+      alert('Transaction submitted. Verification in progress...')
       loadData()
       setActiveTab('subscriptions')
+      
+      const checkInterval = setInterval(async () => {
+        try {
+          const subs = await apiClient.subscriptions.findAll()
+          const sub = subs.find(s => s.txHash === txHash)
+          if (sub && sub.status !== 'pending') {
+            clearInterval(checkInterval)
+            loadData()
+            if (sub.status === 'active') {
+              alert('Payment verified! Subscription activated.')
+            } else {
+              alert('Payment verification failed.')
+            }
+          }
+        } catch {}
+      }, 3000)
+      
+      setTimeout(() => clearInterval(checkInterval), 60000)
     } catch (err) {
       const isCancelled = err instanceof Error && 
-        (err.message.includes('declined') || err.message.includes('rejected') || err.message.includes('cancelled') || err.message.includes('User'))
+        ['declined', 'rejected', 'cancelled', 'User'].some(s => err.message.includes(s))
       if (!isCancelled) {
         alert(err instanceof Error ? err.message : 'Failed to subscribe')
       }
@@ -129,10 +144,15 @@ export default function BillingPage() {
       {activeTab === 'services' && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => {
+            const activeSub = subscriptions.find(s => s.status === 'active')
             const hasActive = subscriptions.some(s => s.servicePlanId === service.id && s.status === 'active')
+            const isSamePlan = activeSub && activeSub.servicePlanId === service.id
+            const isUpgrade = activeSub && service.price > (activeSub.service?.price || 0)
+            const isLowerPlan = activeSub && service.price < (activeSub.service?.price || 0)
+            const isDisabled = hasActive || isSamePlan || isLowerPlan || processing === service.id
             
             return (
-              <Card key={service.id} className={cn("flex flex-col", hasActive && 'border-primary')}>
+              <Card key={service.id} className={cn("flex flex-col", hasActive && 'border-primary', isDisabled && !hasActive && 'opacity-60')}>
                 <CardHeader>
                   <CardTitle className="text-lg sm:text-xl">{service.name}</CardTitle>
                   <CardDescription className="line-clamp-2">
@@ -147,18 +167,36 @@ export default function BillingPage() {
                       <p>Max Products: {service.maxProducts === null ? 'Unlimited' : `${service.maxProducts} / day`}</p>
                     </div>
                   </div>
-                  <div className="mt-auto pt-4">
+                  <div className="mt-auto pt-4 space-y-2">
                     {hasActive ? (
                       <Button variant="outline" size="sm" className="w-full" disabled>
                         Active
                       </Button>
+                    ) : isSamePlan ? (
+                      <>
+                        <Button variant="outline" size="sm" className="w-full" disabled>
+                          Renew Not Allowed
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Wait for current plan to expire
+                        </p>
+                      </>
+                    ) : isLowerPlan ? (
+                      <>
+                        <Button variant="outline" size="sm" className="w-full" disabled>
+                          Lower Plan Not Available
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center">
+                          Upgrade to access higher tier plans
+                        </p>
+                      </>
                     ) : (
                       <Button 
                         className="w-full" 
                         onClick={() => handleSubscribe(service.id)}
                         disabled={processing === service.id}
                       >
-                        {processing === service.id ? 'Processing...' : 'Subscribe'}
+                        {processing === service.id ? 'Processing...' : isUpgrade ? 'Upgrade' : 'Subscribe'}
                       </Button>
                     )}
                   </div>

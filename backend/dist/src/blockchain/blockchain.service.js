@@ -28,7 +28,7 @@ let BlockchainService = class BlockchainService {
         });
         this.platformWallet = process.env.APP_WALLET_ADDRESS || '';
     }
-    async verifyPayment(txHash, expectedAmount) {
+    async verifyPayment(txHash, expectedAmount, maxRetries = 10, delayMs = 2000) {
         if (!process.env.BLOCKFROST_API_KEY) {
             console.warn('Skipping payment verification - BLOCKFROST_API_KEY not set');
             return { valid: true, message: 'Verification skipped (dev mode)' };
@@ -36,42 +36,53 @@ let BlockchainService = class BlockchainService {
         if (!this.platformWallet) {
             throw new common_1.BadRequestException('Platform wallet not configured');
         }
-        try {
-            const tx = await this.blockfrost.txs(txHash);
-            if (!tx.block) {
-                return { valid: false, message: 'Transaction not yet confirmed' };
-            }
-            const utxos = await this.blockfrost.txsUtxos(txHash);
-            let receivedAmount = 0;
-            for (const output of utxos.outputs) {
-                if (output.address === this.platformWallet) {
-                    const lovelace = output.amount.find((a) => a.unit === 'lovelace');
-                    if (lovelace) {
-                        receivedAmount += parseInt(lovelace.quantity);
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const tx = await this.blockfrost.txs(txHash);
+                if (!tx.block) {
+                    if (attempt < maxRetries - 1) {
+                        await new Promise((resolve) => setTimeout(resolve, delayMs));
+                        continue;
+                    }
+                    return { valid: false, message: 'Transaction not yet confirmed' };
+                }
+                const utxos = await this.blockfrost.txsUtxos(txHash);
+                let receivedAmount = 0;
+                for (const output of utxos.outputs) {
+                    if (output.address === this.platformWallet) {
+                        const lovelace = output.amount.find((a) => a.unit === 'lovelace');
+                        if (lovelace) {
+                            receivedAmount += parseInt(lovelace.quantity);
+                        }
                     }
                 }
-            }
-            const receivedADA = receivedAmount / 1_000_000;
-            if (receivedADA < expectedAmount) {
+                const receivedADA = receivedAmount / 1_000_000;
+                if (receivedADA < expectedAmount) {
+                    return {
+                        valid: false,
+                        message: `Insufficient payment. Expected ${expectedAmount} ADA, received ${receivedADA} ADA`,
+                        confirmedAmount: receivedADA,
+                    };
+                }
                 return {
-                    valid: false,
-                    message: `Insufficient payment. Expected ${expectedAmount} ADA, received ${receivedADA} ADA`,
+                    valid: true,
+                    message: 'Payment verified successfully',
                     confirmedAmount: receivedADA,
                 };
             }
-            return {
-                valid: true,
-                message: 'Payment verified successfully',
-                confirmedAmount: receivedADA,
-            };
-        }
-        catch (error) {
-            const bfError = error;
-            if (bfError.status_code === 404) {
-                return { valid: false, message: 'Transaction not found' };
+            catch (error) {
+                const bfError = error;
+                if (bfError.status_code === 404) {
+                    if (attempt < maxRetries - 1) {
+                        await new Promise((resolve) => setTimeout(resolve, delayMs));
+                        continue;
+                    }
+                    return { valid: false, message: 'Transaction not found' };
+                }
+                throw new common_1.BadRequestException(`Failed to verify transaction: ${bfError.message || 'Unknown error'}`);
             }
-            throw new common_1.BadRequestException(`Failed to verify transaction: ${bfError.message || 'Unknown error'}`);
         }
+        return { valid: false, message: 'Transaction verification timeout' };
     }
     async getTransactionInfo(txHash) {
         if (!process.env.BLOCKFROST_API_KEY) {

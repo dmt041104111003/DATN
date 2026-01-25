@@ -14,7 +14,6 @@ import {
 import { useAuth } from "@/contexts/auth-context"
 import { Icon } from "@/components/ui/icon"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api/client"
@@ -43,12 +42,9 @@ function DashboardSidebarComponent() {
       apiClient.subscriptions.findAll().then(subs => {
         const active = subs.find(s => s.status === 'active')
         setPlan(active?.service?.name || 'Free')
-        if (active?.endDate) {
-          const days = Math.max(0, Math.ceil((new Date(active.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-          setRemainingDays(days)
-        } else {
-          setRemainingDays(null)
-        }
+        setRemainingDays(active?.endDate 
+          ? Math.max(0, Math.ceil((new Date(active.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+          : null)
       }).catch(() => {}),
       apiClient.products.getQuota().then(quota => {
         setUsed(quota.usedProducts)
@@ -57,14 +53,10 @@ function DashboardSidebarComponent() {
     ])
   }, [])
 
-  const activeStates = useMemo(() => {
-    return menuItems.reduce((acc, item) => {
-      acc[item.href] = item.href === '/dashboard' 
-        ? pathname === '/dashboard' 
-        : pathname.startsWith(item.href)
-      return acc
-    }, {} as Record<string, boolean>)
-  }, [pathname])
+  const activeStates = useMemo(() => menuItems.reduce((acc, item) => {
+    acc[item.href] = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href)
+    return acc
+  }, {} as Record<string, boolean>), [pathname])
 
   return (
     <SidebarContent>

@@ -8,78 +8,78 @@ export declare class SubscriptionService {
     findAllByUser(userId: string): Promise<({
         service: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        txHash: string | null;
-        amount: number;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     })[]>;
     updateExpiredSubscriptions(userId?: string): Promise<import("@prisma/client").Prisma.BatchPayload>;
     getActiveSubscription(userId: string): Promise<({
         service: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        txHash: string | null;
-        amount: number;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     }) | null>;
     cancel(id: string, userId: string): Promise<{
         service: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        txHash: string | null;
-        amount: number;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     pay(userId: string, dto: PayDto): Promise<{
         result: boolean;
@@ -88,28 +88,30 @@ export declare class SubscriptionService {
             subscription: {
                 service: {
                     id: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     name: string;
                     description: string | null;
                     price: number;
                     duration: number;
                     maxProducts: number | null;
-                    createdAt: Date;
-                    updatedAt: Date;
                 };
             } & {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                txHash: string | null;
-                amount: number;
                 userId: string;
                 servicePlanId: string;
                 startDate: Date;
                 endDate: Date;
                 status: import("@prisma/client").$Enums.SubscriptionStatus;
+                amount: number;
                 currency: string;
+                txHash: string | null;
                 paymentDate: Date;
+                createdAt: Date;
+                updatedAt: Date;
             };
         };
     }>;
+    private isUpgrade;
+    private verifyPaymentAsync;
 }

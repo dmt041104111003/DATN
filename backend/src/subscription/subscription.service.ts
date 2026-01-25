@@ -92,28 +92,38 @@ export class SubscriptionService {
     await this.updateExpiredSubscriptions(userId);
 
     const activeSubscription = await this.getActiveSubscription(userId);
-    if (activeSubscription) {
-      await this.prisma.subscription.update({
-        where: { id: activeSubscription.id },
-        data: { status: SUBSCRIPTION_STATUS.CANCELLED },
-      });
-    }
-
-    const verification = await this.blockchain.verifyPayment(
-      dto.txHash,
-      service.price,
-    );
-
-    if (!verification.valid) {
-      throw new BadRequestException(verification.message);
-    }
-    if (!verification.confirmedAmount) {
-      throw new BadRequestException(
-        'Could not confirm payment amount from blockchain',
-      );
-    }
-
     const now = new Date();
+    
+    if (activeSubscription) {
+      const currentService = await this.prisma.service.findUnique({
+        where: { id: activeSubscription.servicePlanId },
+      });
+      
+      if (!currentService) {
+        await this.prisma.subscription.update({
+          where: { id: activeSubscription.id },
+          data: { status: SUBSCRIPTION_STATUS.CANCELLED },
+        });
+      } else if (activeSubscription.servicePlanId === dto.servicePlanId) {
+        throw new BadRequestException(
+          'Cannot renew. Current subscription will remain active until expiration.',
+        );
+      } else {
+        const isUpgrade = this.isUpgrade(currentService.price, service.price);
+        
+        if (isUpgrade) {
+          await this.prisma.subscription.update({
+            where: { id: activeSubscription.id },
+            data: { status: SUBSCRIPTION_STATUS.CANCELLED },
+          });
+        } else {
+          throw new BadRequestException(
+            'Cannot downgrade. Current subscription will remain active until expiration.',
+          );
+        }
+      }
+    }
+
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + service.duration);
 
@@ -121,10 +131,10 @@ export class SubscriptionService {
       data: {
         userId,
         servicePlanId: dto.servicePlanId,
-        status: SUBSCRIPTION_STATUS.ACTIVE,
+        status: SUBSCRIPTION_STATUS.PENDING,
         startDate: now,
         endDate: endDate,
-        amount: verification.confirmedAmount,
+        amount: service.price,
         currency: 'ADA',
         txHash: dto.txHash,
         paymentDate: now,
@@ -132,10 +142,63 @@ export class SubscriptionService {
       include: { service: true },
     });
 
+    this.verifyPaymentAsync(subscription.id, dto.txHash, service.price, service.duration).catch((err) => {
+      console.error('Payment verification failed:', err);
+    });
+
     return {
       result: true,
-      message: 'Payment successful and subscription activated',
+      message: activeSubscription 
+        ? 'Upgrade submitted. Verification in progress...'
+        : 'Transaction submitted. Verification in progress...',
       data: { subscription },
     };
+  }
+
+  private isUpgrade(currentPrice: number, newPrice: number): boolean {
+    return newPrice > currentPrice;
+  }
+
+  private async verifyPaymentAsync(
+    subscriptionId: string,
+    txHash: string,
+    expectedAmount: number,
+    duration: number,
+  ) {
+    const verification = await this.blockchain.verifyPayment(
+      txHash,
+      expectedAmount,
+    );
+
+    if (!verification.valid) {
+      await this.prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: { status: SUBSCRIPTION_STATUS.CANCELLED },
+      });
+      return;
+    }
+
+    if (!verification.confirmedAmount) {
+      await this.prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: { status: SUBSCRIPTION_STATUS.CANCELLED },
+      });
+      return;
+    }
+
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + duration);
+
+    await this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: SUBSCRIPTION_STATUS.ACTIVE,
+        amount: verification.confirmedAmount,
+        startDate: now,
+        endDate: endDate,
+        paymentDate: now,
+      },
+    });
   }
 }

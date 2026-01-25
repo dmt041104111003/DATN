@@ -39,6 +39,9 @@ let AuthController = class AuthController {
     }
     async getMe(user) {
         const userData = await this.authService.validateUser(user.id);
+        if (!userData) {
+            throw new common_1.UnauthorizedException('User not found');
+        }
         return {
             user: {
                 id: userData.id,

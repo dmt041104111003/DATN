@@ -13,10 +13,10 @@ export declare class JwtStrategy extends JwtStrategy_base {
         address: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         address: string;
         walletName: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }
 declare const JwtAuthGuard_base: import("@nestjs/passport").Type<import("@nestjs/passport").IAuthGuard>;

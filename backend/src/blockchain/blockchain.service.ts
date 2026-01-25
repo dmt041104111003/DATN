@@ -33,6 +33,8 @@ export class BlockchainService {
   async verifyPayment(
     txHash: string,
     expectedAmount: number,
+    maxRetries = 10,
+    delayMs = 2000,
   ): Promise<{
     valid: boolean;
     message: string;
@@ -49,45 +51,57 @@ export class BlockchainService {
       throw new BadRequestException('Platform wallet not configured');
     }
 
-    try {
-      const tx = await this.blockfrost.txs(txHash);
-      if (!tx.block) {
-        return { valid: false, message: 'Transaction not yet confirmed' };
-      }
-      const utxos = await this.blockfrost.txsUtxos(txHash);
-      let receivedAmount = 0;
-      for (const output of utxos.outputs) {
-        if (output.address === this.platformWallet) {
-          const lovelace = output.amount.find((a) => a.unit === 'lovelace');
-          if (lovelace) {
-            receivedAmount += parseInt(lovelace.quantity);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const tx = await this.blockfrost.txs(txHash);
+        if (!tx.block) {
+          if (attempt < maxRetries - 1) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            continue;
+          }
+          return { valid: false, message: 'Transaction not yet confirmed' };
+        }
+        const utxos = await this.blockfrost.txsUtxos(txHash);
+        let receivedAmount = 0;
+        for (const output of utxos.outputs) {
+          if (output.address === this.platformWallet) {
+            const lovelace = output.amount.find((a) => a.unit === 'lovelace');
+            if (lovelace) {
+              receivedAmount += parseInt(lovelace.quantity);
+            }
           }
         }
-      }
 
-      const receivedADA = receivedAmount / 1_000_000;
-      if (receivedADA < expectedAmount) {
+        const receivedADA = receivedAmount / 1_000_000;
+        if (receivedADA < expectedAmount) {
+          return {
+            valid: false,
+            message: `Insufficient payment. Expected ${expectedAmount} ADA, received ${receivedADA} ADA`,
+            confirmedAmount: receivedADA,
+          };
+        }
+
         return {
-          valid: false,
-          message: `Insufficient payment. Expected ${expectedAmount} ADA, received ${receivedADA} ADA`,
+          valid: true,
+          message: 'Payment verified successfully',
           confirmedAmount: receivedADA,
         };
+      } catch (error: unknown) {
+        const bfError = error as BlockfrostError;
+        if (bfError.status_code === 404) {
+          if (attempt < maxRetries - 1) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            continue;
+          }
+          return { valid: false, message: 'Transaction not found' };
+        }
+        throw new BadRequestException(
+          `Failed to verify transaction: ${bfError.message || 'Unknown error'}`,
+        );
       }
-
-      return {
-        valid: true,
-        message: 'Payment verified successfully',
-        confirmedAmount: receivedADA,
-      };
-    } catch (error: unknown) {
-      const bfError = error as BlockfrostError;
-      if (bfError.status_code === 404) {
-        return { valid: false, message: 'Transaction not found' };
-      }
-      throw new BadRequestException(
-        `Failed to verify transaction: ${bfError.message || 'Unknown error'}`,
-      );
     }
+
+    return { valid: false, message: 'Transaction verification timeout' };
   }
 
   async getTransactionInfo(txHash: string) {
@@ -192,7 +206,6 @@ export class BlockchainService {
           }
         }
       } catch {
-        // Reference asset not found - continue
       }
 
       return null;

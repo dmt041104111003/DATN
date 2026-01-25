@@ -2,7 +2,7 @@ export declare class BlockchainService {
     private blockfrost;
     private platformWallet;
     constructor();
-    verifyPayment(txHash: string, expectedAmount: number): Promise<{
+    verifyPayment(txHash: string, expectedAmount: number, maxRetries?: number, delayMs?: number): Promise<{
         valid: boolean;
         message: string;
         confirmedAmount?: number;

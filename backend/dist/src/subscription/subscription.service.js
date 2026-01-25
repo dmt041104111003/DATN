@@ -88,41 +88,92 @@ let SubscriptionService = class SubscriptionService {
         }
         await this.updateExpiredSubscriptions(userId);
         const activeSubscription = await this.getActiveSubscription(userId);
-        if (activeSubscription) {
-            await this.prisma.subscription.update({
-                where: { id: activeSubscription.id },
-                data: { status: subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED },
-            });
-        }
-        const verification = await this.blockchain.verifyPayment(dto.txHash, service.price);
-        if (!verification.valid) {
-            throw new common_1.BadRequestException(verification.message);
-        }
-        if (!verification.confirmedAmount) {
-            throw new common_1.BadRequestException('Could not confirm payment amount from blockchain');
-        }
         const now = new Date();
+        if (activeSubscription) {
+            const currentService = await this.prisma.service.findUnique({
+                where: { id: activeSubscription.servicePlanId },
+            });
+            if (!currentService) {
+                await this.prisma.subscription.update({
+                    where: { id: activeSubscription.id },
+                    data: { status: subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED },
+                });
+            }
+            else if (activeSubscription.servicePlanId === dto.servicePlanId) {
+                throw new common_1.BadRequestException('Cannot renew. Current subscription will remain active until expiration.');
+            }
+            else {
+                const isUpgrade = this.isUpgrade(currentService.price, service.price);
+                if (isUpgrade) {
+                    await this.prisma.subscription.update({
+                        where: { id: activeSubscription.id },
+                        data: { status: subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED },
+                    });
+                }
+                else {
+                    throw new common_1.BadRequestException('Cannot downgrade. Current subscription will remain active until expiration.');
+                }
+            }
+        }
         const endDate = new Date(now);
         endDate.setDate(endDate.getDate() + service.duration);
         const subscription = await this.prisma.subscription.create({
             data: {
                 userId,
                 servicePlanId: dto.servicePlanId,
-                status: subscription_constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+                status: subscription_constants_1.SUBSCRIPTION_STATUS.PENDING,
                 startDate: now,
                 endDate: endDate,
-                amount: verification.confirmedAmount,
+                amount: service.price,
                 currency: 'ADA',
                 txHash: dto.txHash,
                 paymentDate: now,
             },
             include: { service: true },
         });
+        this.verifyPaymentAsync(subscription.id, dto.txHash, service.price, service.duration).catch((err) => {
+            console.error('Payment verification failed:', err);
+        });
         return {
             result: true,
-            message: 'Payment successful and subscription activated',
+            message: activeSubscription
+                ? 'Upgrade submitted. Verification in progress...'
+                : 'Transaction submitted. Verification in progress...',
             data: { subscription },
         };
+    }
+    isUpgrade(currentPrice, newPrice) {
+        return newPrice > currentPrice;
+    }
+    async verifyPaymentAsync(subscriptionId, txHash, expectedAmount, duration) {
+        const verification = await this.blockchain.verifyPayment(txHash, expectedAmount);
+        if (!verification.valid) {
+            await this.prisma.subscription.update({
+                where: { id: subscriptionId },
+                data: { status: subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED },
+            });
+            return;
+        }
+        if (!verification.confirmedAmount) {
+            await this.prisma.subscription.update({
+                where: { id: subscriptionId },
+                data: { status: subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED },
+            });
+            return;
+        }
+        const now = new Date();
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + duration);
+        await this.prisma.subscription.update({
+            where: { id: subscriptionId },
+            data: {
+                status: subscription_constants_1.SUBSCRIPTION_STATUS.ACTIVE,
+                amount: verification.confirmedAmount,
+                startDate: now,
+                endDate: endDate,
+                paymentDate: now,
+            },
+        });
     }
 };
 exports.SubscriptionService = SubscriptionService;

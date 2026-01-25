@@ -24,10 +24,11 @@ let AuthService = class AuthService {
     async getNonce(address) {
         const userAddress = address.trim();
         const nonce = (0, core_1.generateNonce)('I agree to the term and conditions of the HSUPPLY: ');
-        let user = await this.prisma.user.findUnique({ where: { address: userAddress } });
-        if (!user) {
-            user = await this.prisma.user.create({ data: { address: userAddress } });
-        }
+        const user = await this.prisma.user.upsert({
+            where: { address: userAddress },
+            update: {},
+            create: { address: userAddress },
+        });
         await this.prisma.walletNonce.upsert({
             where: { address: userAddress },
             update: { nonce, userId: user.id },
@@ -47,16 +48,11 @@ let AuthService = class AuthService {
         if (!isValid) {
             throw new common_1.UnauthorizedException('Invalid signature');
         }
-        let user = await this.prisma.user.findUnique({ where: { address: userAddress } });
-        if (!user) {
-            user = await this.prisma.user.create({ data: { address: userAddress, walletName } });
-        }
-        else {
-            user = await this.prisma.user.update({
-                where: { id: user.id },
-                data: { walletName },
-            });
-        }
+        const user = await this.prisma.user.upsert({
+            where: { address: userAddress },
+            update: { walletName },
+            create: { address: userAddress, walletName },
+        });
         const newNonce = (0, core_1.generateNonce)('I agree to the term and conditions of the HSUPPLY: ');
         await this.prisma.walletNonce.update({
             where: { address: userAddress },
