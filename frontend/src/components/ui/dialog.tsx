@@ -61,10 +61,10 @@ function DialogContent({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-            "flex flex-col w-full max-w-[500px] bg-white shadow-[0_15px_30px_0_rgba(0,125,171,0.15)] rounded-[10px] outline-none max-h-[90vh] overflow-hidden",
+            "flex flex-col w-full max-w-[500px] bg-white shadow-[0_15px_30px_0_rgba(0,125,171,0.15)] rounded-[10px] outline-none max-h-[90vh] overflow-hidden min-w-0",
             className
           )}
-          style={{ minWidth: 0, width: 'calc(100% - 1.5rem)' }}
+          style={{ minWidth: 0 }}
           {...props}
         >
           {children}
@@ -87,7 +87,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("px-4 sm:px-6 py-3 sm:py-4 border-b border-[#ddd] flex items-center justify-between", className)}
+      className={cn("px-4 sm:px-6 py-3 sm:py-4 border-b border-[#ddd] flex items-center justify-between min-w-0 overflow-x-hidden", className)}
       {...props}
     />
   )

@@ -8,38 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { LoadingPage } from '@/components/ui/loading'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-
-interface TraceResult {
-  product: {
-    id: string
-    name: string
-    policyId: string
-    assetName: string
-    historyHash: string
-    documents: any[]
-    productionProcesses: any[]
-    certifications: any[]
-    warehouseStorages: any[]
-    materials: any[]
-    owner: string
-    createdAt: string
-    updatedAt: string
-  } | null
-  blockchain: {
-    policyId: string
-    assetName: string
-    assetInfo: any
-    onChainMetadata: any
-  }
-}
+import { InfoCard } from '@/components/dashboard/info-card'
+import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
+import { TraceResult } from '@/types/trace'
 
 export default function TraceResultPage() {
   const params = useParams()
@@ -126,31 +97,15 @@ export default function TraceResultPage() {
 
           {product ? (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Product Name</p>
-                      <p className="font-semibold">{product.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Owner</p>
-                      <p className="font-semibold font-mono text-sm">{product.owner}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Created At</p>
-                      <p className="font-semibold">{new Date(product.createdAt).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">History Hash</p>
-                      <p className="font-semibold font-mono text-xs break-all">{product.historyHash}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <InfoCard
+                title="Product Information"
+                items={[
+                  { label: 'Product Name', value: product.name },
+                  { label: 'Owner', value: <span className="font-mono text-sm">{product.owner}</span> },
+                  { label: 'Created At', value: new Date(product.createdAt).toLocaleDateString() },
+                  { label: 'History Hash', value: <span className="font-mono text-xs break-all">{product.historyHash}</span> },
+                ]}
+              />
 
               {product.documents && product.documents.length > 0 && (
                 <Card>
@@ -158,24 +113,20 @@ export default function TraceResultPage() {
                     <CardTitle>Documents ({product.documents.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {product.documents.map((doc: any) => (
-                          <TableRow key={doc.id}>
-                            <TableCell>{doc.name}</TableCell>
-                            <TableCell>{doc.type}</TableCell>
-                            <TableCell>{new Date(doc.createdAt).toLocaleDateString()}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <ResponsiveListView
+                      items={product.documents.map((doc: any) => ({ ...doc, id: doc.id || doc.name }))}
+                      columns={[
+                        { key: 'name', header: 'Name', render: (doc: any) => doc.name || doc.docType },
+                        { key: 'type', header: 'Type', render: (doc: any) => doc.type || doc.docType },
+                        { key: 'createdAt', header: 'Date', render: (doc: any) => new Date(doc.createdAt).toLocaleDateString() },
+                      ]}
+                      mobileCardTitle={(doc: any) => doc.name || doc.docType}
+                      mobileCardDescription={(doc: any) => (
+                        <span className="text-xs text-muted-foreground">
+                          {doc.type || doc.docType} • {new Date(doc.createdAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -186,24 +137,20 @@ export default function TraceResultPage() {
                     <CardTitle>Certifications ({product.certifications.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Issuer</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {product.certifications.map((cert: any) => (
-                          <TableRow key={cert.id}>
-                            <TableCell>{cert.name}</TableCell>
-                            <TableCell>{cert.issuer}</TableCell>
-                            <TableCell>{new Date(cert.issuedDate).toLocaleDateString()}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <ResponsiveListView
+                      items={product.certifications.map((cert: any) => ({ ...cert, id: cert.id || cert.certName }))}
+                      columns={[
+                        { key: 'name', header: 'Name', render: (cert: any) => cert.name || cert.certName },
+                        { key: 'issuer', header: 'Issuer', render: (cert: any) => cert.issuer || '-' },
+                        { key: 'issuedDate', header: 'Date', render: (cert: any) => new Date(cert.issuedDate || cert.issueDate).toLocaleDateString() },
+                      ]}
+                      mobileCardTitle={(cert: any) => cert.name || cert.certName}
+                      mobileCardDescription={(cert: any) => (
+                        <span className="text-xs text-muted-foreground">
+                          {cert.issuer || '-'} • {new Date(cert.issuedDate || cert.issueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -251,26 +198,21 @@ export default function TraceResultPage() {
                     <CardTitle>Materials ({product.materials.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Supplier</TableHead>
-                          <TableHead>Location</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {product.materials.map((material: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell>{material.name}</TableCell>
-                            <TableCell>{material.quantity} {material.unit}</TableCell>
-                            <TableCell>{material.supplier?.name || 'N/A'}</TableCell>
-                            <TableCell>{material.supplier?.location || 'N/A'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <ResponsiveListView
+                      items={product.materials.map((material: any, index: number) => ({ ...material, id: material.id || `material-${index}` }))}
+                      columns={[
+                        { key: 'name', header: 'Name', render: (m: any) => m.name },
+                        { key: 'quantity', header: 'Quantity', render: (m: any) => `${m.quantity} ${m.unit || ''}` },
+                        { key: 'supplier', header: 'Supplier', render: (m: any) => m.supplier?.name || 'N/A' },
+                        { key: 'location', header: 'Location', render: (m: any) => m.supplier?.location || 'N/A' },
+                      ]}
+                      mobileCardTitle={(m: any) => m.name}
+                      mobileCardDescription={(m: any) => (
+                        <span className="text-xs text-muted-foreground">
+                          {m.quantity} {m.unit || ''} • {m.supplier?.name || 'N/A'}
+                        </span>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               )}
@@ -281,26 +223,22 @@ export default function TraceResultPage() {
                     <CardTitle>Warehouse Storage ({product.warehouseStorages.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Warehouse</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Entry Date</TableHead>
-                          <TableHead>Exit Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {product.warehouseStorages.map((storage: any) => (
-                          <TableRow key={storage.id}>
-                            <TableCell>{storage.warehouse?.name || 'N/A'}</TableCell>
-                            <TableCell>{storage.warehouse?.location || 'N/A'}</TableCell>
-                            <TableCell>{new Date(storage.entryDate).toLocaleDateString()}</TableCell>
-                            <TableCell>{storage.exitDate ? new Date(storage.exitDate).toLocaleDateString() : 'Current'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <ResponsiveListView
+                      items={product.warehouseStorages.map((storage: any) => ({ ...storage, id: storage.id || `storage-${storage.warehouseId}` }))}
+                      columns={[
+                        { key: 'warehouse', header: 'Warehouse', render: (s: any) => s.warehouse?.name || 'N/A' },
+                        { key: 'location', header: 'Location', render: (s: any) => s.warehouse?.location || 'N/A' },
+                        { key: 'entryDate', header: 'Entry Date', render: (s: any) => new Date(s.entryDate || s.entryTime).toLocaleDateString() },
+                        { key: 'exitDate', header: 'Exit Date', render: (s: any) => s.exitDate || s.exitTime ? new Date(s.exitDate || s.exitTime).toLocaleDateString() : 'Current' },
+                      ]}
+                      mobileCardTitle={(s: any) => s.warehouse?.name || 'N/A'}
+                      mobileCardDescription={(s: any) => (
+                        <span className="text-xs text-muted-foreground">
+                          {s.warehouse?.location || 'N/A'} • Entry: {new Date(s.entryDate || s.entryTime).toLocaleDateString()}
+                          {s.exitDate || s.exitTime ? ` • Exit: ${new Date(s.exitDate || s.exitTime).toLocaleDateString()}` : ' • Current'}
+                        </span>
+                      )}
+                    />
                   </CardContent>
                 </Card>
               )}

@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Warehouse, WarehouseStorage } from '@/types/api'
 import { WarehouseStorages } from '@/components/dashboard/warehouse-storages'
 import { LoadingPage } from '@/components/ui/loading'
+import { DetailPageHeader } from '@/components/dashboard/detail-page-header'
+import { InfoCard } from '@/components/dashboard/info-card'
+import { NotFoundState } from '@/components/dashboard/not-found-state'
 
 export default function WarehouseDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null)
   const [storages, setStorages] = useState<WarehouseStorage[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,68 +49,37 @@ export default function WarehouseDetailPage() {
 
   if (!warehouse) {
     return (
-      <div className="space-y-4 sm:space-y-6">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Warehouse not found</p>
-              <Button className="mt-4" onClick={() => router.push('/dashboard/warehouses')}>
-                Back to Warehouses
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      <NotFoundState
+        message="Warehouse not found"
+        backHref="/dashboard/warehouses"
+        backLabel="Back to Warehouses"
+      />
     )
   }
 
+  const basicInfoItems = [
+    { label: 'Name', value: warehouse.name },
+    ...(warehouse.location ? [{ label: 'Location', value: warehouse.location }] : []),
+    { label: 'Capacity', value: warehouse.capacity },
+  ]
+
+  const timestampItems = [
+    { label: 'Created At', value: new Date(warehouse.createdAt).toLocaleString() },
+    { label: 'Updated At', value: new Date(warehouse.updatedAt).toLocaleString() },
+  ]
+
   return (
     <div className="space-y-4 sm:space-y-6">
-        <div>
-          <Button variant="ghost" onClick={() => router.push('/dashboard/warehouses')} className="mb-2">
-            ← Back
-          </Button>
-          <h1 className="text-2xl sm:text-3xl font-bold mt-2 break-words">{warehouse.name}</h1>
-          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Warehouse details</p>
-        </div>
+      <DetailPageHeader
+        title={warehouse.name}
+        description="Warehouse details"
+        backHref="/dashboard/warehouses"
+      />
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Name</label>
-                <p className="mt-1">{warehouse.name}</p>
-              </div>
-              {warehouse.location && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Location</label>
-                  <p className="mt-1">{warehouse.location}</p>
-                </div>
-              )}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Capacity</label>
-                <p className="mt-1">{warehouse.capacity}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Timestamps</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Created At</label>
-                <p className="mt-1">{new Date(warehouse.createdAt).toLocaleString()}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Updated At</label>
-                <p className="mt-1">{new Date(warehouse.updatedAt).toLocaleString()}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <InfoCard title="Basic Information" items={basicInfoItems} />
+        <InfoCard title="Timestamps" items={timestampItems} />
+      </div>
 
       <WarehouseStorages warehouseId={warehouse.id} storages={storages} onRefresh={() => loadWarehouse(warehouse.id, true)} />
     </div>

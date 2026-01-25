@@ -66,7 +66,13 @@ let WarehouseStorageService = class WarehouseStorageService {
         });
         if (!warehouse)
             throw new common_1.NotFoundException('Warehouse not found');
-        const storage = await this.prisma.warehouseStorage.create({ data: dto });
+        const storage = await this.prisma.warehouseStorage.create({
+            data: {
+                ...dto,
+                entryTime: new Date(dto.entryTime).toISOString(),
+                exitTime: dto.exitTime ? new Date(dto.exitTime).toISOString() : undefined,
+            },
+        });
         await this.redis.delMultiple([
             'warehouse-storages:all',
             `warehouse-storages:product:${dto.productId}`,
@@ -76,9 +82,16 @@ let WarehouseStorageService = class WarehouseStorageService {
     }
     async update(id, userId, dto) {
         const storage = await this.findOneOwned(id, userId);
+        const updateData = { ...dto };
+        if (dto.entryTime) {
+            updateData.entryTime = new Date(dto.entryTime).toISOString();
+        }
+        if (dto.exitTime !== undefined) {
+            updateData.exitTime = dto.exitTime ? new Date(dto.exitTime).toISOString() : null;
+        }
         const updated = await this.prisma.warehouseStorage.update({
             where: { id },
-            data: dto,
+            data: updateData,
         });
         await this.redis.delMultiple([
             `warehouse-storage:${id}`,

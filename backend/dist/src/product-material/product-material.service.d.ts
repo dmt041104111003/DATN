@@ -13,19 +13,19 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
-                location: string | null;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             userId: string;
             quantity: number;
             supplierId: string;
@@ -33,9 +33,9 @@ export declare class ProductMaterialService {
         };
     } & {
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         materialId: string;
         quantity: number;
         unit: string | null;
@@ -83,19 +83,19 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
-                location: string | null;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             userId: string;
             quantity: number;
             supplierId: string;
@@ -103,9 +103,9 @@ export declare class ProductMaterialService {
         };
     } & {
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         materialId: string;
         quantity: number;
         unit: string | null;
@@ -114,19 +114,19 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
-                location: string | null;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
                 userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
-            name: string;
             userId: string;
             quantity: number;
             supplierId: string;
@@ -134,9 +134,9 @@ export declare class ProductMaterialService {
         };
     } & {
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         materialId: string;
         quantity: number;
         unit: string | null;

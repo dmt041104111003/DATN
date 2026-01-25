@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Warehouse } from '@/types/api'
@@ -17,34 +16,22 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useForm } from 'react-hook-form'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
+import { PageHeader } from '@/components/dashboard/page-header'
+import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
+import { EmptyState } from '@/components/dashboard/empty-state'
+import { useCrud } from '@/hooks/use-crud'
+
+type WarehouseFormData = {
+  name: string
+  location?: string
+  capacity?: number
+}
 
 export default function WarehousesPage() {
   const router = useRouter()
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
-  const [open, setOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [editing, setEditing] = useState<Warehouse | null>(null)
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<{
-    name: string
-    location?: string
-    capacity?: number
-  }>()
-
-  useEffect(() => {
-    loadWarehouses()
-  }, [])
 
   const loadWarehouses = async () => {
     try {
@@ -57,77 +44,64 @@ export default function WarehousesPage() {
     }
   }
 
-  const onSubmit = async (data: { name: string; location?: string; capacity?: number }) => {
-    if (data.capacity !== undefined && data.capacity < 0) {
-      alert('Warehouse capacity must be greater than or equal to 0')
-      return
-    }
-    
-    setSubmitting(true)
-    try {
-      if (editing) {
-        await apiClient.warehouses.update(editing.id, data)
-      } else {
-        await apiClient.warehouses.create(data)
+  const {
+    open,
+    submitting,
+    editing,
+    form,
+    setOpen,
+    handleCreate,
+    handleEdit,
+    handleDelete,
+    handleClose,
+    onSubmit,
+  } = useCrud<Warehouse, WarehouseFormData>({
+    loadData: loadWarehouses,
+    onCreate: async (data) => {
+      if (data.capacity !== undefined && data.capacity < 0) {
+        throw new Error('Warehouse capacity must be greater than or equal to 0')
       }
-      setOpen(false)
-      setEditing(null)
-      reset()
-      loadWarehouses()
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save warehouse'
-      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
-        alert(`${errorMessage}. Please renew your subscription to continue.`)
-        router.push('/dashboard/billing')
-      } else {
-        alert(errorMessage)
+      await apiClient.warehouses.create(data)
+    },
+    onUpdate: async (id, data) => {
+      if (data.capacity !== undefined && data.capacity < 0) {
+        throw new Error('Warehouse capacity must be greater than or equal to 0')
       }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this warehouse?')) return
-    try {
+      await apiClient.warehouses.update(id, data)
+    },
+    onDelete: async (id) => {
       await apiClient.warehouses.remove(id)
-      loadWarehouses()
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete warehouse'
-      alert(errorMessage)
+    },
+    redirectOnSubscriptionError: true,
+  })
+
+  useEffect(() => {
+    loadWarehouses()
+  }, [])
+
+  useEffect(() => {
+    if (editing) {
+      form.reset({
+        name: editing.name,
+        location: editing.location || '',
+        capacity: editing.capacity,
+      })
     }
-  }
-
-  const handleEdit = (warehouse: Warehouse) => {
-    setEditing(warehouse)
-    reset({
-      name: warehouse.name,
-      location: warehouse.location || '',
-      capacity: warehouse.capacity,
-    })
-    setOpen(true)
-  }
-
-  const handleCreate = () => {
-    setEditing(null)
-    reset()
-    setOpen(true)
-  }
+  }, [editing, form])
 
   return (
     <div className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Warehouses</h1>
-            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Manage storage facilities</p>
-          </div>
+      <PageHeader
+        title="Warehouses"
+        description="Manage storage facilities"
+        action={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleCreate} className="w-full sm:w-auto">Add more</Button>
             </DialogTrigger>
             <DialogContent>
               {submitting && <LoadingOverlay />}
-              <form onSubmit={handleSubmit(onSubmit)}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Warehouse' : 'Create Warehouse'}</DialogTitle>
                   <DialogDescription>
@@ -139,19 +113,19 @@ export default function WarehousesPage() {
                     <Label htmlFor="name">Warehouse Name</Label>
                     <Input
                       id="name"
-                      {...register('name', { required: 'Warehouse name is required' })}
+                      {...form.register('name', { required: 'Warehouse name is required' })}
                       placeholder="e.g. Main Warehouse, Storage Facility A"
                       disabled={submitting}
                     />
-                    {errors.name && (
-                      <p className="text-sm text-destructive">{errors.name.message}</p>
+                    {form.formState.errors.name && (
+                      <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                     )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="location">Location (Optional)</Label>
                     <Input
                       id="location"
-                      {...register('location')}
+                      {...form.register('location')}
                       placeholder="e.g. 123 Main St, City, Country"
                       disabled={submitting}
                     />
@@ -161,20 +135,20 @@ export default function WarehousesPage() {
                     <Input
                       id="capacity"
                       type="number"
-                      {...register('capacity', { 
+                      {...form.register('capacity', { 
                         valueAsNumber: true,
                         min: { value: 0, message: 'Warehouse capacity must be greater than or equal to 0' }
                       })}
                       placeholder="e.g. 1000"
                       disabled={submitting}
                     />
-                    {errors.capacity && (
-                      <p className="text-sm text-destructive">{errors.capacity.message}</p>
+                    {form.formState.errors.capacity && (
+                      <p className="text-sm text-destructive">{form.formState.errors.capacity.message}</p>
                     )}
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
+                  <Button type="button" variant="outline" onClick={handleClose} disabled={submitting}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={submitting}>{submitting ? 'Processing...' : editing ? 'Update' : 'Create'}</Button>
@@ -182,88 +156,46 @@ export default function WarehousesPage() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
+        }
+      />
 
-        {loading ? (
-          <LoadingPage />
-        ) : warehouses.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No warehouses yet</p>
-              <p className="text-sm text-muted-foreground mb-4">Create warehouses to manage your product storage</p>
-              <div className="flex justify-center mt-4">
-                <Button onClick={handleCreate}>Add first warehouse</Button>
+      {loading ? (
+        <LoadingPage />
+      ) : warehouses.length === 0 ? (
+        <EmptyState
+          message="No warehouses yet"
+          action={{
+            label: 'Add first warehouse',
+            onClick: handleCreate,
+          }}
+        >
+          <p className="text-sm text-muted-foreground mb-4">Create warehouses to manage your product storage</p>
+        </EmptyState>
+      ) : (
+        <ResponsiveListView
+          items={warehouses}
+          columns={[
+            { key: 'name', header: 'Name', render: (w) => <span className="font-medium">{w.name}</span> },
+            { key: 'location', header: 'Location', render: (w) => <span className="max-w-[200px] truncate">{w.location || '-'}</span>, className: 'max-w-[200px] truncate' },
+            { key: 'capacity', header: 'Capacity', render: (w) => w.capacity || '-' },
+          ]}
+          actions={(warehouse) => ({
+            viewHref: `/dashboard/warehouses/${warehouse.id}`,
+            onEdit: () => handleEdit(warehouse),
+            onDelete: () => handleDelete(warehouse.id, warehouse),
+          })}
+          mobileCardTitle={(w) => w.name}
+          mobileCardDescription={(w) => w.location || undefined}
+          mobileCardContent={(w) => (
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Capacity: </span>
+                <span>{w.capacity || '-'}</span>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="hidden md:block border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Capacity</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {warehouses.map((warehouse) => (
-                    <TableRow key={warehouse.id}>
-                      <TableCell className="font-medium">{warehouse.name}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{warehouse.location || '-'}</TableCell>
-                      <TableCell>{warehouse.capacity || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        <ActionsDropdown
-                          viewHref={`/dashboard/warehouses/${warehouse.id}`}
-                          onEdit={() => handleEdit(warehouse)}
-                          onDelete={() => handleDelete(warehouse.id)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </div>
-            <div className="md:hidden space-y-2">
-              {warehouses.map((warehouse) => (
-                <Card key={warehouse.id}>
-                  <CardHeader>
-                    <CardTitle>{warehouse.name}</CardTitle>
-                    {warehouse.location && (
-                      <CardDescription>{warehouse.location}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Capacity: </span>
-                        <span>{warehouse.capacity || '-'}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/warehouses/${warehouse.id}`)} className="flex-1">
-                          View
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(warehouse)} className="flex-1">
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(warehouse.id)}
-                          className="text-destructive hover:text-destructive flex-1"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+          )}
+        />
+      )}
+    </div>
   )
 }

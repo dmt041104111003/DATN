@@ -145,16 +145,46 @@ let SubscriptionService = class SubscriptionService {
             },
             include: { service: true },
         });
-        this.verifyPaymentAsync(subscription.id, dto.txHash, service.price, service.duration).catch((err) => {
-            console.error('Payment verification failed:', err);
+        try {
+            await Promise.race([
+                this.verifyPaymentAsync(subscription.id, dto.txHash, service.price, service.duration),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Verification timeout')), 15000)),
+            ]);
+        }
+        catch (error) {
+            console.error('Payment verification timeout or error:', error);
+        }
+        const updatedSubscription = await this.prisma.subscription.findUnique({
+            where: { id: subscription.id },
+            include: { service: true },
         });
-        return {
-            result: true,
-            message: activeSubscription
-                ? 'Upgrade submitted. Verification in progress...'
-                : 'Transaction submitted. Verification in progress...',
-            data: { subscription },
-        };
+        if (updatedSubscription?.status === subscription_constants_1.SUBSCRIPTION_STATUS.ACTIVE) {
+            const message = activeSubscription
+                ? 'Upgrade successful! Subscription activated.'
+                : 'Payment verified! Subscription activated.';
+            return {
+                result: true,
+                message,
+                data: { subscription: updatedSubscription },
+            };
+        }
+        else if (updatedSubscription?.status === subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED) {
+            return {
+                result: false,
+                message: 'Payment verification failed.',
+                data: { subscription: updatedSubscription },
+            };
+        }
+        else {
+            this.verifyPaymentAsync(subscription.id, dto.txHash, service.price, service.duration).catch((err) => {
+                console.error('Background verification failed:', err);
+            });
+            return {
+                result: true,
+                message: 'Transaction submitted. Verification in progress...',
+                data: { subscription },
+            };
+        }
     }
     isUpgrade(currentPrice, newPrice) {
         return newPrice > currentPrice;

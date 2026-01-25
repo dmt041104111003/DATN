@@ -11,39 +11,39 @@ export declare class WarehouseService {
     private checkSubscriptionActive;
     findAll(userId: string): Promise<string | {
         id: string;
-        userId: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        location: string | null;
+        capacity: number;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
-        userId: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        location: string | null;
+        capacity: number;
     }>;
     create(userId: string, dto: CreateWarehouseDto): Promise<{
         id: string;
-        userId: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        location: string | null;
+        capacity: number;
     }>;
     update(id: string, userId: string, dto: UpdateWarehouseDto): Promise<{
         id: string;
-        userId: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        location: string | null;
+        capacity: number;
     }>;
     remove(id: string, userId: string): Promise<void>;
 }

@@ -10,40 +10,40 @@ export declare class DocumentService {
     constructor(prisma: PrismaService, redis: RedisService, subscriptionService: SubscriptionService);
     private checkSubscriptionActive;
     findAll(): Promise<string | {
+        url: string;
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         docType: string;
-        url: string;
         hash: string | null;
     }[]>;
     findOne(id: string): Promise<string | {
+        url: string;
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         docType: string;
-        url: string;
         hash: string | null;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateDocumentDto): Promise<{
+        url: string;
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         docType: string;
-        url: string;
         hash: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateDocumentDto): Promise<{
+        url: string;
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         docType: string;
-        url: string;
         hash: string | null;
     }>;
     remove(id: string, userId: string): Promise<void>;

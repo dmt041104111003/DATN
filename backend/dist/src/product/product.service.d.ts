@@ -13,56 +13,56 @@ export declare class ProductService {
     private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }[]>;
     findAllByUser(userId: string): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }>;
     private findOneOwned;
     private getActiveSubscription;
     private checkProductLimit;
     create(userId: string, dto: CreateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
         success: boolean;
@@ -84,12 +84,12 @@ export declare class ProductService {
             assetName: string | null;
             historyHash: string | null;
             documents: {
+                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
-                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -115,10 +115,10 @@ export declare class ProductService {
             warehouseStorages: ({
                 warehouse: {
                     id: string;
-                    userId: string;
                     name: string;
                     createdAt: Date;
                     updatedAt: Date;
+                    userId: string;
                     location: string | null;
                     capacity: number;
                 };

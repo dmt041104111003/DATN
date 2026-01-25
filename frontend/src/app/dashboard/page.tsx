@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { apiClient } from '@/lib/api/client'
 import { LoadingOverlay } from '@/components/ui/loading'
-
+import { PageHeader } from '@/components/dashboard/page-header'
+import { StatsCard } from '@/components/dashboard/stats-card'
 export default function DashboardPage() {
   const [productsCount, setProductsCount] = useState(0)
   const [collectionsCount, setCollectionsCount] = useState(0)
@@ -35,39 +35,16 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6 relative">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Welcome</h1>
-        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Welcome to your traceability dashboard</p>
-      </div>
+      <PageHeader
+        title="Welcome"
+        description="Welcome to your traceability dashboard"
+      />
 
       <div className="w-full h-[calc(100vh-12rem)] flex gap-4 sm:gap-6">
         <div className="w-80 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{productsCount}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Collections</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{collectionsCount}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Suppliers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{suppliersCount}</p>
-            </CardContent>
-          </Card>
+          <StatsCard title="Total Products" value={productsCount} />
+          <StatsCard title="Total Collections" value={collectionsCount} />
+          <StatsCard title="Total Suppliers" value={suppliersCount} />
         </div>
 
         <div className="flex-1 flex items-center justify-center">

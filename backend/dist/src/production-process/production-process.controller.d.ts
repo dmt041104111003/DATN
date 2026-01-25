@@ -6,47 +6,47 @@ export declare class ProductionProcessController {
     constructor(productionProcessService: ProductionProcessService);
     findAll(): Promise<string | {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreateProductionProcessDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductionProcessDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(user: {
         id: string;

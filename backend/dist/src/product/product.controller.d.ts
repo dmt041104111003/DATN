@@ -6,25 +6,25 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }[]>;
     getQuota(user: {
         id: string;
@@ -42,12 +42,12 @@ export declare class ProductController {
             assetName: string | null;
             historyHash: string | null;
             documents: {
+                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
-                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -73,10 +73,10 @@ export declare class ProductController {
             warehouseStorages: ({
                 warehouse: {
                     id: string;
-                    userId: string;
                     name: string;
                     createdAt: Date;
                     updatedAt: Date;
+                    userId: string;
                     location: string | null;
                     capacity: number;
                 };
@@ -144,37 +144,37 @@ export declare class ProductController {
     }>;
     findOne(id: string): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }>;
     create(user: {
         id: string;
     }, dto: CreateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
         name: string;
-        historyHash: string | null;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        assetName: string | null;
+        historyHash: string | null;
+        policyId: string | null;
     }>;
     remove(user: {
         id: string;

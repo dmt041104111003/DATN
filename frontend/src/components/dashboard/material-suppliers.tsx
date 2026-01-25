@@ -16,16 +16,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LocationPicker } from '@/components/ui/location-picker'
 import { useForm } from 'react-hook-form'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { LoadingOverlay } from '@/components/ui/loading'
+import { ResponsiveListView } from './responsive-list-view'
+import { handleApiError } from '@/lib/utils/error-handler'
 
 export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplier[]; onRefresh: () => void }) {
   const [open, setOpen] = useState(false)
@@ -54,7 +47,8 @@ export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplie
       reset()
       onRefresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save supplier')
+      const errorMessage = handleApiError(err)
+      alert(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -66,7 +60,8 @@ export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplie
       await apiClient.suppliers.remove(id)
       onRefresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete')
+      const errorMessage = handleApiError(err)
+      alert(errorMessage)
     }
   }
 
@@ -157,53 +152,27 @@ export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplie
       {suppliers.length === 0 ? (
         <p className="text-sm text-muted-foreground">No suppliers</p>
       ) : (
-        <>
-          <div className="hidden md:block border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>GPS Coordinates</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {suppliers.map((supplier) => (
-                  <TableRow key={supplier.id}>
-                    <TableCell className="font-medium">{supplier.name}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{supplier.location || '-'}</TableCell>
-                    <TableCell className="font-mono text-xs">{supplier.gpsCoordinates || '-'}</TableCell>
-                    <TableCell>{supplier.contactInfo || '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <ActionsDropdown
-                        onEdit={() => handleEdit(supplier)}
-                        onDelete={() => handleDelete(supplier.id)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="md:hidden space-y-2">
-            {suppliers.map((supplier) => (
-              <div key={supplier.id} className="flex flex-col gap-2 p-2 border rounded">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{supplier.name}</p>
-                  {supplier.location && <p className="text-xs text-muted-foreground break-words">{supplier.location}</p>}
-                  {supplier.gpsCoordinates && <p className="text-xs text-muted-foreground font-mono break-words">GPS: {supplier.gpsCoordinates}</p>}
-                  {supplier.contactInfo && <p className="text-xs text-muted-foreground break-words">Contact: {supplier.contactInfo}</p>}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(supplier)} className="flex-1">Edit</Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(supplier.id)} className="flex-1 text-destructive hover:text-destructive">Delete</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+        <ResponsiveListView
+          items={suppliers}
+          columns={[
+            { key: 'name', header: 'Name', render: (s) => <span className="font-medium">{s.name}</span> },
+            { key: 'location', header: 'Location', render: (s) => <span className="max-w-[200px] truncate">{s.location || '-'}</span>, className: 'max-w-[200px] truncate' },
+            { key: 'gpsCoordinates', header: 'GPS Coordinates', render: (s) => <span className="font-mono text-xs">{s.gpsCoordinates || '-'}</span>, className: 'font-mono text-xs' },
+            { key: 'contactInfo', header: 'Contact', render: (s) => s.contactInfo || '-' },
+          ]}
+          actions={(supplier) => ({
+            onEdit: () => handleEdit(supplier),
+            onDelete: () => handleDelete(supplier.id),
+          })}
+          mobileCardTitle={(s) => s.name}
+          mobileCardDescription={(s) => (
+            <>
+              {s.location && <p className="text-xs text-muted-foreground break-words">{s.location}</p>}
+              {s.gpsCoordinates && <p className="text-xs text-muted-foreground font-mono break-words">GPS: {s.gpsCoordinates}</p>}
+              {s.contactInfo && <p className="text-xs text-muted-foreground break-words">Contact: {s.contactInfo}</p>}
+            </>
+          )}
+        />
       )}
     </div>
   )

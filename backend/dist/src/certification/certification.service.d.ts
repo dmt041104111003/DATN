@@ -11,9 +11,9 @@ export declare class CertificationService {
     private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
@@ -21,9 +21,9 @@ export declare class CertificationService {
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
@@ -32,9 +32,9 @@ export declare class CertificationService {
     private findOneOwned;
     create(userId: string, dto: CreateCertificationDto): Promise<{
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
@@ -42,9 +42,9 @@ export declare class CertificationService {
     }>;
     update(id: string, userId: string, dto: UpdateCertificationDto): Promise<{
         id: string;
-        productId: string;
         createdAt: Date;
         updatedAt: Date;
+        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;

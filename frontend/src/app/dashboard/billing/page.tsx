@@ -1,35 +1,20 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Service, Subscription } from '@/types/api'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { LoadingPage } from '@/components/ui/loading'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ServiceCard } from '@/components/ui/service-card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { BillingDialogCard } from '@/components/dashboard/billing-dialog-card'
+import { PageHeader } from '@/components/dashboard/page-header'
+import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
+import { EmptyState } from '@/components/dashboard/empty-state'
 
 type Tab = 'services' | 'subscriptions'
 
@@ -43,6 +28,7 @@ export default function BillingPage() {
   const [processing, setProcessing] = useState<string | null>(null)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +36,13 @@ export default function BillingPage() {
       return
     }
     loadData()
+    
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
+    }
   }, [user, router])
 
   const loadData = async () => {
@@ -106,7 +99,7 @@ export default function BillingPage() {
 
       const hasEnoughBalance = await checkWalletBalance(walletInstance, service.price)
       if (!hasEnoughBalance) {
-        throw new Error('Số dư không đủ. Vui lòng nạp thêm ADA vào ví.')
+        throw new Error('Insufficient balance. Please add more ADA to your wallet.')
       }
 
       const amountLovelace = (service.price * 1_000_000).toString()
@@ -118,32 +111,68 @@ export default function BillingPage() {
       const signedTx = await walletInstance.signTx(paymentResponse.data)
       const txHash = await walletInstance.submitTx(signedTx)
       
-      await apiClient.subscriptions.pay({
+      const payResponse = await apiClient.subscriptions.pay({
         servicePlanId: serviceId,
         txHash
       })
 
-      alert('Transaction submitted. Verification in progress...')
-      loadData()
-      setActiveTab('subscriptions')
-      
-      const checkInterval = setInterval(async () => {
-        try {
-          const subs = await apiClient.subscriptions.findAll()
-          const sub = subs.find(s => s.txHash === txHash)
-          if (sub && sub.status !== 'pending') {
-            clearInterval(checkInterval)
-            loadData()
-            if (sub.status === 'active') {
-              alert('Payment verified! Subscription activated.')
-            } else {
-              alert('Payment verification failed.')
+      if (!payResponse.result) {
+        throw new Error(payResponse.message || 'Payment verification failed')
+      }
+
+      if (payResponse.data?.subscription?.status === 'pending') {
+        alert(payResponse.message || 'Transaction submitted. Verification in progress...')
+        await loadData()
+        setActiveTab('subscriptions')
+        
+        const subscriptionId = payResponse.data.subscription.id
+        let checkCount = 0
+        const maxChecks = 20
+        
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+        }
+        
+        pollingIntervalRef.current = setInterval(async () => {
+          try {
+            checkCount++
+            const subs = await apiClient.subscriptions.findAll()
+            const sub = subs.find(s => s.id === subscriptionId)
+            
+            await loadData()
+            
+            if (sub && sub.status !== 'pending') {
+              if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current)
+                pollingIntervalRef.current = null
+              }
+              if (sub.status === 'active') {
+                alert('Payment verified! Subscription activated.')
+              } else if (sub.status === 'cancelled' || sub.status === 'expired') {
+                alert('Payment verification failed.')
+              }
+              return
+            }
+            
+            if (checkCount >= maxChecks) {
+              if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current)
+                pollingIntervalRef.current = null
+              }
+            }
+          } catch (err) {
+            console.error('Error checking subscription status:', err)
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current)
+              pollingIntervalRef.current = null
             }
           }
-        } catch {}
-      }, 3000)
-      
-      setTimeout(() => clearInterval(checkInterval), 60000)
+        }, 2000)
+      } else {
+        alert(payResponse.message || 'Payment verified! Subscription activated.')
+        await loadData()
+        setActiveTab('subscriptions')
+      }
     } catch (err) {
       const isCancelled = err instanceof Error && 
         ['declined', 'rejected', 'cancelled', 'User'].some(s => err.message.includes(s))
@@ -169,10 +198,10 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Billing</h1>
-        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Manage services and subscriptions</p>
-      </div>
+      <PageHeader
+        title="Billing"
+        description="Manage services and subscriptions"
+      />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
         <TabsList>
@@ -204,14 +233,17 @@ export default function BillingPage() {
             return sortedServices.map((service, index) => {
             const activeSub = subscriptions.find(s => s.status === 'active')
             const hasActive = subscriptions.some(s => s.servicePlanId === service.id && s.status === 'active')
+            const hasPending = subscriptions.some(s => s.servicePlanId === service.id && s.status === 'pending')
             const isSamePlan = activeSub && activeSub.servicePlanId === service.id
             const isUpgrade = activeSub && service.price > (activeSub.service?.price || 0)
             const isLowerPlan = activeSub && service.price < (activeSub.service?.price || 0)
-            const isDisabled = hasActive || isSamePlan || isLowerPlan || processing === service.id
+            const isDisabled = hasActive || isSamePlan || isLowerPlan || processing === service.id || hasPending
             
             let buttonText = ''
             if (hasActive) {
               buttonText = 'Active'
+            } else if (hasPending) {
+              buttonText = 'Verifying...'
             } else if (isSamePlan) {
               buttonText = 'Renew Not Allowed'
             } else if (isLowerPlan) {
@@ -238,7 +270,7 @@ export default function BillingPage() {
             }
             
             return (
-              <div key={service.id} style={orderValue ? { order: orderValue } : undefined}>
+              <div key={service.id} style={orderValue ? { order: orderValue } : undefined} className="h-full">
                 <ServiceCard
                   name={service.name}
                   description={service.description || undefined}
@@ -268,196 +300,74 @@ export default function BillingPage() {
         </TabsContent>
 
         <TabsContent value="subscriptions" className="mt-4 sm:mt-6">
-        <>
           {subscriptions.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">No subscriptions yet</p>
-                <Button className="mt-4" onClick={() => setActiveTab('services')}>
-                  Browse Services
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              message="No subscriptions yet"
+              action={{
+                label: 'Browse Services',
+                onClick: () => setActiveTab('services'),
+              }}
+            />
           ) : (
-            <>
-              <div className="hidden md:block border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Remaining Days</TableHead>
-                      <TableHead>Max Products</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscriptions.map((sub) => {
-                      const remainingDays = sub.endDate && sub.status === 'active' 
-                        ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-                        : null
-
-                      return (
-                        <TableRow key={sub.id} className={sub.status === 'active' ? 'bg-primary/5' : ''}>
-                          <TableCell className="font-medium">{sub.service?.name || 'Unknown Service'}</TableCell>
-                          <TableCell>
-                            <StatusBadge status={sub.status} />
-                          </TableCell>
-                          <TableCell>{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell>{remainingDays !== null ? `${remainingDays} days` : '-'}</TableCell>
-                          <TableCell>
-                            {sub.service 
-                              ? (sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`)
-                              : '-'
-                            }
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {sub.status === 'active' && (
-                              <ActionsDropdown
-                                onCancel={() => handleCancel(sub.id)}
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="md:hidden space-y-2">
-                {subscriptions.map((sub) => {
+            <ResponsiveListView
+              items={subscriptions}
+              columns={[
+                { key: 'service', header: 'Service', render: (sub: Subscription) => <span className="font-medium">{sub.service?.name || 'Unknown Service'}</span> },
+                { key: 'status', header: 'Status', render: (sub: Subscription) => <StatusBadge status={sub.status} /> },
+                { key: 'startDate', header: 'Start Date', render: (sub: Subscription) => sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '-' },
+                { key: 'endDate', header: 'End Date', render: (sub: Subscription) => sub.endDate ? new Date(sub.endDate).toLocaleDateString() : '-' },
+                { key: 'remainingDays', header: 'Remaining Days', render: (sub: Subscription) => {
                   const remainingDays = sub.endDate && sub.status === 'active' 
                     ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
                     : null
-
-                  return (
-                    <Card key={sub.id} className={sub.status === 'active' ? 'border-primary' : ''}>
-                      <CardHeader>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <CardTitle className="text-base sm:text-lg">{sub.service?.name || 'Unknown Service'}</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm">
-                              Status: <StatusBadge status={sub.status} />
-                            </CardDescription>
-                          </div>
-                          {sub.status === 'active' && (
-                            <Button variant="outline" size="sm" onClick={() => handleCancel(sub.id)} className="w-full sm:w-auto">
-                              Cancel
-                            </Button>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-2 text-sm">
-                          {sub.startDate && <p><span className="text-muted-foreground">Start:</span> {new Date(sub.startDate).toLocaleDateString()}</p>}
-                          {sub.endDate && <p><span className="text-muted-foreground">End:</span> {new Date(sub.endDate).toLocaleDateString()}</p>}
-                          {remainingDays !== null && <p><span className="text-muted-foreground">Remaining:</span> <span className="font-medium">{remainingDays} days</span></p>}
-                          {sub.service && <p><span className="text-muted-foreground">Max Products:</span> {sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`}</p>}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            </>
+                  return remainingDays !== null ? `${remainingDays} days` : '-'
+                }},
+                { key: 'maxProducts', header: 'Max Products', render: (sub: Subscription) => {
+                  return sub.service 
+                    ? (sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`)
+                    : '-'
+                }},
+              ]}
+              actions={(sub: Subscription) => ({
+                onCancel: sub.status === 'active' ? () => handleCancel(sub.id) : undefined,
+              })}
+              mobileCardTitle={(sub: Subscription) => sub.service?.name || 'Unknown Service'}
+              mobileCardDescription={(sub: Subscription) => (
+                <div className="space-y-1">
+                  <div className="text-xs">
+                    Status: <StatusBadge status={sub.status} />
+                  </div>
+                  {sub.startDate && <div className="text-xs text-muted-foreground">Start: {new Date(sub.startDate).toLocaleDateString()}</div>}
+                  {sub.endDate && <div className="text-xs text-muted-foreground">End: {new Date(sub.endDate).toLocaleDateString()}</div>}
+                  {(() => {
+                    const remainingDays = sub.endDate && sub.status === 'active' 
+                      ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                      : null
+                    return remainingDays !== null ? <div className="text-xs text-muted-foreground">Remaining: <span className="font-medium">{remainingDays} days</span></div> : null
+                  })()}
+                  {sub.service && <div className="text-xs text-muted-foreground">Max Products: {sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`}</div>}
+                </div>
+              )}
+              mobileCardContent={(sub: Subscription) => null}
+            />
           )}
-        </>
         </TabsContent>
       </Tabs>
 
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedService?.name || 'Service Details'}</DialogTitle>
-            <DialogDescription>
-              Chi tiết gói dịch vụ
-            </DialogDescription>
-          </DialogHeader>
-          {selectedService && (
-            <div className="space-y-4 py-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Thông tin gói</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tên gói:</span>
-                    <span className="font-medium">{selectedService.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Giá:</span>
-                    <span className="font-medium">{selectedService.price} ADA</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Thời hạn:</span>
-                    <span className="font-medium">
-                      {selectedService.duration} {selectedService.duration === 1 ? 'ngày' : 'ngày'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Số sản phẩm tối đa:</span>
-                    <span className="font-medium">
-                      {selectedService.maxProducts === null ? 'Không giới hạn' : `${selectedService.maxProducts} sản phẩm / ngày`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {selectedService.description && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Mô tả</h3>
-                  <p className="text-sm text-muted-foreground">{selectedService.description}</p>
-                </div>
-              )}
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Tính năng</h3>
-                <ul className="space-y-1 text-sm">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Tạo và quản lý sản phẩm</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Mint NFT cho sản phẩm</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Quản lý tài liệu và chứng nhận</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>Theo dõi quy trình sản xuất</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary">•</span>
-                    <span>
-                      {selectedService.maxProducts === null 
-                        ? 'Không giới hạn số lượng sản phẩm' 
-                        : `Tối đa ${selectedService.maxProducts} sản phẩm mỗi ngày`}
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailOpen(false)}>
-              Đóng
-            </Button>
-            {selectedService && (
-              <Button
-                onClick={() => {
-                  setDetailOpen(false)
-                  handleSubscribe(selectedService.id)
-                }}
-                disabled={processing === selectedService.id}
-              >
-                {processing === selectedService.id ? 'Đang xử lý...' : 'Đăng ký ngay'}
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {detailOpen && selectedService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setDetailOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <BillingDialogCard
+              service={selectedService}
+              onSubscribe={() => {
+                setDetailOpen(false)
+                handleSubscribe(selectedService.id)
+              }}
+              processing={processing === selectedService.id}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

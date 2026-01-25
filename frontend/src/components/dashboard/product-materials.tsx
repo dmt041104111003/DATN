@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { ProductMaterial, Material } from '@/types/api'
@@ -26,16 +25,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useForm } from 'react-hook-form'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { LoadingOverlay } from '@/components/ui/loading'
+import { SubListCard } from './sub-list-card'
+import { handleApiError } from '@/lib/utils/error-handler'
 
 export function ProductMaterials({ productId, productMaterials, onRefresh }: { productId: string; productMaterials: ProductMaterial[]; onRefresh: () => void }) {
   const router = useRouter()
@@ -90,11 +82,8 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
       reset()
       onRefresh()
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save material'
-      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
-        alert(`${errorMessage}. Please renew your subscription to continue.`)
-        router.push('/dashboard/billing')
-      } else if (errorMessage.includes('already been added')) {
+      const errorMessage = handleApiError(err, router)
+      if (errorMessage.includes('already been added')) {
         alert(errorMessage)
       } else {
         alert(errorMessage)
@@ -134,7 +123,8 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
       await apiClient.productMaterials.remove(id)
       onRefresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove')
+      const errorMessage = handleApiError(err, router)
+      alert(errorMessage)
     }
   }
 
@@ -147,79 +137,55 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
   const selectedMaterialId = watch('materialId')
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <CardTitle>Materials</CardTitle>
-        <Dialog open={open} onOpenChange={(open) => {
-          setOpen(open)
-          if (!open) {
-            setEditing(null)
-            reset()
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={handleCreate} className="w-full sm:w-auto">Add</Button>
-          </DialogTrigger>
-          <DialogContent>
-            {loading && <LoadingOverlay />}
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <DialogHeader>
-                <DialogTitle>{editing ? 'Edit Material' : 'Add Material'}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 px-4 py-4 min-w-0 w-full">
-                <div className="grid gap-2">
-                  <Label>Material *</Label>
-                  <Select 
-                    value={selectedMaterialId} 
-                    onValueChange={(v) => setValue('materialId', v)} 
-                    disabled={loading || editing !== null}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materials.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!selectedMaterialId && (
-                    <p className="text-sm text-destructive">Please select a material</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label>Quantity *</Label>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    {...register('quantity', { 
-                      required: 'Please enter quantity',
-                      valueAsNumber: true,
-                      min: { value: 0.01, message: 'Quantity must be greater than 0' }
-                    })} 
-                    placeholder="e.g. 10" 
-                    disabled={loading}
-                  />
-                  {errors.quantity && (
-                    <p className="text-sm text-destructive">{errors.quantity.message}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label>Unit (Optional)</Label>
-                  <Input {...register('unit')} placeholder="e.g. kg, lbs, pieces" disabled={loading} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setOpen(false)
-                  setEditing(null)
-                  reset()
-                }} disabled={loading}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : editing ? 'Update' : 'Add'}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+    <SubListCard
+      title="Materials"
+      items={productMaterials}
+      columns={[
+        { key: 'materialId', header: 'Material', render: (pm: ProductMaterial) => {
+          const material = materials.find(m => m.id === pm.materialId)
+          return <span className="font-medium">{material?.name || pm.materialId}</span>
+        }},
+        { key: 'quantity', header: 'Quantity', render: (pm: ProductMaterial) => pm.quantity },
+        { key: 'unit', header: 'Unit', render: (pm: ProductMaterial) => pm.unit || '-' },
+      ]}
+      actions={(pm: ProductMaterial) => ({
+        onView: () => handleView(pm),
+        onEdit: () => handleEdit(pm),
+        onDelete: () => handleDelete(pm.id),
+      })}
+      mobileCardTitle={(pm: ProductMaterial) => {
+        const material = materials.find(m => m.id === pm.materialId)
+        return material?.name || pm.materialId
+      }}
+      mobileCardDescription={(pm: ProductMaterial) => (
+        <span className="text-xs text-muted-foreground">
+          {pm.quantity} {pm.unit || ''}
+        </span>
+      )}
+      emptyContent={
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground mb-4">Chưa có nguyên liệu nào</p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button size="sm" onClick={handleCreate} variant="outline">
+              Thêm nguyên liệu
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/dashboard/materials">Quản lý nguyên liệu</Link>
+            </Button>
+          </div>
+        </div>
+      }
+      dialogOpen={open}
+      onDialogOpenChange={(open: boolean) => {
+        setOpen(open)
+        if (!open) {
+          setEditing(null)
+          reset()
+        }
+      }}
+      dialogTrigger={<Button size="sm" onClick={handleCreate} className="w-full sm:w-auto">Add</Button>}
+      submitting={loading}
+      viewDialog={
         <Dialog open={viewOpen} onOpenChange={setViewOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
@@ -274,76 +240,68 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </CardHeader>
-      <CardContent>
-        {productMaterials.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground mb-4">Chưa có nguyên liệu nào</p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button size="sm" onClick={handleCreate} variant="outline">
-                Thêm nguyên liệu
-              </Button>
-              <Button size="sm" variant="outline" asChild>
-                <Link href="/dashboard/materials">Quản lý nguyên liệu</Link>
-              </Button>
+      }
+      dialogContent={
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Edit Material' : 'Add Material'}</DialogTitle>
+            <DialogDescription>
+              {editing ? 'Update material quantity and unit' : 'Add a material to this product'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 px-4 py-4 min-w-0 w-full">
+            <div className="grid gap-2">
+              <Label>Material *</Label>
+              <Select 
+                value={selectedMaterialId} 
+                onValueChange={(v) => setValue('materialId', v)} 
+                disabled={loading || editing !== null}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select material" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materials.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedMaterialId && (
+                <p className="text-sm text-destructive">Please select a material</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label>Quantity *</Label>
+              <Input 
+                type="number" 
+                step="0.01"
+                {...register('quantity', { 
+                  required: 'Please enter quantity',
+                  valueAsNumber: true,
+                  min: { value: 0.01, message: 'Quantity must be greater than 0' }
+                })} 
+                placeholder="e.g. 10" 
+                disabled={loading}
+              />
+              {errors.quantity && (
+                <p className="text-sm text-destructive">{errors.quantity.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label>Unit (Optional)</Label>
+              <Input {...register('unit')} placeholder="e.g. kg, lbs, pieces" disabled={loading} />
             </div>
           </div>
-        ) : (
-          <>
-            <div className="hidden md:block border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Material</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {productMaterials.map((pm) => {
-                    const material = materials.find(m => m.id === pm.materialId)
-                    return (
-                      <TableRow key={pm.id}>
-                        <TableCell className="font-medium">{material?.name || pm.materialId}</TableCell>
-                        <TableCell>{pm.quantity}</TableCell>
-                        <TableCell>{pm.unit || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        <ActionsDropdown
-                          onView={() => handleView(pm)}
-                          onEdit={() => handleEdit(pm)}
-                          onDelete={() => handleDelete(pm.id)}
-                        />
-                      </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="md:hidden space-y-2">
-              {productMaterials.map((pm) => {
-                const material = materials.find(m => m.id === pm.materialId)
-                return (
-                  <div key={pm.id} className="flex flex-col gap-2 p-2 border rounded">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{material?.name || pm.materialId}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {pm.quantity} {pm.unit || ''}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleView(pm)} className="flex-1">View</Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(pm)} className="flex-1">Edit</Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(pm.id)} className="flex-1 text-destructive hover:text-destructive">Delete</Button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => {
+              setOpen(false)
+              setEditing(null)
+              reset()
+            }} disabled={loading}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Processing...' : editing ? 'Update' : 'Add'}</Button>
+          </DialogFooter>
+        </form>
+      }
+    />
   )
 }

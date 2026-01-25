@@ -1,31 +1,17 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Metadata, Product } from '@/types/api'
 import {
-  Dialog,
-  DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useForm } from 'react-hook-form'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { ActionsDropdown } from '@/components/ui/actions-dropdown'
-import { LoadingOverlay } from '@/components/ui/loading'
 import {
   Select,
   SelectContent,
@@ -33,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SubListCard } from './sub-list-card'
+import { handleApiError } from '@/lib/utils/error-handler'
 
 export function CollectionMetadata({ collectionId, metadata, onRefresh }: { collectionId: string; metadata: Metadata[]; onRefresh: () => void }) {
   const [open, setOpen] = useState(false)
@@ -111,7 +99,8 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
       await apiClient.metadata.remove(id)
       onRefresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete')
+      const errorMessage = handleApiError(err)
+      alert(errorMessage)
     }
   }
 
@@ -123,124 +112,88 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <CardTitle>Metadata</CardTitle>
-        <Dialog open={open} onOpenChange={(open) => {
-          setOpen(open)
-          if (!open) {
-            setEditing(null)
-            setSelectedProductId('')
-            reset()
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={handleCreate} className="w-full sm:w-auto">Add</Button>
-          </DialogTrigger>
-          <DialogContent>
-            {loading && <LoadingOverlay />}
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <DialogHeader>
-                <DialogTitle>{editing ? 'Edit Metadata' : 'Add Metadata'}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 px-4 py-4 min-w-0 w-full">
-                <div className="grid gap-2">
-                  <Label>Select Product (Optional)</Label>
-                  <Select value={selectedProductId} onValueChange={handleProductSelect} disabled={loading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a product to link" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name} ({product.assetName})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Select a minted product to automatically fill NFT reference
-                  </p>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Content</Label>
-                  <Input {...register('content', { required: true })} placeholder="Metadata content..." disabled={loading} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Asset Name (Optional)</Label>
-                  <Input {...register('assetName')} placeholder="e.g. NFT-001" disabled={loading} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>NFT Reference (Optional)</Label>
-                  <Input {...register('nftReference')} placeholder="PolicyID + AssetName" disabled={loading} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setOpen(false)
-                  setEditing(null)
-                  setSelectedProductId('')
-                  reset()
-                }} disabled={loading}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : editing ? 'Update' : 'Add'}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {metadata.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No metadata</p>
-        ) : (
-          <>
-            <div className="hidden md:block border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Asset Name</TableHead>
-                    <TableHead>Content</TableHead>
-                    <TableHead>NFT Reference</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {metadata.map((meta) => (
-                    <TableRow key={meta.id}>
-                      <TableCell className="font-medium">{meta.assetName || '-'}</TableCell>
-                      <TableCell className="max-w-[300px] truncate">{meta.content}</TableCell>
-                      <TableCell className="font-mono text-xs">{meta.nftReference && meta.nftReference.length > 0 ? meta.nftReference.join(', ') : '-'}</TableCell>
-                      <TableCell className="text-right">
-                        <ActionsDropdown
-                          onEdit={() => handleEdit(meta)}
-                          onDelete={() => handleDelete(meta.id)}
-                        />
-                      </TableCell>
-                    </TableRow>
+    <SubListCard
+      title="Metadata"
+      items={metadata}
+      columns={[
+        { key: 'assetName', header: 'Asset Name', render: (m) => <span className="font-medium">{m.assetName || '-'}</span> },
+        { key: 'content', header: 'Content', render: (m) => <span className="max-w-[300px] truncate">{m.content}</span>, className: 'max-w-[300px] truncate' },
+        { key: 'nftReference', header: 'NFT Reference', render: (m) => <span className="font-mono text-xs">{m.nftReference && m.nftReference.length > 0 ? m.nftReference.join(', ') : '-'}</span>, className: 'font-mono text-xs' },
+      ]}
+      actions={(meta) => ({
+        onEdit: () => handleEdit(meta),
+        onDelete: () => handleDelete(meta.id),
+      })}
+      mobileCardTitle={(m) => m.assetName || 'Metadata'}
+      mobileCardDescription={(m) => (
+        <>
+          <p className="text-xs text-muted-foreground break-words">{m.content}</p>
+          {m.nftReference && m.nftReference.length > 0 && (
+            <p className="text-xs text-muted-foreground break-words">NFT: {m.nftReference.join(', ')}</p>
+          )}
+        </>
+      )}
+      emptyMessage="No metadata"
+      dialogOpen={open}
+      onDialogOpenChange={(open) => {
+        setOpen(open)
+        if (!open) {
+          setEditing(null)
+          setSelectedProductId('')
+          reset()
+        }
+      }}
+      dialogTrigger={<Button size="sm" onClick={handleCreate} className="w-full sm:w-auto">Add</Button>}
+      submitting={loading}
+      dialogContent={
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Edit Metadata' : 'Add Metadata'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 px-4 py-4 min-w-0 w-full">
+            <div className="grid gap-2">
+              <Label>Select Product (Optional)</Label>
+              <Select value={selectedProductId} onValueChange={handleProductSelect} disabled={loading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a product to link" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} ({product.assetName})
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Select a minted product to automatically fill NFT reference
+              </p>
             </div>
-            <div className="md:hidden space-y-2">
-              {metadata.map((meta) => (
-                <div key={meta.id} className="flex flex-col gap-2 p-2 border rounded">
-                  <div className="flex-1 min-w-0">
-                    {meta.assetName && <p className="font-medium text-sm truncate">{meta.assetName}</p>}
-                    <p className="text-xs text-muted-foreground break-words">{meta.content}</p>
-                    {meta.nftReference && meta.nftReference.length > 0 && (
-                      <p className="text-xs text-muted-foreground break-words">NFT: {meta.nftReference.join(', ')}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(meta)} className="flex-1">Edit</Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(meta.id)} className="flex-1 text-destructive hover:text-destructive">Delete</Button>
-                  </div>
-                </div>
-              ))}
+            <div className="grid gap-2">
+              <Label>Content</Label>
+              <Input {...register('content', { required: true })} placeholder="Metadata content..." disabled={loading} />
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+            <div className="grid gap-2">
+              <Label>Asset Name (Optional)</Label>
+              <Input {...register('assetName')} placeholder="e.g. NFT-001" disabled={loading} />
+            </div>
+            <div className="grid gap-2">
+              <Label>NFT Reference (Optional)</Label>
+              <Input {...register('nftReference')} placeholder="PolicyID + AssetName" disabled={loading} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => {
+              setOpen(false)
+              setEditing(null)
+              setSelectedProductId('')
+              reset()
+            }} disabled={loading}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Processing...' : editing ? 'Update' : 'Add'}</Button>
+          </DialogFooter>
+        </form>
+      }
+    />
   )
 }

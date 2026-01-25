@@ -11,44 +11,44 @@ export declare class ProductionProcessService {
     private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateProductionProcessDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateProductionProcessDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         stepName: string;
         startTime: Date;
         endTime: Date | null;
         location: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<void>;
 }
