@@ -129,11 +129,11 @@ Error Handling,Asset Not Found (Burn/Update),Check storeAddress UTXO,-,-,"Error:
 Error Handling,No Collateral,Check UTXO >= 5 ADA,-,-,Error: No suitable UTxO for collateral,Need UTXO with >= 5 ADA and no other tokens
 Error Handling,Trace: Product Not in DB,Query blockchain only,-,-,Return blockchain info only,Product exists on blockchain but not in database
 Error Handling,Trace: Product Not on Chain,Query database only,-,-,Return database info only,Product exists in database but not minted as NFT
-Error Handling,Validation Errors,Quantity <= 0,POST /product-materials,-,-,"400 BadRequest: Quantity must be greater than 0",English validation message
-Error Handling,Validation Errors,Expiry Date <= Issue Date,POST /certifications,-,-,"400 BadRequest: Expiry date must be after issue date",English validation message
-Error Handling,Validation Errors,End Time <= Start Time,POST /production-processes,-,-,"400 BadRequest: End time must be after start time",English validation message
-Error Handling,Validation Errors,Capacity < 0,POST /warehouses,-,-,"400 BadRequest: Warehouse capacity must be greater than or equal to 0",English validation message
-Error Handling,Validation Errors,Duplicate Material,POST /product-materials,-,-,"400 BadRequest: This material has already been added to the product. Please update the quantity instead of adding a new entry.",English validation message
+Error Handling,Validation Errors,Quantity <= 0,POST /product-materials,-,-,"400 BadRequest: Quantity must be greater than 0. English validation message"
+Error Handling,Validation Errors,Expiry Date <= Issue Date,POST /certifications,-,-,"400 BadRequest: Expiry date must be after issue date. English validation message"
+Error Handling,Validation Errors,End Time <= Start Time,POST /production-processes,-,-,"400 BadRequest: End time must be after start time. English validation message"
+Error Handling,Validation Errors,Capacity < 0,POST /warehouses,-,-,"400 BadRequest: Warehouse capacity must be greater than or equal to 0. English validation message"
+Error Handling,Validation Errors,Duplicate Material,POST /product-materials,-,-,"400 BadRequest: This material has already been added to the product. Please update the quantity instead of adding a new entry. English validation message"
 User Management,10.1,Get current user info,GET /users/me,-,User,Get authenticated user information
 User Management,10.2,Update user profile,PATCH /users/me,-,User,Update user walletName
 User Management,10.3,Delete user account,DELETE /users/me,-,User,Delete user account and all related data
