@@ -13,22 +13,10 @@ exports.CreateProductDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateProductDto {
     name;
-    description;
-    imageUrl;
 }
 exports.CreateProductDto = CreateProductDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "name", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateProductDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], CreateProductDto.prototype, "imageUrl", void 0);
 //# sourceMappingURL=create-product.dto.js.map

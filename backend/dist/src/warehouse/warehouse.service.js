@@ -27,7 +27,13 @@ let WarehouseService = class WarehouseService {
         return item;
     }
     async create(dto) {
-        return this.prisma.warehouse.create({ data: dto });
+        return this.prisma.warehouse.create({
+            data: {
+                name: dto.name,
+                location: dto.location,
+                capacity: dto.capacity ?? 0,
+            },
+        });
     }
     async update(id, dto) {
         await this.findOne(id);

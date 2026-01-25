@@ -129,8 +129,9 @@ let ProductService = class ProductService {
                 ? {
                     id: product.id,
                     name: product.name,
-                    description: product.description,
-                    imageUrl: product.imageUrl,
+                    policyId: product.policyId,
+                    assetName: product.assetName,
+                    historyHash: product.historyHash,
                     documents: product.documents,
                     productionProcesses: product.productionProcesses,
                     certifications: product.certifications,

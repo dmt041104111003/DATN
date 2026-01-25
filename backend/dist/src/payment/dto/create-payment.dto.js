@@ -24,6 +24,7 @@ __decorate([
 ], CreatePaymentDto.prototype, "subscriptionId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "txHash", void 0);
 __decorate([

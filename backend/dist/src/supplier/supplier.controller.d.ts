@@ -9,59 +9,59 @@ export declare class SupplierController {
     }): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }[]>;
     findOne(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
     create(user: {
         id: string;
     }, dto: CreateSupplierDto): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateSupplierDto): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        gpsCoordinates: string | null;
-        contactInfo: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        location: string | null;
+        gpsCoordinates: string | null;
+        contactInfo: string | null;
     }>;
 }

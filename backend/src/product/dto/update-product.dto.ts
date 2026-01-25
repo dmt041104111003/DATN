@@ -11,9 +11,5 @@ export class UpdateProductDto {
 
   @IsString()
   @IsOptional()
-  imageUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
+  historyHash?: string;
 }

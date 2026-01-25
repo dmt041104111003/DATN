@@ -14,10 +14,15 @@ export class AuthService {
     const userAddress = address.trim();
     const nonce = generateNonce('I agree to the term and conditions of the HSUPPLY: ');
 
+    let user = await this.prisma.user.findUnique({ where: { address: userAddress } });
+    if (!user) {
+      user = await this.prisma.user.create({ data: { address: userAddress } });
+    }
+
     await this.prisma.walletNonce.upsert({
       where: { address: userAddress },
-      update: { nonce },
-      create: { address: userAddress, nonce },
+      update: { nonce, userId: user.id },
+      create: { address: userAddress, nonce, userId: user.id },
     });
 
     return { nonce };
@@ -46,7 +51,7 @@ export class AuthService {
     const newNonce = generateNonce('I agree to the term and conditions of the HSUPPLY: ');
     await this.prisma.walletNonce.update({
       where: { address: userAddress },
-      data: { nonce: newNonce },
+      data: { nonce: newNonce, userId: user.id },
     });
 
     const token = this.jwtService.sign({

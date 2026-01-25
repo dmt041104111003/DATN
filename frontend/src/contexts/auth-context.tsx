@@ -53,10 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await checkAuth()
   }
 
-  const logout = () => {
-    apiClient.logout().catch()
+  const logout = async () => {
     setUser(null)
-    router.push('/login')
+    setIsLoading(false)
+    try {
+      await apiClient.logout()
+    } catch {}
+    window.location.href = '/'
   }
 
   if (isLoading && !isPublic) {

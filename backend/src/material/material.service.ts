@@ -49,7 +49,15 @@ export class MaterialService {
     if (!supplier) throw new NotFoundException('Supplier not found');
     if (supplier.userId !== userId)
       throw new ForbiddenException('Not your supplier');
-    return this.prisma.material.create({ data: dto });
+    return this.prisma.material.create({
+      data: {
+        supplierId: dto.supplierId,
+        name: dto.name,
+        harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : null,
+        quantity: dto.quantity ?? 0,
+        userId,
+      },
+    });
   }
 
   async update(id: string, userId: string, dto: UpdateMaterialDto) {

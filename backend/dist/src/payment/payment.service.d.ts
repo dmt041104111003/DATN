@@ -32,11 +32,12 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        txHash: string;
+        txHash: string | null;
         amount: number;
         userId: string;
         subscriptionId: string;
         currency: string;
+        paymentDate: Date;
     })[]>;
     findOne(id: string, userId: string): Promise<{
         subscription: {
@@ -64,11 +65,12 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        txHash: string;
+        txHash: string | null;
         amount: number;
         userId: string;
         subscriptionId: string;
         currency: string;
+        paymentDate: Date;
     }>;
     create(userId: string, dto: CreatePaymentDto): Promise<{
         result: boolean;
@@ -78,11 +80,12 @@ export declare class PaymentService {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                txHash: string;
+                txHash: string | null;
                 amount: number;
                 userId: string;
                 subscriptionId: string;
                 currency: string;
+                paymentDate: Date;
             };
             subscription: {
                 id: string;
@@ -100,20 +103,22 @@ export declare class PaymentService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        txHash: string;
+        txHash: string | null;
         amount: number;
         userId: string;
         subscriptionId: string;
         currency: string;
+        paymentDate: Date;
     }>;
     remove(id: string, userId: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        txHash: string;
+        txHash: string | null;
         amount: number;
         userId: string;
         subscriptionId: string;
         currency: string;
+        paymentDate: Date;
     }>;
 }

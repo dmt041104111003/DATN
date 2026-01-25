@@ -54,7 +54,15 @@ let MaterialService = class MaterialService {
             throw new common_1.NotFoundException('Supplier not found');
         if (supplier.userId !== userId)
             throw new common_1.ForbiddenException('Not your supplier');
-        return this.prisma.material.create({ data: dto });
+        return this.prisma.material.create({
+            data: {
+                supplierId: dto.supplierId,
+                name: dto.name,
+                harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : null,
+                quantity: dto.quantity ?? 0,
+                userId,
+            },
+        });
     }
     async update(id, userId, dto) {
         await this.findOne(id, userId);

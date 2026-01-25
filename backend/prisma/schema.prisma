@@ -26,6 +26,8 @@ model User {
   payments     Payment[]
   feedbacks    Feedback[]
   suppliers    Supplier[]
+  materials    Material[]
+  walletNonces WalletNonce[]
 
   @@map("user")
 }
@@ -33,10 +35,12 @@ model User {
 // 2. WalletNonce - Nonce cho xác thực ví
 model WalletNonce {
   id        String   @id @default(cuid())
+  userId    String   @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   address   String   @unique @map("address")
   nonce     String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("wallet_nonce")
 }
@@ -91,8 +95,6 @@ model Product {
   policyId            String?             @map("policy_id")
   assetName           String?             @map("asset_name")
   name                String              @map("name")
-  imageUrl            String?             @map("image_url")
-  description         String?             @map("description")
   historyHash         String?             @map("history_hash")
   createdAt           DateTime            @default(now()) @map("created_at")
   updatedAt           DateTime            @updatedAt @map("updated_at")
@@ -110,13 +112,13 @@ model Product {
 // 7. Supplier - Nhà cung cấp
 model Supplier {
   id             String     @id @default(cuid())
-  name           String
-  location       String?
+  userId         String     @map("user_id")
+  name           String     @map("name")
+  location       String?    @map("location")
   gpsCoordinates String?    @map("gps_coordinates")
   contactInfo    String?    @map("contact_info")
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
-  userId         String     @map("user_id")
   user           User       @relation(fields: [userId], references: [id])
   materials      Material[]
 
@@ -126,12 +128,14 @@ model Supplier {
 // 8. Material - Nguyên liệu thô
 model Material {
   id               String            @id @default(cuid())
+  userId           String            @map("user_id")
   supplierId       String            @map("supplier_id")
-  name             String
+  name             String            @map("name")
   harvestDate      DateTime?         @map("harvest_date")
-  quantity         Float             @default(0)
+  quantity         Float             @map("quantity")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
+  user             User              @relation(fields: [userId], references: [id])
   supplier         Supplier          @relation(fields: [supplierId], references: [id])
   productMaterials ProductMaterial[]
 
@@ -159,7 +163,7 @@ model Document {
   id        String   @id @default(cuid())
   productId String   @map("product_id")
   docType   String   @map("doc_type")
-  url       String   @unique
+  url       String   @map("url")
   hash      String?  @map("hash")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -205,9 +209,10 @@ model Payment {
   id             String       @id @default(cuid())
   userId         String       @map("user_id")
   subscriptionId String       @map("subscription_id")
-  amount         Float
-  currency       String       @default("ADA")
-  txHash         String       @unique @map("tx_hash")
+  amount         Float        @map("amount")
+  currency       String       @map("currency")
+  txHash         String?      @map("tx_hash")
+  paymentDate    DateTime     @map("payment_date")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
   user           User         @relation(fields: [userId], references: [id])
@@ -219,9 +224,9 @@ model Payment {
 // 13. Warehouse - Kho hàng
 model Warehouse {
   id               String             @id @default(cuid())
-  name             String
-  location         String?
-  capacity         Int                @default(0)
+  name             String             @map("name")
+  location         String?            @map("location")
+  capacity         Int                @map("capacity")
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
   warehouseStorages WarehouseStorage[]

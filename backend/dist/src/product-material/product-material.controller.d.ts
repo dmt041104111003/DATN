@@ -11,18 +11,19 @@ export declare class ProductMaterialController {
             supplier: {
                 id: string;
                 name: string;
-                location: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
-                userId: string;
             };
         } & {
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -44,29 +45,28 @@ export declare class ProductMaterialController {
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            assetName: string | null;
+            historyHash: string | null;
             userId: string;
             policyId: string | null;
-            assetName: string | null;
-            imageUrl: string | null;
-            description: string | null;
-            historyHash: string | null;
         };
         material: {
             supplier: {
                 id: string;
                 name: string;
-                location: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
-                userId: string;
             };
         } & {
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -87,18 +87,19 @@ export declare class ProductMaterialController {
             supplier: {
                 id: string;
                 name: string;
-                location: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
-                userId: string;
             };
         } & {
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -119,18 +120,19 @@ export declare class ProductMaterialController {
             supplier: {
                 id: string;
                 name: string;
-                location: string | null;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
+                location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
-                userId: string;
             };
         } & {
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;

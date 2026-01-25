@@ -21,6 +21,7 @@ export declare class ProductMaterialService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -38,14 +39,12 @@ export declare class ProductMaterialService {
         product: {
             id: string;
             name: string;
-            description: string | null;
             createdAt: Date;
             updatedAt: Date;
-            imageUrl: string | null;
             assetName: string | null;
+            historyHash: string | null;
             userId: string;
             policyId: string | null;
-            historyHash: string | null;
         };
         material: {
             supplier: {
@@ -63,6 +62,7 @@ export declare class ProductMaterialService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -93,6 +93,7 @@ export declare class ProductMaterialService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -123,6 +124,7 @@ export declare class ProductMaterialService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;

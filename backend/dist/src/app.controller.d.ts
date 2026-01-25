@@ -4,9 +4,9 @@ export declare class AppController {
     constructor(appService: AppService);
     getUsers(): Promise<{
         id: string;
-        address: string;
         createdAt: Date;
         updatedAt: Date;
+        address: string;
     }[]>;
     health(): {
         status: string;

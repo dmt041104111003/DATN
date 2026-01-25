@@ -1,6 +1,6 @@
 export declare class CreatePaymentDto {
     subscriptionId: string;
-    txHash: string;
+    txHash?: string;
     amount?: number;
     currency?: string;
 }

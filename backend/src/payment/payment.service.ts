@@ -35,11 +35,13 @@ export class PaymentService {
   }
 
   async create(userId: string, dto: CreatePaymentDto) {
-    const existingPayment = await this.prisma.payment.findUnique({
-      where: { txHash: dto.txHash },
-    });
-    if (existingPayment) {
-      throw new BadRequestException('Transaction hash already used');
+    if (dto.txHash) {
+      const existingPayment = await this.prisma.payment.findFirst({
+        where: { txHash: dto.txHash },
+      });
+      if (existingPayment) {
+        throw new BadRequestException('Transaction hash already used');
+      }
     }
     const subscription = await this.prisma.subscription.findUnique({
       where: { id: dto.subscriptionId },
@@ -52,18 +54,27 @@ export class PaymentService {
       throw new ForbiddenException('Not your subscription');
     }
     const expectedAmount = subscription.service.price;
-    const verification = await this.blockchain.verifyPayment(
-      dto.txHash,
-      expectedAmount,
-    );
+    
+    let verification: {
+      valid: boolean;
+      message: string;
+      confirmedAmount?: number;
+    } = { valid: true, message: 'Verification skipped', confirmedAmount: expectedAmount };
 
-    if (!verification.valid) {
-      throw new BadRequestException(verification.message);
-    }
-    if (!verification.confirmedAmount) {
-      throw new BadRequestException(
-        'Could not confirm payment amount from blockchain',
+    if (dto.txHash) {
+      verification = await this.blockchain.verifyPayment(
+        dto.txHash,
+        expectedAmount,
       );
+
+      if (!verification.valid) {
+        throw new BadRequestException(verification.message);
+      }
+      if (!verification.confirmedAmount) {
+        throw new BadRequestException(
+          'Could not confirm payment amount from blockchain',
+        );
+      }
     }
 
     const now = new Date();
@@ -77,7 +88,8 @@ export class PaymentService {
           subscriptionId: dto.subscriptionId,
           amount: verification.confirmedAmount!,
           currency: dto.currency || 'ADA',
-          txHash: dto.txHash,
+          txHash: dto.txHash || null,
+          paymentDate: now,
         },
       });
 

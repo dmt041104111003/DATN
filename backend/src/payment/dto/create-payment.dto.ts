@@ -5,7 +5,8 @@ export class CreatePaymentDto {
   subscriptionId: string;
 
   @IsString()
-  txHash: string;
+  @IsOptional()
+  txHash?: string;
 
   @IsOptional()
   @IsNumber()

@@ -38,11 +38,13 @@ let PaymentService = class PaymentService {
         return item;
     }
     async create(userId, dto) {
-        const existingPayment = await this.prisma.payment.findUnique({
-            where: { txHash: dto.txHash },
-        });
-        if (existingPayment) {
-            throw new common_1.BadRequestException('Transaction hash already used');
+        if (dto.txHash) {
+            const existingPayment = await this.prisma.payment.findFirst({
+                where: { txHash: dto.txHash },
+            });
+            if (existingPayment) {
+                throw new common_1.BadRequestException('Transaction hash already used');
+            }
         }
         const subscription = await this.prisma.subscription.findUnique({
             where: { id: dto.subscriptionId },
@@ -55,12 +57,15 @@ let PaymentService = class PaymentService {
             throw new common_1.ForbiddenException('Not your subscription');
         }
         const expectedAmount = subscription.service.price;
-        const verification = await this.blockchain.verifyPayment(dto.txHash, expectedAmount);
-        if (!verification.valid) {
-            throw new common_1.BadRequestException(verification.message);
-        }
-        if (!verification.confirmedAmount) {
-            throw new common_1.BadRequestException('Could not confirm payment amount from blockchain');
+        let verification = { valid: true, message: 'Verification skipped', confirmedAmount: expectedAmount };
+        if (dto.txHash) {
+            verification = await this.blockchain.verifyPayment(dto.txHash, expectedAmount);
+            if (!verification.valid) {
+                throw new common_1.BadRequestException(verification.message);
+            }
+            if (!verification.confirmedAmount) {
+                throw new common_1.BadRequestException('Could not confirm payment amount from blockchain');
+            }
         }
         const now = new Date();
         const endDate = new Date(now);
@@ -72,7 +77,8 @@ let PaymentService = class PaymentService {
                     subscriptionId: dto.subscriptionId,
                     amount: verification.confirmedAmount,
                     currency: dto.currency || 'ADA',
-                    txHash: dto.txHash,
+                    txHash: dto.txHash || null,
+                    paymentDate: now,
                 },
             });
             const updatedSubscription = await prisma.subscription.update({

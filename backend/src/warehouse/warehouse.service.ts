@@ -18,7 +18,13 @@ export class WarehouseService {
   }
 
   async create(dto: CreateWarehouseDto) {
-    return this.prisma.warehouse.create({ data: dto });
+    return this.prisma.warehouse.create({
+      data: {
+        name: dto.name,
+        location: dto.location,
+        capacity: dto.capacity ?? 0,
+      },
+    });
   }
 
   async update(id: string, dto: UpdateWarehouseDto) {

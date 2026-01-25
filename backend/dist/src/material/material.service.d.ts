@@ -20,6 +20,7 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -29,6 +30,7 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -49,6 +51,7 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -58,6 +61,7 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -67,6 +71,7 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
@@ -76,6 +81,7 @@ export declare class MaterialService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         quantity: number;
         supplierId: string;
         harvestDate: Date | null;
