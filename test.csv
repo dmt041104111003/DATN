@@ -1,0 +1,128 @@
+Module,Step,Description,API Endpoint,Frontend Page,Database Model,Technical Details
+Authentication,1.1,User kết nối wallet (Nami/Eternl),GET /auth/nonce,/login,WalletNonce,Generate nonce cho wallet address
+Authentication,1.2,User ký message với wallet,POST /auth/verify,/login,"User, WalletNonce",Verify signature tạo JWT token
+Authentication,1.3,Lưu session redirect dashboard,GET /auth/me,/dashboard,User,Validate token return user info
+Authentication,1.4,Logout user,POST /auth/logout,-,User,Clear session và redirect về home
+Subscription,2.1,Xem danh sách service plans,GET /services,/dashboard/billing,Service,Hiển thị price duration maxProducts
+Subscription,2.1.1,Xem chi tiết service plan,GET /services/:id,/dashboard/billing,Service,Hiển thị chi tiết service plan
+Subscription,2.2,Chọn service plan click Subscribe,-,/dashboard/billing,-,User chọn plan
+Subscription,2.3,Kết nối wallet tạo payment transaction,POST /contract/payment,/dashboard/billing,-,Tạo unsignedTx gửi ADA đến APP_WALLET_ADDRESS
+Subscription,2.4,User ký và submit transaction,-,/dashboard/billing,-,Wallet ký tx submit lên blockchain
+Subscription,2.5,Submit txHash để verify payment,POST /subscriptions/pay,/dashboard/billing,Subscription (status pending),Lưu subscription với txHash status pending
+Subscription,2.6,Backend verify transaction trên blockchain,-,-,Subscription,"BlockchainService.verifyPayment(): Query Blockfrost API Check tx confirmation Verify amount >= service.price Max 10 retries delay 2s"
+Subscription,2.7,Update subscription status,-,-,Subscription,"Nếu valid → status: active Nếu invalid → status: expired"
+Subscription,2.8,User xem subscription status,GET /subscriptions,/dashboard/billing,Subscription,Auto-update expired subscriptions
+Subscription,2.9,Cancel subscription (nếu cần),POST /subscriptions/:id/cancel,/dashboard/billing,Subscription (status cancelled),Chỉ cancel không refund
+Product Lifecycle,3.1,Check quota trước khi tạo,GET /products/quota,/dashboard/products,"Subscription, Service, User","Check daily limit: Free: 5 products/day Premium: theo maxProducts Unlimited: null. Related tables: User (owner), Subscription (quota check), Service (maxProducts)"
+Product Lifecycle,3.2,Tạo product mới,POST /products,/dashboard/products,"Product, User, Subscription, Service","Validate quota tạo product (chưa có policyId). Related tables: User (owner), Subscription (quota validation), Service (maxProducts limit)"
+Product Lifecycle,3.3,Xem danh sách products,GET /products/my,/dashboard/products,Product,Cache 300s trong Redis
+Product Lifecycle,3.3.1,Xem tất cả products (public),GET /products,-,Product,Public endpoint xem tất cả products
+Product Lifecycle,3.4,Xem chi tiết product,GET /products/:id,/dashboard/products/:id,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Include related data từ tất cả bảng: Document[], Certification[], ProductionProcess[], WarehouseStorage[] (với Warehouse), ProductMaterial[] (với Material và Supplier)"
+Product Lifecycle,3.5,Thêm Documents,POST /documents,/dashboard/products/:id,"Document, Product","Link với productId. Related tables: Product (foreign key)"
+Product Lifecycle,3.5.1,Xem danh sách Documents,GET /documents,/dashboard/products/:id,Document,Public endpoint xem tất cả documents
+Product Lifecycle,3.5.2,Xem chi tiết Document,GET /documents/:id,/dashboard/products/:id,Document,Public endpoint xem document detail
+Product Lifecycle,3.5.3,Update Document,PATCH /documents/:id,/dashboard/products/:id,Document,Update document information
+Product Lifecycle,3.5.4,Delete Document,DELETE /documents/:id,/dashboard/products/:id,Document,Delete document
+Product Lifecycle,3.6,Thêm Certifications,POST /certifications,/dashboard/products/:id,"Certification, Product","certName, issueDate, expiryDate, certHash. Related tables: Product (foreign key)"
+Product Lifecycle,3.6.1,Xem danh sách Certifications,GET /certifications,/dashboard/products/:id,Certification,Public endpoint xem tất cả certifications
+Product Lifecycle,3.6.2,Xem chi tiết Certification,GET /certifications/:id,/dashboard/products/:id,Certification,Public endpoint xem certification detail
+Product Lifecycle,3.6.3,Update Certification,PATCH /certifications/:id,/dashboard/products/:id,Certification,Update certification information
+Product Lifecycle,3.6.4,Delete Certification,DELETE /certifications/:id,/dashboard/products/:id,Certification,Delete certification
+Product Lifecycle,3.7,Thêm Production Processes,POST /production-processes,/dashboard/products/:id,"ProductionProcess, Product","stepName, startTime, endTime, location. Related tables: Product (foreign key)"
+Product Lifecycle,3.7.1,Xem danh sách Production Processes,GET /production-processes,/dashboard/products/:id,ProductionProcess,Public endpoint xem tất cả processes
+Product Lifecycle,3.7.2,Xem chi tiết Production Process,GET /production-processes/:id,/dashboard/products/:id,ProductionProcess,Public endpoint xem process detail
+Product Lifecycle,3.7.3,Update Production Process,PATCH /production-processes/:id,/dashboard/products/:id,ProductionProcess,Update process information
+Product Lifecycle,3.7.4,Delete Production Process,DELETE /production-processes/:id,/dashboard/products/:id,ProductionProcess,Delete process
+Product Lifecycle,3.8,Thêm Materials (link với Material),POST /product-materials,/dashboard/products/:id,"ProductMaterial, Product, Material, Supplier","quantity, unit. Related tables: Product (foreign key), Material (foreign key), Material → Supplier (nested relationship)"
+Product Lifecycle,3.8.1,Xem danh sách Product Materials,GET /product-materials?productId=...,/dashboard/products/:id,ProductMaterial,Get materials linked to product
+Product Lifecycle,3.8.2,Xem chi tiết Product Material,GET /product-materials/:id,/dashboard/products/:id,ProductMaterial,Get product material detail
+Product Lifecycle,3.8.3,Update Product Material,PATCH /product-materials/:id,/dashboard/products/:id,ProductMaterial,Update quantity unit
+Product Lifecycle,3.8.4,Delete Product Material,DELETE /product-materials/:id,/dashboard/products/:id,ProductMaterial,Remove material from product
+Product Lifecycle,3.9,Thêm Warehouse Storage,POST /warehouse-storages,/dashboard/products/:id,"WarehouseStorage, Product, Warehouse","entryTime, exitTime, conditions. Related tables: Product (foreign key), Warehouse (foreign key)"
+Product Lifecycle,3.9.1,Xem danh sách Warehouse Storages,GET /warehouse-storages,/dashboard/products/:id,WarehouseStorage,Public endpoint xem tất cả storages
+Product Lifecycle,3.9.2,Xem chi tiết Warehouse Storage,GET /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Public endpoint xem storage detail
+Product Lifecycle,3.9.3,Update Warehouse Storage,PATCH /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Update entry exit time conditions
+Product Lifecycle,3.9.4,Delete Warehouse Storage,DELETE /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Delete storage record
+Product Lifecycle,3.10,Get Policy ID từ wallet,GET /contract/info?walletAddress=...,/dashboard/products/:id,-,"Cip68Contract: Tạo wallet từ address Generate policyId từ mint script Return policyId + storeAddress"
+Product Lifecycle,3.11,Mint Product thành NFT (CIP-68),POST /contract/mint,/dashboard/products/:id,Product,"Cip68Contract.mint(): Mint 2 tokens: CIP68_222 (fungible gửi user) CIP68_100 (reference lưu storeAddress) Metadata: {name, productId, _pk: pubKeyHash} Store: Inline datum tại storeAddress Fee: 1 ADA đến APP_WALLET_ADDRESS Collateral: Cần >= 5 ADA UTXO"
+Product Lifecycle,3.12,User ký và submit mint transaction,-,/dashboard/products/:id,-,Wallet ký unsignedTx submit
+Product Lifecycle,3.13,Update product với policyId và assetName,PATCH /products/:id,/dashboard/products/:id,Product,Lưu policyId assetName sau khi mint thành công
+Product Lifecycle,3.14,Verify mint transaction,-,-,Product,Query blockchain để verify
+Product Lifecycle,3.15,Delete product,DELETE /products/:id,/dashboard/products,"Product, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial","Delete product (cascade delete related data). Cascade delete: ProductMaterial (onDelete: Cascade). Manual delete: Document, Certification, ProductionProcess, WarehouseStorage"
+Material Supplier,4.1,Tạo Supplier,POST /suppliers,/dashboard/materials (tab Suppliers),Supplier,"name, location, gpsCoordinates, contactInfo"
+Material Supplier,4.2,Xem danh sách Suppliers,GET /suppliers,/dashboard/materials,Supplier,Filter theo userId
+Material Supplier,4.2.1,Xem chi tiết Supplier,GET /suppliers/:id,/dashboard/materials,Supplier,Get supplier detail
+Material Supplier,4.2.2,Update Supplier,PATCH /suppliers/:id,/dashboard/materials,Supplier,Update supplier information
+Material Supplier,4.2.3,Delete Supplier,DELETE /suppliers/:id,/dashboard/materials,Supplier,Delete supplier
+Material Supplier,4.3,Tạo Material (link với Supplier),POST /materials,/dashboard/materials (tab Materials),Material,"name, supplierId, harvestDate, quantity"
+Material Supplier,4.4,Xem Materials theo Supplier,GET /materials/by-supplier/:supplierId,/dashboard/materials,Material,Filter materials theo supplier
+Warehouse,5.1,Tạo Warehouse,POST /warehouses,/dashboard/warehouses,Warehouse,"name, location, capacity"
+Warehouse,5.2,Xem danh sách Warehouses,GET /warehouses,/dashboard/warehouses,Warehouse,Public (không filter userId)
+Warehouse,5.3,Xem chi tiết Warehouse,GET /warehouses/:id,/dashboard/warehouses/:id,"Warehouse, WarehouseStorage",Include storage history
+Warehouse,5.3.1,Update Warehouse,PATCH /warehouses/:id,/dashboard/warehouses/:id,Warehouse,Update warehouse information
+Warehouse,5.3.2,Delete Warehouse,DELETE /warehouses/:id,/dashboard/warehouses/:id,Warehouse,Delete warehouse
+Warehouse,5.4,Thêm Product vào Warehouse,POST /warehouse-storages,/dashboard/warehouses/:id,WarehouseStorage,"entryTime, exitTime (optional), conditions"
+Media Collection,6.1,Upload Media files (single),POST /media/upload,/dashboard/media,Media,Upload lên IPFS lưu URL
+Media Collection,6.2,Upload Media files (batch),POST /media/upload/batch,/dashboard/media,Media[],Upload nhiều files cùng lúc (max 10)
+Media Collection,6.3,Xem danh sách Media,GET /media,/dashboard/media,Media,Filter theo userId
+Media Collection,6.3.1,Xem chi tiết Media,GET /media/:id,/dashboard/media,Media,Get media detail
+Media Collection,6.3.2,Update Media,PATCH /media/:id,/dashboard/media,Media,Update media information
+Media Collection,6.3.3,Delete Media,DELETE /media/:id,/dashboard/media,Media,Delete media file
+Media Collection,6.4,Tạo Collection,POST /collections,/dashboard/collections,Collection,"name, description, thumbnail (có thể chọn từ Media)"
+Media Collection,6.5,Xem Collections,GET /collections/my,/dashboard/collections,Collection,Filter theo userId
+Media Collection,6.6,Xem chi tiết Collection,GET /collections/:id,/dashboard/collections/:id,"Collection, Metadata",Include metadata và NFT references
+Media Collection,6.6.1,Xem tất cả Collections (public),GET /collections,-,Collection,Public endpoint xem tất cả collections
+Media Collection,6.6.2,Update Collection,PATCH /collections/:id,/dashboard/collections/:id,Collection,Update collection information
+Media Collection,6.6.3,Delete Collection,DELETE /collections/:id,/dashboard/collections/:id,Collection,Delete collection (cascade delete metadata)
+Media Collection,6.7,Thêm Metadata vào Collection,POST /metadata,/dashboard/collections/:id,Metadata,Create metadata for collection
+Media Collection,6.7.1,Xem danh sách Metadata,GET /metadata,/dashboard/collections/:id,Metadata,Public endpoint xem tất cả metadata
+Media Collection,6.7.2,Xem chi tiết Metadata,GET /metadata/:id,/dashboard/collections/:id,Metadata,Public endpoint xem metadata detail
+Media Collection,6.7.3,Update Metadata,PATCH /metadata/:id,/dashboard/collections/:id,Metadata,Update metadata content
+Media Collection,6.7.4,Delete Metadata,DELETE /metadata/:id,/dashboard/collections/:id,Metadata,Delete metadata
+Public Trace,7.1,User nhập Policy ID và Asset Name,-,/trace,-,Input form
+Public Trace,7.2,Submit để trace product,GET /products/trace/:policyId/:assetName,/trace,-,ProductService.traceByNft()
+Public Trace,7.3,Query database product,-,-,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Tìm product theo policyId + assetName. Include: documents, productionProcesses, certifications, warehouseStorages (với warehouse), productMaterials (với material và supplier), user"
+Public Trace,7.4,Query blockchain (Blockfrost),-,-,-,"BlockchainService: getAssetInfo(): Asset details getAssetMetadata(): Metadata từ CIP68_100 reference token getAssetHistory(): Transaction history"
+Public Trace,7.5,Combine database + blockchain data,-,-,-,Merge data từ cả 2 nguồn
+Public Trace,7.6,Hiển thị trace results,-,/trace/:policyId/:assetName,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Hiển thị từ 10+ bảng: Product info (name policyId assetName historyHash owner) User (address) Documents[] Certifications[] ProductionProcesses[] Materials[] (từ ProductMaterial → Material → Supplier với location GPS) WarehouseStorages[] (với Warehouse name location) Blockchain asset info On-chain metadata (CIP-68)"
+Public Trace,7.7,Xem transaction history,GET /products/:id/history,-,-,"BlockchainService.getAssetHistory(): Query tất cả transactions của asset Include txHash action amount blockTime"
+NFT Operations,8.1,Update NFT Metadata,POST /contract/update,-,Product,"Cip68Contract.update(): Spend reference token từ storeAddress Update inline datum với metadata mới Fee: 1 ADA Redeemer: mConStr0([])"
+NFT Operations,8.2,Burn NFT,POST /contract/burn,-,Product,"Cip68Contract.burn(): Burn cả 2 tokens (CIP68_222 + CIP68_100) Spend reference token từ storeAddress Fee: 1 ADA Redeemer: mConStr1([])"
+Quota Management,9.1,Check product quota,GET /products/quota,/dashboard/products,"Subscription, Service","Logic: Get active subscription maxProducts = subscription.service.maxProducts ?? 5 Count products created today (from startOfDay) Return: tier maxProducts usedProducts remainingProducts"
+Quota Management,9.2,Validate trước khi tạo product,POST /products,/dashboard/products,Service,"ProductService.checkProductLimit(): Nếu maxProducts === null → unlimited Nếu todayCount >= maxProducts → throw ForbiddenException"
+Product Database Relationships,Product Core Tables,Product chính có 5 bảng con trực tiếp,-,-,"Product, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial","1. Product (main) 2. Document[] (1:N) 3. Certification[] (1:N) 4. ProductionProcess[] (1:N) 5. WarehouseStorage[] (1:N) 6. ProductMaterial[] (1:N)"
+Product Database Relationships,Product Nested Relationships,Product liên kết gián tiếp qua bảng trung gian,-,-,"ProductMaterial, Material, Supplier, WarehouseStorage, Warehouse","7. ProductMaterial → Material (N:1) 8. Material → Supplier (N:1) 9. WarehouseStorage → Warehouse (N:1) 10. Product → User (N:1 owner)"
+Product Database Relationships,Product Quota Check,Check quota khi tạo product,-,-,"Product, User, Subscription, Service","11. User (owner) 12. Subscription (active subscription) 13. Service (maxProducts limit)"
+Smart Contract,Policy ID Generation,Unique per wallet address,-,-,-,Generated từ mint script với params: pubKeyExchange pubKeyIssuer storeScriptHash
+Smart Contract,Store Address,Script address lưu reference tokens,-,-,-,Generated từ store script với params: pubKeyExchange pubKeyIssuer
+Smart Contract,CIP-68 Tokens,2 tokens per NFT,-,-,-,"CIP68_222: Fungible token (user sở hữu) CIP68_100: Reference token (lưu tại storeAddress)"
+Smart Contract,Metadata Storage,Inline datum tại storeAddress,-,-,-,Format: CIP-68 compliant với metadataToCip68()
+Smart Contract,Mint Process,Tạo NFT mới,-,-,-,"1. Mint CIP68_222 → user address 2. Mint CIP68_100 → storeAddress 3. Store metadata tại storeAddress 4. Pay 1 ADA fee"
+Smart Contract,Update Process,Update metadata,-,-,-,"1. Spend reference token từ storeAddress 2. Create new reference token với metadata mới 3. Pay 1 ADA fee"
+Smart Contract,Burn Process,Destroy NFT,-,-,-,"1. Burn CIP68_222 token 2. Burn CIP68_100 token 3. Spend reference token từ storeAddress 4. Pay 1 ADA fee"
+Smart Contract,Collateral Requirement,Cho Plutus transactions,-,-,-,Cần >= 5 ADA UTXO (không có tokens khác)
+Smart Contract,Network Support,Preprod & Mainnet,-,-,-,Config qua env: NEXT_PUBLIC_APP_NETWORK
+Test Flow,1,Onboarding,Login với wallet → Xem dashboard → Check quota,-,-,-
+Test Flow,2,Subscription,"Browse services → Subscribe → Payment (1 ADA fee) → Verify active subscription",-,-,Payment transaction → Blockfrost verification
+Test Flow,3,Setup Infrastructure,Tạo Suppliers → Tạo Materials → Tạo Warehouses → Upload Media (IPFS),-,-,-
+Test Flow,4,Create Product,"Tạo product (check quota) → Add Documents → Add Certifications → Add Production Processes → Link Materials → Add Warehouse Storage",-,-,-
+Test Flow,5,Mint NFT (CIP-68),Get Policy ID → Mint với metadata → Sign & Submit → Update product với policyId/assetName,-,-,"Mint 2 tokens → Store metadata → Pay 1 ADA fee"
+Test Flow,6,Public Trace,"Mở /trace (không login) → Nhập Policy ID + Asset Name → Query database + blockchain → Xem đầy đủ trace information",-,-,"Blockfrost queries: Asset info metadata history"
+Test Flow,7,Update NFT Metadata,Update product info → Update metadata trên blockchain,-,-,"Spend reference token → Update inline datum → Pay 1 ADA fee"
+Test Flow,8,View Transaction History,Xem lịch sử transactions của NFT,-,-,Blockfrost.getAssetHistory() → All tx hashes actions amounts
+Test Flow,9,Collection Management,Tạo Collection → Link với Media → View collection details,-,-,-
+Test Flow,10,Burn NFT (Optional),Burn NFT nếu cần,-,-,"Burn cả 2 tokens → Spend reference token → Pay 1 ADA fee"
+Error Handling,Duplicate Asset Name,Check existing UTXO tại storeAddress,-,-,Error: Asset already exists
+Error Handling,Insufficient Payment,Verify amount < expected,-,-,"Status: expired, message: Insufficient payment"
+Error Handling,Transaction Not Confirmed,Retry up to 10 times (2s delay),-,-,"Status: pending, continue retry"
+Error Handling,No Active Subscription,Default to Free tier (5 products/day),-,-,Quota: 5 products/day
+Error Handling,Product Quota Exceeded,Check before create,-,-,403 Forbidden: Bạn đã đạt giới hạn...
+Error Handling,Asset Not Found (Burn/Update),Check storeAddress UTXO,-,-,Error: Asset not found
+Error Handling,No Collateral,Check UTXO >= 5 ADA,-,-,Error: No suitable UTxO for collateral
+Error Handling,Trace: Product Not in DB,Query blockchain only,-,-,Return blockchain info only
+Error Handling,Trace: Product Not on Chain,Query database only,-,-,Return database info only
+User Management,10.1,Get current user info,GET /users/me,-,User,Get authenticated user information
+User Management,10.2,Update user profile,PATCH /users/me,-,User,Update user walletName
+User Management,10.3,Delete user account,DELETE /users/me,-,User,Delete user account và all related data
+System,11.1,Health check,GET /health,-,-,Check system health status
+System,11.2,Root endpoint,GET /,-,-,API root endpoint
