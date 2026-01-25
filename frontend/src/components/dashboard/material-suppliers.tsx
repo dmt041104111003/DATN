@@ -15,22 +15,31 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LocationPicker } from '@/components/ui/location-picker'
 import { useForm } from 'react-hook-form'
 
 export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplier[]; onRefresh: () => void }) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Supplier | null>(null)
-  const { register, handleSubmit, reset } = useForm<{ name: string; contact?: string; address?: string }>()
+  const [location, setLocation] = useState<{ location: string; gpsCoordinates: string } | undefined>()
+  const { register, handleSubmit, reset } = useForm<{ name: string; contactInfo?: string }>()
 
-  const onSubmit = async (data: { name: string; contact?: string; address?: string }) => {
+  const onSubmit = async (data: { name: string; contactInfo?: string }) => {
     try {
+      const payload = {
+        name: data.name,
+        contactInfo: data.contactInfo,
+        location: location?.location,
+        gpsCoordinates: location?.gpsCoordinates,
+      }
       if (editing) {
-        await apiClient.suppliers.update(editing.id, data)
+        await apiClient.suppliers.update(editing.id, payload)
       } else {
-        await apiClient.suppliers.create(data)
+        await apiClient.suppliers.create(payload)
       }
       setOpen(false)
       setEditing(null)
+      setLocation(undefined)
       reset()
       onRefresh()
     } catch (err) {
@@ -52,14 +61,18 @@ export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplie
     setEditing(supplier)
     reset({
       name: supplier.name,
-      contact: supplier.contact || '',
-      address: supplier.address || '',
+      contactInfo: supplier.contactInfo || '',
+    })
+    setLocation({
+      location: supplier.location || '',
+      gpsCoordinates: supplier.gpsCoordinates || '',
     })
     setOpen(true)
   }
 
   const handleCreate = () => {
     setEditing(null)
+    setLocation(undefined)
     reset()
     setOpen(true)
   }
@@ -79,16 +92,35 @@ export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplie
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label>Name</Label>
-                  <Input {...register('name', { required: true })} placeholder="e.g. ABC Supplier Co." />
+                  <Label htmlFor="name">Name *</Label>
+                  <Input 
+                    id="name"
+                    {...register('name', { required: true })} 
+                    placeholder="e.g. ABC Supplier Co." 
+                  />
+                </div>
+                <LocationPicker
+                  value={location}
+                  onChange={setLocation}
+                  label="Location"
+                />
+                <div className="grid gap-2">
+                  <Label htmlFor="gps">GPS Coordinates</Label>
+                  <Input 
+                    id="gps"
+                    value={location?.gpsCoordinates || ''} 
+                    readOnly
+                    placeholder="Select location on map to get GPS coordinates"
+                    className="bg-muted font-mono text-xs"
+                  />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Contact (Optional)</Label>
-                  <Input {...register('contact')} placeholder="e.g. +1234567890, email@example.com" />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Address (Optional)</Label>
-                  <Input {...register('address')} placeholder="e.g. 123 Main St, City, Country" />
+                  <Label htmlFor="contactInfo">Contact Info</Label>
+                  <Input 
+                    id="contactInfo"
+                    {...register('contactInfo')} 
+                    placeholder="e.g. +1234567890, email@example.com" 
+                  />
                 </div>
               </div>
               <DialogFooter>
@@ -108,8 +140,9 @@ export function MaterialSuppliers({ suppliers, onRefresh }: { suppliers: Supplie
               <div key={supplier.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 border rounded">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{supplier.name}</p>
-                  {supplier.contact && <p className="text-xs text-muted-foreground break-words">Contact: {supplier.contact}</p>}
-                  {supplier.address && <p className="text-xs text-muted-foreground break-words">{supplier.address}</p>}
+                  {supplier.location && <p className="text-xs text-muted-foreground break-words">{supplier.location}</p>}
+                  {supplier.gpsCoordinates && <p className="text-xs text-muted-foreground font-mono break-words">GPS: {supplier.gpsCoordinates}</p>}
+                  {supplier.contactInfo && <p className="text-xs text-muted-foreground break-words">Contact: {supplier.contactInfo}</p>}
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto shrink-0">
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(supplier)} className="flex-1 sm:flex-initial">Edit</Button>
