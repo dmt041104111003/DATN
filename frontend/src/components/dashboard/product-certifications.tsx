@@ -206,9 +206,6 @@ export function ProductCertifications({ productId, certifications, onRefresh }: 
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Certification' : 'Add Certification'}</DialogTitle>
-            <DialogDescription>
-              {editing ? 'Update certification information' : 'Add a new certification'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 px-4 py-4 min-w-0 w-full">
             <div className="grid gap-2">

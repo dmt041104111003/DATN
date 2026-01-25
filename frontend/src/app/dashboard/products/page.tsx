@@ -104,9 +104,6 @@ export default function ProductsPage() {
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Product' : 'Create Product'}</DialogTitle>
-                  <DialogDescription>
-                    {editing ? 'Update product information' : 'Add a new product to your system'}
-                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4 px-4 min-w-0 w-full">
                   <div className="grid gap-2">

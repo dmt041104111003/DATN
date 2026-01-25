@@ -104,9 +104,6 @@ export default function WarehousesPage() {
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Warehouse' : 'Create Warehouse'}</DialogTitle>
-                  <DialogDescription>
-                    {editing ? 'Update warehouse information' : 'Add a new storage facility'}
-                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                   <div className="grid gap-2">

@@ -133,9 +133,6 @@ export default function MaterialsPage() {
                   <form onSubmit={form.handleSubmit(onSubmit)}>
                     <DialogHeader>
                       <DialogTitle>{editing ? 'Edit Material' : 'Create Material'}</DialogTitle>
-                      <DialogDescription>
-                        {editing ? 'Update material information' : 'Add a new raw material'}
-                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                       <div className="grid gap-2">

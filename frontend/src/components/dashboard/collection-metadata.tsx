@@ -27,7 +27,7 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
   const [editing, setEditing] = useState<Metadata | null>(null)
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
-  const [selectedProductId, setSelectedProductId] = useState<string>('')
+  const [selectedProductId, setSelectedProductId] = useState<string>('__none__')
   const { register, handleSubmit, reset, setValue, watch } = useForm<{ assetName?: string; content: string; nftReference?: string }>()
 
   useEffect(() => {
@@ -45,6 +45,12 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
 
   const handleProductSelect = (productId: string) => {
     setSelectedProductId(productId)
+    if (productId === '__none__') {
+      setValue('nftReference', '')
+      setValue('assetName', '')
+      setValue('content', '')
+      return
+    }
     const product = products.find(p => p.id === productId)
     if (product && product.policyId && product.assetName) {
       const nftRef = `${product.policyId}${product.assetName}`
@@ -73,7 +79,7 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
       }
       setOpen(false)
       setEditing(null)
-      setSelectedProductId('')
+      setSelectedProductId('__none__')
       reset()
       onRefresh()
     } catch (err) {
@@ -89,7 +95,7 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
     setValue('content', meta.content)
     setValue('nftReference', meta.nftReference && meta.nftReference.length > 0 ? meta.nftReference[0] : '')
     const product = products.find(p => p.policyId && p.assetName && meta.nftReference?.includes(`${p.policyId}${p.assetName}`))
-    setSelectedProductId(product?.id || '')
+    setSelectedProductId(product?.id || '__none__')
     setOpen(true)
   }
 
@@ -106,7 +112,7 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
 
   const handleCreate = () => {
     setEditing(null)
-    setSelectedProductId('')
+    setSelectedProductId('__none__')
     reset()
     setOpen(true)
   }
@@ -158,7 +164,7 @@ export function CollectionMetadata({ collectionId, metadata, onRefresh }: { coll
                   <SelectValue placeholder="Select a product to link" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {products.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.name} ({product.assetName})

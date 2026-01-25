@@ -245,9 +245,6 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Material' : 'Add Material'}</DialogTitle>
-            <DialogDescription>
-              {editing ? 'Update material quantity and unit' : 'Add a material to this product'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 px-4 py-4 min-w-0 w-full">
             <div className="grid gap-2">

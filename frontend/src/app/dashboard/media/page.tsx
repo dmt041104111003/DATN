@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/dashboard/page-header'
 import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
 import { handleApiError } from '@/lib/utils/error-handler'
 import { EmptyState } from '@/components/dashboard/empty-state'
+import { toGatewayUrl, GatewayLink } from '@/components/ui/gateway-link'
 export default function MediaPage() {
   const router = useRouter()
   const { user } = useAuth()
@@ -93,13 +94,6 @@ export default function MediaPage() {
     return ''
   }
 
-  const toGatewayUrl = (ipfsUrl: string): string => {
-    if (ipfsUrl.startsWith('ipfs://')) {
-      const cid = ipfsUrl.replace('ipfs://', '')
-      return `https://gateway.pinata.cloud/ipfs/${cid}`
-    }
-    return ipfsUrl
-  }
 
   const getCidFromUrl = (url: string): string => {
     if (url.startsWith('ipfs://')) {
@@ -185,14 +179,7 @@ export default function MediaPage() {
             )},
             { key: 'type', header: 'Type', render: (item) => item.type },
             { key: 'url', header: 'URL', render: (item) => (
-              <a
-                href={toGatewayUrl(item.url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline font-mono text-xs break-all"
-              >
-                {truncateUrl(item.url)}
-              </a>
+              <GatewayLink url={item.url} className="block max-w-[300px]" />
             )},
           ]}
           actions={(item) => ({
@@ -218,16 +205,8 @@ export default function MediaPage() {
                 <span>{new Date(item.createdAt).toLocaleString()}</span>
               </div>
               <div className="break-words overflow-hidden w-full">
-                <span className="text-muted-foreground">URL: </span>
-                <a
-                  href={toGatewayUrl(item.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline font-mono text-xs block break-all"
-                  style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
-                >
-                  {item.url}
-                </a>
+                <span className="text-muted-foreground mb-2 block">URL: </span>
+                <GatewayLink url={item.url} className="mt-0" />
               </div>
               {item.type.startsWith('image/') && (
                 <img

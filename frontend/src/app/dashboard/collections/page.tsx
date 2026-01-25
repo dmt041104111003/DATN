@@ -29,6 +29,7 @@ import { PageHeader } from '@/components/dashboard/page-header'
 import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { useCrud } from '@/hooks/use-crud'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 type CollectionFormData = {
   name: string
@@ -165,9 +166,6 @@ export default function CollectionsPage() {
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Collection' : 'Create Collection'}</DialogTitle>
-                  <DialogDescription>
-                    {editing ? 'Update collection information' : 'Create a new product collection'}
-                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                   <div className="grid gap-2">
@@ -193,28 +191,19 @@ export default function CollectionsPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label>Thumbnail (Optional)</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={thumbnailSource === 'media' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleThumbnailSourceChange('media')}
-                        disabled={submitting}
-                        className="flex-1"
-                      >
-                        Select from Media
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={thumbnailSource === 'other' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleThumbnailSourceChange('other')}
-                        disabled={submitting}
-                        className="flex-1"
-                      >
-                        Other URL
-                      </Button>
-                    </div>
+                    <Tabs
+                      value={thumbnailSource}
+                      onValueChange={(value) => handleThumbnailSourceChange(value as 'media' | 'other')}
+                    >
+                      <TabsList className="w-full">
+                        <TabsTrigger value="media" disabled={submitting}>
+                          Select from Media
+                        </TabsTrigger>
+                        <TabsTrigger value="other" disabled={submitting}>
+                          Other URL
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
                     {thumbnailSource === 'media' ? (
                       <Select
                         value={selectedMediaId}
@@ -226,7 +215,7 @@ export default function CollectionsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {media.length === 0 ? (
-                            <SelectItem value="" disabled>No media files available</SelectItem>
+                            <SelectItem value="__no_media__" disabled>No media files available</SelectItem>
                           ) : (
                             media.map((item) => (
                               <SelectItem key={item.id} value={item.id}>

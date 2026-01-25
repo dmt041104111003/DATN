@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Collection, Metadata } from '@/types/api'
 import { CollectionMetadata } from '@/components/dashboard/collection-metadata'
@@ -10,10 +9,10 @@ import { LoadingPage } from '@/components/ui/loading'
 import { DetailPageHeader } from '@/components/dashboard/detail-page-header'
 import { InfoCard } from '@/components/dashboard/info-card'
 import { NotFoundState } from '@/components/dashboard/not-found-state'
+import { GatewayLink } from '@/components/ui/gateway-link'
 
 export default function CollectionDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const [collection, setCollection] = useState<Collection | null>(null)
   const [metadata, setMetadata] = useState<Metadata[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,7 +60,14 @@ export default function CollectionDetailPage() {
   const basicInfoItems = [
     { label: 'Name', value: collection.name },
     ...(collection.description ? [{ label: 'Description', value: collection.description }] : []),
-    ...(collection.thumbnail ? [{ label: 'Thumbnail', value: <img src={collection.thumbnail} alt={collection.name} className="mt-2 rounded w-full max-w-xs" /> }] : []),
+    ...(collection.thumbnail ? [{
+      label: 'Thumbnail',
+      value: (
+        <div className="mt-2">
+          <GatewayLink url={collection.thumbnail} />
+        </div>
+      )
+    }] : []),
   ]
 
   const timestampItems = [

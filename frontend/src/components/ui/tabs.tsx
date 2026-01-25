@@ -19,11 +19,68 @@ interface TabsProps {
 
 export function Tabs({ value, onValueChange, children, className }: TabsProps) {
   return (
-    <TabsContext.Provider value={{ value, onValueChange }}>
-      <div className={className}>
-        {children}
-      </div>
-    </TabsContext.Provider>
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .radio-inputs {
+            position: relative;
+            display: flex;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            box-sizing: border-box;
+            font-size: 14px;
+            width: 100%;
+            padding: 1rem 1rem 0 1rem;
+            gap: 0;
+          }
+
+          .radio-inputs .radio {
+            flex: 1;
+            display: flex;
+          }
+
+          .radio-inputs .radio input {
+            display: none;
+          }
+
+          .radio-inputs .radio .name {
+            display: flex;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+            border: none;
+            padding: 0.5rem 0.8rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            transform: translateY(0);
+            color: #666;
+            width: 100%;
+          }
+
+          .radio-inputs .radio input:checked + .name {
+            background-color: #374151;
+            color: #ffffff;
+            font-weight: 600;
+            transform: translateY(0);
+          }
+          .radio-inputs .radio input + .name:hover {
+            color: #374151;
+            transform: translateY(-1px);
+          }
+          .radio-inputs .radio input:checked + .name:hover {
+            color: #ffffff;
+            transform: translateY(0);
+          }
+        `
+      }} />
+      <TabsContext.Provider value={{ value, onValueChange }}>
+        <div className={className}>
+          {children}
+        </div>
+      </TabsContext.Provider>
+    </>
   )
 }
 
@@ -34,7 +91,7 @@ interface TabsListProps {
 
 export function TabsList({ children, className }: TabsListProps) {
   return (
-    <div className={cn("flex gap-1 sm:gap-2 border-b overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0", className)}>
+    <div className={cn("radio-inputs", className)}>
       {children}
     </div>
   )
@@ -56,19 +113,17 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
   const isActive = activeValue === value
 
   return (
-    <button
-      type="button"
-      onClick={() => onValueChange(value)}
-      className={cn(
-        "px-4 py-2 rounded-none border-b-2 border-transparent whitespace-nowrap text-sm sm:text-base transition-colors",
-        "hover:bg-accent/50 hover:text-accent-foreground",
-        "outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        isActive && "border-primary text-primary font-semibold bg-accent/50",
-        className
-      )}
-    >
-      {children}
-    </button>
+    <label className="radio">
+      <input
+        type="radio"
+        name="tabs"
+        checked={isActive}
+        onChange={() => onValueChange(value)}
+      />
+      <span className="name">
+        {children}
+      </span>
+    </label>
   )
 }
 

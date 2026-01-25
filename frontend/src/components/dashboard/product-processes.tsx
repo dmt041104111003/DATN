@@ -124,9 +124,6 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Process Step' : 'Add Process Step'}</DialogTitle>
-            <DialogDescription>
-              {editing ? 'Update production process information' : 'Add a new production process step'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 px-4 py-4 min-w-0 w-full">
             <div className="grid gap-2">

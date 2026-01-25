@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { useForm } from 'react-hook-form'
 import { SubListCard } from './sub-list-card'
 import { handleApiError } from '@/lib/utils/error-handler'
+import { toGatewayUrl, GatewayLink } from '@/components/ui/gateway-link'
 
 export function ProductDocuments({ productId, documents, onRefresh }: { productId: string; documents: Document[]; onRefresh: () => void }) {
   const router = useRouter()
@@ -31,14 +32,6 @@ export function ProductDocuments({ productId, documents, onRefresh }: { productI
   const [uploadMethod, setUploadMethod] = useState<'url' | 'file'>('url')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<{ docType: string; url: string; hash?: string }>()
-
-  const toGatewayUrl = (ipfsUrl: string): string => {
-    if (ipfsUrl.startsWith('ipfs://')) {
-      const cid = ipfsUrl.replace('ipfs://', '')
-      return `https://gateway.pinata.cloud/ipfs/${cid}`
-    }
-    return ipfsUrl
-  }
 
   const handleFileUpload = async (file: File) => {
     setUploading(true)
@@ -134,9 +127,7 @@ export function ProductDocuments({ productId, documents, onRefresh }: { productI
       columns={[
         { key: 'docType', header: 'Type', render: (d: Document) => <span className="font-medium">{d.docType}</span> },
         { key: 'url', header: 'URL', render: (d: Document) => (
-          <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block max-w-[300px]">
-            {d.url}
-          </a>
+          <GatewayLink url={d.url} className="block max-w-[300px]" />
         ), className: 'max-w-[300px]' },
         { key: 'hash', header: 'Hash', render: (d: Document) => <span className="font-mono text-xs">{d.hash || '-'}</span>, className: 'font-mono text-xs' },
       ]}
@@ -147,9 +138,7 @@ export function ProductDocuments({ productId, documents, onRefresh }: { productI
       })}
       mobileCardTitle={(d: Document) => d.docType}
       mobileCardDescription={(d: Document) => (
-        <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline break-all">
-          View
-        </a>
+        <GatewayLink url={d.url} className="text-xs" />
       )}
       emptyMessage="No documents"
       dialogOpen={open}
@@ -181,14 +170,7 @@ export function ProductDocuments({ productId, documents, onRefresh }: { productI
                 </div>
                 <div className="grid gap-2">
                   <Label className="text-sm font-medium">URL</Label>
-                  <a 
-                    href={viewingDoc.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-sm text-primary hover:underline break-all"
-                  >
-                    {viewingDoc.url}
-                  </a>
+                  <GatewayLink url={viewingDoc.url} />
                 </div>
                 {viewingDoc.hash && (
                   <div className="grid gap-2">
@@ -230,7 +212,7 @@ export function ProductDocuments({ productId, documents, onRefresh }: { productI
               <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
               {viewingDoc && (
                 <Button asChild>
-                  <a href={viewingDoc.url} target="_blank" rel="noopener noreferrer">
+                  <a href={toGatewayUrl(viewingDoc.url)} target="_blank" rel="noopener noreferrer">
                     Open in New Tab
                   </a>
                 </Button>
@@ -243,9 +225,6 @@ export function ProductDocuments({ productId, documents, onRefresh }: { productI
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Document' : 'Add Document'}</DialogTitle>
-            <DialogDescription>
-              {editing ? 'Update document information' : 'Add a new document via URL or file upload'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 px-4 py-4 min-w-0 w-full">
             <div className="grid gap-2">
