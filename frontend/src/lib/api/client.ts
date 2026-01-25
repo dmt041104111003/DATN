@@ -46,7 +46,7 @@ export const apiClient = {
     trace: (policyId: string, assetName: string) => request<any>(`/products/trace/${policyId}/${assetName}`),
     create: (data: { name: string }) => request<Product>('/products', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Product>) => request<Product>(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => request<{ message: string }>(`/products/${id}`, { method: 'DELETE' }),
+    remove: (id: string) => request<{ success: boolean; message: string; wasMinted?: boolean; warning?: string | null }>(`/products/${id}`, { method: 'DELETE' }),
   },
   materials: {
     findAll: () => request<Material[]>('/materials'),
@@ -150,7 +150,7 @@ export const apiClient = {
     uploadBatch: (files: File[]) => {
       const formData = new FormData()
       files.forEach(file => formData.append('files', file))
-      return request<Media[]>('/media/upload/batch', {
+      return request<{ successful: Media[]; failed: number; total: number }>('/media/upload/batch', {
         method: 'POST',
         body: formData,
         headers: {},
@@ -180,6 +180,7 @@ export const apiClient = {
   },
   contract: {
     getInfo: (walletAddress: string) => request<ContractInfo>(`/contract/info?walletAddress=${encodeURIComponent(walletAddress)}`),
+    prepareMetadata: (productId: string) => request<any>(`/contract/prepare-metadata/${productId}`),
     mint: (walletAddress: string, assets: MintAsset[]) => 
       request<ContractResponse>('/contract/mint', {
         method: 'POST',
@@ -190,10 +191,10 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify({ walletAddress, assets }),
       }),
-    update: (walletAddress: string, assets: UpdateAsset[]) => 
+    update: (walletAddress: string, assets: UpdateAsset[], productId?: string) => 
       request<ContractResponse>('/contract/update', {
         method: 'POST',
-        body: JSON.stringify({ walletAddress, assets }),
+        body: JSON.stringify({ walletAddress, assets, productId }),
       }),
     payment: (walletAddress: string, amount: string) => 
       request<ContractResponse>('/contract/payment', {

@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
 
@@ -13,7 +15,18 @@ export class CertificationService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private subscriptionService: SubscriptionService,
   ) {}
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
 
   async findAll() {
     const cacheKey = 'certifications:all';
@@ -49,6 +62,12 @@ export class CertificationService {
   }
 
   async create(userId: string, dto: CreateCertificationDto) {
+    await this.checkSubscriptionActive(userId);
+    
+    if (dto.expiryDate && new Date(dto.expiryDate) <= new Date(dto.issueDate)) {
+      throw new BadRequestException('Expiry date must be after issue date');
+    }
+    
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
     });
@@ -65,7 +84,17 @@ export class CertificationService {
   }
 
   async update(id: string, userId: string, dto: UpdateCertificationDto) {
+    await this.checkSubscriptionActive(userId);
+    
     const certification = await this.findOneOwned(id, userId);
+    
+    const issueDate = dto.issueDate || certification.issueDate;
+    const expiryDate = dto.expiryDate !== undefined ? dto.expiryDate : certification.expiryDate;
+    
+    if (expiryDate && new Date(expiryDate) <= new Date(issueDate)) {
+      throw new BadRequestException('Expiry date must be after issue date');
+    }
+    
     const updated = await this.prisma.certification.update({
       where: { id },
       data: dto,

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Collection, Media } from '@/types/api'
+import { useAuth } from '@/contexts/auth-context'
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ import {
 
 export default function CollectionsPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [collections, setCollections] = useState<Collection[]>([])
   const [media, setMedia] = useState<Media[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,9 +57,13 @@ export default function CollectionsPage() {
   const thumbnailValue = watch('thumbnail')
 
   useEffect(() => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
     loadCollections()
     loadMedia()
-  }, [])
+  }, [user, router])
 
   useEffect(() => {
     if (open && editing) {

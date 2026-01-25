@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateProductionProcessDto } from './dto/create-production-process.dto';
 import { UpdateProductionProcessDto } from './dto/update-production-process.dto';
 
@@ -13,7 +15,18 @@ export class ProductionProcessService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private subscriptionService: SubscriptionService,
   ) {}
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
 
   async findAll() {
     const cacheKey = 'production-processes:all';
@@ -51,6 +64,12 @@ export class ProductionProcessService {
   }
 
   async create(userId: string, dto: CreateProductionProcessDto) {
+    await this.checkSubscriptionActive(userId);
+    
+    if (dto.endTime && new Date(dto.endTime) <= new Date(dto.startTime)) {
+      throw new BadRequestException('End time must be after start time');
+    }
+    
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
     });
@@ -67,7 +86,17 @@ export class ProductionProcessService {
   }
 
   async update(id: string, userId: string, dto: UpdateProductionProcessDto) {
+    await this.checkSubscriptionActive(userId);
+    
     const process = await this.findOneOwned(id, userId);
+    
+    const startTime = dto.startTime || process.startTime;
+    const endTime = dto.endTime !== undefined ? dto.endTime : process.endTime;
+    
+    if (endTime && new Date(endTime) <= new Date(startTime)) {
+      throw new BadRequestException('End time must be after start time');
+    }
+    
     const updated = await this.prisma.productionProcess.update({
       where: { id },
       data: dto,

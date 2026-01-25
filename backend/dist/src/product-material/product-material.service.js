@@ -13,12 +13,22 @@ exports.ProductMaterialService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
+const subscription_service_1 = require("../subscription/subscription.service");
 let ProductMaterialService = class ProductMaterialService {
     prisma;
     redis;
-    constructor(prisma, redis) {
+    subscriptionService;
+    constructor(prisma, redis, subscriptionService) {
         this.prisma = prisma;
         this.redis = redis;
+        this.subscriptionService = subscriptionService;
+    }
+    async checkSubscriptionActive(userId) {
+        const subscription = await this.subscriptionService.getActiveSubscription(userId);
+        if (!subscription) {
+            throw new common_1.BadRequestException('Subscription has expired. Please renew to continue using this feature.');
+        }
+        return subscription;
     }
     async findByProduct(productId, userId) {
         await this.checkProductOwnership(productId, userId);
@@ -62,8 +72,23 @@ let ProductMaterialService = class ProductMaterialService {
         return pm;
     }
     async create(userId, dto) {
+        await this.checkSubscriptionActive(userId);
+        if (dto.quantity <= 0) {
+            throw new common_1.BadRequestException('Số lượng phải lớn hơn 0');
+        }
         await this.checkProductOwnership(dto.productId, userId);
         await this.checkMaterialOwnership(dto.materialId, userId);
+        const existing = await this.prisma.productMaterial.findUnique({
+            where: {
+                productId_materialId: {
+                    productId: dto.productId,
+                    materialId: dto.materialId,
+                },
+            },
+        });
+        if (existing) {
+            throw new common_1.BadRequestException('This material has already been added to the product. Please update the quantity instead of adding a new entry.');
+        }
         const pm = await this.prisma.productMaterial.create({
             data: dto,
             include: {
@@ -76,6 +101,10 @@ let ProductMaterialService = class ProductMaterialService {
         return pm;
     }
     async update(id, userId, dto) {
+        await this.checkSubscriptionActive(userId);
+        if (dto.quantity !== undefined && dto.quantity <= 0) {
+            throw new common_1.BadRequestException('Số lượng phải lớn hơn 0');
+        }
         const pm = await this.findOneOwned(id, userId);
         const updated = await this.prisma.productMaterial.update({
             where: { id },
@@ -135,6 +164,7 @@ exports.ProductMaterialService = ProductMaterialService;
 exports.ProductMaterialService = ProductMaterialService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        subscription_service_1.SubscriptionService])
 ], ProductMaterialService);
 //# sourceMappingURL=product-material.service.js.map

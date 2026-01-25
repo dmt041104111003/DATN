@@ -14,14 +14,24 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 const ipfs_service_1 = require("../ipfs/ipfs.service");
+const subscription_service_1 = require("../subscription/subscription.service");
 let MediaService = class MediaService {
     prisma;
     redis;
     ipfs;
-    constructor(prisma, redis, ipfs) {
+    subscriptionService;
+    constructor(prisma, redis, ipfs, subscriptionService) {
         this.prisma = prisma;
         this.redis = redis;
         this.ipfs = ipfs;
+        this.subscriptionService = subscriptionService;
+    }
+    async checkSubscriptionActive(userId) {
+        const subscription = await this.subscriptionService.getActiveSubscription(userId);
+        if (!subscription) {
+            throw new common_1.BadRequestException('Subscription has expired. Please renew to continue using this feature.');
+        }
+        return subscription;
     }
     async findAllByUser(userId) {
         const cacheKey = `media:user:${userId}`;
@@ -57,28 +67,51 @@ let MediaService = class MediaService {
         return result;
     }
     async uploadToIpfs(userId, file) {
-        const { cid, url } = await this.ipfs.uploadFile(file, {
-            name: file.originalname,
-        });
-        const type = this.getFileType(file.mimetype);
-        const media = await this.prisma.media.create({
-            data: {
-                userId,
+        await this.checkSubscriptionActive(userId);
+        try {
+            const { cid, url } = await this.ipfs.uploadFile(file, {
                 name: file.originalname,
-                type,
-                url,
-            },
-        });
-        await this.redis.del(`media:user:${userId}`);
-        return {
-            ...media,
-            cid,
-            gatewayUrl: this.ipfs.toGatewayUrl(url),
-        };
+            });
+            const type = this.getFileType(file.mimetype);
+            const media = await this.prisma.media.create({
+                data: {
+                    userId,
+                    name: file.originalname,
+                    type,
+                    url,
+                },
+            });
+            await this.redis.del(`media:user:${userId}`);
+            return {
+                ...media,
+                cid,
+                gatewayUrl: this.ipfs.toGatewayUrl(url),
+            };
+        }
+        catch (error) {
+            if (error instanceof common_1.BadRequestException && error.message.includes('IPFS')) {
+                throw new common_1.BadRequestException('Kết nối IPFS lỗi. Vui lòng thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.');
+            }
+            throw error;
+        }
     }
     async uploadBatchToIpfs(userId, files) {
-        const results = await Promise.all(files.map((file) => this.uploadToIpfs(userId, file)));
-        return results;
+        await this.checkSubscriptionActive(userId);
+        const results = await Promise.allSettled(files.map((file) => this.uploadToIpfs(userId, file)));
+        const successful = results
+            .filter((r) => r.status === 'fulfilled')
+            .map((r) => r.value);
+        const failed = results
+            .filter((r) => r.status === 'rejected')
+            .map((r) => r.reason);
+        if (failed.length > 0 && successful.length === 0) {
+            throw new common_1.BadRequestException(`Upload failed: ${failed[0]?.message || 'Unable to upload file'}. Please try again.`);
+        }
+        return {
+            successful,
+            failed: failed.length,
+            total: files.length,
+        };
     }
     async update(id, userId, dto) {
         await this.findOne(id, userId);
@@ -114,6 +147,7 @@ exports.MediaService = MediaService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         redis_service_1.RedisService,
-        ipfs_service_1.IpfsService])
+        ipfs_service_1.IpfsService,
+        subscription_service_1.SubscriptionService])
 ], MediaService);
 //# sourceMappingURL=media.service.js.map

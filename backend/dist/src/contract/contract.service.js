@@ -14,10 +14,102 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@meshsdk/core");
 const cip68_contract_1 = require("./cip68.contract");
 const constants_1 = require("./constants");
+const subscription_service_1 = require("../subscription/subscription.service");
+const product_service_1 = require("../product/product.service");
+const prisma_service_1 = require("../prisma.service");
 let ContractService = class ContractService {
+    subscriptionService;
+    productService;
+    prisma;
     blockfrostProvider;
-    constructor() {
+    constructor(subscriptionService, productService, prisma) {
+        this.subscriptionService = subscriptionService;
+        this.productService = productService;
+        this.prisma = prisma;
         this.blockfrostProvider = new core_1.BlockfrostProvider(constants_1.BLOCKFROST_API_KEY);
+    }
+    async checkSubscriptionActive(userId) {
+        const subscription = await this.subscriptionService.getActiveSubscription(userId);
+        if (!subscription) {
+            throw new common_1.BadRequestException('Subscription has expired. Please renew to continue using this feature.');
+        }
+        return subscription;
+    }
+    async verifyProductOwnership(productId, userId) {
+        const product = await this.prisma.product.findUnique({
+            where: { id: productId },
+        });
+        if (!product) {
+            throw new common_1.NotFoundException('Product not found');
+        }
+        if (product.userId !== userId) {
+            throw new common_1.ForbiddenException('Not your product');
+        }
+        return product;
+    }
+    async prepareProductMetadata(productId, userId) {
+        await this.verifyProductOwnership(productId, userId);
+        const product = await this.prisma.product.findUnique({
+            where: { id: productId },
+            include: {
+                documents: true,
+                productionProcesses: true,
+                certifications: true,
+                productMaterials: {
+                    include: {
+                        material: {
+                            include: {
+                                supplier: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!product) {
+            throw new common_1.NotFoundException('Product not found');
+        }
+        const metadata = {
+            name: product.name,
+            productId: product.id,
+            description: `Product: ${product.name}`,
+        };
+        if (product.documents && product.documents.length > 0) {
+            metadata.documents = product.documents.map((doc) => ({
+                type: doc.docType,
+                url: doc.url,
+                hash: doc.hash || '',
+            }));
+        }
+        if (product.productMaterials && product.productMaterials.length > 0) {
+            metadata.materials = product.productMaterials.map((pm) => ({
+                name: pm.material.name,
+                quantity: pm.quantity,
+                unit: pm.unit || '',
+                harvestDate: pm.material.harvestDate?.toISOString() || '',
+                supplier: {
+                    name: pm.material.supplier.name,
+                    location: pm.material.supplier.location || '',
+                },
+            }));
+        }
+        if (product.productionProcesses && product.productionProcesses.length > 0) {
+            metadata.productionProcesses = product.productionProcesses.map((proc) => ({
+                stepName: proc.stepName,
+                startTime: proc.startTime.toISOString(),
+                endTime: proc.endTime?.toISOString() || '',
+                location: proc.location || '',
+            }));
+        }
+        if (product.certifications && product.certifications.length > 0) {
+            metadata.certifications = product.certifications.map((cert) => ({
+                name: cert.certName,
+                issueDate: cert.issueDate.toISOString(),
+                expiryDate: cert.expiryDate?.toISOString() || '',
+                hash: cert.certHash || '',
+            }));
+        }
+        return metadata;
     }
     createWalletFromAddress(walletAddress) {
         return new core_1.MeshWallet({
@@ -38,8 +130,11 @@ let ContractService = class ContractService {
             storeAddress: contract.storeAddress,
         };
     }
-    async createMint(walletAddress, params) {
+    async createMint(walletAddress, params, userId) {
         try {
+            if (userId) {
+                await this.checkSubscriptionActive(userId);
+            }
             const wallet = this.createWalletFromAddress(walletAddress);
             const contract = new cip68_contract_1.Cip68Contract({ wallet });
             const pubKeyHash = (0, core_1.deserializeAddress)(walletAddress).pubKeyHash;
@@ -60,6 +155,11 @@ let ContractService = class ContractService {
             };
         }
         catch (error) {
+            if (error instanceof common_1.BadRequestException ||
+                error instanceof common_1.NotFoundException ||
+                error instanceof common_1.ForbiddenException) {
+                throw error;
+            }
             return {
                 result: false,
                 data: null,
@@ -90,8 +190,20 @@ let ContractService = class ContractService {
             };
         }
     }
-    async createUpdate(walletAddress, params) {
+    async createUpdate(walletAddress, params, userId, productId) {
         try {
+            if (userId) {
+                await this.checkSubscriptionActive(userId);
+            }
+            if (userId && productId) {
+                const product = await this.verifyProductOwnership(productId, userId);
+                if (!product.policyId || !product.assetName) {
+                    throw new common_1.BadRequestException('Product must be minted before updating metadata');
+                }
+                if (params.length > 0 && params[0].assetName !== product.assetName) {
+                    throw new common_1.BadRequestException('Asset name does not match product');
+                }
+            }
             const wallet = this.createWalletFromAddress(walletAddress);
             const contract = new cip68_contract_1.Cip68Contract({ wallet });
             const pubKeyHash = (0, core_1.deserializeAddress)(walletAddress).pubKeyHash;
@@ -110,6 +222,16 @@ let ContractService = class ContractService {
             };
         }
         catch (error) {
+            if (error instanceof common_1.BadRequestException ||
+                error instanceof common_1.NotFoundException ||
+                error instanceof common_1.ForbiddenException) {
+                throw error;
+            }
+            if (error instanceof Error) {
+                if (error.message.includes('Asset') && error.message.includes('not found')) {
+                    throw new common_1.BadRequestException('Product does not support metadata updates. Asset not found on blockchain.');
+                }
+            }
             return {
                 result: false,
                 data: null,
@@ -140,6 +262,8 @@ let ContractService = class ContractService {
 exports.ContractService = ContractService;
 exports.ContractService = ContractService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [subscription_service_1.SubscriptionService,
+        product_service_1.ProductService,
+        prisma_service_1.PrismaService])
 ], ContractService);
 //# sourceMappingURL=contract.service.js.map

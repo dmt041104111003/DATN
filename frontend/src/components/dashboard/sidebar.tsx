@@ -34,6 +34,8 @@ function DashboardSidebarComponent() {
   const [used, setUsed] = useState<number>(0)
   const [max, setMax] = useState<number | null>(null)
   const [remainingDays, setRemainingDays] = useState<number | null>(null)
+  const [balance, setBalance] = useState<string | null>(null)
+  const [loadingBalance, setLoadingBalance] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -51,6 +53,39 @@ function DashboardSidebarComponent() {
     ])
   }, [])
 
+  useEffect(() => {
+    if (!user?.address || !user?.walletName) return
+
+    const getWalletBalance = async () => {
+      setLoadingBalance(true)
+      try {
+        const { BrowserWallet } = await import('@meshsdk/core')
+        const walletInstance = await BrowserWallet.enable(user.walletName || '')
+        const utxos = await walletInstance.getUtxos()
+        
+        let totalLovelace = BigInt(0)
+        for (const utxo of utxos) {
+          const lovelace = utxo.output.amount.find((a: any) => a.unit === 'lovelace')
+          if (lovelace) {
+            totalLovelace += BigInt(lovelace.quantity)
+          }
+        }
+        
+        const totalADA = Number(totalLovelace) / 1_000_000
+        setBalance(totalADA.toFixed(2))
+      } catch (err) {
+        console.error('Failed to get wallet balance:', err)
+        setBalance(null)
+      } finally {
+        setLoadingBalance(false)
+      }
+    }
+
+    getWalletBalance()
+    const interval = setInterval(getWalletBalance, 30000)
+    return () => clearInterval(interval)
+  }, [user?.address, user?.walletName])
+
   const activeStates = useMemo(() => menuItems.reduce((acc, item) => {
     acc[item.href] = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href)
     return acc
@@ -66,6 +101,11 @@ function DashboardSidebarComponent() {
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">{user?.id ? `${user.id.slice(0, 8)}...` : 'ID'}</p>
               <p className="text-sm font-medium truncate">{user?.address ? `${user.address.slice(0, 6)}...${user.address.slice(-4)}` : ''}</p>
+              {balance !== null && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {loadingBalance ? 'Loading...' : `${balance} ADA`}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">

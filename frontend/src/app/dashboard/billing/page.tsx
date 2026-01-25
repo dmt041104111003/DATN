@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
@@ -20,20 +21,36 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { LoadingPage } from '@/components/ui/loading'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ServiceCard } from '@/components/ui/service-card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 type Tab = 'services' | 'subscriptions'
 
 export default function BillingPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('services')
   const [services, setServices] = useState<Service[]>([])
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
 
   useEffect(() => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
     loadData()
-  }, [])
+  }, [user, router])
 
   const loadData = async () => {
     try {
@@ -48,9 +65,30 @@ export default function BillingPage() {
     }
   }
 
+  const checkWalletBalance = async (walletInstance: any, requiredAmountADA: number): Promise<boolean> => {
+    try {
+      const utxos = await walletInstance.getUtxos()
+      let totalLovelace = BigInt(0)
+      
+      for (const utxo of utxos) {
+        const lovelace = utxo.output.amount.find((a: any) => a.unit === 'lovelace')
+        if (lovelace) {
+          totalLovelace += BigInt(lovelace.quantity)
+        }
+      }
+      
+      const totalADA = Number(totalLovelace) / 1_000_000
+      const requiredAmount = requiredAmountADA + 0.2
+      
+      return totalADA >= requiredAmount
+    } catch {
+      return false
+    }
+  }
+
   const handleSubscribe = async (serviceId: string) => {
     if (!user?.address) {
-      alert('Please connect your wallet first')
+      router.push('/login')
       return
     }
 
@@ -65,6 +103,11 @@ export default function BillingPage() {
 
       const { BrowserWallet } = await import('@meshsdk/core')
       const walletInstance = await BrowserWallet.enable(user.walletName)
+
+      const hasEnoughBalance = await checkWalletBalance(walletInstance, service.price)
+      if (!hasEnoughBalance) {
+        throw new Error('Số dư không đủ. Vui lòng nạp thêm ADA vào ví.')
+      }
 
       const amountLovelace = (service.price * 1_000_000).toString()
       const paymentResponse = await apiClient.contract.payment(user.address, amountLovelace)
@@ -195,25 +238,30 @@ export default function BillingPage() {
             }
             
             return (
-              <ServiceCard
-                key={service.id}
-                name={service.name}
-                description={service.description || undefined}
-                price={service.price}
-                duration={durationText}
-                product={productText}
-                isActive={hasActive}
-                disabled={isDisabled}
-                buttonText={buttonText}
-                onClick={() => !isDisabled && handleSubscribe(service.id)}
-                className={cn(
-                  isDisabled && !hasActive && 'opacity-60',
-                  isFeatured && 'md:-mt-4 md:mb-4'
-                )}
-                style={orderValue ? { order: orderValue } : undefined}
-                isFeatured={isFeatured}
-                variant={(originalIndex % 3) as 0 | 1 | 2}
-              />
+              <div key={service.id} style={orderValue ? { order: orderValue } : undefined}>
+                <ServiceCard
+                  name={service.name}
+                  description={service.description || undefined}
+                  price={service.price}
+                  duration={durationText}
+                  product={productText}
+                  isActive={hasActive}
+                  disabled={isDisabled}
+                  buttonText={buttonText}
+                  onClick={() => {
+                    if (!isDisabled) {
+                      setSelectedService(service)
+                      setDetailOpen(true)
+                    }
+                  }}
+                  className={cn(
+                    isDisabled && !hasActive && 'opacity-60',
+                    isFeatured && 'md:-mt-4 md:mb-4'
+                  )}
+                  isFeatured={isFeatured}
+                  variant={(originalIndex % 3) as 0 | 1 | 2}
+                />
+              </div>
             )
           })})()}
         </div>
@@ -319,6 +367,97 @@ export default function BillingPage() {
         </>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedService?.name || 'Service Details'}</DialogTitle>
+            <DialogDescription>
+              Chi tiết gói dịch vụ
+            </DialogDescription>
+          </DialogHeader>
+          {selectedService && (
+            <div className="space-y-4 py-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Thông tin gói</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tên gói:</span>
+                    <span className="font-medium">{selectedService.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Giá:</span>
+                    <span className="font-medium">{selectedService.price} ADA</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Thời hạn:</span>
+                    <span className="font-medium">
+                      {selectedService.duration} {selectedService.duration === 1 ? 'ngày' : 'ngày'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Số sản phẩm tối đa:</span>
+                    <span className="font-medium">
+                      {selectedService.maxProducts === null ? 'Không giới hạn' : `${selectedService.maxProducts} sản phẩm / ngày`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {selectedService.description && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Mô tả</h3>
+                  <p className="text-sm text-muted-foreground">{selectedService.description}</p>
+                </div>
+              )}
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Tính năng</h3>
+                <ul className="space-y-1 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>Tạo và quản lý sản phẩm</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>Mint NFT cho sản phẩm</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>Quản lý tài liệu và chứng nhận</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>Theo dõi quy trình sản xuất</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    <span>
+                      {selectedService.maxProducts === null 
+                        ? 'Không giới hạn số lượng sản phẩm' 
+                        : `Tối đa ${selectedService.maxProducts} sản phẩm mỗi ngày`}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailOpen(false)}>
+              Đóng
+            </Button>
+            {selectedService && (
+              <Button
+                onClick={() => {
+                  setDetailOpen(false)
+                  handleSubscribe(selectedService.id)
+                }}
+                disabled={processing === selectedService.id}
+              >
+                {processing === selectedService.id ? 'Đang xử lý...' : 'Đăng ký ngay'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

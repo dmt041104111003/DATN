@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
@@ -31,6 +32,7 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
 
 export default function ProductsPage() {
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -66,19 +68,54 @@ export default function ProductsPage() {
       reset()
       loadProducts()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save product')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save product'
+      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
+        alert(`${errorMessage}. Please renew your subscription to continue.`)
+        router.push('/dashboard/billing')
+      } else {
+        alert(errorMessage)
+      }
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return
+    const product = products.find(p => p.id === id)
+    const isMinted = product?.policyId && product?.assetName
+    
+    let confirmMessage = 'Are you sure you want to delete this product?'
+    if (isMinted) {
+      confirmMessage = 'Are you sure you want to delete this product?\n\n⚠️ WARNING: This product has been minted as NFT.\n\nOn-chain blockchain data cannot be deleted, but off-chain metadata will be removed from the system.\n\nThis action cannot be undone.'
+    } else {
+      confirmMessage = 'Are you sure you want to delete this product?\n\nThis action cannot be undone.'
+    }
+    
+    if (!confirm(confirmMessage)) return
+    
     try {
-      await apiClient.products.remove(id)
+      const result = await apiClient.products.remove(id)
       loadProducts()
+      
+      // Show success message with warning if product was minted
+      if (result?.wasMinted) {
+        alert(`Product deleted successfully.\n\n⚠️ Note: This product was minted as NFT. On-chain blockchain data cannot be deleted, but off-chain metadata has been removed.`)
+      } else {
+        alert('Product deleted successfully.')
+      }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete product')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete product'
+      
+      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
+        alert(`${errorMessage}. Please renew your subscription to continue.`)
+        router.push('/dashboard/billing')
+      } else if (errorMessage.includes('Not your product') || errorMessage.includes('permission') || errorMessage.includes('Forbidden')) {
+        alert('You do not have permission to delete this product.')
+      } else if (errorMessage.includes('not found') || errorMessage.includes('NotFound')) {
+        alert('Product not found or has already been deleted.')
+      } else {
+        alert(`Failed to delete product. ${errorMessage}`)
+      }
     }
   }
 

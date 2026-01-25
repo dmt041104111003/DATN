@@ -10,11 +10,15 @@ exports.ContractModule = void 0;
 const common_1 = require("@nestjs/common");
 const contract_controller_1 = require("./contract.controller");
 const contract_service_1 = require("./contract.service");
+const subscription_module_1 = require("../subscription/subscription.module");
+const product_module_1 = require("../product/product.module");
+const prisma_module_1 = require("../prisma.module");
 let ContractModule = class ContractModule {
 };
 exports.ContractModule = ContractModule;
 exports.ContractModule = ContractModule = __decorate([
     (0, common_1.Module)({
+        imports: [subscription_module_1.SubscriptionModule, product_module_1.ProductModule, prisma_module_1.PrismaModule],
         controllers: [contract_controller_1.ContractController],
         providers: [contract_service_1.ContractService],
         exports: [contract_service_1.ContractService],

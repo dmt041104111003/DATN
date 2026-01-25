@@ -10,11 +10,15 @@ exports.CertificationModule = void 0;
 const common_1 = require("@nestjs/common");
 const certification_controller_1 = require("./certification.controller");
 const certification_service_1 = require("./certification.service");
+const prisma_module_1 = require("../prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const subscription_module_1 = require("../subscription/subscription.module");
 let CertificationModule = class CertificationModule {
 };
 exports.CertificationModule = CertificationModule;
 exports.CertificationModule = CertificationModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, subscription_module_1.SubscriptionModule],
         controllers: [certification_controller_1.CertificationController],
         providers: [certification_service_1.CertificationService],
         exports: [certification_service_1.CertificationService],

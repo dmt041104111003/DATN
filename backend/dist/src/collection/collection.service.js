@@ -13,12 +13,22 @@ exports.CollectionService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
+const subscription_service_1 = require("../subscription/subscription.service");
 let CollectionService = class CollectionService {
     prisma;
     redis;
-    constructor(prisma, redis) {
+    subscriptionService;
+    constructor(prisma, redis, subscriptionService) {
         this.prisma = prisma;
         this.redis = redis;
+        this.subscriptionService = subscriptionService;
+    }
+    async checkSubscriptionActive(userId) {
+        const subscription = await this.subscriptionService.getActiveSubscription(userId);
+        if (!subscription) {
+            throw new common_1.BadRequestException('Subscription has expired. Please renew to continue using this feature.');
+        }
+        return subscription;
     }
     async findAll() {
         const cacheKey = 'collections:all';
@@ -58,6 +68,7 @@ let CollectionService = class CollectionService {
         return item;
     }
     async create(userId, dto) {
+        await this.checkSubscriptionActive(userId);
         const collection = await this.prisma.collection.create({
             data: { ...dto, userId },
         });
@@ -68,6 +79,7 @@ let CollectionService = class CollectionService {
         return collection;
     }
     async update(id, userId, dto) {
+        await this.checkSubscriptionActive(userId);
         await this.findOneOwned(id, userId);
         const collection = await this.prisma.collection.update({
             where: { id },
@@ -94,6 +106,7 @@ exports.CollectionService = CollectionService;
 exports.CollectionService = CollectionService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        subscription_service_1.SubscriptionService])
 ], CollectionService);
 //# sourceMappingURL=collection.service.js.map

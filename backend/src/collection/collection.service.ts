@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
 
@@ -13,7 +15,18 @@ export class CollectionService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private subscriptionService: SubscriptionService,
   ) {}
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
 
   async findAll() {
     const cacheKey = 'collections:all';
@@ -57,6 +70,7 @@ export class CollectionService {
   }
 
   async create(userId: string, dto: CreateCollectionDto) {
+    await this.checkSubscriptionActive(userId);
     const collection = await this.prisma.collection.create({
       data: { ...dto, userId },
     });
@@ -68,6 +82,7 @@ export class CollectionService {
   }
 
   async update(id: string, userId: string, dto: UpdateCollectionDto) {
+    await this.checkSubscriptionActive(userId);
     await this.findOneOwned(id, userId);
     const collection = await this.prisma.collection.update({
       where: { id },

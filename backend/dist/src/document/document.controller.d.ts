@@ -6,18 +6,18 @@ export declare class DocumentController {
     constructor(documentService: DocumentService);
     findAll(): Promise<string | {
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         docType: string;
         url: string;
         hash: string | null;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         docType: string;
         url: string;
         hash: string | null;
@@ -26,9 +26,9 @@ export declare class DocumentController {
         id: string;
     }, dto: CreateDocumentDto): Promise<{
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         docType: string;
         url: string;
         hash: string | null;
@@ -37,9 +37,9 @@ export declare class DocumentController {
         id: string;
     }, id: string, dto: UpdateDocumentDto): Promise<{
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         docType: string;
         url: string;
         hash: string | null;

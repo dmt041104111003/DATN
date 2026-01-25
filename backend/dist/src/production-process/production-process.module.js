@@ -10,11 +10,15 @@ exports.ProductionProcessModule = void 0;
 const common_1 = require("@nestjs/common");
 const production_process_controller_1 = require("./production-process.controller");
 const production_process_service_1 = require("./production-process.service");
+const prisma_module_1 = require("../prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const subscription_module_1 = require("../subscription/subscription.module");
 let ProductionProcessModule = class ProductionProcessModule {
 };
 exports.ProductionProcessModule = ProductionProcessModule;
 exports.ProductionProcessModule = ProductionProcessModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, subscription_module_1.SubscriptionModule],
         controllers: [production_process_controller_1.ProductionProcessController],
         providers: [production_process_service_1.ProductionProcessService],
         exports: [production_process_service_1.ProductionProcessService],

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Media } from '@/types/api'
+import { useAuth } from '@/contexts/auth-context'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +22,8 @@ import {
 import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 
 export default function MediaPage() {
+  const router = useRouter()
+  const { user } = useAuth()
   const [media, setMedia] = useState<Media[]>([])
   const [loading, setLoading] = useState(true)
   const [uploadOpen, setUploadOpen] = useState(false)
@@ -28,8 +32,12 @@ export default function MediaPage() {
   const batchFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
     loadData()
-  }, [])
+  }, [user, router])
 
   const loadData = async () => {
     try {
@@ -49,15 +57,29 @@ export default function MediaPage() {
     try {
       if (files.length === 1) {
         await apiClient.media.upload(files[0])
+        alert('Upload thành công!')
       } else {
-        await apiClient.media.uploadBatch(Array.from(files))
+        const result = await apiClient.media.uploadBatch(Array.from(files))
+        if (result.failed > 0) {
+          alert(`Upload hoàn tất: ${result.successful.length}/${result.total} file thành công. ${result.failed} file thất bại.`)
+        } else {
+          alert(`Upload thành công ${result.total} file!`)
+        }
       }
       setUploadOpen(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
       if (batchFileInputRef.current) batchFileInputRef.current.value = ''
       loadData()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to upload')
+      const errorMessage = err instanceof Error ? err.message : 'Upload thất bại'
+      if (errorMessage.includes('hết hạn')) {
+        alert(`${errorMessage}. Vui lòng gia hạn gói dịch vụ để tiếp tục.`)
+        router.push('/dashboard/billing')
+      } else if (errorMessage.includes('IPFS')) {
+        alert(`${errorMessage}. Vui lòng thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.`)
+      } else {
+        alert(errorMessage)
+      }
     } finally {
       setUploading(false)
     }
@@ -86,6 +108,21 @@ export default function MediaPage() {
       return `https://gateway.pinata.cloud/ipfs/${cid}`
     }
     return ipfsUrl
+  }
+
+  const getCidFromUrl = (url: string): string => {
+    if (url.startsWith('ipfs://')) {
+      return url.replace('ipfs://', '')
+    }
+    return ''
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
   }
 
   const truncateUrl = (url: string, maxLength: number = 40) => {
@@ -203,6 +240,16 @@ export default function MediaPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
+                    {getCidFromUrl(item.url) && (
+                      <div>
+                        <span className="text-muted-foreground">CID: </span>
+                        <span className="font-mono text-xs break-all">{getCidFromUrl(item.url)}</span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground">Upload Date: </span>
+                      <span>{new Date(item.createdAt).toLocaleString()}</span>
+                    </div>
                     <div className="break-words overflow-hidden w-full">
                       <span className="text-muted-foreground">URL: </span>
                       <a

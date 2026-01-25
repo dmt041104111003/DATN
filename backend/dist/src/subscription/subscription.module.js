@@ -10,6 +10,7 @@ exports.SubscriptionModule = void 0;
 const common_1 = require("@nestjs/common");
 const subscription_controller_1 = require("./subscription.controller");
 const subscription_service_1 = require("./subscription.service");
+const subscription_scheduler_service_1 = require("./subscription-scheduler.service");
 const prisma_module_1 = require("../prisma.module");
 const blockchain_module_1 = require("../blockchain/blockchain.module");
 let SubscriptionModule = class SubscriptionModule {
@@ -19,7 +20,7 @@ exports.SubscriptionModule = SubscriptionModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule, blockchain_module_1.BlockchainModule],
         controllers: [subscription_controller_1.SubscriptionController],
-        providers: [subscription_service_1.SubscriptionService],
+        providers: [subscription_service_1.SubscriptionService, subscription_scheduler_service_1.SubscriptionSchedulerService],
         exports: [subscription_service_1.SubscriptionService],
     })
 ], SubscriptionModule);

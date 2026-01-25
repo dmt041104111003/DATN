@@ -9,7 +9,12 @@ export declare class ContractController {
         policyId: string;
         storeAddress: string;
     }>;
-    createMint(walletAddress: string, assets: MintDto[]): Promise<{
+    prepareMetadata(user: {
+        id: string;
+    } | undefined, productId: string): Promise<Record<string, any>>;
+    createMint(user: {
+        id: string;
+    } | undefined, walletAddress: string, assets: MintDto[]): Promise<{
         result: boolean;
         data: string;
         message: string;
@@ -27,7 +32,9 @@ export declare class ContractController {
         data: null;
         message: string;
     }>;
-    createUpdate(walletAddress: string, assets: UpdateMetadataDto[]): Promise<{
+    createUpdate(user: {
+        id: string;
+    } | undefined, walletAddress: string, assets: UpdateMetadataDto[], productId?: string): Promise<{
         result: boolean;
         data: string;
         message: string;

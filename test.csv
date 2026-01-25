@@ -1,128 +1,141 @@
 Module,Step,Description,API Endpoint,Frontend Page,Database Model,Technical Details
-Authentication,1.1,User kết nối wallet (Nami/Eternl),GET /auth/nonce,/login,WalletNonce,Generate nonce cho wallet address
-Authentication,1.2,User ký message với wallet,POST /auth/verify,/login,"User, WalletNonce",Verify signature tạo JWT token
-Authentication,1.3,Lưu session redirect dashboard,GET /auth/me,/dashboard,User,Validate token return user info
-Authentication,1.4,Logout user,POST /auth/logout,-,User,Clear session và redirect về home
-Subscription,2.1,Xem danh sách service plans,GET /services,/dashboard/billing,Service,Hiển thị price duration maxProducts
-Subscription,2.1.1,Xem chi tiết service plan,GET /services/:id,/dashboard/billing,Service,Hiển thị chi tiết service plan
-Subscription,2.2,Chọn service plan click Subscribe,-,/dashboard/billing,-,User chọn plan
-Subscription,2.3,Kết nối wallet tạo payment transaction,POST /contract/payment,/dashboard/billing,-,Tạo unsignedTx gửi ADA đến APP_WALLET_ADDRESS
-Subscription,2.4,User ký và submit transaction,-,/dashboard/billing,-,Wallet ký tx submit lên blockchain
-Subscription,2.5,Submit txHash để verify payment,POST /subscriptions/pay,/dashboard/billing,Subscription (status pending),Lưu subscription với txHash status pending
-Subscription,2.6,Backend verify transaction trên blockchain,-,-,Subscription,"BlockchainService.verifyPayment(): Query Blockfrost API Check tx confirmation Verify amount >= service.price Max 10 retries delay 2s"
-Subscription,2.7,Update subscription status,-,-,Subscription,"Nếu valid → status: active Nếu invalid → status: expired"
-Subscription,2.8,User xem subscription status,GET /subscriptions,/dashboard/billing,Subscription,Auto-update expired subscriptions
-Subscription,2.9,Cancel subscription (nếu cần),POST /subscriptions/:id/cancel,/dashboard/billing,Subscription (status cancelled),Chỉ cancel không refund
-Product Lifecycle,3.1,Check quota trước khi tạo,GET /products/quota,/dashboard/products,"Subscription, Service, User","Check daily limit: Free: 5 products/day Premium: theo maxProducts Unlimited: null. Related tables: User (owner), Subscription (quota check), Service (maxProducts)"
-Product Lifecycle,3.2,Tạo product mới,POST /products,/dashboard/products,"Product, User, Subscription, Service","Validate quota tạo product (chưa có policyId). Related tables: User (owner), Subscription (quota validation), Service (maxProducts limit)"
-Product Lifecycle,3.3,Xem danh sách products,GET /products/my,/dashboard/products,Product,Cache 300s trong Redis
-Product Lifecycle,3.3.1,Xem tất cả products (public),GET /products,-,Product,Public endpoint xem tất cả products
-Product Lifecycle,3.4,Xem chi tiết product,GET /products/:id,/dashboard/products/:id,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Include related data từ tất cả bảng: Document[], Certification[], ProductionProcess[], WarehouseStorage[] (với Warehouse), ProductMaterial[] (với Material và Supplier)"
-Product Lifecycle,3.5,Thêm Documents,POST /documents,/dashboard/products/:id,"Document, Product","Link với productId. Related tables: Product (foreign key)"
-Product Lifecycle,3.5.1,Xem danh sách Documents,GET /documents,/dashboard/products/:id,Document,Public endpoint xem tất cả documents
-Product Lifecycle,3.5.2,Xem chi tiết Document,GET /documents/:id,/dashboard/products/:id,Document,Public endpoint xem document detail
-Product Lifecycle,3.5.3,Update Document,PATCH /documents/:id,/dashboard/products/:id,Document,Update document information
-Product Lifecycle,3.5.4,Delete Document,DELETE /documents/:id,/dashboard/products/:id,Document,Delete document
-Product Lifecycle,3.6,Thêm Certifications,POST /certifications,/dashboard/products/:id,"Certification, Product","certName, issueDate, expiryDate, certHash. Related tables: Product (foreign key)"
-Product Lifecycle,3.6.1,Xem danh sách Certifications,GET /certifications,/dashboard/products/:id,Certification,Public endpoint xem tất cả certifications
-Product Lifecycle,3.6.2,Xem chi tiết Certification,GET /certifications/:id,/dashboard/products/:id,Certification,Public endpoint xem certification detail
-Product Lifecycle,3.6.3,Update Certification,PATCH /certifications/:id,/dashboard/products/:id,Certification,Update certification information
-Product Lifecycle,3.6.4,Delete Certification,DELETE /certifications/:id,/dashboard/products/:id,Certification,Delete certification
-Product Lifecycle,3.7,Thêm Production Processes,POST /production-processes,/dashboard/products/:id,"ProductionProcess, Product","stepName, startTime, endTime, location. Related tables: Product (foreign key)"
-Product Lifecycle,3.7.1,Xem danh sách Production Processes,GET /production-processes,/dashboard/products/:id,ProductionProcess,Public endpoint xem tất cả processes
-Product Lifecycle,3.7.2,Xem chi tiết Production Process,GET /production-processes/:id,/dashboard/products/:id,ProductionProcess,Public endpoint xem process detail
-Product Lifecycle,3.7.3,Update Production Process,PATCH /production-processes/:id,/dashboard/products/:id,ProductionProcess,Update process information
-Product Lifecycle,3.7.4,Delete Production Process,DELETE /production-processes/:id,/dashboard/products/:id,ProductionProcess,Delete process
-Product Lifecycle,3.8,Thêm Materials (link với Material),POST /product-materials,/dashboard/products/:id,"ProductMaterial, Product, Material, Supplier","quantity, unit. Related tables: Product (foreign key), Material (foreign key), Material → Supplier (nested relationship)"
-Product Lifecycle,3.8.1,Xem danh sách Product Materials,GET /product-materials?productId=...,/dashboard/products/:id,ProductMaterial,Get materials linked to product
-Product Lifecycle,3.8.2,Xem chi tiết Product Material,GET /product-materials/:id,/dashboard/products/:id,ProductMaterial,Get product material detail
-Product Lifecycle,3.8.3,Update Product Material,PATCH /product-materials/:id,/dashboard/products/:id,ProductMaterial,Update quantity unit
-Product Lifecycle,3.8.4,Delete Product Material,DELETE /product-materials/:id,/dashboard/products/:id,ProductMaterial,Remove material from product
-Product Lifecycle,3.9,Thêm Warehouse Storage,POST /warehouse-storages,/dashboard/products/:id,"WarehouseStorage, Product, Warehouse","entryTime, exitTime, conditions. Related tables: Product (foreign key), Warehouse (foreign key)"
-Product Lifecycle,3.9.1,Xem danh sách Warehouse Storages,GET /warehouse-storages,/dashboard/products/:id,WarehouseStorage,Public endpoint xem tất cả storages
-Product Lifecycle,3.9.2,Xem chi tiết Warehouse Storage,GET /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Public endpoint xem storage detail
-Product Lifecycle,3.9.3,Update Warehouse Storage,PATCH /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Update entry exit time conditions
-Product Lifecycle,3.9.4,Delete Warehouse Storage,DELETE /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Delete storage record
-Product Lifecycle,3.10,Get Policy ID từ wallet,GET /contract/info?walletAddress=...,/dashboard/products/:id,-,"Cip68Contract: Tạo wallet từ address Generate policyId từ mint script Return policyId + storeAddress"
-Product Lifecycle,3.11,Mint Product thành NFT (CIP-68),POST /contract/mint,/dashboard/products/:id,Product,"Cip68Contract.mint(): Mint 2 tokens: CIP68_222 (fungible gửi user) CIP68_100 (reference lưu storeAddress) Metadata: {name, productId, _pk: pubKeyHash} Store: Inline datum tại storeAddress Fee: 1 ADA đến APP_WALLET_ADDRESS Collateral: Cần >= 5 ADA UTXO"
-Product Lifecycle,3.12,User ký và submit mint transaction,-,/dashboard/products/:id,-,Wallet ký unsignedTx submit
-Product Lifecycle,3.13,Update product với policyId và assetName,PATCH /products/:id,/dashboard/products/:id,Product,Lưu policyId assetName sau khi mint thành công
-Product Lifecycle,3.14,Verify mint transaction,-,-,Product,Query blockchain để verify
-Product Lifecycle,3.15,Delete product,DELETE /products/:id,/dashboard/products,"Product, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial","Delete product (cascade delete related data). Cascade delete: ProductMaterial (onDelete: Cascade). Manual delete: Document, Certification, ProductionProcess, WarehouseStorage"
-Material Supplier,4.1,Tạo Supplier,POST /suppliers,/dashboard/materials (tab Suppliers),Supplier,"name, location, gpsCoordinates, contactInfo"
-Material Supplier,4.2,Xem danh sách Suppliers,GET /suppliers,/dashboard/materials,Supplier,Filter theo userId
-Material Supplier,4.2.1,Xem chi tiết Supplier,GET /suppliers/:id,/dashboard/materials,Supplier,Get supplier detail
-Material Supplier,4.2.2,Update Supplier,PATCH /suppliers/:id,/dashboard/materials,Supplier,Update supplier information
-Material Supplier,4.2.3,Delete Supplier,DELETE /suppliers/:id,/dashboard/materials,Supplier,Delete supplier
-Material Supplier,4.3,Tạo Material (link với Supplier),POST /materials,/dashboard/materials (tab Materials),Material,"name, supplierId, harvestDate, quantity"
-Material Supplier,4.4,Xem Materials theo Supplier,GET /materials/by-supplier/:supplierId,/dashboard/materials,Material,Filter materials theo supplier
-Warehouse,5.1,Tạo Warehouse,POST /warehouses,/dashboard/warehouses,Warehouse,"name, location, capacity"
-Warehouse,5.2,Xem danh sách Warehouses,GET /warehouses,/dashboard/warehouses,Warehouse,Public (không filter userId)
-Warehouse,5.3,Xem chi tiết Warehouse,GET /warehouses/:id,/dashboard/warehouses/:id,"Warehouse, WarehouseStorage",Include storage history
-Warehouse,5.3.1,Update Warehouse,PATCH /warehouses/:id,/dashboard/warehouses/:id,Warehouse,Update warehouse information
-Warehouse,5.3.2,Delete Warehouse,DELETE /warehouses/:id,/dashboard/warehouses/:id,Warehouse,Delete warehouse
-Warehouse,5.4,Thêm Product vào Warehouse,POST /warehouse-storages,/dashboard/warehouses/:id,WarehouseStorage,"entryTime, exitTime (optional), conditions"
-Media Collection,6.1,Upload Media files (single),POST /media/upload,/dashboard/media,Media,Upload lên IPFS lưu URL
-Media Collection,6.2,Upload Media files (batch),POST /media/upload/batch,/dashboard/media,Media[],Upload nhiều files cùng lúc (max 10)
-Media Collection,6.3,Xem danh sách Media,GET /media,/dashboard/media,Media,Filter theo userId
-Media Collection,6.3.1,Xem chi tiết Media,GET /media/:id,/dashboard/media,Media,Get media detail
-Media Collection,6.3.2,Update Media,PATCH /media/:id,/dashboard/media,Media,Update media information
-Media Collection,6.3.3,Delete Media,DELETE /media/:id,/dashboard/media,Media,Delete media file
-Media Collection,6.4,Tạo Collection,POST /collections,/dashboard/collections,Collection,"name, description, thumbnail (có thể chọn từ Media)"
-Media Collection,6.5,Xem Collections,GET /collections/my,/dashboard/collections,Collection,Filter theo userId
-Media Collection,6.6,Xem chi tiết Collection,GET /collections/:id,/dashboard/collections/:id,"Collection, Metadata",Include metadata và NFT references
-Media Collection,6.6.1,Xem tất cả Collections (public),GET /collections,-,Collection,Public endpoint xem tất cả collections
-Media Collection,6.6.2,Update Collection,PATCH /collections/:id,/dashboard/collections/:id,Collection,Update collection information
-Media Collection,6.6.3,Delete Collection,DELETE /collections/:id,/dashboard/collections/:id,Collection,Delete collection (cascade delete metadata)
-Media Collection,6.7,Thêm Metadata vào Collection,POST /metadata,/dashboard/collections/:id,Metadata,Create metadata for collection
-Media Collection,6.7.1,Xem danh sách Metadata,GET /metadata,/dashboard/collections/:id,Metadata,Public endpoint xem tất cả metadata
-Media Collection,6.7.2,Xem chi tiết Metadata,GET /metadata/:id,/dashboard/collections/:id,Metadata,Public endpoint xem metadata detail
-Media Collection,6.7.3,Update Metadata,PATCH /metadata/:id,/dashboard/collections/:id,Metadata,Update metadata content
-Media Collection,6.7.4,Delete Metadata,DELETE /metadata/:id,/dashboard/collections/:id,Metadata,Delete metadata
-Public Trace,7.1,User nhập Policy ID và Asset Name,-,/trace,-,Input form
-Public Trace,7.2,Submit để trace product,GET /products/trace/:policyId/:assetName,/trace,-,ProductService.traceByNft()
-Public Trace,7.3,Query database product,-,-,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Tìm product theo policyId + assetName. Include: documents, productionProcesses, certifications, warehouseStorages (với warehouse), productMaterials (với material và supplier), user"
-Public Trace,7.4,Query blockchain (Blockfrost),-,-,-,"BlockchainService: getAssetInfo(): Asset details getAssetMetadata(): Metadata từ CIP68_100 reference token getAssetHistory(): Transaction history"
-Public Trace,7.5,Combine database + blockchain data,-,-,-,Merge data từ cả 2 nguồn
-Public Trace,7.6,Hiển thị trace results,-,/trace/:policyId/:assetName,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Hiển thị từ 10+ bảng: Product info (name policyId assetName historyHash owner) User (address) Documents[] Certifications[] ProductionProcesses[] Materials[] (từ ProductMaterial → Material → Supplier với location GPS) WarehouseStorages[] (với Warehouse name location) Blockchain asset info On-chain metadata (CIP-68)"
-Public Trace,7.7,Xem transaction history,GET /products/:id/history,-,-,"BlockchainService.getAssetHistory(): Query tất cả transactions của asset Include txHash action amount blockTime"
-NFT Operations,8.1,Update NFT Metadata,POST /contract/update,-,Product,"Cip68Contract.update(): Spend reference token từ storeAddress Update inline datum với metadata mới Fee: 1 ADA Redeemer: mConStr0([])"
-NFT Operations,8.2,Burn NFT,POST /contract/burn,-,Product,"Cip68Contract.burn(): Burn cả 2 tokens (CIP68_222 + CIP68_100) Spend reference token từ storeAddress Fee: 1 ADA Redeemer: mConStr1([])"
+Authentication,1.1,User connects wallet (Nami/Eternl),GET /auth/nonce,/login,WalletNonce,Generate nonce for wallet address
+Authentication,1.2,User signs message with wallet,POST /auth/verify,/login,"User, WalletNonce",Verify signature create JWT token
+Authentication,1.3,Save session redirect to dashboard,GET /auth/me,/dashboard,User,Validate token return user info
+Authentication,1.4,Logout user,POST /auth/logout,-,User,Clear session and redirect to home
+Subscription,2.1,View list of service plans,GET /services,/dashboard/billing,Service,Display price duration maxProducts
+Subscription,2.1.1,View service plan details,GET /services/:id,/dashboard/billing,Service,Display service plan details
+Subscription,2.2,Select service plan click Subscribe,-,/dashboard/billing,-,User selects plan
+Subscription,2.3,Connect wallet create payment transaction,POST /contract/payment,/dashboard/billing,-,Create unsignedTx send ADA to APP_WALLET_ADDRESS
+Subscription,2.4,User signs and submits transaction,-,/dashboard/billing,-,Wallet signs tx submits to blockchain
+Subscription,2.5,Submit txHash to verify payment,POST /subscriptions/pay,/dashboard/billing,Subscription (status pending),Save subscription with txHash status pending
+Subscription,2.6,Backend verifies transaction on blockchain,-,-,Subscription,"BlockchainService.verifyPayment(): Query Blockfrost API Check tx confirmation Verify amount >= service.price Max 10 retries delay 2s"
+Subscription,2.7,Update subscription status,-,-,Subscription,"If valid → status: active If invalid → status: expired"
+Subscription,2.8,User views subscription status,GET /subscriptions,/dashboard/billing,Subscription,Auto-update expired subscriptions
+Subscription,2.9,Cancel subscription (if needed),POST /subscriptions/:id/cancel,/dashboard/billing,Subscription (status cancelled),Cancel only no refund
+Product Lifecycle,3.1,Check quota before creating,GET /products/quota,/dashboard/products,"Subscription, Service, User","Check daily limit: Free: 5 products/day Premium: according to maxProducts Unlimited: null. Related tables: User (owner), Subscription (quota check), Service (maxProducts)"
+Product Lifecycle,3.2,Create new product,POST /products,/dashboard/products,"Product, User, Subscription, Service","Validate quota create product (no policyId yet). Check subscription active. Related tables: User (owner), Subscription (quota validation), Service (maxProducts limit)"
+Product Lifecycle,3.3,View list of products,GET /products/my,/dashboard/products,Product,Cache 300s in Redis filter by userId
+Product Lifecycle,3.3.1,View all products (public),GET /products,-,Product,Public endpoint view all products
+Product Lifecycle,3.4,View product details,GET /products/:id,/dashboard/products/:id,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Include related data from all tables: Document[], Certification[], ProductionProcess[], WarehouseStorage[] (with Warehouse), ProductMaterial[] (with Material and Supplier)"
+Product Lifecycle,3.5,Add Documents,POST /documents,/dashboard/products/:id,"Document, Product","Link with productId. Check subscription active. Verify product ownership. Related tables: Product (foreign key)"
+Product Lifecycle,3.5.1,View list of Documents,GET /documents,/dashboard/products/:id,Document,Public endpoint view all documents
+Product Lifecycle,3.5.2,View Document details,GET /documents/:id,/dashboard/products/:id,Document,Public endpoint view document detail
+Product Lifecycle,3.5.3,Update Document,PATCH /documents/:id,/dashboard/products/:id,Document,"Update document information. Check subscription active. Verify ownership"
+Product Lifecycle,3.5.4,Delete Document,DELETE /documents/:id,/dashboard/products/:id,Document,"Delete document. Verify ownership"
+Product Lifecycle,3.6,Add Certifications,POST /certifications,/dashboard/products/:id,"Certification, Product","certName, issueDate, expiryDate, certHash. Validate expiryDate > issueDate. Check subscription active. Verify product ownership. Related tables: Product (foreign key)"
+Product Lifecycle,3.6.1,View list of Certifications,GET /certifications,/dashboard/products/:id,Certification,Public endpoint view all certifications
+Product Lifecycle,3.6.2,View Certification details,GET /certifications/:id,/dashboard/products/:id,Certification,Public endpoint view certification detail
+Product Lifecycle,3.6.3,Update Certification,PATCH /certifications/:id,/dashboard/products/:id,Certification,"Update certification information. Validate expiryDate > issueDate. Check subscription active. Verify ownership"
+Product Lifecycle,3.6.4,Delete Certification,DELETE /certifications/:id,/dashboard/products/:id,Certification,"Delete certification. Verify ownership"
+Product Lifecycle,3.7,Add Production Processes,POST /production-processes,/dashboard/products/:id,"ProductionProcess, Product","stepName, startTime, endTime, location. Validate endTime > startTime. Check subscription active. Verify product ownership. Related tables: Product (foreign key)"
+Product Lifecycle,3.7.1,View list of Production Processes,GET /production-processes,/dashboard/products/:id,ProductionProcess,Public endpoint view all processes
+Product Lifecycle,3.7.2,View Production Process details,GET /production-processes/:id,/dashboard/products/:id,ProductionProcess,Public endpoint view process detail
+Product Lifecycle,3.7.3,Update Production Process,PATCH /production-processes/:id,/dashboard/products/:id,ProductionProcess,"Update process information. Validate endTime > startTime. Check subscription active. Verify ownership"
+Product Lifecycle,3.7.4,Delete Production Process,DELETE /production-processes/:id,/dashboard/products/:id,ProductionProcess,"Delete process. Verify ownership"
+Product Lifecycle,3.8,Add Materials (link with Material),POST /product-materials,/dashboard/products/:id,"ProductMaterial, Product, Material, Supplier","quantity, unit. Validate quantity > 0. Check subscription active. Verify product and material ownership. Prevent duplicate material. Related tables: Product (foreign key), Material (foreign key), Material → Supplier (nested relationship)"
+Product Lifecycle,3.8.1,View list of Product Materials,GET /product-materials?productId=...,/dashboard/products/:id,ProductMaterial,Get materials linked to product with material and supplier details
+Product Lifecycle,3.8.2,View Product Material details,GET /product-materials/:id,/dashboard/products/:id,ProductMaterial,Get product material detail with material and supplier info
+Product Lifecycle,3.8.3,Update Product Material,PATCH /product-materials/:id,/dashboard/products/:id,ProductMaterial,"Update quantity unit. Validate quantity > 0. Check subscription active. Verify ownership"
+Product Lifecycle,3.8.4,Delete Product Material,DELETE /product-materials/:id,/dashboard/products/:id,ProductMaterial,"Remove material from product. Verify ownership"
+Product Lifecycle,3.9,Add Warehouse Storage,POST /warehouse-storages,/dashboard/products/:id,"WarehouseStorage, Product, Warehouse","entryTime, exitTime, conditions. Check subscription active. Verify product and warehouse ownership. Related tables: Product (foreign key), Warehouse (foreign key)"
+Product Lifecycle,3.9.1,View list of Warehouse Storages,GET /warehouse-storages,/dashboard/products/:id,WarehouseStorage,Public endpoint view all storages
+Product Lifecycle,3.9.2,View Warehouse Storage details,GET /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,Public endpoint view storage detail
+Product Lifecycle,3.9.3,Update Warehouse Storage,PATCH /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,"Update entry exit time conditions. Verify ownership"
+Product Lifecycle,3.9.4,Delete Warehouse Storage,DELETE /warehouse-storages/:id,/dashboard/products/:id,WarehouseStorage,"Delete storage record. Verify ownership"
+Product Lifecycle,3.10,Get Policy ID from wallet,GET /contract/info?walletAddress=...,/dashboard/products/:id,-,"Cip68Contract: Create wallet from address Generate policyId from mint script Return policyId + storeAddress"
+Product Lifecycle,3.11,Prepare Product Metadata,GET /contract/prepare-metadata/:productId,/dashboard/products/:id,Product,"Prepare comprehensive metadata: Include documents, materials (with suppliers), production processes, certifications. Verify product ownership. Return structured metadata object for blockchain"
+Product Lifecycle,3.12,Mint Product as NFT (CIP-68),POST /contract/mint,/dashboard/products/:id,Product,"Check subscription active. Cip68Contract.mint(): Mint 2 tokens: CIP68_222 (fungible send to user) CIP68_100 (reference store at storeAddress) Metadata: {name, productId, description, documents[], materials[], productionProcesses[], certifications[], _pk: pubKeyHash} Store: Inline datum at storeAddress Fee: 1 ADA to APP_WALLET_ADDRESS Collateral: Need >= 5 ADA UTXO"
+Product Lifecycle,3.13,User signs and submits mint transaction,-,/dashboard/products/:id,-,Wallet signs unsignedTx submits to blockchain
+Product Lifecycle,3.14,Update product with policyId and assetName,PATCH /products/:id,/dashboard/products/:id,Product,Save policyId assetName after successful mint
+Product Lifecycle,3.15,Verify mint transaction,-,-,Product,Query blockchain to verify
+Product Lifecycle,3.16,Update Product Information,PATCH /products/:id,/dashboard/products/:id,Product,"Update product name. Check subscription active. Verify ownership"
+Product Lifecycle,3.17,Delete product,DELETE /products/:id,/dashboard/products,"Product, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial","Check subscription active. Verify ownership. Check if product is minted (has policyId/assetName). Delete product (cascade delete related data). Return warning if minted. Cascade delete: ProductMaterial (onDelete: Cascade). Manual delete: Document, Certification, ProductionProcess, WarehouseStorage"
+Material Supplier,4.1,Create Supplier,POST /suppliers,/dashboard/materials (tab Suppliers),Supplier,"name, location, gpsCoordinates, contactInfo. Check subscription active"
+Material Supplier,4.2,View list of Suppliers,GET /suppliers,/dashboard/materials,Supplier,Filter by userId
+Material Supplier,4.2.1,View Supplier details,GET /suppliers/:id,/dashboard/materials,Supplier,Get supplier detail
+Material Supplier,4.2.2,Update Supplier,PATCH /suppliers/:id,/dashboard/materials,Supplier,"Update supplier information. Verify ownership"
+Material Supplier,4.2.3,Delete Supplier,DELETE /suppliers/:id,/dashboard/materials,Supplier,"Delete supplier. Verify ownership"
+Material Supplier,4.3,Create Material (link with Supplier),POST /materials,/dashboard/materials (tab Materials),Material,"name, supplierId, harvestDate, quantity. Check subscription active. Verify supplier ownership"
+Material Supplier,4.4,View Materials by Supplier,GET /materials/by-supplier/:supplierId,/dashboard/materials,Material,Filter materials by supplier
+Warehouse,5.1,Create Warehouse,POST /warehouses,/dashboard/warehouses,Warehouse,"name, location, capacity. Validate capacity >= 0. Check subscription active. Set userId for ownership"
+Warehouse,5.2,View list of Warehouses,GET /warehouses,/dashboard/warehouses,Warehouse,Filter by userId (user-specific)
+Warehouse,5.3,View Warehouse details,GET /warehouses/:id,/dashboard/warehouses/:id,"Warehouse, WarehouseStorage","Include storage history. Verify ownership"
+Warehouse,5.3.1,Update Warehouse,PATCH /warehouses/:id,/dashboard/warehouses/:id,Warehouse,"Update warehouse information. Validate capacity >= 0. Check subscription active. Verify ownership"
+Warehouse,5.3.2,Delete Warehouse,DELETE /warehouses/:id,/dashboard/warehouses/:id,Warehouse,"Delete warehouse. Check subscription active. Verify ownership"
+Warehouse,5.4,Add Product to Warehouse,POST /warehouse-storages,/dashboard/warehouses/:id,WarehouseStorage,"entryTime, exitTime (optional), conditions. Check subscription active. Verify product and warehouse ownership"
+Media Collection,6.1,Upload Media files (single),POST /media/upload,/dashboard/media,Media,"Upload to IPFS save URL. Check subscription active. Validate file type and size (max 10MB). Error messages in English"
+Media Collection,6.2,Upload Media files (batch),POST /media/upload/batch,/dashboard/media,Media[],Upload multiple files at once (max 10). Check subscription active. Validate all files
+Media Collection,6.3,View list of Media,GET /media,/dashboard/media,Media,Filter by userId
+Media Collection,6.3.1,View Media details,GET /media/:id,/dashboard/media,Media,"Get media detail. Verify ownership"
+Media Collection,6.3.2,Update Media,PATCH /media/:id,/dashboard/media,Media,"Update media information. Verify ownership"
+Media Collection,6.3.3,Delete Media,DELETE /media/:id,/dashboard/media,Media,"Delete media file. Unpin from IPFS if applicable. Verify ownership"
+Media Collection,6.4,Create Collection,POST /collections,/dashboard/collections,Collection,"name, description, thumbnail (can select from Media). Check subscription active"
+Media Collection,6.5,View Collections,GET /collections/my,/dashboard/collections,Collection,Filter by userId
+Media Collection,6.6,View Collection details,GET /collections/:id,/dashboard/collections/:id,"Collection, Metadata",Include metadata and NFT references
+Media Collection,6.6.1,View all Collections (public),GET /collections,-,Collection,Public endpoint view all collections
+Media Collection,6.6.2,Update Collection,PATCH /collections/:id,/dashboard/collections/:id,Collection,"Update collection information. Verify ownership"
+Media Collection,6.6.3,Delete Collection,DELETE /collections/:id,/dashboard/collections/:id,Collection,"Delete collection (cascade delete metadata). Verify ownership"
+Media Collection,6.7,Add Metadata to Collection,POST /metadata,/dashboard/collections/:id,Metadata,"Create metadata for collection. Verify collection ownership"
+Media Collection,6.7.1,View list of Metadata,GET /metadata,/dashboard/collections/:id,Metadata,Public endpoint view all metadata
+Media Collection,6.7.2,View Metadata details,GET /metadata/:id,/dashboard/collections/:id,Metadata,Public endpoint view metadata detail
+Media Collection,6.7.3,Update Metadata,PATCH /metadata/:id,/dashboard/collections/:id,Metadata,"Update metadata content. Verify ownership"
+Media Collection,6.7.4,Delete Metadata,DELETE /metadata/:id,/dashboard/collections/:id,Metadata,"Delete metadata. Verify ownership"
+Public Trace,7.1,User enters Policy ID and Asset Name,-,/trace,-,Input form
+Public Trace,7.2,Submit to trace product,GET /products/trace/:policyId/:assetName,/trace,-,ProductService.traceByNft()
+Public Trace,7.3,Query database product,-,-,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Find product by policyId + assetName. Include: documents, productionProcesses, certifications, warehouseStorages (with warehouse), productMaterials (with material and supplier), user"
+Public Trace,7.4,Query blockchain (Blockfrost),-,-,-,"BlockchainService: getAssetInfo(): Asset details getAssetMetadata(): Metadata from CIP68_100 reference token getAssetHistory(): Transaction history"
+Public Trace,7.5,Combine database + blockchain data,-,-,-,Merge data from both sources
+Public Trace,7.6,Display trace results,-,/trace/:policyId/:assetName,"Product, User, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial, Material, Supplier, Warehouse","Display from 10+ tables: Product info (name policyId assetName historyHash owner) User (address) Documents[] Certifications[] ProductionProcesses[] Materials[] (from ProductMaterial → Material → Supplier with location GPS) WarehouseStorages[] (with Warehouse name location) Blockchain asset info On-chain metadata (CIP-68)"
+Public Trace,7.7,View transaction history,GET /products/:id/history,-,-,"BlockchainService.getAssetHistory(): Query all transactions of asset Include txHash action amount blockTime"
+NFT Operations,8.1,Prepare Metadata for Update,GET /contract/prepare-metadata/:productId,/dashboard/products/:id,Product,"Prepare comprehensive metadata with all product information. Verify product ownership. Check subscription active. Return structured metadata for review"
+NFT Operations,8.2,Update NFT Metadata,POST /contract/update,/dashboard/products/:id,Product,"Check subscription active. Verify product ownership. Verify product is minted. Verify assetName matches. Cip68Contract.update(): Spend reference token from storeAddress Update inline datum with new metadata Fee: 1 ADA Redeemer: mConStr0([])"
+NFT Operations,8.3,User signs and submits update transaction,-,/dashboard/products/:id,-,Wallet signs unsignedTx submits to blockchain
+NFT Operations,8.4,Burn NFT,POST /contract/burn,/dashboard/products/:id,Product,"Cip68Contract.burn(): Burn both tokens (CIP68_222 + CIP68_100) Spend reference token from storeAddress Fee: 1 ADA Redeemer: mConStr1([])"
+NFT Operations,8.5,User signs and submits burn transaction,-,/dashboard/products/:id,-,Wallet signs unsignedTx submits to blockchain
 Quota Management,9.1,Check product quota,GET /products/quota,/dashboard/products,"Subscription, Service","Logic: Get active subscription maxProducts = subscription.service.maxProducts ?? 5 Count products created today (from startOfDay) Return: tier maxProducts usedProducts remainingProducts"
-Quota Management,9.2,Validate trước khi tạo product,POST /products,/dashboard/products,Service,"ProductService.checkProductLimit(): Nếu maxProducts === null → unlimited Nếu todayCount >= maxProducts → throw ForbiddenException"
-Product Database Relationships,Product Core Tables,Product chính có 5 bảng con trực tiếp,-,-,"Product, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial","1. Product (main) 2. Document[] (1:N) 3. Certification[] (1:N) 4. ProductionProcess[] (1:N) 5. WarehouseStorage[] (1:N) 6. ProductMaterial[] (1:N)"
-Product Database Relationships,Product Nested Relationships,Product liên kết gián tiếp qua bảng trung gian,-,-,"ProductMaterial, Material, Supplier, WarehouseStorage, Warehouse","7. ProductMaterial → Material (N:1) 8. Material → Supplier (N:1) 9. WarehouseStorage → Warehouse (N:1) 10. Product → User (N:1 owner)"
-Product Database Relationships,Product Quota Check,Check quota khi tạo product,-,-,"Product, User, Subscription, Service","11. User (owner) 12. Subscription (active subscription) 13. Service (maxProducts limit)"
-Smart Contract,Policy ID Generation,Unique per wallet address,-,-,-,Generated từ mint script với params: pubKeyExchange pubKeyIssuer storeScriptHash
-Smart Contract,Store Address,Script address lưu reference tokens,-,-,-,Generated từ store script với params: pubKeyExchange pubKeyIssuer
-Smart Contract,CIP-68 Tokens,2 tokens per NFT,-,-,-,"CIP68_222: Fungible token (user sở hữu) CIP68_100: Reference token (lưu tại storeAddress)"
-Smart Contract,Metadata Storage,Inline datum tại storeAddress,-,-,-,Format: CIP-68 compliant với metadataToCip68()
-Smart Contract,Mint Process,Tạo NFT mới,-,-,-,"1. Mint CIP68_222 → user address 2. Mint CIP68_100 → storeAddress 3. Store metadata tại storeAddress 4. Pay 1 ADA fee"
-Smart Contract,Update Process,Update metadata,-,-,-,"1. Spend reference token từ storeAddress 2. Create new reference token với metadata mới 3. Pay 1 ADA fee"
-Smart Contract,Burn Process,Destroy NFT,-,-,-,"1. Burn CIP68_222 token 2. Burn CIP68_100 token 3. Spend reference token từ storeAddress 4. Pay 1 ADA fee"
-Smart Contract,Collateral Requirement,Cho Plutus transactions,-,-,-,Cần >= 5 ADA UTXO (không có tokens khác)
-Smart Contract,Network Support,Preprod & Mainnet,-,-,-,Config qua env: NEXT_PUBLIC_APP_NETWORK
-Test Flow,1,Onboarding,Login với wallet → Xem dashboard → Check quota,-,-,-
+Quota Management,9.2,Validate before creating product,POST /products,/dashboard/products,Service,"ProductService.checkProductLimit(): If maxProducts === null → unlimited If todayCount >= maxProducts → throw ForbiddenException with English message"
+Product Database Relationships,Product Core Tables,Product main has 5 direct child tables,-,-,"Product, Document, Certification, ProductionProcess, WarehouseStorage, ProductMaterial","1. Product (main) 2. Document[] (1:N) 3. Certification[] (1:N) 4. ProductionProcess[] (1:N) 5. WarehouseStorage[] (1:N) 6. ProductMaterial[] (1:N)"
+Product Database Relationships,Product Nested Relationships,Product links indirectly through intermediate tables,-,-,"ProductMaterial, Material, Supplier, WarehouseStorage, Warehouse","7. ProductMaterial → Material (N:1) 8. Material → Supplier (N:1) 9. WarehouseStorage → Warehouse (N:1) 10. Product → User (N:1 owner)"
+Product Database Relationships,Product Quota Check,Check quota when creating product,-,-,"Product, User, Subscription, Service","11. User (owner) 12. Subscription (active subscription) 13. Service (maxProducts limit)"
+Smart Contract,Policy ID Generation,Unique per wallet address,-,-,-,Generated from mint script with params: pubKeyExchange pubKeyIssuer storeScriptHash
+Smart Contract,Store Address,Script address stores reference tokens,-,-,-,Generated from store script with params: pubKeyExchange pubKeyIssuer
+Smart Contract,CIP-68 Tokens,2 tokens per NFT,-,-,-,"CIP68_222: Fungible token (user owns) CIP68_100: Reference token (stored at storeAddress)"
+Smart Contract,Metadata Storage,Inline datum at storeAddress,-,-,-,Format: CIP-68 compliant with metadataToCip68()
+Smart Contract,Mint Process,Create new NFT,-,-,-,"1. Mint CIP68_222 → user address 2. Mint CIP68_100 → storeAddress 3. Store metadata at storeAddress 4. Pay 1 ADA fee"
+Smart Contract,Update Process,Update metadata,-,-,-,"1. Spend reference token from storeAddress 2. Create new reference token with new metadata 3. Pay 1 ADA fee"
+Smart Contract,Burn Process,Destroy NFT,-,-,-,"1. Burn CIP68_222 token 2. Burn CIP68_100 token 3. Spend reference token from storeAddress 4. Pay 1 ADA fee"
+Smart Contract,Collateral Requirement,For Plutus transactions,-,-,-,Need >= 5 ADA UTXO (no other tokens)
+Smart Contract,Network Support,Preprod & Mainnet,-,-,-,Config via env: NEXT_PUBLIC_APP_NETWORK
+Test Flow,1,Onboarding,Login with wallet → View dashboard → Check quota,-,-,-
 Test Flow,2,Subscription,"Browse services → Subscribe → Payment (1 ADA fee) → Verify active subscription",-,-,Payment transaction → Blockfrost verification
-Test Flow,3,Setup Infrastructure,Tạo Suppliers → Tạo Materials → Tạo Warehouses → Upload Media (IPFS),-,-,-
-Test Flow,4,Create Product,"Tạo product (check quota) → Add Documents → Add Certifications → Add Production Processes → Link Materials → Add Warehouse Storage",-,-,-
-Test Flow,5,Mint NFT (CIP-68),Get Policy ID → Mint với metadata → Sign & Submit → Update product với policyId/assetName,-,-,"Mint 2 tokens → Store metadata → Pay 1 ADA fee"
-Test Flow,6,Public Trace,"Mở /trace (không login) → Nhập Policy ID + Asset Name → Query database + blockchain → Xem đầy đủ trace information",-,-,"Blockfrost queries: Asset info metadata history"
-Test Flow,7,Update NFT Metadata,Update product info → Update metadata trên blockchain,-,-,"Spend reference token → Update inline datum → Pay 1 ADA fee"
-Test Flow,8,View Transaction History,Xem lịch sử transactions của NFT,-,-,Blockfrost.getAssetHistory() → All tx hashes actions amounts
-Test Flow,9,Collection Management,Tạo Collection → Link với Media → View collection details,-,-,-
-Test Flow,10,Burn NFT (Optional),Burn NFT nếu cần,-,-,"Burn cả 2 tokens → Spend reference token → Pay 1 ADA fee"
-Error Handling,Duplicate Asset Name,Check existing UTXO tại storeAddress,-,-,Error: Asset already exists,Error message returned to user
+Test Flow,3,Setup Infrastructure,Create Suppliers → Create Materials → Create Warehouses → Upload Media (IPFS),-,-,-
+Test Flow,4,Create Product,"Create product (check quota) → Add Documents → Add Certifications → Add Production Processes → Link Materials → Add Warehouse Storage",-,-,-
+Test Flow,5,Mint NFT (CIP-68),"Get Policy ID → Prepare Metadata (review UI) → Mint with metadata → Sign & Submit → Update product with policyId/assetName",-,-,"Mint 2 tokens → Store metadata → Pay 1 ADA fee"
+Test Flow,6,Public Trace,"Open /trace (no login) → Enter Policy ID + Asset Name → Query database + blockchain → View full trace information",-,-,"Blockfrost queries: Asset info metadata history"
+Test Flow,7,Update NFT Metadata,"Prepare Metadata (review UI) → Update product info → Update metadata on blockchain → Sign & Submit",-,-,"Spend reference token → Update inline datum → Pay 1 ADA fee"
+Test Flow,8,View Transaction History,View transaction history of NFT,-,-,Blockfrost.getAssetHistory() → All tx hashes actions amounts
+Test Flow,9,Collection Management,Create Collection → Link with Media → View collection details,-,-,-
+Test Flow,10,Burn NFT (Optional),Burn NFT if needed,-,-,"Burn both tokens → Spend reference token → Pay 1 ADA fee"
+Test Flow,11,Delete Product,"Delete product → Warning if minted → Confirm deletion → Remove off-chain data → Warning about on-chain data",-,-,"Check subscription. Verify ownership. Return warning if minted"
+Error Handling,Duplicate Asset Name,Check existing UTXO at storeAddress,-,-,Error: Asset already exists,Error message in English returned to user
 Error Handling,Insufficient Payment,Verify amount < expected,-,-,"Status: expired, message: Insufficient payment",Subscription status set to expired
 Error Handling,Transaction Not Confirmed,Retry up to 10 times (2s delay),-,-,"Status: pending, continue retry",Auto-retry mechanism with 2s delay
 Error Handling,No Active Subscription,Default to Free tier (5 products/day),-,-,Quota: 5 products/day,Default quota applied when no active subscription
-Error Handling,Product Quota Exceeded,Check before create,-,-,403 Forbidden: Bạn đã đạt giới hạn...,HTTP 403 error returned
-Error Handling,Asset Not Found (Burn/Update),Check storeAddress UTXO,-,-,Error: Asset not found,Asset does not exist at storeAddress
+Error Handling,Product Quota Exceeded,Check before create,-,-,"403 Forbidden: You have reached the daily limit...",HTTP 403 error with English message
+Error Handling,Subscription Expired,Check before operations,-,-,"400 BadRequest: Subscription has expired. Please renew...",Redirect to billing page
+Error Handling,Ownership Verification Failed,Check product/material/warehouse ownership,-,-,"403 Forbidden: Not your product/material/warehouse",English error message
+Error Handling,Asset Not Found (Burn/Update),Check storeAddress UTXO,-,-,"Error: Product does not support metadata updates. Asset not found on blockchain",English error message
 Error Handling,No Collateral,Check UTXO >= 5 ADA,-,-,Error: No suitable UTxO for collateral,Need UTXO with >= 5 ADA and no other tokens
 Error Handling,Trace: Product Not in DB,Query blockchain only,-,-,Return blockchain info only,Product exists on blockchain but not in database
 Error Handling,Trace: Product Not on Chain,Query database only,-,-,Return database info only,Product exists in database but not minted as NFT
+Error Handling,Validation Errors,Quantity <= 0,POST /product-materials,-,-,"400 BadRequest: Quantity must be greater than 0",English validation message
+Error Handling,Validation Errors,Expiry Date <= Issue Date,POST /certifications,-,-,"400 BadRequest: Expiry date must be after issue date",English validation message
+Error Handling,Validation Errors,End Time <= Start Time,POST /production-processes,-,-,"400 BadRequest: End time must be after start time",English validation message
+Error Handling,Validation Errors,Capacity < 0,POST /warehouses,-,-,"400 BadRequest: Warehouse capacity must be greater than or equal to 0",English validation message
+Error Handling,Validation Errors,Duplicate Material,POST /product-materials,-,-,"400 BadRequest: This material has already been added to the product. Please update the quantity instead of adding a new entry.",English validation message
 User Management,10.1,Get current user info,GET /users/me,-,User,Get authenticated user information
 User Management,10.2,Update user profile,PATCH /users/me,-,User,Update user walletName
-User Management,10.3,Delete user account,DELETE /users/me,-,User,Delete user account và all related data
+User Management,10.3,Delete user account,DELETE /users/me,-,User,Delete user account and all related data
 System,11.1,Health check,GET /health,-,-,Check system health status
 System,11.2,Root endpoint,GET /,-,-,API root endpoint

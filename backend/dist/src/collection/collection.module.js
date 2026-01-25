@@ -10,11 +10,15 @@ exports.CollectionModule = void 0;
 const common_1 = require("@nestjs/common");
 const collection_controller_1 = require("./collection.controller");
 const collection_service_1 = require("./collection.service");
+const prisma_module_1 = require("../prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const subscription_module_1 = require("../subscription/subscription.module");
 let CollectionModule = class CollectionModule {
 };
 exports.CollectionModule = CollectionModule;
 exports.CollectionModule = CollectionModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, subscription_module_1.SubscriptionModule],
         controllers: [collection_controller_1.CollectionController],
         providers: [collection_service_1.CollectionService],
         exports: [collection_service_1.CollectionService],

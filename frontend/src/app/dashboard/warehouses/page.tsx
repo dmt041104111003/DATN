@@ -58,6 +58,11 @@ export default function WarehousesPage() {
   }
 
   const onSubmit = async (data: { name: string; location?: string; capacity?: number }) => {
+    if (data.capacity !== undefined && data.capacity < 0) {
+      alert('Warehouse capacity must be greater than or equal to 0')
+      return
+    }
+    
     setSubmitting(true)
     try {
       if (editing) {
@@ -70,7 +75,13 @@ export default function WarehousesPage() {
       reset()
       loadWarehouses()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save warehouse')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save warehouse'
+      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
+        alert(`${errorMessage}. Please renew your subscription to continue.`)
+        router.push('/dashboard/billing')
+      } else {
+        alert(errorMessage)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -82,7 +93,8 @@ export default function WarehousesPage() {
       await apiClient.warehouses.remove(id)
       loadWarehouses()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete warehouse')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete warehouse'
+      alert(errorMessage)
     }
   }
 
@@ -149,10 +161,16 @@ export default function WarehousesPage() {
                     <Input
                       id="capacity"
                       type="number"
-                      {...register('capacity', { valueAsNumber: true })}
+                      {...register('capacity', { 
+                        valueAsNumber: true,
+                        min: { value: 0, message: 'Warehouse capacity must be greater than or equal to 0' }
+                      })}
                       placeholder="e.g. 1000"
                       disabled={submitting}
                     />
+                    {errors.capacity && (
+                      <p className="text-sm text-destructive">{errors.capacity.message}</p>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
@@ -171,10 +189,11 @@ export default function WarehousesPage() {
         ) : warehouses.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No warehouses yet</p>
-                <div className="flex justify-center mt-4">
-                  <Button onClick={handleCreate}>Add first</Button>
-                </div>
+              <p className="text-muted-foreground mb-4">No warehouses yet</p>
+              <p className="text-sm text-muted-foreground mb-4">Create warehouses to manage your product storage</p>
+              <div className="flex justify-center mt-4">
+                <Button onClick={handleCreate}>Add first warehouse</Button>
+              </div>
             </CardContent>
           </Card>
         ) : (

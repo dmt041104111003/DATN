@@ -4,37 +4,51 @@ import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
 export declare class WarehouseController {
     private warehouseService;
     constructor(warehouseService: WarehouseService);
-    findAll(): Promise<string | {
+    findAll(user: {
         id: string;
+    }): Promise<string | {
+        id: string;
+        userId: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
         location: string | null;
         capacity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<string | {
+    findOne(user: {
         id: string;
+    }, id: string): Promise<{
+        id: string;
+        userId: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
         location: string | null;
         capacity: number;
-    }>;
-    create(dto: CreateWarehouseDto): Promise<{
-        id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+    }>;
+    create(user: {
+        id: string;
+    }, dto: CreateWarehouseDto): Promise<{
+        id: string;
+        userId: string;
+        name: string;
         location: string | null;
         capacity: number;
-    }>;
-    update(id: string, dto: UpdateWarehouseDto): Promise<{
-        id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
+    }>;
+    update(user: {
+        id: string;
+    }, id: string, dto: UpdateWarehouseDto): Promise<{
+        id: string;
+        userId: string;
+        name: string;
         location: string | null;
         capacity: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string): Promise<void>;
+    remove(user: {
+        id: string;
+    }, id: string): Promise<void>;
 }

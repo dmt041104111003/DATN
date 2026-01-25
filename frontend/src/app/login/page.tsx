@@ -9,6 +9,18 @@ import { useWallet } from '@/hooks/use-wallet'
 import { useAuth } from '@/contexts/auth-context'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+type Network = 'mainnet' | 'preprod'
+
+const NETWORK_STORAGE_KEY = 'selected_network'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,6 +28,15 @@ export default function LoginPage() {
   const { refreshAuth } = useAuth()
   const [wallets, setWallets] = useState<ReturnType<typeof BrowserWallet.getInstalledWallets>>([])
   const [loadingWallet, setLoadingWallet] = useState<string | null>(null)
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(NETWORK_STORAGE_KEY) as Network | null
+      if (saved === 'mainnet' || saved === 'preprod') {
+        return saved
+      }
+    }
+    return 'preprod'
+  })
 
   useEffect(() => {
     try {
@@ -25,12 +46,18 @@ export default function LoginPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(NETWORK_STORAGE_KEY, selectedNetwork)
+    }
+  }, [selectedNetwork])
+
   const handleWalletClick = async (walletName: string) => {
     if (loadingWallet) return
     
     setLoadingWallet(walletName)
     try {
-      const result = await connectWallet(walletName)
+      const result = await connectWallet(walletName, selectedNetwork)
       await login(result.wallet, result.address, walletName)
       await refreshAuth()
       router.refresh()
@@ -50,6 +77,22 @@ export default function LoginPage() {
             <CardTitle className="text-2xl">Connect Wallet</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="network">Select Network</Label>
+              <Select value={selectedNetwork} onValueChange={(value: Network) => setSelectedNetwork(value)} disabled={!!loadingWallet}>
+                <SelectTrigger id="network">
+                  <SelectValue placeholder="Select network" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="preprod">Preprod (Testnet)</SelectItem>
+                  <SelectItem value="mainnet">Mainnet</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Make sure your wallet is connected to the same network
+              </p>
+            </div>
+
             {wallets.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-sm text-muted-foreground">

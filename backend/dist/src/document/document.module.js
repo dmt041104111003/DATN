@@ -10,11 +10,15 @@ exports.DocumentModule = void 0;
 const common_1 = require("@nestjs/common");
 const document_controller_1 = require("./document.controller");
 const document_service_1 = require("./document.service");
+const prisma_module_1 = require("../prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const subscription_module_1 = require("../subscription/subscription.module");
 let DocumentModule = class DocumentModule {
 };
 exports.DocumentModule = DocumentModule;
 exports.DocumentModule = DocumentModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, subscription_module_1.SubscriptionModule],
         controllers: [document_controller_1.DocumentController],
         providers: [document_service_1.DocumentService],
         exports: [document_service_1.DocumentService],

@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
@@ -15,7 +17,18 @@ export class ProductService {
     private prisma: PrismaService,
     private redis: RedisService,
     private blockchain: BlockchainService,
+    private subscriptionService: SubscriptionService,
   ) {}
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
 
   async findAll() {
     const cacheKey = 'products:all';
@@ -92,12 +105,13 @@ export class ProductService {
     if (todayCount >= maxProducts) {
       const tierName = subscription?.service.name ?? 'Free';
       throw new ForbiddenException(
-        `Bạn đã đạt giới hạn ${maxProducts} sản phẩm/ngày của gói ${tierName}. Nâng cấp gói để tạo thêm.`,
+        `You have reached the daily limit of ${maxProducts} products for the ${tierName} plan. Upgrade your plan to create more.`,
       );
     }
   }
 
   async create(userId: string, dto: CreateProductDto) {
+    await this.checkSubscriptionActive(userId);
     await this.checkProductLimit(userId);
     const product = await this.prisma.product.create({
       data: { ...dto, userId },
@@ -107,6 +121,7 @@ export class ProductService {
   }
 
   async update(id: string, userId: string, dto: UpdateProductDto) {
+    await this.checkSubscriptionActive(userId);
     await this.findOneOwned(id, userId);
     const product = await this.prisma.product.update({
       where: { id },
@@ -121,13 +136,28 @@ export class ProductService {
   }
 
   async remove(id: string, userId: string) {
-    await this.findOneOwned(id, userId);
+    await this.checkSubscriptionActive(userId);
+    const product = await this.findOneOwned(id, userId);
+    
+    // Check if product is minted - warn but allow deletion
+    const isMinted = product.policyId && product.assetName;
+    
     await this.prisma.product.delete({ where: { id } });
     await this.redis.delMultiple([
       `product:${id}`,
       'products:all',
       `products:user:${userId}`,
     ]);
+    
+    // Return info about minted status for frontend warning
+    return {
+      success: true,
+      message: 'Product deleted successfully',
+      wasMinted: isMinted,
+      warning: isMinted 
+        ? 'Note: This product was minted as NFT. On-chain blockchain data cannot be deleted, but off-chain metadata has been removed.'
+        : null,
+    };
   }
 
   async getQuota(userId: string) {

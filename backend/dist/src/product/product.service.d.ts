@@ -1,67 +1,75 @@
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 export declare class ProductService {
     private prisma;
     private redis;
     private blockchain;
-    constructor(prisma: PrismaService, redis: RedisService, blockchain: BlockchainService);
+    private subscriptionService;
+    constructor(prisma: PrismaService, redis: RedisService, blockchain: BlockchainService, subscriptionService: SubscriptionService);
+    private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
+        name: string;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findAllByUser(userId: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
+        name: string;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
+        name: string;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     private findOneOwned;
     private getActiveSubscription;
     private checkProductLimit;
     create(userId: string, dto: CreateProductDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
+        name: string;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string | null;
         assetName: string | null;
+        name: string;
         historyHash: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
-    remove(id: string, userId: string): Promise<void>;
+    remove(id: string, userId: string): Promise<{
+        success: boolean;
+        message: string;
+        wasMinted: string | null;
+        warning: string | null;
+    }>;
     getQuota(userId: string): Promise<{
         tier: string;
         maxProducts: number;
@@ -107,6 +115,7 @@ export declare class ProductService {
             warehouseStorages: ({
                 warehouse: {
                     id: string;
+                    userId: string;
                     name: string;
                     createdAt: Date;
                     updatedAt: Date;

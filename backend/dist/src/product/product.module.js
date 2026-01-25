@@ -10,11 +10,16 @@ exports.ProductModule = void 0;
 const common_1 = require("@nestjs/common");
 const product_controller_1 = require("./product.controller");
 const product_service_1 = require("./product.service");
+const prisma_module_1 = require("../prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const blockchain_module_1 = require("../blockchain/blockchain.module");
+const subscription_module_1 = require("../subscription/subscription.module");
 let ProductModule = class ProductModule {
 };
 exports.ProductModule = ProductModule;
 exports.ProductModule = ProductModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, blockchain_module_1.BlockchainModule, subscription_module_1.SubscriptionModule],
         controllers: [product_controller_1.ProductController],
         providers: [product_service_1.ProductService],
         exports: [product_service_1.ProductService],

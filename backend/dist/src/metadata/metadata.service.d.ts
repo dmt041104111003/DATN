@@ -11,8 +11,8 @@ export declare class MetadataService {
         createdAt: Date;
         updatedAt: Date;
         assetName: string | null;
-        collectionId: string;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }[]>;
     findOne(id: string): Promise<string | {
@@ -20,8 +20,8 @@ export declare class MetadataService {
         createdAt: Date;
         updatedAt: Date;
         assetName: string | null;
-        collectionId: string;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
     private findOneOwned;
@@ -30,8 +30,8 @@ export declare class MetadataService {
         createdAt: Date;
         updatedAt: Date;
         assetName: string | null;
-        collectionId: string;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
     update(id: string, userId: string, dto: UpdateMetadataDto): Promise<{
@@ -39,8 +39,8 @@ export declare class MetadataService {
         createdAt: Date;
         updatedAt: Date;
         assetName: string | null;
-        collectionId: string;
         content: string;
+        collectionId: string;
         nftReference: string[];
     }>;
     remove(id: string, userId: string): Promise<void>;

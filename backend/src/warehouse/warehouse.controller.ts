@@ -10,36 +10,34 @@ import {
 import { WarehouseService } from './warehouse.service';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
-import { Public } from '../auth/decorators';
+import { CurrentUser } from '../auth/decorators';
 
 @Controller('warehouses')
 export class WarehouseController {
   constructor(private warehouseService: WarehouseService) {}
 
-  @Public()
   @Get()
-  findAll() {
-    return this.warehouseService.findAll();
+  findAll(@CurrentUser() user: { id: string }) {
+    return this.warehouseService.findAll(user.id);
   }
 
-  @Public()
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.warehouseService.findOne(id);
+  findOne(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.warehouseService.findOne(id, user.id);
   }
 
   @Post()
-  create(@Body() dto: CreateWarehouseDto) {
-    return this.warehouseService.create(dto);
+  create(@CurrentUser() user: { id: string }, @Body() dto: CreateWarehouseDto) {
+    return this.warehouseService.create(user.id, dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateWarehouseDto) {
-    return this.warehouseService.update(id, dto);
+  update(@CurrentUser() user: { id: string }, @Param('id') id: string, @Body() dto: UpdateWarehouseDto) {
+    return this.warehouseService.update(id, user.id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.warehouseService.remove(id);
+  remove(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    return this.warehouseService.remove(id, user.id);
   }
 }

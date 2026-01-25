@@ -13,63 +13,90 @@ exports.WarehouseService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
+const subscription_service_1 = require("../subscription/subscription.service");
 let WarehouseService = class WarehouseService {
     prisma;
     redis;
-    constructor(prisma, redis) {
+    subscriptionService;
+    constructor(prisma, redis, subscriptionService) {
         this.prisma = prisma;
         this.redis = redis;
+        this.subscriptionService = subscriptionService;
     }
-    async findAll() {
-        const cacheKey = 'warehouses:all';
+    async checkSubscriptionActive(userId) {
+        const subscription = await this.subscriptionService.getActiveSubscription(userId);
+        if (!subscription) {
+            throw new common_1.BadRequestException('Subscription has expired. Please renew to continue using this feature.');
+        }
+        return subscription;
+    }
+    async findAll(userId) {
+        const cacheKey = `warehouses:user:${userId}`;
         const cached = await this.redis.get(cacheKey);
         if (cached)
             return cached;
-        const warehouses = await this.prisma.warehouse.findMany();
+        const warehouses = await this.prisma.warehouse.findMany({
+            where: { userId },
+        });
         await this.redis.set(cacheKey, warehouses, 300);
         return warehouses;
     }
-    async findOne(id) {
+    async findOne(id, userId) {
         const cacheKey = `warehouse:${id}`;
         const cached = await this.redis.get(cacheKey);
-        if (cached)
+        if (cached && typeof cached === 'object' && 'userId' in cached) {
+            if (cached.userId !== userId)
+                throw new common_1.ForbiddenException('Not your warehouse');
             return cached;
+        }
         const item = await this.prisma.warehouse.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Warehouse not found');
+        if (item.userId !== userId)
+            throw new common_1.ForbiddenException('Not your warehouse');
         await this.redis.set(cacheKey, item, 300);
         return item;
     }
-    async create(dto) {
+    async create(userId, dto) {
+        await this.checkSubscriptionActive(userId);
+        if (dto.capacity !== undefined && dto.capacity < 0) {
+            throw new common_1.BadRequestException('Warehouse capacity must be greater than or equal to 0');
+        }
         const warehouse = await this.prisma.warehouse.create({
             data: {
                 name: dto.name,
                 location: dto.location,
                 capacity: dto.capacity ?? 0,
+                userId,
             },
         });
-        await this.redis.del('warehouses:all');
+        await this.redis.del(`warehouses:user:${userId}`);
         return warehouse;
     }
-    async update(id, dto) {
-        await this.findOne(id);
+    async update(id, userId, dto) {
+        await this.checkSubscriptionActive(userId);
+        if (dto.capacity !== undefined && dto.capacity < 0) {
+            throw new common_1.BadRequestException('Warehouse capacity must be greater than or equal to 0');
+        }
+        await this.findOne(id, userId);
         const warehouse = await this.prisma.warehouse.update({
             where: { id },
             data: dto,
         });
-        await this.redis.delMultiple([`warehouse:${id}`, 'warehouses:all']);
+        await this.redis.delMultiple([`warehouse:${id}`, `warehouses:user:${userId}`]);
         return warehouse;
     }
-    async remove(id) {
-        await this.findOne(id);
+    async remove(id, userId) {
+        await this.findOne(id, userId);
         await this.prisma.warehouse.delete({ where: { id } });
-        await this.redis.delMultiple([`warehouse:${id}`, 'warehouses:all']);
+        await this.redis.delMultiple([`warehouse:${id}`, `warehouses:user:${userId}`]);
     }
 };
 exports.WarehouseService = WarehouseService;
 exports.WarehouseService = WarehouseService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        subscription_service_1.SubscriptionService])
 ], WarehouseService);
 //# sourceMappingURL=warehouse.service.js.map

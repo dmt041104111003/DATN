@@ -1,21 +1,24 @@
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { IpfsService } from '../ipfs/ipfs.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { UpdateMediaDto } from './dto/update-media.dto';
 export declare class MediaService {
     private prisma;
     private redis;
     private ipfs;
-    constructor(prisma: PrismaService, redis: RedisService, ipfs: IpfsService);
+    private subscriptionService;
+    constructor(prisma: PrismaService, redis: RedisService, ipfs: IpfsService, subscriptionService: SubscriptionService);
+    private checkSubscriptionActive;
     findAllByUser(userId: string): Promise<string | {
         gatewayUrl: string;
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
+        name: string;
         type: string;
+        url: string;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -31,32 +34,26 @@ export declare class MediaService {
         cid: string;
         gatewayUrl: string;
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
+        name: string;
         type: string;
+        url: string;
     }>;
     uploadBatchToIpfs(userId: string, files: Express.Multer.File[]): Promise<{
-        cid: string;
-        gatewayUrl: string;
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        url: string;
-        type: string;
-    }[]>;
+        successful: any[];
+        failed: number;
+        total: number;
+    }>;
     update(id: string, userId: string, dto: UpdateMediaDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
+        name: string;
         type: string;
+        url: string;
     }>;
     remove(id: string, userId: string): Promise<void>;
     private getFileType;

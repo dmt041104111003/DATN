@@ -20,6 +20,7 @@ model User {
   subscriptions Subscription[]
   suppliers    Supplier[]
   materials    Material[]
+  warehouses   Warehouse[]
   walletNonces WalletNonce[]
 
   @@map("user")
@@ -201,11 +202,13 @@ enum SubscriptionStatus {
 
 model Warehouse {
   id               String             @id @default(cuid())
+  userId           String             @map("user_id")
   name             String             @map("name")
   location         String?            @map("location")
   capacity         Int                @map("capacity")
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
+  user             User               @relation(fields: [userId], references: [id])
   warehouseStorages WarehouseStorage[]
 
   @@map("warehouse")

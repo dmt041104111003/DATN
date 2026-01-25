@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { IpfsService } from '../ipfs/ipfs.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { UpdateMediaDto } from './dto/update-media.dto';
 
 @Injectable()
@@ -14,7 +16,18 @@ export class MediaService {
     private prisma: PrismaService,
     private redis: RedisService,
     private ipfs: IpfsService,
+    private subscriptionService: SubscriptionService,
   ) {}
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
 
   async findAllByUser(userId: string) {
     const cacheKey = `media:user:${userId}`;
@@ -52,33 +65,65 @@ export class MediaService {
   }
 
   async uploadToIpfs(userId: string, file: Express.Multer.File) {
-    const { cid, url } = await this.ipfs.uploadFile(file, {
-      name: file.originalname,
-    });
-    const type = this.getFileType(file.mimetype);
-    const media = await this.prisma.media.create({
-      data: {
-        userId,
+    await this.checkSubscriptionActive(userId);
+    
+    try {
+      const { cid, url } = await this.ipfs.uploadFile(file, {
         name: file.originalname,
-        type,
-        url,
-      },
-    });
+      });
+      const type = this.getFileType(file.mimetype);
+      const media = await this.prisma.media.create({
+        data: {
+          userId,
+          name: file.originalname,
+          type,
+          url,
+        },
+      });
 
-    await this.redis.del(`media:user:${userId}`);
+      await this.redis.del(`media:user:${userId}`);
 
-    return {
-      ...media,
-      cid,
-      gatewayUrl: this.ipfs.toGatewayUrl(url),
-    };
+      return {
+        ...media,
+        cid,
+        gatewayUrl: this.ipfs.toGatewayUrl(url),
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException && error.message.includes('IPFS')) {
+        throw new BadRequestException(
+          'Kết nối IPFS lỗi. Vui lòng thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.',
+        );
+      }
+      throw error;
+    }
   }
 
   async uploadBatchToIpfs(userId: string, files: Express.Multer.File[]) {
-    const results = await Promise.all(
+    await this.checkSubscriptionActive(userId);
+    
+    const results = await Promise.allSettled(
       files.map((file) => this.uploadToIpfs(userId, file)),
     );
-    return results;
+    
+    const successful = results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => (r as PromiseFulfilledResult<any>).value);
+    
+    const failed = results
+      .filter((r) => r.status === 'rejected')
+      .map((r) => (r as PromiseRejectedResult).reason);
+
+    if (failed.length > 0 && successful.length === 0) {
+      throw new BadRequestException(
+        `Upload failed: ${failed[0]?.message || 'Unable to upload file'}. Please try again.`,
+      );
+    }
+
+    return {
+      successful,
+      failed: failed.length,
+      total: files.length,
+    };
   }
 
   async update(id: string, userId: string, dto: UpdateMediaDto) {

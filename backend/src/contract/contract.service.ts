@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import {
   BlockfrostProvider,
   deserializeAddress,
@@ -9,13 +9,116 @@ import { BLOCKFROST_API_KEY, appNetworkId } from './constants';
 import { MintDto } from './dto/mint.dto';
 import { BurnDto } from './dto/burn.dto';
 import { UpdateMetadataDto } from './dto/update-metadata.dto';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { ProductService } from '../product/product.service';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ContractService {
   private blockfrostProvider: BlockfrostProvider;
 
-  constructor() {
+  constructor(
+    private subscriptionService: SubscriptionService,
+    private productService: ProductService,
+    private prisma: PrismaService,
+  ) {
     this.blockfrostProvider = new BlockfrostProvider(BLOCKFROST_API_KEY);
+  }
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
+
+  private async verifyProductOwnership(productId: string, userId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+    if (product.userId !== userId) {
+      throw new ForbiddenException('Not your product');
+    }
+    return product;
+  }
+
+  async prepareProductMetadata(productId: string, userId: string) {
+    await this.verifyProductOwnership(productId, userId);
+    
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        documents: true,
+        productionProcesses: true,
+        certifications: true,
+        productMaterials: {
+          include: {
+            material: {
+              include: {
+                supplier: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const metadata: Record<string, any> = {
+      name: product.name,
+      productId: product.id,
+      description: `Product: ${product.name}`,
+    };
+
+    if (product.documents && product.documents.length > 0) {
+      metadata.documents = product.documents.map((doc) => ({
+        type: doc.docType,
+        url: doc.url,
+        hash: doc.hash || '',
+      }));
+    }
+
+    if (product.productMaterials && product.productMaterials.length > 0) {
+      metadata.materials = product.productMaterials.map((pm) => ({
+        name: pm.material.name,
+        quantity: pm.quantity,
+        unit: pm.unit || '',
+        harvestDate: pm.material.harvestDate?.toISOString() || '',
+        supplier: {
+          name: pm.material.supplier.name,
+          location: pm.material.supplier.location || '',
+        },
+      }));
+    }
+
+    if (product.productionProcesses && product.productionProcesses.length > 0) {
+      metadata.productionProcesses = product.productionProcesses.map((proc) => ({
+        stepName: proc.stepName,
+        startTime: proc.startTime.toISOString(),
+        endTime: proc.endTime?.toISOString() || '',
+        location: proc.location || '',
+      }));
+    }
+
+    if (product.certifications && product.certifications.length > 0) {
+      metadata.certifications = product.certifications.map((cert) => ({
+        name: cert.certName,
+        issueDate: cert.issueDate.toISOString(),
+        expiryDate: cert.expiryDate?.toISOString() || '',
+        hash: cert.certHash || '',
+      }));
+    }
+
+    return metadata;
   }
 
   private createWalletFromAddress(walletAddress: string): MeshWallet {
@@ -39,8 +142,12 @@ export class ContractService {
     };
   }
 
-  async createMint(walletAddress: string, params: MintDto[]) {
+  async createMint(walletAddress: string, params: MintDto[], userId?: string) {
     try {
+      if (userId) {
+        await this.checkSubscriptionActive(userId);
+      }
+
       const wallet = this.createWalletFromAddress(walletAddress);
       const contract = new Cip68Contract({ wallet });
       const pubKeyHash = deserializeAddress(walletAddress).pubKeyHash;
@@ -62,6 +169,11 @@ export class ContractService {
         message: 'Transaction created successfully',
       };
     } catch (error) {
+      if (error instanceof BadRequestException || 
+          error instanceof NotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
       return {
         result: false,
         data: null,
@@ -95,8 +207,22 @@ export class ContractService {
     }
   }
 
-  async createUpdate(walletAddress: string, params: UpdateMetadataDto[]) {
+  async createUpdate(walletAddress: string, params: UpdateMetadataDto[], userId?: string, productId?: string) {
     try {
+      if (userId) {
+        await this.checkSubscriptionActive(userId);
+      }
+
+      if (userId && productId) {
+        const product = await this.verifyProductOwnership(productId, userId);
+        if (!product.policyId || !product.assetName) {
+          throw new BadRequestException('Product must be minted before updating metadata');
+        }
+        if (params.length > 0 && params[0].assetName !== product.assetName) {
+          throw new BadRequestException('Asset name does not match product');
+        }
+      }
+
       const wallet = this.createWalletFromAddress(walletAddress);
       const contract = new Cip68Contract({ wallet });
       const pubKeyHash = deserializeAddress(walletAddress).pubKeyHash;
@@ -116,6 +242,16 @@ export class ContractService {
         message: 'Transaction created successfully',
       };
     } catch (error) {
+      if (error instanceof BadRequestException || 
+          error instanceof NotFoundException || 
+          error instanceof ForbiddenException) {
+        throw error;
+      }
+      if (error instanceof Error) {
+        if (error.message.includes('Asset') && error.message.includes('not found')) {
+          throw new BadRequestException('Product does not support metadata updates. Asset not found on blockchain.');
+        }
+      }
       return {
         result: false,
         data: null,

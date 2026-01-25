@@ -10,11 +10,15 @@ exports.ProductMaterialModule = void 0;
 const common_1 = require("@nestjs/common");
 const product_material_controller_1 = require("./product-material.controller");
 const product_material_service_1 = require("./product-material.service");
+const prisma_module_1 = require("../prisma.module");
+const redis_module_1 = require("../redis/redis.module");
+const subscription_module_1 = require("../subscription/subscription.module");
 let ProductMaterialModule = class ProductMaterialModule {
 };
 exports.ProductMaterialModule = ProductMaterialModule;
 exports.ProductMaterialModule = ProductMaterialModule = __decorate([
     (0, common_1.Module)({
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, subscription_module_1.SubscriptionModule],
         controllers: [product_material_controller_1.ProductMaterialController],
         providers: [product_material_service_1.ProductMaterialService],
         exports: [product_material_service_1.ProductMaterialService],

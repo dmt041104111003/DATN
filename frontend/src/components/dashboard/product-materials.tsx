@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
@@ -12,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -35,10 +38,15 @@ import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { LoadingOverlay } from '@/components/ui/loading'
 
 export function ProductMaterials({ productId, productMaterials, onRefresh }: { productId: string; productMaterials: ProductMaterial[]; onRefresh: () => void }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewingPm, setViewingPm] = useState<ProductMaterial | null>(null)
+  const [editing, setEditing] = useState<ProductMaterial | null>(null)
   const [materials, setMaterials] = useState<Material[]>([])
   const [materialsLoading, setMaterialsLoading] = useState(false)
-  const { register, handleSubmit, reset, setValue, watch } = useForm<{ materialId: string; quantity: number; unit?: string }>()
+  const [loading, setLoading] = useState(false)
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<{ materialId: string; quantity: number; unit?: string }>()
 
   const loadMaterials = async () => {
     if (materials.length > 0) return // Already loaded
@@ -54,34 +62,74 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
   }
 
   useEffect(() => {
-    if (open && materials.length === 0) {
+    if (materials.length === 0) {
       loadMaterials()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
-  const [loading, setLoading] = useState(false)
+  }, [])
 
   const onSubmit = async (data: { materialId: string; quantity: number; unit?: string }) => {
     if (!data.materialId) {
-      alert('Please select a material')
+      alert('Vui lòng chọn nguyên liệu')
       return
     }
+    if (data.quantity <= 0) {
+      alert('Quantity must be greater than 0')
+      return
+    }
+    
     setLoading(true)
     try {
-      await apiClient.productMaterials.create({ ...data, productId })
+      if (editing) {
+        await apiClient.productMaterials.update(editing.id, data)
+      } else {
+        await apiClient.productMaterials.create({ ...data, productId })
+      }
       setOpen(false)
+      setEditing(null)
       reset()
       onRefresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add material')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save material'
+      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
+        alert(`${errorMessage}. Please renew your subscription to continue.`)
+        router.push('/dashboard/billing')
+      } else if (errorMessage.includes('already been added')) {
+        alert(errorMessage)
+      } else {
+        alert(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
   }
 
+  const handleEdit = (pm: ProductMaterial) => {
+    setEditing(pm)
+    setValue('materialId', pm.materialId)
+    setValue('quantity', pm.quantity)
+    setValue('unit', pm.unit || '')
+    setOpen(true)
+  }
+
+  const handleView = async (pm: ProductMaterial) => {
+    try {
+      const data = await apiClient.productMaterials.findOne(pm.id) as any
+      if (data && data.material) {
+        if (!materials.find(m => m.id === data.material.id)) {
+          setMaterials([...materials, data.material])
+        }
+      }
+      setViewingPm(data || pm)
+      setViewOpen(true)
+    } catch {
+      setViewingPm(pm)
+      setViewOpen(true)
+    }
+  }
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Remove this material?')) return
+    if (!confirm('Xóa nguyên liệu này khỏi sản phẩm?')) return
     try {
       await apiClient.productMaterials.remove(id)
       onRefresh()
@@ -90,26 +138,42 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
     }
   }
 
+  const handleCreate = () => {
+    setEditing(null)
+    reset()
+    setOpen(true)
+  }
+
   const selectedMaterialId = watch('materialId')
 
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <CardTitle>Materials</CardTitle>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(open) => {
+          setOpen(open)
+          if (!open) {
+            setEditing(null)
+            reset()
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button size="sm" className="w-full sm:w-auto">Add</Button>
+            <Button size="sm" onClick={handleCreate} className="w-full sm:w-auto">Add</Button>
           </DialogTrigger>
           <DialogContent>
             {loading && <LoadingOverlay />}
             <form onSubmit={handleSubmit(onSubmit)}>
               <DialogHeader>
-                <DialogTitle>Add Material</DialogTitle>
+                <DialogTitle>{editing ? 'Edit Material' : 'Add Material'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                 <div className="grid gap-2">
-                  <Label>Material</Label>
-                  <Select value={selectedMaterialId} onValueChange={(v) => setValue('materialId', v)} disabled={loading}>
+                  <Label>Material *</Label>
+                  <Select 
+                    value={selectedMaterialId} 
+                    onValueChange={(v) => setValue('materialId', v)} 
+                    disabled={loading || editing !== null}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select material" />
                     </SelectTrigger>
@@ -119,10 +183,26 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
                       ))}
                     </SelectContent>
                   </Select>
+                  {!selectedMaterialId && (
+                    <p className="text-sm text-destructive">Please select a material</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
-                  <Label>Quantity</Label>
-                  <Input type="number" {...register('quantity', { required: true, valueAsNumber: true })} placeholder="e.g. 10" disabled={loading} />
+                  <Label>Quantity *</Label>
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    {...register('quantity', { 
+                      required: 'Please enter quantity',
+                      valueAsNumber: true,
+                      min: { value: 0.01, message: 'Quantity must be greater than 0' }
+                    })} 
+                    placeholder="e.g. 10" 
+                    disabled={loading}
+                  />
+                  {errors.quantity && (
+                    <p className="text-sm text-destructive">{errors.quantity.message}</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label>Unit (Optional)</Label>
@@ -130,16 +210,84 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : 'Add'}</Button>
+                <Button type="button" variant="outline" onClick={() => {
+                  setOpen(false)
+                  setEditing(null)
+                  reset()
+                }} disabled={loading}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : editing ? 'Update' : 'Add'}</Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Material Details</DialogTitle>
+              <DialogDescription>
+                View material information and supplier details
+              </DialogDescription>
+            </DialogHeader>
+            {viewingPm && (
+              <div className="space-y-4 py-4">
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Material Name</Label>
+                  <p className="text-sm">{(viewingPm as any).material?.name || materials.find(m => m.id === viewingPm.materialId)?.name || viewingPm.materialId}</p>
+                </div>
+                {(viewingPm as any).material?.harvestDate && (
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">Harvest Date</Label>
+                    <p className="text-sm">{new Date((viewingPm as any).material.harvestDate).toLocaleDateString()}</p>
+                  </div>
+                )}
+                {(viewingPm as any).material?.supplier && (
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">Supplier</Label>
+                    <p className="text-sm">{(viewingPm as any).material.supplier.name}</p>
+                    {(viewingPm as any).material.supplier.location && (
+                      <p className="text-xs text-muted-foreground">{(viewingPm as any).material.supplier.location}</p>
+                    )}
+                  </div>
+                )}
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Quantity</Label>
+                  <p className="text-sm">{viewingPm.quantity} {viewingPm.unit || ''}</p>
+                </div>
+                {viewingPm.unit && (
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">Unit</Label>
+                    <p className="text-sm">{viewingPm.unit}</p>
+                  </div>
+                )}
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Created At</Label>
+                  <p className="text-sm">{new Date(viewingPm.createdAt).toLocaleString()}</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Updated At</Label>
+                  <p className="text-sm">{new Date(viewingPm.updatedAt).toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent>
         {productMaterials.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No materials</p>
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground mb-4">Chưa có nguyên liệu nào</p>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button size="sm" onClick={handleCreate} variant="outline">
+                Thêm nguyên liệu
+              </Button>
+              <Button size="sm" variant="outline" asChild>
+                <Link href="/dashboard/materials">Quản lý nguyên liệu</Link>
+              </Button>
+            </div>
+          </div>
         ) : (
           <>
             <div className="hidden md:block border rounded-lg">
@@ -160,11 +308,13 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
                         <TableCell className="font-medium">{material?.name || pm.materialId}</TableCell>
                         <TableCell>{pm.quantity}</TableCell>
                         <TableCell>{pm.unit || '-'}</TableCell>
-                        <TableCell className="text-right">
-                          <ActionsDropdown
-                            onDelete={() => handleDelete(pm.id)}
-                          />
-                        </TableCell>
+                      <TableCell className="text-right">
+                        <ActionsDropdown
+                          onView={() => handleView(pm)}
+                          onEdit={() => handleEdit(pm)}
+                          onDelete={() => handleDelete(pm.id)}
+                        />
+                      </TableCell>
                       </TableRow>
                     )
                   })}
@@ -182,7 +332,11 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
                         {pm.quantity} {pm.unit || ''}
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(pm.id)} className="w-full text-destructive hover:text-destructive">Remove</Button>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleView(pm)} className="flex-1">View</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(pm)} className="flex-1">Edit</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(pm.id)} className="flex-1 text-destructive hover:text-destructive">Delete</Button>
+                    </div>
                   </div>
                 )
               })}

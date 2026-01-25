@@ -6,9 +6,9 @@ export declare class CertificationController {
     constructor(certificationService: CertificationService);
     findAll(): Promise<string | {
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
@@ -16,9 +16,9 @@ export declare class CertificationController {
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
@@ -28,9 +28,9 @@ export declare class CertificationController {
         id: string;
     }, dto: CreateCertificationDto): Promise<{
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
@@ -40,9 +40,9 @@ export declare class CertificationController {
         id: string;
     }, id: string, dto: UpdateCertificationDto): Promise<{
         id: string;
+        productId: string;
         createdAt: Date;
         updatedAt: Date;
-        productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;

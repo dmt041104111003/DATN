@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
@@ -13,7 +15,18 @@ export class DocumentService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private subscriptionService: SubscriptionService,
   ) {}
+
+  private async checkSubscriptionActive(userId: string) {
+    const subscription = await this.subscriptionService.getActiveSubscription(userId);
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription has expired. Please renew to continue using this feature.',
+      );
+    }
+    return subscription;
+  }
 
   async findAll() {
     const cacheKey = 'documents:all';
@@ -48,6 +61,7 @@ export class DocumentService {
     return item;
   }
   async create(userId: string, dto: CreateDocumentDto) {
+    await this.checkSubscriptionActive(userId);
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
     });
@@ -64,6 +78,7 @@ export class DocumentService {
   }
 
   async update(id: string, userId: string, dto: UpdateDocumentDto) {
+    await this.checkSubscriptionActive(userId);
     const document = await this.findOneOwned(id, userId);
     const updated = await this.prisma.document.update({
       where: { id },

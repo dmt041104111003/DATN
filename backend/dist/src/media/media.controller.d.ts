@@ -8,12 +8,12 @@ export declare class MediaController {
     }): Promise<string | {
         gatewayUrl: string;
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
+        name: string;
         type: string;
+        url: string;
     }[]>;
     findOne(user: {
         id: string;
@@ -33,36 +33,30 @@ export declare class MediaController {
         cid: string;
         gatewayUrl: string;
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
+        name: string;
         type: string;
+        url: string;
     }>;
     uploadFiles(user: {
         id: string;
     }, files: Express.Multer.File[]): Promise<{
-        cid: string;
-        gatewayUrl: string;
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        url: string;
-        type: string;
-    }[]>;
+        successful: any[];
+        failed: number;
+        total: number;
+    }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateMediaDto): Promise<{
         id: string;
-        name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
+        name: string;
         type: string;
+        url: string;
     }>;
     remove(user: {
         id: string;

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
@@ -12,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,22 +30,46 @@ import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { LoadingOverlay } from '@/components/ui/loading'
 
 export function ProductProcesses({ productId, processes, onRefresh }: { productId: string; processes: ProductionProcess[]; onRefresh: () => void }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewingProcess, setViewingProcess] = useState<ProductionProcess | null>(null)
+  const [editing, setEditing] = useState<ProductionProcess | null>(null)
   const [loading, setLoading] = useState(false)
-  const { register, handleSubmit, reset } = useForm<{ stepName: string; startTime: string; endTime?: string; location?: string }>()
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<{ stepName: string; startTime: string; endTime?: string; location?: string }>()
 
   const onSubmit = async (data: { stepName: string; startTime: string; endTime?: string; location?: string }) => {
     setLoading(true)
     try {
-      await apiClient.productionProcesses.create({ ...data, productId })
+      if (editing) {
+        await apiClient.productionProcesses.update(editing.id, data)
+      } else {
+        await apiClient.productionProcesses.create({ ...data, productId })
+      }
       setOpen(false)
+      setEditing(null)
       reset()
       onRefresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create process')
+      alert(err instanceof Error ? err.message : 'Failed to save process')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEdit = (process: ProductionProcess) => {
+    setEditing(process)
+    setValue('stepName', process.stepName)
+    const startTime = new Date(process.startTime)
+    setValue('startTime', startTime.toISOString().slice(0, 16))
+    if (process.endTime) {
+      const endTime = new Date(process.endTime)
+      setValue('endTime', endTime.toISOString().slice(0, 16))
+    } else {
+      setValue('endTime', '')
+    }
+    setValue('location', process.location || '')
+    setOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -55,6 +81,20 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
       alert(err instanceof Error ? err.message : 'Failed to delete')
     }
   }
+
+  const handleCreate = () => {
+    setEditing(null)
+    reset()
+    setOpen(true)
+  }
+
+  const handleView = (process: ProductionProcess) => {
+    setViewingProcess(process)
+    setViewOpen(true)
+  }
+
+  const startTime = watch('startTime')
+  const endTime = watch('endTime')
 
   return (
     <Card>
@@ -72,16 +112,46 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
               </DialogHeader>
               <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                 <div className="grid gap-2">
-                  <Label>Step Name</Label>
-                  <Input {...register('stepName', { required: true })} placeholder="e.g. Harvesting, Processing, Packaging" disabled={loading} />
+                  <Label>Step Name *</Label>
+                  <Input 
+                    {...register('stepName', { required: 'Please enter step name' })} 
+                    placeholder="e.g. Harvesting, Processing, Packaging" 
+                    disabled={loading}
+                  />
+                  {errors.stepName && (
+                    <p className="text-sm text-destructive">{errors.stepName.message}</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
-                  <Label>Start Time</Label>
-                  <Input type="datetime-local" {...register('startTime', { required: true })} disabled={loading} />
+                  <Label>Start Time *</Label>
+                  <Input 
+                    type="datetime-local" 
+                    {...register('startTime', { required: 'Vui lòng chọn thời gian bắt đầu' })} 
+                    disabled={loading}
+                  />
+                  {errors.startTime && (
+                    <p className="text-sm text-destructive">{errors.startTime.message}</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label>End Time (Optional)</Label>
-                  <Input type="datetime-local" {...register('endTime')} disabled={loading} />
+                  <Input 
+                    type="datetime-local" 
+                    {...register('endTime', {
+                      validate: (value) => {
+                        if (!value) return true
+                        if (!startTime) return true
+                        if (new Date(value) <= new Date(startTime)) {
+                          return 'End time must be after start time'
+                        }
+                        return true
+                      }
+                    })} 
+                    disabled={loading}
+                  />
+                  {errors.endTime && (
+                    <p className="text-sm text-destructive">{errors.endTime.message}</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label>Location (Optional)</Label>
@@ -89,10 +159,67 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : 'Add'}</Button>
+                <Button type="button" variant="outline" onClick={() => {
+                  setOpen(false)
+                  setEditing(null)
+                  reset()
+                }} disabled={loading}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : editing ? 'Update' : 'Add'}</Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{viewingProcess?.stepName || 'Process Details'}</DialogTitle>
+              <DialogDescription>
+                View production process information
+              </DialogDescription>
+            </DialogHeader>
+            {viewingProcess && (
+              <div className="space-y-4 py-4">
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Step Name</Label>
+                  <p className="text-sm">{viewingProcess.stepName}</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Start Time</Label>
+                  <p className="text-sm">{new Date(viewingProcess.startTime).toLocaleString()}</p>
+                </div>
+                {viewingProcess.endTime && (
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">End Time</Label>
+                    <p className="text-sm">{new Date(viewingProcess.endTime).toLocaleString()}</p>
+                  </div>
+                )}
+                {viewingProcess.location && (
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">Location</Label>
+                    <p className="text-sm">{viewingProcess.location}</p>
+                  </div>
+                )}
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Created At</Label>
+                  <p className="text-sm">{new Date(viewingProcess.createdAt).toLocaleString()}</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">Updated At</Label>
+                  <p className="text-sm">{new Date(viewingProcess.updatedAt).toLocaleString()}</p>
+                </div>
+                {viewingProcess.endTime && (
+                  <div className="grid gap-2">
+                    <Label className="text-sm font-medium">Duration</Label>
+                    <p className="text-sm">
+                      {Math.round((new Date(viewingProcess.endTime).getTime() - new Date(viewingProcess.startTime).getTime()) / (1000 * 60 * 60))} hours
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardHeader>
@@ -121,6 +248,8 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
                       <TableCell>{process.location || '-'}</TableCell>
                       <TableCell className="text-right">
                         <ActionsDropdown
+                          onView={() => handleView(process)}
+                          onEdit={() => handleEdit(process)}
                           onDelete={() => handleDelete(process.id)}
                         />
                       </TableCell>
@@ -140,7 +269,11 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
                       {process.location && ` | ${process.location}`}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(process.id)} className="w-full text-destructive hover:text-destructive">Delete</Button>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleView(process)} className="flex-1">View</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(process)} className="flex-1">Edit</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(process.id)} className="flex-1 text-destructive hover:text-destructive">Delete</Button>
+                  </div>
                 </div>
               ))}
             </div>

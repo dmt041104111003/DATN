@@ -1,9 +1,9 @@
-import { Controller, Post, Get, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Param } from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { MintDto } from './dto/mint.dto';
 import { BurnDto } from './dto/burn.dto';
 import { UpdateMetadataDto } from './dto/update-metadata.dto';
-import { Public } from '../auth/decorators';
+import { Public, CurrentUser } from '../auth/decorators';
 
 @Controller('contract')
 export class ContractController {
@@ -15,13 +15,24 @@ export class ContractController {
     return this.contractService.getPolicyId(walletAddress);
   }
 
-  @Public()
+  @Get('prepare-metadata/:productId')
+  async prepareMetadata(
+    @CurrentUser() user: { id: string } | undefined,
+    @Param('productId') productId: string,
+  ) {
+    if (!user) {
+      throw new Error('Authentication required');
+    }
+    return this.contractService.prepareProductMetadata(productId, user.id);
+  }
+
   @Post('mint')
   async createMint(
+    @CurrentUser() user: { id: string } | undefined,
     @Body('walletAddress') walletAddress: string,
     @Body('assets') assets: MintDto[],
   ) {
-    return this.contractService.createMint(walletAddress, assets);
+    return this.contractService.createMint(walletAddress, assets, user?.id);
   }
 
   @Public()
@@ -33,13 +44,17 @@ export class ContractController {
     return this.contractService.createBurn(walletAddress, assets);
   }
 
-  @Public()
   @Post('update')
   async createUpdate(
+    @CurrentUser() user: { id: string } | undefined,
     @Body('walletAddress') walletAddress: string,
     @Body('assets') assets: UpdateMetadataDto[],
+    @Body('productId') productId?: string,
   ) {
-    return this.contractService.createUpdate(walletAddress, assets);
+    if (!user) {
+      throw new Error('Authentication required');
+    }
+    return this.contractService.createUpdate(walletAddress, assets, user.id, productId);
   }
 
   @Public()

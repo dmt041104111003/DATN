@@ -4,15 +4,27 @@ import { useState } from 'react'
 import { BrowserWallet } from '@meshsdk/core'
 import { apiClient } from '@/lib/api/client'
 
+type Network = 'mainnet' | 'preprod'
+
 export function useWallet() {
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const connectWallet = async (walletName: string) => {
+  const connectWallet = async (walletName: string, selectedNetwork: Network) => {
     setIsConnecting(true)
     setError(null)
     try {
       const walletInstance = await BrowserWallet.enable(walletName)
+      
+      const walletNetworkId = await walletInstance.getNetworkId()
+      const expectedNetworkId = selectedNetwork === 'mainnet' ? 1 : 0
+      
+      if (walletNetworkId !== expectedNetworkId) {
+        const walletNetwork = walletNetworkId === 1 ? 'Mainnet' : 'Preprod'
+        const expectedNetwork = selectedNetwork === 'mainnet' ? 'Mainnet' : 'Preprod'
+        throw new Error(`Network mismatch: Your wallet is connected to ${walletNetwork}, but the app is configured for ${expectedNetwork}. Please switch your wallet network or select the correct network.`)
+      }
+      
       const addresses = await walletInstance.getUsedAddresses()
       const walletAddress = addresses[0]
       if (!walletAddress) throw new Error('No address found')

@@ -24,14 +24,23 @@ let ContractController = class ContractController {
     async getInfo(walletAddress) {
         return this.contractService.getPolicyId(walletAddress);
     }
-    async createMint(walletAddress, assets) {
-        return this.contractService.createMint(walletAddress, assets);
+    async prepareMetadata(user, productId) {
+        if (!user) {
+            throw new Error('Authentication required');
+        }
+        return this.contractService.prepareProductMetadata(productId, user.id);
+    }
+    async createMint(user, walletAddress, assets) {
+        return this.contractService.createMint(walletAddress, assets, user?.id);
     }
     async createBurn(walletAddress, assets) {
         return this.contractService.createBurn(walletAddress, assets);
     }
-    async createUpdate(walletAddress, assets) {
-        return this.contractService.createUpdate(walletAddress, assets);
+    async createUpdate(user, walletAddress, assets, productId) {
+        if (!user) {
+            throw new Error('Authentication required');
+        }
+        return this.contractService.createUpdate(walletAddress, assets, user.id, productId);
     }
     async createPayment(walletAddress, amount) {
         return this.contractService.createPayment(walletAddress, amount);
@@ -47,12 +56,20 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "getInfo", null);
 __decorate([
-    (0, decorators_1.Public)(),
-    (0, common_1.Post)('mint'),
-    __param(0, (0, common_1.Body)('walletAddress')),
-    __param(1, (0, common_1.Body)('assets')),
+    (0, common_1.Get)('prepare-metadata/:productId'),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('productId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], ContractController.prototype, "prepareMetadata", null);
+__decorate([
+    (0, common_1.Post)('mint'),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)('walletAddress')),
+    __param(2, (0, common_1.Body)('assets')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Array]),
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "createMint", null);
 __decorate([
@@ -65,12 +82,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "createBurn", null);
 __decorate([
-    (0, decorators_1.Public)(),
     (0, common_1.Post)('update'),
-    __param(0, (0, common_1.Body)('walletAddress')),
-    __param(1, (0, common_1.Body)('assets')),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)('walletAddress')),
+    __param(2, (0, common_1.Body)('assets')),
+    __param(3, (0, common_1.Body)('productId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:paramtypes", [Object, String, Array, String]),
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "createUpdate", null);
 __decorate([
