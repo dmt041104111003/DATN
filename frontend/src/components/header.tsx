@@ -3,7 +3,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Icon } from "@/components/ui/icon"
 import { useAuth } from "@/contexts/auth-context"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -30,30 +29,39 @@ export function Header() {
             <Link 
               href="/" 
               className={cn(
-                "text-sm font-medium transition-colors",
-                isActive('/') ? "text-primary" : "hover:text-primary"
+                "text-sm font-medium transition-colors relative",
+                isActive('/') ? "text-primary font-semibold" : "hover:text-primary"
               )}
             >
               Home
+              {isActive('/') && (
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary" />
+              )}
             </Link>
             <Link 
               href="/trace" 
               className={cn(
-                "text-sm font-medium transition-colors",
-                isActive('/trace') ? "text-primary" : "hover:text-primary"
+                "text-sm font-medium transition-colors relative",
+                isActive('/trace') ? "text-primary font-semibold" : "hover:text-primary"
               )}
             >
               Trace Product
+              {isActive('/trace') && (
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary" />
+              )}
             </Link>
             {user && (
               <Link 
                 href="/dashboard" 
                 className={cn(
-                  "text-sm font-medium transition-colors",
-                  isActive('/dashboard') ? "text-primary" : "hover:text-primary"
+                  "text-sm font-medium transition-colors relative",
+                  isActive('/dashboard') ? "text-primary font-semibold" : "hover:text-primary"
                 )}
               >
                 Dashboard
+                {isActive('/dashboard') && (
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary" />
+                )}
               </Link>
             )}
           </nav>
