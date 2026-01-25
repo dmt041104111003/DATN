@@ -21,11 +21,11 @@ export function Footer() {
             <div className="space-y-2">
               <p className="text-sm font-semibold">Follow Us</p>
               <div className="flex items-center gap-4">
-                <a href="#" className="text-foreground hover:text-muted-foreground">
-                  <Icon name="public" size="md" />
+                <a href="#" className="text-foreground hover:text-muted-foreground text-sm">
+                  Website
                 </a>
-                <a href="#" className="text-foreground hover:text-muted-foreground">
-                  <Icon name="smart_display" size="md" />
+                <a href="#" className="text-foreground hover:text-muted-foreground text-sm">
+                  Video
                 </a>
               </div>
             </div>

@@ -23,6 +23,8 @@ import { ProductDocuments } from '@/components/dashboard/product-documents'
 import { ProductCertifications } from '@/components/dashboard/product-certifications'
 import { ProductProcesses } from '@/components/dashboard/product-processes'
 import { ProductMaterials } from '@/components/dashboard/product-materials'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { LoadingPage } from '@/components/ui/loading'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -116,18 +118,7 @@ export default function ProductDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="space-y-4 sm:space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="h-8 bg-muted animate-pulse rounded w-48" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-32 bg-muted animate-pulse rounded" />
-            </CardContent>
-          </Card>
-      </div>
-    )
+    return <LoadingPage />
   }
 
   if (!product) {
@@ -204,15 +195,7 @@ export default function ProductDetailPage() {
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <p className="mt-1">
-                  {product.policyId && product.assetName ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-800 text-sm">
-                      Minted
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-800 text-sm">
-                      Draft
-                    </span>
-                  )}
+                  <StatusBadge status={product.policyId && product.assetName ? 'Minted' : 'Draft'} />
                 </p>
               </div>
               {product.policyId && (

@@ -23,6 +23,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useForm } from 'react-hook-form'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ActionsDropdown } from '@/components/ui/actions-dropdown'
+import { LoadingOverlay } from '@/components/ui/loading'
 
 export function ProductMaterials({ productId, productMaterials, onRefresh }: { productId: string; productMaterials: ProductMaterial[]; onRefresh: () => void }) {
   const [open, setOpen] = useState(false)
@@ -50,11 +60,14 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  const [loading, setLoading] = useState(false)
+
   const onSubmit = async (data: { materialId: string; quantity: number; unit?: string }) => {
     if (!data.materialId) {
       alert('Please select a material')
       return
     }
+    setLoading(true)
     try {
       await apiClient.productMaterials.create({ ...data, productId })
       setOpen(false)
@@ -62,6 +75,8 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
       onRefresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to add material')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -86,14 +101,15 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
             <Button size="sm" className="w-full sm:w-auto">Add</Button>
           </DialogTrigger>
           <DialogContent>
+            {loading && <LoadingOverlay />}
             <form onSubmit={handleSubmit(onSubmit)}>
               <DialogHeader>
                 <DialogTitle>Add Material</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                 <div className="grid gap-2">
                   <Label>Material</Label>
-                  <Select value={selectedMaterialId} onValueChange={(v) => setValue('materialId', v)}>
+                  <Select value={selectedMaterialId} onValueChange={(v) => setValue('materialId', v)} disabled={loading}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select material" />
                     </SelectTrigger>
@@ -106,42 +122,73 @@ export function ProductMaterials({ productId, productMaterials, onRefresh }: { p
                 </div>
                 <div className="grid gap-2">
                   <Label>Quantity</Label>
-                  <Input type="number" {...register('quantity', { required: true, valueAsNumber: true })} placeholder="e.g. 10" />
+                  <Input type="number" {...register('quantity', { required: true, valueAsNumber: true })} placeholder="e.g. 10" disabled={loading} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Unit (Optional)</Label>
-                  <Input {...register('unit')} placeholder="e.g. kg, lbs, pieces" />
+                  <Input {...register('unit')} placeholder="e.g. kg, lbs, pieces" disabled={loading} />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">Add</Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : 'Add'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {productMaterials.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No materials</p>
-          ) : (
-              productMaterials.map((pm) => {
-              const material = materials.find(m => m.id === pm.materialId)
-              return (
-                <div key={pm.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 border rounded">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{material?.name || pm.materialId}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {pm.quantity} {pm.unit || ''}
-                    </p>
+        {productMaterials.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No materials</p>
+        ) : (
+          <>
+            <div className="hidden md:block border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Material</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {productMaterials.map((pm) => {
+                    const material = materials.find(m => m.id === pm.materialId)
+                    return (
+                      <TableRow key={pm.id}>
+                        <TableCell className="font-medium">{material?.name || pm.materialId}</TableCell>
+                        <TableCell>{pm.quantity}</TableCell>
+                        <TableCell>{pm.unit || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <ActionsDropdown
+                            onDelete={() => handleDelete(pm.id)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="md:hidden space-y-2">
+              {productMaterials.map((pm) => {
+                const material = materials.find(m => m.id === pm.materialId)
+                return (
+                  <div key={pm.id} className="flex flex-col gap-2 p-2 border rounded">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{material?.name || pm.materialId}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {pm.quantity} {pm.unit || ''}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(pm.id)} className="w-full text-destructive hover:text-destructive">Remove</Button>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(pm.id)} className="w-full sm:w-auto shrink-0">Remove</Button>
-                </div>
-              )
-            })
-          )}
-        </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )

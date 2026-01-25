@@ -7,6 +7,19 @@ import { apiClient } from '@/lib/api/client'
 import { Service, Subscription } from '@/types/api'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ActionsDropdown } from '@/components/ui/actions-dropdown'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { LoadingPage } from '@/components/ui/loading'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ServiceCard } from '@/components/ui/service-card'
 
 type Tab = 'services' | 'subscriptions'
 
@@ -109,7 +122,7 @@ export default function BillingPage() {
     }
   }
 
-  if (loading) return <div className="space-y-6">Loading...</div>
+  if (loading) return <LoadingPage />
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -118,31 +131,14 @@ export default function BillingPage() {
         <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Manage services and subscriptions</p>
       </div>
 
-      <div className="flex gap-1 sm:gap-2 border-b overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <Button
-          variant="ghost"
-          onClick={() => setActiveTab('services')}
-          className={cn(
-            "rounded-none border-b-2 border-transparent whitespace-nowrap text-sm sm:text-base transition-colors",
-            activeTab === 'services' && "border-primary text-primary font-semibold bg-accent/50"
-          )}
-        >
-          Services
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => setActiveTab('subscriptions')}
-          className={cn(
-            "rounded-none border-b-2 border-transparent whitespace-nowrap text-sm sm:text-base transition-colors",
-            activeTab === 'subscriptions' && "border-primary text-primary font-semibold bg-accent/50"
-          )}
-        >
-          Subscriptions
-        </Button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
+        <TabsList>
+          <TabsTrigger value="services">Services</TabsTrigger>
+          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+        </TabsList>
 
-      {activeTab === 'services' && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <TabsContent value="services" className="mt-4 sm:mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 justify-items-center">
           {services.map((service) => {
             const activeSub = subscriptions.find(s => s.status === 'active')
             const hasActive = subscriptions.some(s => s.servicePlanId === service.id && s.status === 'active')
@@ -151,63 +147,40 @@ export default function BillingPage() {
             const isLowerPlan = activeSub && service.price < (activeSub.service?.price || 0)
             const isDisabled = hasActive || isSamePlan || isLowerPlan || processing === service.id
             
+            let buttonText = ''
+            if (hasActive) {
+              buttonText = 'Active'
+            } else if (isSamePlan) {
+              buttonText = 'Renew Not Allowed'
+            } else if (isLowerPlan) {
+              buttonText = 'Lower Plan Not Available'
+            } else {
+              buttonText = processing === service.id ? 'Processing...' : isUpgrade ? 'Upgrade' : 'Subscribe'
+            }
+            
+            const durationText = service.duration ? `${service.duration} ${service.duration === 1 ? 'day' : 'days'}` : 'N/A'
+            const productText = service.maxProducts === null ? 'Unlimited / ngày' : service.maxProducts ? `${service.maxProducts} products / ngày` : 'N/A'
+            
             return (
-              <Card key={service.id} className={cn("flex flex-col", hasActive && 'border-primary', isDisabled && !hasActive && 'opacity-60')}>
-                <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl">{service.name}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {service.description || 'No description'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col flex-1 space-y-4">
-                  <div>
-                    <p className="text-2xl sm:text-3xl font-bold">{service.price} ADA</p>
-                    <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                      <p>Duration: {service.duration} days</p>
-                      <p>Max Products: {service.maxProducts === null ? 'Unlimited' : `${service.maxProducts} / day`}</p>
-                    </div>
-                  </div>
-                  <div className="mt-auto pt-4 space-y-2">
-                    {hasActive ? (
-                      <Button variant="outline" size="sm" className="w-full" disabled>
-                        Active
-                      </Button>
-                    ) : isSamePlan ? (
-                      <>
-                        <Button variant="outline" size="sm" className="w-full" disabled>
-                          Renew Not Allowed
-                        </Button>
-                        <p className="text-xs text-muted-foreground text-center">
-                          Wait for current plan to expire
-                        </p>
-                      </>
-                    ) : isLowerPlan ? (
-                      <>
-                        <Button variant="outline" size="sm" className="w-full" disabled>
-                          Lower Plan Not Available
-                        </Button>
-                        <p className="text-xs text-muted-foreground text-center">
-                          Upgrade to access higher tier plans
-                        </p>
-                      </>
-                    ) : (
-                      <Button 
-                        className="w-full" 
-                        onClick={() => handleSubscribe(service.id)}
-                        disabled={processing === service.id}
-                      >
-                        {processing === service.id ? 'Processing...' : isUpgrade ? 'Upgrade' : 'Subscribe'}
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <ServiceCard
+                key={service.id}
+                name={service.name}
+                description={service.description || undefined}
+                price={service.price}
+                duration={durationText}
+                product={productText}
+                isActive={hasActive}
+                disabled={isDisabled}
+                buttonText={buttonText}
+                onClick={() => !isDisabled && handleSubscribe(service.id)}
+                className={cn(isDisabled && !hasActive && 'opacity-60')}
+              />
             )
           })}
         </div>
-      )}
+        </TabsContent>
 
-      {activeTab === 'subscriptions' && (
+        <TabsContent value="subscriptions" className="mt-4 sm:mt-6">
         <>
           {subscriptions.length === 0 ? (
             <Card>
@@ -219,49 +192,94 @@ export default function BillingPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {subscriptions.map((sub) => {
-                const remainingDays = sub.endDate && sub.status === 'active' 
-                  ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-                  : null
+            <>
+              <div className="hidden md:block border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Remaining Days</TableHead>
+                      <TableHead>Max Products</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {subscriptions.map((sub) => {
+                      const remainingDays = sub.endDate && sub.status === 'active' 
+                        ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                        : null
 
-                return (
-                  <Card key={sub.id} className={sub.status === 'active' ? 'border-primary' : ''}>
-                    <CardHeader>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div>
-                          <CardTitle className="text-base sm:text-lg">{sub.service?.name || 'Unknown Service'}</CardTitle>
-                          <CardDescription className="text-xs sm:text-sm">
-                            Status: <span className={cn(
-                              sub.status === 'active' && 'text-primary font-medium',
-                              sub.status === 'expired' && 'text-orange-600 font-medium',
-                              sub.status === 'cancelled' && 'text-gray-500',
-                              sub.status === 'pending' && 'text-yellow-600'
-                            )}>{sub.status}</span>
-                          </CardDescription>
+                      return (
+                        <TableRow key={sub.id} className={sub.status === 'active' ? 'bg-primary/5' : ''}>
+                          <TableCell className="font-medium">{sub.service?.name || 'Unknown Service'}</TableCell>
+                          <TableCell>
+                            <StatusBadge status={sub.status} />
+                          </TableCell>
+                          <TableCell>{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>{remainingDays !== null ? `${remainingDays} days` : '-'}</TableCell>
+                          <TableCell>
+                            {sub.service 
+                              ? (sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`)
+                              : '-'
+                            }
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {sub.status === 'active' && (
+                              <ActionsDropdown
+                                onCancel={() => handleCancel(sub.id)}
+                              />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="md:hidden space-y-2">
+                {subscriptions.map((sub) => {
+                  const remainingDays = sub.endDate && sub.status === 'active' 
+                    ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                    : null
+
+                  return (
+                    <Card key={sub.id} className={sub.status === 'active' ? 'border-primary' : ''}>
+                      <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <CardTitle className="text-base sm:text-lg">{sub.service?.name || 'Unknown Service'}</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm">
+                              Status: <StatusBadge status={sub.status} />
+                            </CardDescription>
+                          </div>
+                          {sub.status === 'active' && (
+                            <Button variant="outline" size="sm" onClick={() => handleCancel(sub.id)} className="w-full sm:w-auto">
+                              Cancel
+                            </Button>
+                          )}
                         </div>
-                        {sub.status === 'active' && (
-                          <Button variant="outline" size="sm" onClick={() => handleCancel(sub.id)} className="w-full sm:w-auto">
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-2 text-sm">
-                        {sub.startDate && <p><span className="text-muted-foreground">Start:</span> {new Date(sub.startDate).toLocaleDateString()}</p>}
-                        {sub.endDate && <p><span className="text-muted-foreground">End:</span> {new Date(sub.endDate).toLocaleDateString()}</p>}
-                        {remainingDays !== null && <p><span className="text-muted-foreground">Remaining:</span> <span className="font-medium">{remainingDays} days</span></p>}
-                        {sub.service && <p><span className="text-muted-foreground">Max Products:</span> {sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`}</p>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-2 text-sm">
+                          {sub.startDate && <p><span className="text-muted-foreground">Start:</span> {new Date(sub.startDate).toLocaleDateString()}</p>}
+                          {sub.endDate && <p><span className="text-muted-foreground">End:</span> {new Date(sub.endDate).toLocaleDateString()}</p>}
+                          {remainingDays !== null && <p><span className="text-muted-foreground">Remaining:</span> <span className="font-medium">{remainingDays} days</span></p>}
+                          {sub.service && <p><span className="text-muted-foreground">Max Products:</span> {sub.service.maxProducts === null ? 'Unlimited' : `${sub.service.maxProducts} / day`}</p>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </>
           )}
         </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -18,12 +18,23 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useForm } from 'react-hook-form'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ActionsDropdown } from '@/components/ui/actions-dropdown'
+import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
 
 export default function WarehousesPage() {
   const router = useRouter()
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState<Warehouse | null>(null)
   const { register, handleSubmit, reset, formState: { errors } } = useForm<{
     name: string
@@ -47,6 +58,7 @@ export default function WarehousesPage() {
   }
 
   const onSubmit = async (data: { name: string; location?: string; capacity?: number }) => {
+    setSubmitting(true)
     try {
       if (editing) {
         await apiClient.warehouses.update(editing.id, data)
@@ -59,6 +71,8 @@ export default function WarehousesPage() {
       loadWarehouses()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to save warehouse')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -97,9 +111,10 @@ export default function WarehousesPage() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button onClick={handleCreate} className="w-full sm:w-auto">Add Warehouse</Button>
+              <Button onClick={handleCreate} className="w-full sm:w-auto">Add more</Button>
             </DialogTrigger>
             <DialogContent>
+              {submitting && <LoadingOverlay />}
               <form onSubmit={handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Warehouse' : 'Create Warehouse'}</DialogTitle>
@@ -107,13 +122,14 @@ export default function WarehousesPage() {
                     {editing ? 'Update warehouse information' : 'Add a new storage facility'}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Warehouse Name</Label>
                     <Input
                       id="name"
                       {...register('name', { required: 'Warehouse name is required' })}
                       placeholder="e.g. Main Warehouse, Storage Facility A"
+                      disabled={submitting}
                     />
                     {errors.name && (
                       <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -125,6 +141,7 @@ export default function WarehousesPage() {
                       id="location"
                       {...register('location')}
                       placeholder="e.g. 123 Main St, City, Country"
+                      disabled={submitting}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -134,14 +151,15 @@ export default function WarehousesPage() {
                       type="number"
                       {...register('capacity', { valueAsNumber: true })}
                       placeholder="e.g. 1000"
+                      disabled={submitting}
                     />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
                     Cancel
                   </Button>
-                  <Button type="submit">{editing ? 'Update' : 'Create'}</Button>
+                  <Button type="submit" disabled={submitting}>{submitting ? 'Processing...' : editing ? 'Update' : 'Create'}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -149,62 +167,83 @@ export default function WarehousesPage() {
         </div>
 
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <CardTitle className="h-4 bg-muted animate-pulse rounded" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-20 bg-muted animate-pulse rounded" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <LoadingPage />
         ) : warehouses.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">No warehouses yet</p>
-              <Button className="mt-4" onClick={handleCreate}>Add your first warehouse</Button>
+                <div className="flex justify-center mt-4">
+                  <Button onClick={handleCreate}>Add first</Button>
+                </div>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {warehouses.map((warehouse) => (
-              <Card key={warehouse.id}>
-                <CardHeader>
-                  <CardTitle>{warehouse.name}</CardTitle>
-                  {warehouse.location && (
-                    <CardDescription>{warehouse.location}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Capacity: </span>
-                      <span>{warehouse.capacity}</span>
+          <>
+            <div className="hidden md:block border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Capacity</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {warehouses.map((warehouse) => (
+                    <TableRow key={warehouse.id}>
+                      <TableCell className="font-medium">{warehouse.name}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{warehouse.location || '-'}</TableCell>
+                      <TableCell>{warehouse.capacity || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <ActionsDropdown
+                          viewHref={`/dashboard/warehouses/${warehouse.id}`}
+                          onEdit={() => handleEdit(warehouse)}
+                          onDelete={() => handleDelete(warehouse.id)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="md:hidden space-y-2">
+              {warehouses.map((warehouse) => (
+                <Card key={warehouse.id}>
+                  <CardHeader>
+                    <CardTitle>{warehouse.name}</CardTitle>
+                    {warehouse.location && (
+                      <CardDescription>{warehouse.location}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Capacity: </span>
+                        <span>{warehouse.capacity || '-'}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/warehouses/${warehouse.id}`)} className="flex-1">
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(warehouse)} className="flex-1">
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(warehouse.id)}
+                          className="text-destructive hover:text-destructive flex-1"
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/warehouses/${warehouse.id}`)}>
-                        View
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(warehouse)}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(warehouse.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </div>
   )

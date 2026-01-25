@@ -6,7 +6,6 @@ import {
   SidebarGroup, 
   SidebarGroupContent, 
   SidebarMenu, 
-  SidebarMenuButton, 
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter
@@ -91,20 +90,21 @@ function DashboardSidebarComponent() {
               const isActive = activeStates[item.href]
               return (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive}
-                    className={cn("w-full justify-start gap-3", isActive && "bg-accent font-semibold")}
+                  <Link 
+                    href={item.href}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-md p-2 text-sm transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      isActive && "bg-accent font-semibold"
+                    )}
                   >
-                    <Link href={item.href}>
-                      <Icon 
-                        name={item.icon} 
-                        size="sm" 
-                        className={cn(isActive ? "text-foreground" : "text-muted-foreground")}
-                      />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    <Icon 
+                      name={item.icon} 
+                      size="sm" 
+                      className={cn(isActive ? "text-foreground" : "text-muted-foreground")}
+                    />
+                    <span>{item.title}</span>
+                  </Link>
                 </SidebarMenuItem>
               )
             })}
@@ -115,10 +115,13 @@ function DashboardSidebarComponent() {
       <SidebarFooter className="border-t pt-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} className="w-full justify-start gap-3">
+            <button
+              onClick={logout}
+              className="flex w-full items-center gap-3 rounded-md p-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
               <Icon name="logout" size="sm" className="text-muted-foreground" />
               <span>Logout</span>
-            </SidebarMenuButton>
+            </button>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

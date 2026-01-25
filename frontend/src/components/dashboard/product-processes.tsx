@@ -16,12 +16,24 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useForm } from 'react-hook-form'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ActionsDropdown } from '@/components/ui/actions-dropdown'
+import { LoadingOverlay } from '@/components/ui/loading'
 
 export function ProductProcesses({ productId, processes, onRefresh }: { productId: string; processes: ProductionProcess[]; onRefresh: () => void }) {
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
   const { register, handleSubmit, reset } = useForm<{ stepName: string; startTime: string; endTime?: string; location?: string }>()
 
   const onSubmit = async (data: { stepName: string; startTime: string; endTime?: string; location?: string }) => {
+    setLoading(true)
     try {
       await apiClient.productionProcesses.create({ ...data, productId })
       setOpen(false)
@@ -29,6 +41,8 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
       onRefresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to create process')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -51,56 +65,87 @@ export function ProductProcesses({ productId, processes, onRefresh }: { productI
             <Button size="sm" className="w-full sm:w-auto">Add</Button>
           </DialogTrigger>
           <DialogContent>
+            {loading && <LoadingOverlay />}
             <form onSubmit={handleSubmit(onSubmit)}>
               <DialogHeader>
                 <DialogTitle>Add Process Step</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                 <div className="grid gap-2">
                   <Label>Step Name</Label>
-                  <Input {...register('stepName', { required: true })} placeholder="e.g. Harvesting, Processing, Packaging" />
+                  <Input {...register('stepName', { required: true })} placeholder="e.g. Harvesting, Processing, Packaging" disabled={loading} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Start Time</Label>
-                  <Input type="datetime-local" {...register('startTime', { required: true })} />
+                  <Input type="datetime-local" {...register('startTime', { required: true })} disabled={loading} />
                 </div>
                 <div className="grid gap-2">
                   <Label>End Time (Optional)</Label>
-                  <Input type="datetime-local" {...register('endTime')} />
+                  <Input type="datetime-local" {...register('endTime')} disabled={loading} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Location (Optional)</Label>
-                  <Input {...register('location')} placeholder="e.g. Factory A, Warehouse B" />
+                  <Input {...register('location')} placeholder="e.g. Factory A, Warehouse B" disabled={loading} />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">Add</Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? 'Processing...' : 'Add'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {processes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No processes</p>
-          ) : (
-            processes.map((process) => (
-              <div key={process.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 border rounded">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{process.stepName}</p>
-                  <p className="text-xs text-muted-foreground break-words">
-                    {new Date(process.startTime).toLocaleString()}
-                    {process.endTime && ` - ${new Date(process.endTime).toLocaleString()}`}
-                    {process.location && ` | ${process.location}`}
-                  </p>
+        {processes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No processes</p>
+        ) : (
+          <>
+            <div className="hidden md:block border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Step Name</TableHead>
+                    <TableHead>Start Time</TableHead>
+                    <TableHead>End Time</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {processes.map((process) => (
+                    <TableRow key={process.id}>
+                      <TableCell className="font-medium">{process.stepName}</TableCell>
+                      <TableCell>{new Date(process.startTime).toLocaleString()}</TableCell>
+                      <TableCell>{process.endTime ? new Date(process.endTime).toLocaleString() : '-'}</TableCell>
+                      <TableCell>{process.location || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <ActionsDropdown
+                          onDelete={() => handleDelete(process.id)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="md:hidden space-y-2">
+              {processes.map((process) => (
+                <div key={process.id} className="flex flex-col gap-2 p-2 border rounded">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{process.stepName}</p>
+                    <p className="text-xs text-muted-foreground break-words">
+                      {new Date(process.startTime).toLocaleString()}
+                      {process.endTime && ` - ${new Date(process.endTime).toLocaleString()}`}
+                      {process.location && ` | ${process.location}`}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleDelete(process.id)} className="w-full text-destructive hover:text-destructive">Delete</Button>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(process.id)} className="w-full sm:w-auto shrink-0">Delete</Button>
-              </div>
-            ))
-          )}
-        </div>
+              ))}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   )

@@ -8,6 +8,7 @@ import { Media } from '@/types/api'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { LoadingPage, LoadingOverlay } from '@/components/ui/loading'
 
 export default function MediaPage() {
   const [media, setMedia] = useState<Media[]>([])
@@ -70,7 +71,7 @@ export default function MediaPage() {
     return '📎'
   }
 
-  if (loading) return <div className="space-y-6">Loading...</div>
+  if (loading) return <LoadingPage />
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -87,7 +88,7 @@ export default function MediaPage() {
             <DialogHeader>
               <DialogTitle>Upload Media</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="space-y-4 px-4 py-4 min-w-0 w-full">
               <div className="grid gap-2">
                 <Label>Single File</Label>
                 <Input
@@ -109,7 +110,7 @@ export default function MediaPage() {
                   accept="image/*,video/*,application/pdf"
                 />
               </div>
-              {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+              {uploading && <LoadingOverlay text="Uploading..." />}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setUploadOpen(false)} disabled={uploading}>

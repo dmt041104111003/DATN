@@ -25,12 +25,28 @@ import {
 } from '@/components/ui/select'
 import { useForm } from 'react-hook-form'
 import { MaterialSuppliers } from '@/components/dashboard/material-suppliers'
+import { cn } from '@/lib/utils'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ActionsDropdown } from '@/components/ui/actions-dropdown'
+import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+
+type Tab = 'materials' | 'suppliers'
 
 export default function MaterialsPage() {
+  const [activeTab, setActiveTab] = useState<Tab>('materials')
   const [materials, setMaterials] = useState<Material[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState<Material | null>(null)
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<{
     supplierId: string
@@ -64,6 +80,7 @@ export default function MaterialsPage() {
       alert('Please select a supplier')
       return
     }
+    setSubmitting(true)
     try {
       if (editing) {
         await apiClient.materials.update(editing.id, data)
@@ -76,6 +93,8 @@ export default function MaterialsPage() {
       loadData()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to save material')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -108,16 +127,25 @@ export default function MaterialsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Materials</h1>
-            <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Manage raw materials</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleCreate} className="w-full sm:w-auto">Add Material</Button>
-            </DialogTrigger>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Materials</h1>
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Manage raw materials and suppliers</p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
+        <TabsList>
+          <TabsTrigger value="materials">Materials</TabsTrigger>
+          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="materials">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleCreate} className="w-full sm:w-auto">Add more</Button>
+                </DialogTrigger>
             <DialogContent>
+              {submitting && <LoadingOverlay />}
               <form onSubmit={handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Material' : 'Create Material'}</DialogTitle>
@@ -125,12 +153,13 @@ export default function MaterialsPage() {
                     {editing ? 'Update material information' : 'Add a new raw material'}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="space-y-4 px-4 py-4 min-w-0 w-full">
                   <div className="grid gap-2">
                     <Label htmlFor="supplierId">Supplier</Label>
                     <Select
                       value={watch('supplierId')}
                       onValueChange={(value) => setValue('supplierId', value)}
+                      disabled={submitting}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select supplier" />
@@ -153,104 +182,133 @@ export default function MaterialsPage() {
                       id="name"
                       {...register('name', { required: 'Material name is required' })}
                       placeholder="e.g. Coffee Beans, Cotton, Wheat"
+                      disabled={submitting}
                     />
                     {errors.name && (
                       <p className="text-sm text-destructive">{errors.name.message}</p>
                     )}
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="harvestDate">Harvest Date (Optional)</Label>
-                    <Input
-                      id="harvestDate"
-                      type="date"
-                      {...register('harvestDate')}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="quantity">Quantity (Optional)</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      step="0.01"
-                      {...register('quantity', { valueAsNumber: true })}
-                      placeholder="e.g. 100.5"
-                    />
-                  </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="harvestDate">Harvest Date (Optional)</Label>
+                      <Input
+                        id="harvestDate"
+                        type="date"
+                        {...register('harvestDate')}
+                        disabled={submitting}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="quantity">Quantity (Optional)</Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        step="0.01"
+                        {...register('quantity', { valueAsNumber: true })}
+                        placeholder="e.g. 100.5"
+                        disabled={submitting}
+                      />
+                    </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
                     Cancel
                   </Button>
-                  <Button type="submit">{editing ? 'Update' : 'Create'}</Button>
+                  <Button type="submit" disabled={submitting}>{submitting ? 'Processing...' : editing ? 'Update' : 'Create'}</Button>
                 </DialogFooter>
               </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <CardTitle className="h-4 bg-muted animate-pulse rounded" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-20 bg-muted animate-pulse rounded" />
-                </CardContent>
-              </Card>
-            ))}
+              </DialogContent>
+            </Dialog>
           </div>
-        ) : materials.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No materials yet</p>
-              <Button className="mt-4" onClick={handleCreate}>Add your first material</Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {materials.map((material) => (
-              <Card key={material.id}>
-                <CardHeader>
-                  <CardTitle>{material.name}</CardTitle>
-                  <CardDescription>
-                    {material.supplier?.name || 'No supplier'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Quantity: </span>
-                      <span>{material.quantity}</span>
-                    </div>
-                    {material.harvestDate && (
-                      <div>
-                        <span className="text-muted-foreground">Harvest: </span>
-                        <span>{new Date(material.harvestDate).toLocaleDateString()}</span>
+
+          {loading ? (
+            <LoadingPage />
+          ) : materials.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No materials yet</p>
+                <div className="flex justify-center mt-4">
+                  <Button onClick={handleCreate}>Add first</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="hidden md:block border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Supplier</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Harvest Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {materials.map((material) => (
+                      <TableRow key={material.id}>
+                        <TableCell className="font-medium">{material.name}</TableCell>
+                        <TableCell>{material.supplier?.name || 'No supplier'}</TableCell>
+                        <TableCell>{material.quantity || '-'}</TableCell>
+                        <TableCell>{material.harvestDate ? new Date(material.harvestDate).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <ActionsDropdown
+                            onEdit={() => handleEdit(material)}
+                            onDelete={() => handleDelete(material.id)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="md:hidden space-y-2">
+                {materials.map((material) => (
+                  <Card key={material.id}>
+                    <CardHeader>
+                      <CardTitle>{material.name}</CardTitle>
+                      <CardDescription>
+                        {material.supplier?.name || 'No supplier'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Quantity: </span>
+                          <span>{material.quantity || '-'}</span>
+                        </div>
+                        {material.harvestDate && (
+                          <div>
+                            <span className="text-muted-foreground">Harvest: </span>
+                            <span>{new Date(material.harvestDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(material)} className="flex-1">
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(material.id)}
+                            className="text-destructive hover:text-destructive flex-1"
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(material)} className="flex-1 sm:flex-initial">
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(material.id)}
-                        className="text-destructive hover:text-destructive flex-1 sm:flex-initial"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+        </TabsContent>
 
-      <MaterialSuppliers suppliers={suppliers} onRefresh={loadData} />
+        <TabsContent value="suppliers">
+          <MaterialSuppliers suppliers={suppliers} onRefresh={loadData} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

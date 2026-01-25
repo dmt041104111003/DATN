@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Collection, Metadata } from '@/types/api'
 import { CollectionMetadata } from '@/components/dashboard/collection-metadata'
+import { LoadingPage } from '@/components/ui/loading'
 
 export default function CollectionDetailPage() {
   const params = useParams()
@@ -42,18 +43,7 @@ export default function CollectionDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="h-8 bg-muted animate-pulse rounded w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="h-32 bg-muted animate-pulse rounded" />
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return <LoadingPage />
   }
 
   if (!collection) {

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { useRouter, usePathname } from 'next/navigation'
 import { apiClient } from '@/lib/api/client'
 import { User, AuthContextType } from '@/types/auth'
+import { LoadingPage } from '@/components/ui/loading'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const publicRoutes = ['/', '/login']
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   if (isLoading && !isPublic) {
-    return <div className="min-h-screen bg-white" />
+    return <LoadingPage />
   }
 
   return <AuthContext.Provider value={{ user, isLoading, logout, refreshAuth }}>{children}</AuthContext.Provider>

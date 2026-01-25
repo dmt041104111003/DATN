@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BrowserWallet } from '@meshsdk/core'
-import { Button } from '@/components/ui/button'
+import { WalletButton } from '@/components/ui/wallet-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Icon } from '@/components/ui/icon'
 import { useWallet } from '@/hooks/use-wallet'
 import { useAuth } from '@/contexts/auth-context'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
+import { Loading } from '@/components/ui/loading'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -58,23 +59,19 @@ export default function LoginPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {wallets.map((wallet) => {
                   const isLoading = loadingWallet === wallet.name
                   return (
-                    <Button
+                    <WalletButton
                       key={wallet.name}
-                      variant="outline"
-                      className="w-full justify-start gap-3 h-auto py-3"
+                      icon={wallet.icon}
                       onClick={() => handleWalletClick(wallet.name)}
                       disabled={!!loadingWallet}
+                      className={isLoading ? "opacity-50 cursor-not-allowed" : ""}
                     >
-                      {wallet.icon && (
-                        <img src={wallet.icon} alt={wallet.name} className="w-5 h-5" />
-                      )}
-                      <span className="font-semibold">{wallet.name}</span>
-                      {isLoading && <span className="text-sm ml-auto">Connecting...</span>}
-                    </Button>
+                      {wallet.name}
+                    </WalletButton>
                   )
                 })}
               </div>
@@ -83,7 +80,6 @@ export default function LoginPage() {
             {error && (
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
                 <div className="flex items-center gap-2 text-sm text-destructive">
-                  <Icon name="error" size="sm" />
                   <span>{error}</span>
                 </div>
               </div>
