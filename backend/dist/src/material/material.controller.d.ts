@@ -9,35 +9,35 @@ export declare class MaterialController {
     }): Promise<string | ({
         supplier: {
             id: string;
-            userId: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
             location: string | null;
             gpsCoordinates: string | null;
             contactInfo: string | null;
         };
     } & {
         id: string;
-        userId: string;
-        supplierId: string;
         name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        quantity: number;
+        supplierId: string;
+        harvestDate: Date | null;
     })[]>;
     findBySupplier(user: {
         id: string;
     }, supplierId: string): Promise<string | {
         id: string;
-        userId: string;
-        supplierId: string;
         name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        quantity: number;
+        supplierId: string;
+        harvestDate: Date | null;
     }[]>;
     findOne(user: {
         id: string;
@@ -65,25 +65,25 @@ export declare class MaterialController {
         id: string;
     }, dto: CreateMaterialDto): Promise<{
         id: string;
-        userId: string;
-        supplierId: string;
         name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        quantity: number;
+        supplierId: string;
+        harvestDate: Date | null;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateMaterialDto): Promise<{
         id: string;
-        userId: string;
-        supplierId: string;
         name: string;
-        harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        quantity: number;
+        supplierId: string;
+        harvestDate: Date | null;
     }>;
     remove(user: {
         id: string;

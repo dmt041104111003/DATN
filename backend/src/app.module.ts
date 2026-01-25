@@ -9,7 +9,6 @@ import { ProductionProcessModule } from './production-process/production-process
 import { CertificationModule } from './certification/certification.module';
 import { MaterialModule } from './material/material.module';
 import { SupplierModule } from './supplier/supplier.module';
-import { FeedbackModule } from './feedback/feedback.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { WarehouseStorageModule } from './warehouse-storage/warehouse-storage.module';
 import { ServiceModule } from './service/service.module';
@@ -44,7 +43,6 @@ import { JwtAuthGuard } from './auth/guards';
     SupplierModule,
     WarehouseModule,
     WarehouseStorageModule,
-    FeedbackModule,
     ServiceModule,
     SubscriptionModule,
     BlockchainModule,

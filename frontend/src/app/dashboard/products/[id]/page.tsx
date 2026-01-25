@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
-import { Product, Document, Certification, ProductionProcess, Feedback, ProductMaterial } from '@/types/api'
+import { Product, Document, Certification, ProductionProcess, ProductMaterial } from '@/types/api'
 import { useAuth } from '@/contexts/auth-context'
 import { useWallet } from '@/hooks/use-wallet'
 import {
@@ -22,7 +22,6 @@ import { Label } from '@/components/ui/label'
 import { ProductDocuments } from '@/components/dashboard/product-documents'
 import { ProductCertifications } from '@/components/dashboard/product-certifications'
 import { ProductProcesses } from '@/components/dashboard/product-processes'
-import { ProductFeedbacks } from '@/components/dashboard/product-feedbacks'
 import { ProductMaterials } from '@/components/dashboard/product-materials'
 
 export default function ProductDetailPage() {
@@ -34,7 +33,6 @@ export default function ProductDetailPage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [certifications, setCertifications] = useState<Certification[]>([])
   const [processes, setProcesses] = useState<ProductionProcess[]>([])
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
   const [productMaterials, setProductMaterials] = useState<ProductMaterial[]>([])
   const [loading, setLoading] = useState(true)
   const [minting, setMinting] = useState(false)
@@ -52,19 +50,17 @@ export default function ProductDetailPage() {
       setLoading(true)
     }
     try {
-      const [productData, docsData, certsData, processesData, feedbacksData, materialsData] = await Promise.all([
+      const [productData, docsData, certsData, processesData, materialsData] = await Promise.all([
         apiClient.products.findOne(id),
         apiClient.documents.findAll().catch(() => []),
         apiClient.certifications.findAll().catch(() => []),
         apiClient.productionProcesses.findAll().catch(() => []),
-        apiClient.feedbacks.findAll().catch(() => []),
         apiClient.productMaterials.findByProduct(id).catch(() => []),
       ])
       setProduct(productData)
       setDocuments(Array.isArray(docsData) ? docsData.filter(d => d.productId === id) : [])
       setCertifications(Array.isArray(certsData) ? certsData.filter(c => c.productId === id) : [])
       setProcesses(Array.isArray(processesData) ? processesData.filter(p => p.productId === id) : [])
-      setFeedbacks(Array.isArray(feedbacksData) ? feedbacksData.filter(f => f.productId === id) : [])
       setProductMaterials(Array.isArray(materialsData) ? materialsData : [])
     } catch {
       setProduct(null)
@@ -261,7 +257,6 @@ export default function ProductDetailPage() {
           <ProductDocuments productId={product.id} documents={documents} onRefresh={() => loadProduct(product.id, true)} />
           <ProductCertifications productId={product.id} certifications={certifications} onRefresh={() => loadProduct(product.id, true)} />
           <ProductProcesses productId={product.id} processes={processes} onRefresh={() => loadProduct(product.id, true)} />
-          <ProductFeedbacks productId={product.id} feedbacks={feedbacks} onRefresh={() => loadProduct(product.id, true)} />
           <ProductMaterials productId={product.id} productMaterials={productMaterials} onRefresh={() => loadProduct(product.id, true)} />
         </div>
     </div>

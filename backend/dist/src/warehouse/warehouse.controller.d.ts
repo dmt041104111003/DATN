@@ -7,34 +7,34 @@ export declare class WarehouseController {
     findAll(): Promise<string | {
         id: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        location: string | null;
+        capacity: number;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        location: string | null;
+        capacity: number;
     }>;
     create(dto: CreateWarehouseDto): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        location: string | null;
+        capacity: number;
     }>;
     update(id: string, dto: UpdateWarehouseDto): Promise<{
         id: string;
         name: string;
-        location: string | null;
-        capacity: number;
         createdAt: Date;
         updatedAt: Date;
+        location: string | null;
+        capacity: number;
     }>;
     remove(id: string): Promise<void>;
 }

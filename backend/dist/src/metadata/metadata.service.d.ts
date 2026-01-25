@@ -8,39 +8,39 @@ export declare class MetadataService {
     constructor(prisma: PrismaService, redis: RedisService);
     findAll(): Promise<string | {
         id: string;
-        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        content: string;
+        assetName: string | null;
         collectionId: string;
+        content: string;
         nftReference: string[];
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
-        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        content: string;
+        assetName: string | null;
         collectionId: string;
+        content: string;
         nftReference: string[];
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateMetadataDto): Promise<{
         id: string;
-        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        content: string;
+        assetName: string | null;
         collectionId: string;
+        content: string;
         nftReference: string[];
     }>;
     update(id: string, userId: string, dto: UpdateMetadataDto): Promise<{
         id: string;
-        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        content: string;
+        assetName: string | null;
         collectionId: string;
+        content: string;
         nftReference: string[];
     }>;
     remove(id: string, userId: string): Promise<void>;

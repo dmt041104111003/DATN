@@ -138,16 +138,6 @@ export interface ProductionProcess {
   updatedAt: string
 }
 
-export interface Feedback {
-  id: string
-  userId: string
-  productId: string
-  content: string
-  rating?: number
-  createdAt: string
-  updatedAt: string
-}
-
 export interface Metadata {
   id: string
   collectionId: string

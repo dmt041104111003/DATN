@@ -11,25 +11,25 @@ export declare class SubscriptionService {
         service: {
             id: string;
             name: string;
-            createdAt: Date;
-            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
-        txHash: string | null;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
     })[]>;
     updateExpiredSubscriptions(userId?: string): Promise<import("@prisma/client").Prisma.BatchPayload>;
@@ -37,50 +37,50 @@ export declare class SubscriptionService {
         service: {
             id: string;
             name: string;
-            createdAt: Date;
-            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
-        txHash: string | null;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
     }) | null>;
     cancel(id: string, userId: string): Promise<{
         service: {
             id: string;
             name: string;
-            createdAt: Date;
-            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
+            createdAt: Date;
+            updatedAt: Date;
         };
     } & {
-        txHash: string | null;
-        amount: number;
         id: string;
-        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
     }>;
     pay(userId: string, dto: PayDto): Promise<{
@@ -91,25 +91,25 @@ export declare class SubscriptionService {
                 service: {
                     id: string;
                     name: string;
-                    createdAt: Date;
-                    updatedAt: Date;
                     description: string | null;
                     price: number;
                     duration: number;
                     maxProducts: number | null;
+                    createdAt: Date;
+                    updatedAt: Date;
                 };
             } & {
-                txHash: string | null;
-                amount: number;
                 id: string;
-                userId: string;
                 createdAt: Date;
                 updatedAt: Date;
+                userId: string;
                 servicePlanId: string;
                 startDate: Date;
                 endDate: Date;
                 status: import("@prisma/client").$Enums.SubscriptionStatus;
+                amount: number;
                 currency: string;
+                txHash: string | null;
                 paymentDate: Date;
             };
         };

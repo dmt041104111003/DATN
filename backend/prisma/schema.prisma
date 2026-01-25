@@ -18,7 +18,6 @@ model User {
   media        Media[]
   products     Product[]
   subscriptions Subscription[]
-  feedbacks    Feedback[]
   suppliers    Supplier[]
   materials    Material[]
   walletNonces WalletNonce[]
@@ -91,7 +90,6 @@ model Product {
   documents           Document[]
   productionProcesses ProductionProcess[]
   warehouseStorages   WarehouseStorage[]
-  feedbacks           Feedback[]
   certifications      Certification[]
   productMaterials    ProductMaterial[]
 
@@ -257,16 +255,3 @@ model Certification {
   @@map("certification")
 }
 
-model Feedback {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  productId String   @map("product_id")
-  content   String   @map("content")
-  rating    Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
-
-  @@map("feedback")
-}

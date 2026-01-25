@@ -10,20 +10,20 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
-                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -80,20 +80,20 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
-                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -111,20 +111,20 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
-                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;

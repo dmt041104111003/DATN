@@ -8,43 +8,43 @@ export declare class SupplierService {
     constructor(prisma: PrismaService, redis: RedisService);
     findAllByUser(userId: string): Promise<string | {
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(userId: string, dto: CreateSupplierDto): Promise<{
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateSupplierDto): Promise<{
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<void>;
 }

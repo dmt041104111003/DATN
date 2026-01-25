@@ -8,49 +8,49 @@ export declare class SupplierController {
         id: string;
     }): Promise<string | {
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreateSupplierDto): Promise<{
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateSupplierDto): Promise<{
         id: string;
-        userId: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
         location: string | null;
         gpsCoordinates: string | null;
         contactInfo: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(user: {
         id: string;

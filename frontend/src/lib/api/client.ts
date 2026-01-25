@@ -15,7 +15,6 @@ import {
   Document,
   Certification,
   ProductionProcess,
-  Feedback,
   Metadata,
   Media,
   WarehouseStorage,
@@ -126,15 +125,6 @@ export const apiClient = {
     update: (id: string, data: Partial<ProductionProcess>) => 
       request<ProductionProcess>(`/production-processes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<{ message: string }>(`/production-processes/${id}`, { method: 'DELETE' }),
-  },
-  feedbacks: {
-    findAll: () => request<Feedback[]>('/feedbacks'),
-    findOne: (id: string) => request<Feedback>(`/feedbacks/${id}`),
-    create: (data: { productId: string; content: string; rating?: number }) => 
-      request<Feedback>('/feedbacks', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Feedback>) => 
-      request<Feedback>(`/feedbacks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => request<{ message: string }>(`/feedbacks/${id}`, { method: 'DELETE' }),
   },
   metadata: {
     findAll: () => request<Metadata[]>('/metadata'),

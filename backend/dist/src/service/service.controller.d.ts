@@ -5,21 +5,21 @@ export declare class ServiceController {
     findAll(): Promise<string | {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         price: number;
         duration: number;
         maxProducts: number | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
         description: string | null;
         price: number;
         duration: number;
         maxProducts: number | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }
