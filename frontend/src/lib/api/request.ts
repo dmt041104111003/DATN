@@ -1,0 +1,34 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const REQUEST_TIMEOUT = 10000
+
+export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      credentials: 'include',
+    })
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Request failed' }))
+      throw new Error(error.message || `HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  } catch (err) {
+    clearTimeout(timeoutId)
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Request timeout')
+    }
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error(`Cannot connect to backend at ${API_BASE_URL}. Please ensure the backend server is running.`)
+    }
+    throw err
+  }
+}

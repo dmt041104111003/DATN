@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { GetNonceDto, VerifyWalletDto } from './dto/verify-wallet.dto';
 import { Public } from './public.decorator';
+import { CurrentUser } from './current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -36,6 +37,11 @@ export class AuthController {
     return {
       user: result.user,
     };
+  }
+
+  @Get('me')
+  getMe(@CurrentUser() user: { id: string; address: string }) {
+    return { user };
   }
 
   @Public()

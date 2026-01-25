@@ -22,10 +22,7 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async getNonce(address) {
-        if (!address || typeof address !== 'string') {
-            throw new common_1.UnauthorizedException('Invalid address');
-        }
-        const normalizedAddress = address.trim().toLowerCase();
+        const normalizedAddress = this.normalizeAddress(address);
         const nonce = (0, core_1.generateNonce)('I agree to the term and conditions of the Mesh: ');
         await this.prisma.walletNonce.upsert({
             where: { address: normalizedAddress },
@@ -35,11 +32,8 @@ let AuthService = class AuthService {
         return { nonce };
     }
     async verifyWallet(address, signature, key) {
-        if (!address || !signature || !key || typeof address !== 'string' || typeof signature !== 'string' || typeof key !== 'string') {
-            throw new common_1.UnauthorizedException('Invalid input');
-        }
         const userAddress = address.trim();
-        const normalizedAddress = userAddress.toLowerCase();
+        const normalizedAddress = this.normalizeAddress(address);
         const walletNonce = await this.prisma.walletNonce.findUnique({
             where: { address: normalizedAddress },
         });
@@ -70,13 +64,12 @@ let AuthService = class AuthService {
             },
         };
     }
+    normalizeAddress(address) {
+        return address.trim().toLowerCase();
+    }
     verifySignature(nonce, signature, key, address) {
         try {
-            const userAddress = address.trim();
-            if (!userAddress || userAddress.length === 0) {
-                return false;
-            }
-            return (0, core_1.checkSignature)(nonce, { signature, key }, userAddress);
+            return (0, core_1.checkSignature)(nonce, { signature, key }, address.trim());
         }
         catch (error) {
             console.error('Signature verification error:', error instanceof Error ? error.message : String(error));

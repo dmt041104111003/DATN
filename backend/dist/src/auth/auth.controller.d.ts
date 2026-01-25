@@ -13,6 +13,15 @@ export declare class AuthController {
             address: string;
         };
     }>;
+    getMe(user: {
+        id: string;
+        address: string;
+    }): {
+        user: {
+            id: string;
+            address: string;
+        };
+    };
     logout(res: Response): {
         message: string;
     };

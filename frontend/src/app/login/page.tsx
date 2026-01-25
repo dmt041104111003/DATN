@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BrowserWallet } from '@meshsdk/core'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ import { Footer } from '@/components/footer'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { isConnecting, error, connectWallet, login } = useWallet()
+  const { error, connectWallet, login } = useWallet()
   const [wallets, setWallets] = useState<ReturnType<typeof BrowserWallet.getInstalledWallets>>([])
   const [loadingWallet, setLoadingWallet] = useState<string | null>(null)
 
@@ -24,7 +24,7 @@ export default function LoginPage() {
     }
   }, [])
 
-  const handleWalletClick = useCallback(async (walletName: string) => {
+  const handleWalletClick = async (walletName: string) => {
     if (loadingWallet) return
     
     setLoadingWallet(walletName)
@@ -35,7 +35,7 @@ export default function LoginPage() {
     } catch {} finally {
       setLoadingWallet(null)
     }
-  }, [connectWallet, login, router, loadingWallet])
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

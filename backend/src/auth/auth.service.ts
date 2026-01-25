@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import { generateNonce, checkSignature } from '@meshsdk/core';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -10,10 +11,7 @@ export class AuthService {
   ) {}
 
   async getNonce(address: string) {
-    if (!address || typeof address !== 'string') {
-      throw new UnauthorizedException('Invalid address');
-    }
-    const normalizedAddress = address.trim().toLowerCase();
+    const normalizedAddress = this.normalizeAddress(address);
     const nonce = generateNonce('I agree to the term and conditions of the Mesh: ');
 
     await this.prisma.walletNonce.upsert({
@@ -26,12 +24,8 @@ export class AuthService {
   }
 
   async verifyWallet(address: string, signature: string, key: string) {
-    if (!address || !signature || !key || typeof address !== 'string' || typeof signature !== 'string' || typeof key !== 'string') {
-      throw new UnauthorizedException('Invalid input');
-    }
-
     const userAddress = address.trim();
-    const normalizedAddress = userAddress.toLowerCase();
+    const normalizedAddress = this.normalizeAddress(address);
     const walletNonce = await this.prisma.walletNonce.findUnique({
       where: { address: normalizedAddress },
     });
@@ -69,13 +63,13 @@ export class AuthService {
     };
   }
 
+  private normalizeAddress(address: string): string {
+    return address.trim().toLowerCase();
+  }
+
   private verifySignature(nonce: string, signature: string, key: string, address: string): boolean {
     try {
-      const userAddress = address.trim();
-      if (!userAddress || userAddress.length === 0) {
-        return false;
-      }
-      return checkSignature(nonce, { signature, key }, userAddress);
+      return checkSignature(nonce, { signature, key }, address.trim());
     } catch (error) {
       console.error('Signature verification error:', error instanceof Error ? error.message : String(error));
       return false;
