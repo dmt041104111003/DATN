@@ -12,46 +12,88 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CollectionService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let CollectionService = class CollectionService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async findAll() {
-        return this.prisma.collection.findMany();
+        const cacheKey = 'collections:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const collections = await this.prisma.collection.findMany();
+        await this.redis.set(cacheKey, collections, 300);
+        return collections;
     }
     async findAllByUser(userId) {
-        return this.prisma.collection.findMany({ where: { userId } });
+        const cacheKey = `collections:user:${userId}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const collections = await this.prisma.collection.findMany({
+            where: { userId },
+        });
+        await this.redis.set(cacheKey, collections, 300);
+        return collections;
     }
     async findOne(id) {
+        const cacheKey = `collection:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const item = await this.prisma.collection.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Collection not found');
+        await this.redis.set(cacheKey, item, 300);
         return item;
     }
     async findOneOwned(id, userId) {
         const item = await this.findOne(id);
-        if (item.userId !== userId)
+        if (!item || typeof item === 'string' || item.userId !== userId)
             throw new common_1.ForbiddenException('Not your collection');
         return item;
     }
     async create(userId, dto) {
-        return this.prisma.collection.create({
+        const collection = await this.prisma.collection.create({
             data: { ...dto, userId },
         });
+        await this.redis.delMultiple([
+            'collections:all',
+            `collections:user:${userId}`,
+        ]);
+        return collection;
     }
     async update(id, userId, dto) {
         await this.findOneOwned(id, userId);
-        return this.prisma.collection.update({ where: { id }, data: dto });
+        const collection = await this.prisma.collection.update({
+            where: { id },
+            data: dto,
+        });
+        await this.redis.delMultiple([
+            `collection:${id}`,
+            'collections:all',
+            `collections:user:${userId}`,
+        ]);
+        return collection;
     }
     async remove(id, userId) {
         await this.findOneOwned(id, userId);
-        return this.prisma.collection.delete({ where: { id } });
+        await this.prisma.collection.delete({ where: { id } });
+        await this.redis.delMultiple([
+            `collection:${id}`,
+            'collections:all',
+            `collections:user:${userId}`,
+        ]);
     }
 };
 exports.CollectionService = CollectionService;
 exports.CollectionService = CollectionService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], CollectionService);
 //# sourceMappingURL=collection.service.js.map

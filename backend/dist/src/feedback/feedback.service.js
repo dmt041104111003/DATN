@@ -12,43 +12,81 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FeedbackService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let FeedbackService = class FeedbackService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async findAll() {
-        return this.prisma.feedback.findMany();
+        const cacheKey = 'feedbacks:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const feedbacks = await this.prisma.feedback.findMany();
+        await this.redis.set(cacheKey, feedbacks, 300);
+        return feedbacks;
     }
     async findOne(id) {
+        const cacheKey = `feedback:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const item = await this.prisma.feedback.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Feedback not found');
+        await this.redis.set(cacheKey, item, 300);
         return item;
     }
     async findOneOwned(id, userId) {
         const item = await this.findOne(id);
-        if (item.userId !== userId)
+        if (!item || typeof item === 'string' || item.userId !== userId)
             throw new common_1.ForbiddenException('Not your feedback');
         return item;
     }
     async create(userId, dto) {
-        return this.prisma.feedback.create({
+        const feedback = await this.prisma.feedback.create({
             data: { ...dto, userId },
         });
+        await this.redis.delMultiple([
+            'feedbacks:all',
+            `feedbacks:product:${dto.productId}`,
+        ]);
+        return feedback;
     }
     async update(id, userId, dto) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.feedback.update({ where: { id }, data: dto });
+        const feedback = await this.findOneOwned(id, userId);
+        const updated = await this.prisma.feedback.update({
+            where: { id },
+            data: dto,
+        });
+        if (feedback && typeof feedback === 'object' && 'productId' in feedback) {
+            await this.redis.delMultiple([
+                `feedback:${id}`,
+                'feedbacks:all',
+                `feedbacks:product:${feedback.productId}`,
+            ]);
+        }
+        return updated;
     }
     async remove(id, userId) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.feedback.delete({ where: { id } });
+        const feedback = await this.findOneOwned(id, userId);
+        await this.prisma.feedback.delete({ where: { id } });
+        if (feedback && typeof feedback === 'object' && 'productId' in feedback) {
+            await this.redis.delMultiple([
+                `feedback:${id}`,
+                'feedbacks:all',
+                `feedbacks:product:${feedback.productId}`,
+            ]);
+        }
     }
 };
 exports.FeedbackService = FeedbackService;
 exports.FeedbackService = FeedbackService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], FeedbackService);
 //# sourceMappingURL=feedback.service.js.map

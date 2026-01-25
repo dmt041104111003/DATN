@@ -50,7 +50,12 @@ let RedisService = RedisService_1 = class RedisService {
     }
     async set(key, value, ttlSeconds) {
         const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        ttlSeconds ? await this.client.setex(key, ttlSeconds, serialized) : await this.client.set(key, serialized);
+        if (ttlSeconds) {
+            await this.client.setex(key, ttlSeconds, serialized);
+        }
+        else {
+            await this.client.set(key, serialized);
+        }
     }
     async get(key) {
         const value = await this.client.get(key);
@@ -85,7 +90,8 @@ let RedisService = RedisService_1 = class RedisService {
     async hsetMultiple(key, data) {
         const serialized = {};
         for (const [field, value] of Object.entries(data)) {
-            serialized[field] = typeof value === 'object' ? JSON.stringify(value) : String(value);
+            serialized[field] =
+                typeof value === 'object' ? JSON.stringify(value) : String(value);
         }
         return this.client.hset(key, serialized);
     }
@@ -119,11 +125,11 @@ let RedisService = RedisService_1 = class RedisService {
         return this.client.hdel(key, field);
     }
     async lpush(key, ...values) {
-        const serialized = values.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v));
+        const serialized = values.map((v) => typeof v === 'object' ? JSON.stringify(v) : String(v));
         return this.client.lpush(key, ...serialized);
     }
     async rpush(key, ...values) {
-        const serialized = values.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v));
+        const serialized = values.map((v) => typeof v === 'object' ? JSON.stringify(v) : String(v));
         return this.client.rpush(key, ...serialized);
     }
     async lpop(key) {
@@ -150,7 +156,7 @@ let RedisService = RedisService_1 = class RedisService {
     }
     async lrange(key, start, stop) {
         const values = await this.client.lrange(key, start, stop);
-        return values.map(v => {
+        return values.map((v) => {
             try {
                 return JSON.parse(v);
             }

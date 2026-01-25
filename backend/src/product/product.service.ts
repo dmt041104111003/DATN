@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -12,26 +13,45 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductService {
   constructor(
     private prisma: PrismaService,
+    private redis: RedisService,
     private blockchain: BlockchainService,
   ) {}
 
   async findAll() {
-    return this.prisma.product.findMany();
+    const cacheKey = 'products:all';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const products = await this.prisma.product.findMany();
+    await this.redis.set(cacheKey, products, 300);
+    return products;
   }
 
   async findAllByUser(userId: string) {
-    return this.prisma.product.findMany({ where: { userId } });
+    const cacheKey = `products:user:${userId}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const products = await this.prisma.product.findMany({ where: { userId } });
+    await this.redis.set(cacheKey, products, 300);
+    return products;
   }
 
   async findOne(id: string) {
+    const cacheKey = `product:${id}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const product = await this.prisma.product.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Product not found');
+
+    await this.redis.set(cacheKey, product, 300);
     return product;
   }
 
   private async findOneOwned(id: string, userId: string) {
     const product = await this.findOne(id);
-    if (product.userId !== userId)
+    if (!product || typeof product === 'string' || product.userId !== userId)
       throw new ForbiddenException('Not your product');
     return product;
   }
@@ -54,17 +74,21 @@ export class ProductService {
     const subscription = await this.getActiveSubscription(userId);
     const maxProducts = subscription?.service.maxProducts ?? 5;
     if (maxProducts === null) return;
-    
+
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
     const todayCount = await this.prisma.product.count({
       where: {
         userId,
         createdAt: { gte: startOfDay },
       },
     });
-    
+
     if (todayCount >= maxProducts) {
       const tierName = subscription?.service.name ?? 'Free';
       throw new ForbiddenException(
@@ -75,28 +99,48 @@ export class ProductService {
 
   async create(userId: string, dto: CreateProductDto) {
     await this.checkProductLimit(userId);
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: { ...dto, userId },
     });
+    await this.redis.delMultiple(['products:all', `products:user:${userId}`]);
+    return product;
   }
 
   async update(id: string, userId: string, dto: UpdateProductDto) {
     await this.findOneOwned(id, userId);
-    return this.prisma.product.update({ where: { id }, data: dto });
+    const product = await this.prisma.product.update({
+      where: { id },
+      data: dto,
+    });
+    await this.redis.delMultiple([
+      `product:${id}`,
+      'products:all',
+      `products:user:${userId}`,
+    ]);
+    return product;
   }
 
   async remove(id: string, userId: string) {
     await this.findOneOwned(id, userId);
-    return this.prisma.product.delete({ where: { id } });
+    await this.prisma.product.delete({ where: { id } });
+    await this.redis.delMultiple([
+      `product:${id}`,
+      'products:all',
+      `products:user:${userId}`,
+    ]);
   }
 
   async getQuota(userId: string) {
     const subscription = await this.getActiveSubscription(userId);
     const maxProducts = subscription?.service.maxProducts ?? 5;
-    
+
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
     const todayCount = await this.prisma.product.count({
       where: {
         userId,

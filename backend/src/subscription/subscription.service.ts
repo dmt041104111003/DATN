@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { SUBSCRIPTION_STATUS } from './subscription.constants';
 import { PayDto } from './dto/pay.dto';
@@ -13,17 +14,24 @@ import { PayDto } from './dto/pay.dto';
 export class SubscriptionService {
   constructor(
     private prisma: PrismaService,
+    private redis: RedisService,
     private blockchain: BlockchainService,
   ) {}
 
   async findAllByUser(userId: string) {
     await this.updateExpiredSubscriptions(userId);
 
-    return this.prisma.subscription.findMany({
+    const cacheKey = `subscriptions:user:${userId}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const subscriptions = await this.prisma.subscription.findMany({
       where: { userId },
       include: { service: true },
       orderBy: { createdAt: 'desc' },
     });
+    await this.redis.set(cacheKey, subscriptions, 300);
+    return subscriptions;
   }
 
   async updateExpiredSubscriptions(userId?: string) {
@@ -67,11 +75,16 @@ export class SubscriptionService {
     if (subscription.userId !== userId) {
       throw new ForbiddenException('Not your subscription');
     }
-    return this.prisma.subscription.update({
+    const updated = await this.prisma.subscription.update({
       where: { id },
       data: { status: SUBSCRIPTION_STATUS.CANCELLED },
       include: { service: true },
     });
+    await this.redis.delMultiple([
+      `subscriptions:user:${userId}`,
+      `subscription:active:${userId}`,
+    ]);
+    return updated;
   }
 
   async pay(userId: string, dto: PayDto) {
@@ -93,12 +106,12 @@ export class SubscriptionService {
 
     const activeSubscription = await this.getActiveSubscription(userId);
     const now = new Date();
-    
+
     if (activeSubscription) {
       const currentService = await this.prisma.service.findUnique({
         where: { id: activeSubscription.servicePlanId },
       });
-      
+
       if (!currentService) {
         await this.prisma.subscription.update({
           where: { id: activeSubscription.id },
@@ -110,7 +123,7 @@ export class SubscriptionService {
         );
       } else {
         const isUpgrade = this.isUpgrade(currentService.price, service.price);
-        
+
         if (isUpgrade) {
           await this.prisma.subscription.update({
             where: { id: activeSubscription.id },
@@ -142,13 +155,18 @@ export class SubscriptionService {
       include: { service: true },
     });
 
-    this.verifyPaymentAsync(subscription.id, dto.txHash, service.price, service.duration).catch((err) => {
+    this.verifyPaymentAsync(
+      subscription.id,
+      dto.txHash,
+      service.price,
+      service.duration,
+    ).catch((err) => {
       console.error('Payment verification failed:', err);
     });
 
     return {
       result: true,
-      message: activeSubscription 
+      message: activeSubscription
         ? 'Upgrade submitted. Verification in progress...'
         : 'Transaction submitted. Verification in progress...',
       data: { subscription },
@@ -190,6 +208,10 @@ export class SubscriptionService {
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + duration);
 
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+    });
+
     await this.prisma.subscription.update({
       where: { id: subscriptionId },
       data: {
@@ -200,5 +222,12 @@ export class SubscriptionService {
         paymentDate: now,
       },
     });
+
+    if (subscription) {
+      await this.redis.delMultiple([
+        `subscriptions:user:${subscription.userId}`,
+        `subscription:active:${subscription.userId}`,
+      ]);
+    }
   }
 }

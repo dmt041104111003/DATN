@@ -12,31 +12,49 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 const ipfs_service_1 = require("../ipfs/ipfs.service");
 let MediaService = class MediaService {
     prisma;
+    redis;
     ipfs;
-    constructor(prisma, ipfs) {
+    constructor(prisma, redis, ipfs) {
         this.prisma = prisma;
+        this.redis = redis;
         this.ipfs = ipfs;
     }
     async findAllByUser(userId) {
+        const cacheKey = `media:user:${userId}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const media = await this.prisma.media.findMany({ where: { userId } });
-        return media.map((m) => ({
+        const result = media.map((m) => ({
             ...m,
             gatewayUrl: this.ipfs.toGatewayUrl(m.url),
         }));
+        await this.redis.set(cacheKey, result, 300);
+        return result;
     }
     async findOne(id, userId) {
+        const cacheKey = `media:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached && typeof cached === 'object') {
+            if (cached.userId !== userId)
+                throw new common_1.ForbiddenException('Not your media');
+            return cached;
+        }
         const item = await this.prisma.media.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Media not found');
         if (item.userId !== userId)
             throw new common_1.ForbiddenException('Not your media');
-        return {
+        const result = {
             ...item,
             gatewayUrl: this.ipfs.toGatewayUrl(item.url),
         };
+        await this.redis.set(cacheKey, result, 300);
+        return result;
     }
     async uploadToIpfs(userId, file) {
         const { cid, url } = await this.ipfs.uploadFile(file, {
@@ -51,6 +69,7 @@ let MediaService = class MediaService {
                 url,
             },
         });
+        await this.redis.del(`media:user:${userId}`);
         return {
             ...media,
             cid,
@@ -63,15 +82,22 @@ let MediaService = class MediaService {
     }
     async update(id, userId, dto) {
         await this.findOne(id, userId);
-        return this.prisma.media.update({ where: { id }, data: dto });
+        const updated = await this.prisma.media.update({
+            where: { id },
+            data: dto,
+        });
+        await this.redis.delMultiple([`media:${id}`, `media:user:${userId}`]);
+        return updated;
     }
     async remove(id, userId) {
         const media = await this.findOne(id, userId);
-        if (media.url.startsWith('ipfs://')) {
+        if (media && typeof media === 'object' && 'url' in media && media.url.startsWith('ipfs://')) {
             const cid = media.url.replace('ipfs://', '');
             await this.ipfs.unpin(cid);
         }
-        return this.prisma.media.delete({ where: { id } });
+        await this.prisma.media.delete({ where: { id } });
+        const mediaUserId = media && typeof media === 'object' && 'userId' in media ? media.userId : userId;
+        await this.redis.delMultiple([`media:${id}`, `media:user:${mediaUserId}`]);
     }
     getFileType(mimetype) {
         if (mimetype.startsWith('image/'))
@@ -87,6 +113,7 @@ exports.MediaService = MediaService;
 exports.MediaService = MediaService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService,
         ipfs_service_1.IpfsService])
 ], MediaService);
 //# sourceMappingURL=media.service.js.map

@@ -12,29 +12,49 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 const blockchain_service_1 = require("../blockchain/blockchain.service");
 let ProductService = class ProductService {
     prisma;
+    redis;
     blockchain;
-    constructor(prisma, blockchain) {
+    constructor(prisma, redis, blockchain) {
         this.prisma = prisma;
+        this.redis = redis;
         this.blockchain = blockchain;
     }
     async findAll() {
-        return this.prisma.product.findMany();
+        const cacheKey = 'products:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const products = await this.prisma.product.findMany();
+        await this.redis.set(cacheKey, products, 300);
+        return products;
     }
     async findAllByUser(userId) {
-        return this.prisma.product.findMany({ where: { userId } });
+        const cacheKey = `products:user:${userId}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const products = await this.prisma.product.findMany({ where: { userId } });
+        await this.redis.set(cacheKey, products, 300);
+        return products;
     }
     async findOne(id) {
+        const cacheKey = `product:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const product = await this.prisma.product.findUnique({ where: { id } });
         if (!product)
             throw new common_1.NotFoundException('Product not found');
+        await this.redis.set(cacheKey, product, 300);
         return product;
     }
     async findOneOwned(id, userId) {
         const product = await this.findOne(id);
-        if (product.userId !== userId)
+        if (!product || typeof product === 'string' || product.userId !== userId)
             throw new common_1.ForbiddenException('Not your product');
         return product;
     }
@@ -71,17 +91,33 @@ let ProductService = class ProductService {
     }
     async create(userId, dto) {
         await this.checkProductLimit(userId);
-        return this.prisma.product.create({
+        const product = await this.prisma.product.create({
             data: { ...dto, userId },
         });
+        await this.redis.delMultiple(['products:all', `products:user:${userId}`]);
+        return product;
     }
     async update(id, userId, dto) {
         await this.findOneOwned(id, userId);
-        return this.prisma.product.update({ where: { id }, data: dto });
+        const product = await this.prisma.product.update({
+            where: { id },
+            data: dto,
+        });
+        await this.redis.delMultiple([
+            `product:${id}`,
+            'products:all',
+            `products:user:${userId}`,
+        ]);
+        return product;
     }
     async remove(id, userId) {
         await this.findOneOwned(id, userId);
-        return this.prisma.product.delete({ where: { id } });
+        await this.prisma.product.delete({ where: { id } });
+        await this.redis.delMultiple([
+            `product:${id}`,
+            'products:all',
+            `products:user:${userId}`,
+        ]);
     }
     async getQuota(userId) {
         const subscription = await this.getActiveSubscription(userId);
@@ -210,6 +246,7 @@ exports.ProductService = ProductService;
 exports.ProductService = ProductService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService,
         blockchain_service_1.BlockchainService])
 ], ProductService);
 //# sourceMappingURL=product.service.js.map

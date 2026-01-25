@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -22,9 +27,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.client.on('connect', () => this.logger.log('Redis client connected'));
-    this.client.on('error', (err) => this.logger.error('Redis client error:', err));
-    this.subscriber.on('connect', () => this.logger.log('Redis subscriber connected'));
-    this.subscriber.on('error', (err) => this.logger.error('Redis subscriber error:', err));
+    this.client.on('error', (err) =>
+      this.logger.error('Redis client error:', err),
+    );
+    this.subscriber.on('connect', () =>
+      this.logger.log('Redis subscriber connected'),
+    );
+    this.subscriber.on('error', (err) =>
+      this.logger.error('Redis subscriber error:', err),
+    );
   }
 
   async onModuleDestroy() {
@@ -41,9 +52,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.subscriber;
   }
 
-  async set(key: string, value: string | number | object, ttlSeconds?: number): Promise<void> {
-    const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    ttlSeconds ? await this.client.setex(key, ttlSeconds, serialized) : await this.client.set(key, serialized);
+  async set(
+    key: string,
+    value: string | number | object,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    const serialized =
+      typeof value === 'object' ? JSON.stringify(value) : String(value);
+    if (ttlSeconds) {
+      await this.client.setex(key, ttlSeconds, serialized);
+    } else {
+      await this.client.set(key, serialized);
+    }
   }
 
   async get<T = string>(key: string): Promise<T | null> {
@@ -76,15 +96,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.ttl(key);
   }
 
-  async hset(key: string, field: string, value: string | number | object): Promise<number> {
-    const serialized = typeof value === 'object' ? JSON.stringify(value) : String(value);
+  async hset(
+    key: string,
+    field: string,
+    value: string | number | object,
+  ): Promise<number> {
+    const serialized =
+      typeof value === 'object' ? JSON.stringify(value) : String(value);
     return this.client.hset(key, field, serialized);
   }
 
-  async hsetMultiple(key: string, data: Record<string, string | number | object>): Promise<number> {
+  async hsetMultiple(
+    key: string,
+    data: Record<string, string | number | object>,
+  ): Promise<number> {
     const serialized: Record<string, string> = {};
     for (const [field, value] of Object.entries(data)) {
-      serialized[field] = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      serialized[field] =
+        typeof value === 'object' ? JSON.stringify(value) : String(value);
     }
     return this.client.hset(key, serialized);
   }
@@ -117,13 +146,23 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.hdel(key, field);
   }
 
-  async lpush(key: string, ...values: (string | number | object)[]): Promise<number> {
-    const serialized = values.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v));
+  async lpush(
+    key: string,
+    ...values: (string | number | object)[]
+  ): Promise<number> {
+    const serialized = values.map((v) =>
+      typeof v === 'object' ? JSON.stringify(v) : String(v),
+    );
     return this.client.lpush(key, ...serialized);
   }
 
-  async rpush(key: string, ...values: (string | number | object)[]): Promise<number> {
-    const serialized = values.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v));
+  async rpush(
+    key: string,
+    ...values: (string | number | object)[]
+  ): Promise<number> {
+    const serialized = values.map((v) =>
+      typeof v === 'object' ? JSON.stringify(v) : String(v),
+    );
     return this.client.rpush(key, ...serialized);
   }
 
@@ -147,9 +186,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async lrange<T = string>(key: string, start: number, stop: number): Promise<T[]> {
+  async lrange<T = string>(
+    key: string,
+    start: number,
+    stop: number,
+  ): Promise<T[]> {
     const values = await this.client.lrange(key, start, stop);
-    return values.map(v => {
+    return values.map((v) => {
       try {
         return JSON.parse(v) as T;
       } catch {
@@ -178,18 +221,32 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client.srem(key, ...members.map(String));
   }
 
-  async zadd(key: string, score: number, member: string | number): Promise<number> {
+  async zadd(
+    key: string,
+    score: number,
+    member: string | number,
+  ): Promise<number> {
     return this.client.zadd(key, score, String(member));
   }
 
-  async zrange(key: string, start: number, stop: number, withScores = false): Promise<string[]> {
-    return withScores 
+  async zrange(
+    key: string,
+    start: number,
+    stop: number,
+    withScores = false,
+  ): Promise<string[]> {
+    return withScores
       ? this.client.zrange(key, start, stop, 'WITHSCORES')
       : this.client.zrange(key, start, stop);
   }
 
-  async zrevrange(key: string, start: number, stop: number, withScores = false): Promise<string[]> {
-    return withScores 
+  async zrevrange(
+    key: string,
+    start: number,
+    stop: number,
+    withScores = false,
+  ): Promise<string[]> {
+    return withScores
       ? this.client.zrevrange(key, start, stop, 'WITHSCORES')
       : this.client.zrevrange(key, start, stop);
   }
@@ -200,11 +257,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async publish(channel: string, message: string | object): Promise<number> {
-    const serialized = typeof message === 'object' ? JSON.stringify(message) : message;
+    const serialized =
+      typeof message === 'object' ? JSON.stringify(message) : message;
     return this.client.publish(channel, serialized);
   }
 
-  async subscribe(channel: string, callback: (message: string) => void): Promise<void> {
+  async subscribe(
+    channel: string,
+    callback: (message: string) => void,
+  ): Promise<void> {
     await this.subscriber.subscribe(channel);
     this.subscriber.on('message', (ch, msg) => {
       if (ch === channel) callback(msg);

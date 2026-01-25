@@ -15,8 +15,6 @@ export declare class JwtStrategy extends JwtStrategy_base {
         id: string;
         address: string;
         walletName: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }
 declare const JwtAuthGuard_base: import("@nestjs/passport").Type<import("@nestjs/passport").IAuthGuard>;

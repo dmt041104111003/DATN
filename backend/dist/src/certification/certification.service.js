@@ -12,18 +12,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CertificationService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let CertificationService = class CertificationService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async findAll() {
-        return this.prisma.certification.findMany();
+        const cacheKey = 'certifications:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const certifications = await this.prisma.certification.findMany();
+        await this.redis.set(cacheKey, certifications, 300);
+        return certifications;
     }
     async findOne(id) {
+        const cacheKey = `certification:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const item = await this.prisma.certification.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Certification not found');
+        await this.redis.set(cacheKey, item, 300);
         return item;
     }
     async findOneOwned(id, userId) {
@@ -45,20 +59,40 @@ let CertificationService = class CertificationService {
             throw new common_1.NotFoundException('Product not found');
         if (product.userId !== userId)
             throw new common_1.ForbiddenException('Not your product');
-        return this.prisma.certification.create({ data: dto });
+        const certification = await this.prisma.certification.create({ data: dto });
+        await this.redis.delMultiple([
+            'certifications:all',
+            `certifications:product:${dto.productId}`,
+        ]);
+        return certification;
     }
     async update(id, userId, dto) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.certification.update({ where: { id }, data: dto });
+        const certification = await this.findOneOwned(id, userId);
+        const updated = await this.prisma.certification.update({
+            where: { id },
+            data: dto,
+        });
+        await this.redis.delMultiple([
+            `certification:${id}`,
+            'certifications:all',
+            `certifications:product:${certification.productId}`,
+        ]);
+        return updated;
     }
     async remove(id, userId) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.certification.delete({ where: { id } });
+        const certification = await this.findOneOwned(id, userId);
+        await this.prisma.certification.delete({ where: { id } });
+        await this.redis.delMultiple([
+            `certification:${id}`,
+            'certifications:all',
+            `certifications:product:${certification.productId}`,
+        ]);
     }
 };
 exports.CertificationService = CertificationService;
 exports.CertificationService = CertificationService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], CertificationService);
 //# sourceMappingURL=certification.service.js.map

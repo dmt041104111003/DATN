@@ -12,22 +12,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 const blockchain_service_1 = require("../blockchain/blockchain.service");
 const subscription_constants_1 = require("./subscription.constants");
 let SubscriptionService = class SubscriptionService {
     prisma;
+    redis;
     blockchain;
-    constructor(prisma, blockchain) {
+    constructor(prisma, redis, blockchain) {
         this.prisma = prisma;
+        this.redis = redis;
         this.blockchain = blockchain;
     }
     async findAllByUser(userId) {
         await this.updateExpiredSubscriptions(userId);
-        return this.prisma.subscription.findMany({
+        const cacheKey = `subscriptions:user:${userId}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const subscriptions = await this.prisma.subscription.findMany({
             where: { userId },
             include: { service: true },
             orderBy: { createdAt: 'desc' },
         });
+        await this.redis.set(cacheKey, subscriptions, 300);
+        return subscriptions;
     }
     async updateExpiredSubscriptions(userId) {
         const now = new Date();
@@ -67,11 +76,16 @@ let SubscriptionService = class SubscriptionService {
         if (subscription.userId !== userId) {
             throw new common_1.ForbiddenException('Not your subscription');
         }
-        return this.prisma.subscription.update({
+        const updated = await this.prisma.subscription.update({
             where: { id },
             data: { status: subscription_constants_1.SUBSCRIPTION_STATUS.CANCELLED },
             include: { service: true },
         });
+        await this.redis.delMultiple([
+            `subscriptions:user:${userId}`,
+            `subscription:active:${userId}`,
+        ]);
+        return updated;
     }
     async pay(userId, dto) {
         const existingSubscription = await this.prisma.subscription.findFirst({
@@ -164,6 +178,9 @@ let SubscriptionService = class SubscriptionService {
         const now = new Date();
         const endDate = new Date(now);
         endDate.setDate(endDate.getDate() + duration);
+        const subscription = await this.prisma.subscription.findUnique({
+            where: { id: subscriptionId },
+        });
         await this.prisma.subscription.update({
             where: { id: subscriptionId },
             data: {
@@ -174,12 +191,19 @@ let SubscriptionService = class SubscriptionService {
                 paymentDate: now,
             },
         });
+        if (subscription) {
+            await this.redis.delMultiple([
+                `subscriptions:user:${subscription.userId}`,
+                `subscription:active:${subscription.userId}`,
+            ]);
+        }
     }
 };
 exports.SubscriptionService = SubscriptionService;
 exports.SubscriptionService = SubscriptionService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService,
         blockchain_service_1.BlockchainService])
 ], SubscriptionService);
 //# sourceMappingURL=subscription.service.js.map

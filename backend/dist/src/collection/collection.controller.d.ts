@@ -4,66 +4,58 @@ import { UpdateCollectionDto } from './dto/update-collection.dto';
 export declare class CollectionController {
     private collectionService;
     constructor(collectionService: CollectionService);
-    findAll(): Promise<{
+    findAll(): Promise<string | {
         id: string;
-        name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        name: string;
         thumbnail: string | null;
+        description: string | null;
     }[]>;
     findMy(user: {
         id: string;
-    }): Promise<{
+    }): Promise<string | {
         id: string;
-        name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        name: string;
         thumbnail: string | null;
+        description: string | null;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
-        name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        name: string;
         thumbnail: string | null;
+        description: string | null;
     }>;
     create(user: {
         id: string;
     }, dto: CreateCollectionDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        name: string;
         thumbnail: string | null;
+        description: string | null;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateCollectionDto): Promise<{
         id: string;
-        name: string;
-        description: string | null;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        name: string;
         thumbnail: string | null;
+        description: string | null;
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        name: string;
-        description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        thumbnail: string | null;
-    }>;
+    }, id: string): Promise<void>;
 }

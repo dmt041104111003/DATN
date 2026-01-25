@@ -13,7 +13,7 @@ async function bootstrap() {
     app.use((0, cookie_parser_1.default)());
     app.enableCors({
         origin: process.env.NODE_ENV === 'production'
-            ? (process.env.FRONTEND_URL || 'http://localhost:3000')
+            ? process.env.FRONTEND_URL || 'http://localhost:3000'
             : true,
         credentials: true,
     });

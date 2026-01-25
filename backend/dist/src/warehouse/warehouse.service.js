@@ -12,41 +12,64 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.WarehouseService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let WarehouseService = class WarehouseService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async findAll() {
-        return this.prisma.warehouse.findMany();
+        const cacheKey = 'warehouses:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const warehouses = await this.prisma.warehouse.findMany();
+        await this.redis.set(cacheKey, warehouses, 300);
+        return warehouses;
     }
     async findOne(id) {
+        const cacheKey = `warehouse:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const item = await this.prisma.warehouse.findUnique({ where: { id } });
         if (!item)
             throw new common_1.NotFoundException('Warehouse not found');
+        await this.redis.set(cacheKey, item, 300);
         return item;
     }
     async create(dto) {
-        return this.prisma.warehouse.create({
+        const warehouse = await this.prisma.warehouse.create({
             data: {
                 name: dto.name,
                 location: dto.location,
                 capacity: dto.capacity ?? 0,
             },
         });
+        await this.redis.del('warehouses:all');
+        return warehouse;
     }
     async update(id, dto) {
         await this.findOne(id);
-        return this.prisma.warehouse.update({ where: { id }, data: dto });
+        const warehouse = await this.prisma.warehouse.update({
+            where: { id },
+            data: dto,
+        });
+        await this.redis.delMultiple([`warehouse:${id}`, 'warehouses:all']);
+        return warehouse;
     }
     async remove(id) {
         await this.findOne(id);
-        return this.prisma.warehouse.delete({ where: { id } });
+        await this.prisma.warehouse.delete({ where: { id } });
+        await this.redis.delMultiple([`warehouse:${id}`, 'warehouses:all']);
     }
 };
 exports.WarehouseService = WarehouseService;
 exports.WarehouseService = WarehouseService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], WarehouseService);
 //# sourceMappingURL=warehouse.service.js.map

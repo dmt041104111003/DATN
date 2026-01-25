@@ -4,20 +4,36 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 
 @Injectable()
 export class DocumentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async findAll() {
-    return this.prisma.document.findMany();
+    const cacheKey = 'documents:all';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const documents = await this.prisma.document.findMany();
+    await this.redis.set(cacheKey, documents, 300);
+    return documents;
   }
 
   async findOne(id: string) {
+    const cacheKey = `document:${id}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const item = await this.prisma.document.findUnique({ where: { id } });
     if (!item) throw new NotFoundException('Document not found');
+
+    await this.redis.set(cacheKey, item, 300);
     return item;
   }
 
@@ -39,16 +55,35 @@ export class DocumentService {
     if (product.userId !== userId)
       throw new ForbiddenException('Not your product');
 
-    return this.prisma.document.create({ data: dto });
+    const document = await this.prisma.document.create({ data: dto });
+    await this.redis.delMultiple([
+      'documents:all',
+      `documents:product:${dto.productId}`,
+    ]);
+    return document;
   }
 
   async update(id: string, userId: string, dto: UpdateDocumentDto) {
-    await this.findOneOwned(id, userId);
-    return this.prisma.document.update({ where: { id }, data: dto });
+    const document = await this.findOneOwned(id, userId);
+    const updated = await this.prisma.document.update({
+      where: { id },
+      data: dto,
+    });
+    await this.redis.delMultiple([
+      `document:${id}`,
+      'documents:all',
+      `documents:product:${document.productId}`,
+    ]);
+    return updated;
   }
 
   async remove(id: string, userId: string) {
-    await this.findOneOwned(id, userId);
-    return this.prisma.document.delete({ where: { id } });
+    const document = await this.findOneOwned(id, userId);
+    await this.prisma.document.delete({ where: { id } });
+    await this.redis.delMultiple([
+      `document:${id}`,
+      'documents:all',
+      `documents:product:${document.productId}`,
+    ]);
   }
 }

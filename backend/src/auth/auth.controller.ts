@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Query, Res, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { GetNonceDto, VerifyWalletDto } from './dto/verify-wallet.dto';
@@ -42,15 +50,15 @@ export class AuthController {
   @Get('me')
   async getMe(@CurrentUser() user: { id: string; address: string }) {
     const userData = await this.authService.validateUser(user.id);
-    if (!userData) {
+    if (!userData || typeof userData === 'string') {
       throw new UnauthorizedException('User not found');
     }
-    return { 
+    return {
       user: {
         id: userData.id,
         address: userData.address,
         walletName: userData.walletName,
-      }
+      },
     };
   }
 

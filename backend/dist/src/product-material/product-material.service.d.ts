@@ -1,27 +1,29 @@
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateProductMaterialDto } from './dto/create-product-material.dto';
 import { UpdateProductMaterialDto } from './dto/update-product-material.dto';
 export declare class ProductMaterialService {
     private prisma;
-    constructor(prisma: PrismaService);
-    findByProduct(productId: string, userId: string): Promise<({
+    private redis;
+    constructor(prisma: PrismaService, redis: RedisService);
+    findByProduct(productId: string, userId: string): Promise<string | ({
         material: {
             supplier: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
+                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
+            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -36,64 +38,62 @@ export declare class ProductMaterialService {
         unit: string | null;
     })[]>;
     findOne(id: string, userId: string): Promise<{
-        product: {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            assetName: string | null;
-            historyHash: string | null;
-            userId: string;
-            policyId: string | null;
-        };
-        material: {
-            supplier: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                userId: string;
-                location: string | null;
-                gpsCoordinates: string | null;
-                contactInfo: string | null;
-            };
-        } & {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            userId: string;
-            quantity: number;
-            supplierId: string;
-            harvestDate: Date | null;
-        };
-    } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         materialId: string;
         quantity: number;
         unit: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        product: {
+            id: string;
+            userId: string;
+            name: string;
+            policyId: string | null;
+            assetName: string | null;
+            historyHash: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        material: {
+            id: string;
+            userId: string;
+            supplierId: string;
+            name: string;
+            harvestDate: Date | null;
+            quantity: number;
+            createdAt: Date;
+            updatedAt: Date;
+            supplier: {
+                id: string;
+                userId: string;
+                name: string;
+                location: string | null;
+                gpsCoordinates: string | null;
+                contactInfo: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        };
     }>;
     create(userId: string, dto: CreateProductMaterialDto): Promise<{
         material: {
             supplier: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
+                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
+            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -111,20 +111,20 @@ export declare class ProductMaterialService {
         material: {
             supplier: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
+                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
+            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -138,15 +138,7 @@ export declare class ProductMaterialService {
         quantity: number;
         unit: string | null;
     }>;
-    remove(id: string, userId: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        productId: string;
-        materialId: string;
-        quantity: number;
-        unit: string | null;
-    }>;
+    remove(id: string, userId: string): Promise<void>;
     private findOneOwned;
     private checkProductOwnership;
     private checkMaterialOwnership;

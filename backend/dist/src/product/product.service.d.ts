@@ -1,12 +1,14 @@
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 export declare class ProductService {
     private prisma;
+    private redis;
     private blockchain;
-    constructor(prisma: PrismaService, blockchain: BlockchainService);
-    findAll(): Promise<{
+    constructor(prisma: PrismaService, redis: RedisService, blockchain: BlockchainService);
+    findAll(): Promise<string | {
         id: string;
         userId: string;
         policyId: string | null;
@@ -16,7 +18,7 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
-    findAllByUser(userId: string): Promise<{
+    findAllByUser(userId: string): Promise<string | {
         id: string;
         userId: string;
         policyId: string | null;
@@ -26,7 +28,7 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         userId: string;
         policyId: string | null;
@@ -59,16 +61,7 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    remove(id: string, userId: string): Promise<{
-        id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
+    remove(id: string, userId: string): Promise<void>;
     getQuota(userId: string): Promise<{
         tier: string;
         maxProducts: number;

@@ -6,24 +6,24 @@ export declare class ProductMaterialController {
     constructor(service: ProductMaterialService);
     findByProduct(user: {
         id: string;
-    }, productId: string): Promise<({
+    }, productId: string): Promise<string | ({
         material: {
             supplier: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
+                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
+            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -40,45 +40,43 @@ export declare class ProductMaterialController {
     findOne(user: {
         id: string;
     }, id: string): Promise<{
-        product: {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            assetName: string | null;
-            historyHash: string | null;
-            userId: string;
-            policyId: string | null;
-        };
-        material: {
-            supplier: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                userId: string;
-                location: string | null;
-                gpsCoordinates: string | null;
-                contactInfo: string | null;
-            };
-        } & {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            userId: string;
-            quantity: number;
-            supplierId: string;
-            harvestDate: Date | null;
-        };
-    } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         materialId: string;
         quantity: number;
         unit: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        product: {
+            id: string;
+            userId: string;
+            name: string;
+            policyId: string | null;
+            assetName: string | null;
+            historyHash: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
+        material: {
+            id: string;
+            userId: string;
+            supplierId: string;
+            name: string;
+            harvestDate: Date | null;
+            quantity: number;
+            createdAt: Date;
+            updatedAt: Date;
+            supplier: {
+                id: string;
+                userId: string;
+                name: string;
+                location: string | null;
+                gpsCoordinates: string | null;
+                contactInfo: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        };
     }>;
     create(user: {
         id: string;
@@ -86,20 +84,20 @@ export declare class ProductMaterialController {
         material: {
             supplier: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
+                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
+            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -119,20 +117,20 @@ export declare class ProductMaterialController {
         material: {
             supplier: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
                 userId: string;
+                name: string;
                 location: string | null;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
+            name: string;
             quantity: number;
             supplierId: string;
             harvestDate: Date | null;
@@ -148,13 +146,5 @@ export declare class ProductMaterialController {
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        productId: string;
-        materialId: string;
-        quantity: number;
-        unit: string | null;
-    }>;
+    }, id: string): Promise<void>;
 }

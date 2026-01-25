@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { CurrentUser } from '../auth/decorators';
 import { PayDto } from './dto/pay.dto';

@@ -4,7 +4,7 @@ import { UpdateProductionProcessDto } from './dto/update-production-process.dto'
 export declare class ProductionProcessController {
     private productionProcessService;
     constructor(productionProcessService: ProductionProcessService);
-    findAll(): Promise<{
+    findAll(): Promise<string | {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -14,7 +14,7 @@ export declare class ProductionProcessController {
         endTime: Date | null;
         location: string | null;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -50,14 +50,5 @@ export declare class ProductionProcessController {
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        productId: string;
-        stepName: string;
-        startTime: Date;
-        endTime: Date | null;
-        location: string | null;
-    }>;
+    }, id: string): Promise<void>;
 }

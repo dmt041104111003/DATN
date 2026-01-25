@@ -1,9 +1,11 @@
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 export declare class AuthService {
     private prisma;
     private jwtService;
-    constructor(prisma: PrismaService, jwtService: JwtService);
+    private redis;
+    constructor(prisma: PrismaService, jwtService: JwtService, redis: RedisService);
     getNonce(address: string): Promise<{
         nonce: string;
     }>;
@@ -19,7 +21,5 @@ export declare class AuthService {
         id: string;
         address: string;
         walletName: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     } | null>;
 }

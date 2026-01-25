@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { generateNonce, checkSignature } from '@meshsdk/core';
 
 @Injectable()
@@ -8,11 +9,14 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private redis: RedisService,
   ) {}
 
   async getNonce(address: string) {
     const userAddress = address.trim();
-    const nonce = generateNonce('I agree to the term and conditions of the HSUPPLY: ');
+    const nonce = generateNonce(
+      'I agree to the term and conditions of the HSUPPLY: ',
+    );
 
     const user = await this.prisma.user.upsert({
       where: { address: userAddress },
@@ -29,7 +33,12 @@ export class AuthService {
     return { nonce };
   }
 
-  async verifyWallet(address: string, signature: string, key: string, walletName: string) {
+  async verifyWallet(
+    address: string,
+    signature: string,
+    key: string,
+    walletName: string,
+  ) {
     const userAddress = address.trim();
     const walletNonce = await this.prisma.walletNonce.findUnique({
       where: { address: userAddress },
@@ -39,7 +48,11 @@ export class AuthService {
       throw new UnauthorizedException('Nonce not found. Get nonce first.');
     }
 
-    const isValid = checkSignature(walletNonce.nonce, { signature, key }, userAddress);
+    const isValid = checkSignature(
+      walletNonce.nonce,
+      { signature, key },
+      userAddress,
+    );
     if (!isValid) {
       throw new UnauthorizedException('Invalid signature');
     }
@@ -50,7 +63,9 @@ export class AuthService {
       create: { address: userAddress, walletName },
     });
 
-    const newNonce = generateNonce('I agree to the term and conditions of the HSUPPLY: ');
+    const newNonce = generateNonce(
+      'I agree to the term and conditions of the HSUPPLY: ',
+    );
     await this.prisma.walletNonce.update({
       where: { address: userAddress },
       data: { nonce: newNonce, userId: user.id },
@@ -72,6 +87,12 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    return this.prisma.user.findUnique({ where: { id: userId } });
+    const cacheKey = `user:${userId}`;
+    const cached = await this.redis.get<{ id: string; address: string; walletName: string | null }>(cacheKey);
+    if (cached && typeof cached === 'object') return cached;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user) await this.redis.set(cacheKey, user, 600);
+    return user;
   }
 }

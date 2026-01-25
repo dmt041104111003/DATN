@@ -4,7 +4,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export declare class ProductController {
     private productService;
     constructor(productService: ProductService);
-    findAll(): Promise<{
+    findAll(): Promise<string | {
         id: string;
         userId: string;
         policyId: string | null;
@@ -16,7 +16,7 @@ export declare class ProductController {
     }[]>;
     findMy(user: {
         id: string;
-    }): Promise<{
+    }): Promise<string | {
         id: string;
         userId: string;
         policyId: string | null;
@@ -141,7 +141,7 @@ export declare class ProductController {
         })[];
         message?: undefined;
     }>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         userId: string;
         policyId: string | null;
@@ -177,14 +177,5 @@ export declare class ProductController {
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        name: string;
-        historyHash: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
+    }, id: string): Promise<void>;
 }

@@ -4,22 +4,38 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateWarehouseStorageDto } from './dto/create-warehouse-storage.dto';
 import { UpdateWarehouseStorageDto } from './dto/update-warehouse-storage.dto';
 
 @Injectable()
 export class WarehouseStorageService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async findAll() {
-    return this.prisma.warehouseStorage.findMany();
+    const cacheKey = 'warehouse-storages:all';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const storages = await this.prisma.warehouseStorage.findMany();
+    await this.redis.set(cacheKey, storages, 300);
+    return storages;
   }
 
   async findOne(id: string) {
+    const cacheKey = `warehouse-storage:${id}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const item = await this.prisma.warehouseStorage.findUnique({
       where: { id },
     });
     if (!item) throw new NotFoundException('WarehouseStorage not found');
+
+    await this.redis.set(cacheKey, item, 300);
     return item;
   }
 
@@ -46,16 +62,38 @@ export class WarehouseStorageService {
     });
     if (!warehouse) throw new NotFoundException('Warehouse not found');
 
-    return this.prisma.warehouseStorage.create({ data: dto });
+    const storage = await this.prisma.warehouseStorage.create({ data: dto });
+    await this.redis.delMultiple([
+      'warehouse-storages:all',
+      `warehouse-storages:product:${dto.productId}`,
+      `warehouse-storages:warehouse:${dto.warehouseId}`,
+    ]);
+    return storage;
   }
 
   async update(id: string, userId: string, dto: UpdateWarehouseStorageDto) {
-    await this.findOneOwned(id, userId);
-    return this.prisma.warehouseStorage.update({ where: { id }, data: dto });
+    const storage = await this.findOneOwned(id, userId);
+    const updated = await this.prisma.warehouseStorage.update({
+      where: { id },
+      data: dto,
+    });
+    await this.redis.delMultiple([
+      `warehouse-storage:${id}`,
+      'warehouse-storages:all',
+      `warehouse-storages:product:${storage.productId}`,
+      `warehouse-storages:warehouse:${storage.warehouseId}`,
+    ]);
+    return updated;
   }
 
   async remove(id: string, userId: string) {
-    await this.findOneOwned(id, userId);
-    return this.prisma.warehouseStorage.delete({ where: { id } });
+    const storage = await this.findOneOwned(id, userId);
+    await this.prisma.warehouseStorage.delete({ where: { id } });
+    await this.redis.delMultiple([
+      `warehouse-storage:${id}`,
+      'warehouse-storages:all',
+      `warehouse-storages:product:${storage.productId}`,
+      `warehouse-storages:warehouse:${storage.warehouseId}`,
+    ]);
   }
 }

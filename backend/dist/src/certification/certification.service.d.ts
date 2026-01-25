@@ -1,10 +1,12 @@
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
 export declare class CertificationService {
     private prisma;
-    constructor(prisma: PrismaService);
-    findAll(): Promise<{
+    private redis;
+    constructor(prisma: PrismaService, redis: RedisService);
+    findAll(): Promise<string | {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -14,7 +16,7 @@ export declare class CertificationService {
         expiryDate: Date | null;
         certHash: string | null;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -45,14 +47,5 @@ export declare class CertificationService {
         expiryDate: Date | null;
         certHash: string | null;
     }>;
-    remove(id: string, userId: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        productId: string;
-        certName: string;
-        issueDate: Date;
-        expiryDate: Date | null;
-        certHash: string | null;
-    }>;
+    remove(id: string, userId: string): Promise<void>;
 }

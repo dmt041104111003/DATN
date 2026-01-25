@@ -12,14 +12,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductMaterialService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let ProductMaterialService = class ProductMaterialService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async findByProduct(productId, userId) {
         await this.checkProductOwnership(productId, userId);
-        return this.prisma.productMaterial.findMany({
+        const cacheKey = `product-materials:product:${productId}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const materials = await this.prisma.productMaterial.findMany({
             where: { productId },
             include: {
                 material: {
@@ -27,8 +34,17 @@ let ProductMaterialService = class ProductMaterialService {
                 },
             },
         });
+        await this.redis.set(cacheKey, materials, 300);
+        return materials;
     }
     async findOne(id, userId) {
+        const cacheKey = `product-material:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached && typeof cached === 'object' && 'product' in cached) {
+            if (cached.product.userId !== userId)
+                throw new common_1.ForbiddenException('Not your product');
+            return cached;
+        }
         const pm = await this.prisma.productMaterial.findUnique({
             where: { id },
             include: {
@@ -42,12 +58,13 @@ let ProductMaterialService = class ProductMaterialService {
             throw new common_1.NotFoundException('ProductMaterial not found');
         if (pm.product.userId !== userId)
             throw new common_1.ForbiddenException('Not your product');
+        await this.redis.set(cacheKey, pm, 300);
         return pm;
     }
     async create(userId, dto) {
         await this.checkProductOwnership(dto.productId, userId);
         await this.checkMaterialOwnership(dto.materialId, userId);
-        return this.prisma.productMaterial.create({
+        const pm = await this.prisma.productMaterial.create({
             data: dto,
             include: {
                 material: {
@@ -55,10 +72,12 @@ let ProductMaterialService = class ProductMaterialService {
                 },
             },
         });
+        await this.redis.del(`product-materials:product:${dto.productId}`);
+        return pm;
     }
     async update(id, userId, dto) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.productMaterial.update({
+        const pm = await this.findOneOwned(id, userId);
+        const updated = await this.prisma.productMaterial.update({
             where: { id },
             data: dto,
             include: {
@@ -67,10 +86,19 @@ let ProductMaterialService = class ProductMaterialService {
                 },
             },
         });
+        await this.redis.delMultiple([
+            `product-material:${id}`,
+            `product-materials:product:${pm.productId}`,
+        ]);
+        return updated;
     }
     async remove(id, userId) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.productMaterial.delete({ where: { id } });
+        const pm = await this.findOneOwned(id, userId);
+        await this.prisma.productMaterial.delete({ where: { id } });
+        await this.redis.delMultiple([
+            `product-material:${id}`,
+            `product-materials:product:${pm.productId}`,
+        ]);
     }
     async findOneOwned(id, userId) {
         const pm = await this.prisma.productMaterial.findUnique({
@@ -106,6 +134,7 @@ let ProductMaterialService = class ProductMaterialService {
 exports.ProductMaterialService = ProductMaterialService;
 exports.ProductMaterialService = ProductMaterialService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], ProductMaterialService);
 //# sourceMappingURL=product-material.service.js.map

@@ -13,13 +13,16 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 const core_1 = require("@meshsdk/core");
 let AuthService = class AuthService {
     prisma;
     jwtService;
-    constructor(prisma, jwtService) {
+    redis;
+    constructor(prisma, jwtService, redis) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.redis = redis;
     }
     async getNonce(address) {
         const userAddress = address.trim();
@@ -72,13 +75,21 @@ let AuthService = class AuthService {
         };
     }
     async validateUser(userId) {
-        return this.prisma.user.findUnique({ where: { id: userId } });
+        const cacheKey = `user:${userId}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached && typeof cached === 'object')
+            return cached;
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (user)
+            await this.redis.set(cacheKey, user, 600);
+        return user;
     }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        redis_service_1.RedisService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

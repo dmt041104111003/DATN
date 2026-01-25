@@ -1,8 +1,10 @@
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 export declare class ServiceService {
     private prisma;
-    constructor(prisma: PrismaService);
-    findAll(): Promise<{
+    private redis;
+    constructor(prisma: PrismaService, redis: RedisService);
+    findAll(): Promise<string | {
         id: string;
         name: string;
         description: string | null;
@@ -12,7 +14,7 @@ export declare class ServiceService {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         name: string;
         description: string | null;

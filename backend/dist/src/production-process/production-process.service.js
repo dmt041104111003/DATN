@@ -12,20 +12,34 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionProcessService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let ProductionProcessService = class ProductionProcessService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async findAll() {
-        return this.prisma.productionProcess.findMany();
+        const cacheKey = 'production-processes:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const processes = await this.prisma.productionProcess.findMany();
+        await this.redis.set(cacheKey, processes, 300);
+        return processes;
     }
     async findOne(id) {
+        const cacheKey = `production-process:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const item = await this.prisma.productionProcess.findUnique({
             where: { id },
         });
         if (!item)
             throw new common_1.NotFoundException('ProductionProcess not found');
+        await this.redis.set(cacheKey, item, 300);
         return item;
     }
     async findOneOwned(id, userId) {
@@ -47,20 +61,40 @@ let ProductionProcessService = class ProductionProcessService {
             throw new common_1.NotFoundException('Product not found');
         if (product.userId !== userId)
             throw new common_1.ForbiddenException('Not your product');
-        return this.prisma.productionProcess.create({ data: dto });
+        const process = await this.prisma.productionProcess.create({ data: dto });
+        await this.redis.delMultiple([
+            'production-processes:all',
+            `production-processes:product:${dto.productId}`,
+        ]);
+        return process;
     }
     async update(id, userId, dto) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.productionProcess.update({ where: { id }, data: dto });
+        const process = await this.findOneOwned(id, userId);
+        const updated = await this.prisma.productionProcess.update({
+            where: { id },
+            data: dto,
+        });
+        await this.redis.delMultiple([
+            `production-process:${id}`,
+            'production-processes:all',
+            `production-processes:product:${process.productId}`,
+        ]);
+        return updated;
     }
     async remove(id, userId) {
-        await this.findOneOwned(id, userId);
-        return this.prisma.productionProcess.delete({ where: { id } });
+        const process = await this.findOneOwned(id, userId);
+        await this.prisma.productionProcess.delete({ where: { id } });
+        await this.redis.delMultiple([
+            `production-process:${id}`,
+            'production-processes:all',
+            `production-processes:product:${process.productId}`,
+        ]);
     }
 };
 exports.ProductionProcessService = ProductionProcessService;
 exports.ProductionProcessService = ProductionProcessService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], ProductionProcessService);
 //# sourceMappingURL=production-process.service.js.map

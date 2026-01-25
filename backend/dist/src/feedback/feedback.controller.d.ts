@@ -4,55 +4,47 @@ import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 export declare class FeedbackController {
     private feedbackService;
     constructor(feedbackService: FeedbackService);
-    findAll(): Promise<{
+    findAll(): Promise<string | {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreateFeedbackDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateFeedbackDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        productId: string;
-        content: string;
-        rating: number;
-    }>;
+    }, id: string): Promise<void>;
 }

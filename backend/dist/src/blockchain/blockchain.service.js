@@ -174,8 +174,7 @@ let BlockchainService = class BlockchainService {
                     }
                 }
             }
-            catch {
-            }
+            catch { }
             return null;
         }
         catch (error) {

@@ -4,22 +4,38 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateProductionProcessDto } from './dto/create-production-process.dto';
 import { UpdateProductionProcessDto } from './dto/update-production-process.dto';
 
 @Injectable()
 export class ProductionProcessService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async findAll() {
-    return this.prisma.productionProcess.findMany();
+    const cacheKey = 'production-processes:all';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const processes = await this.prisma.productionProcess.findMany();
+    await this.redis.set(cacheKey, processes, 300);
+    return processes;
   }
 
   async findOne(id: string) {
+    const cacheKey = `production-process:${id}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const item = await this.prisma.productionProcess.findUnique({
       where: { id },
     });
     if (!item) throw new NotFoundException('ProductionProcess not found');
+
+    await this.redis.set(cacheKey, item, 300);
     return item;
   }
 
@@ -42,16 +58,35 @@ export class ProductionProcessService {
     if (product.userId !== userId)
       throw new ForbiddenException('Not your product');
 
-    return this.prisma.productionProcess.create({ data: dto });
+    const process = await this.prisma.productionProcess.create({ data: dto });
+    await this.redis.delMultiple([
+      'production-processes:all',
+      `production-processes:product:${dto.productId}`,
+    ]);
+    return process;
   }
 
   async update(id: string, userId: string, dto: UpdateProductionProcessDto) {
-    await this.findOneOwned(id, userId);
-    return this.prisma.productionProcess.update({ where: { id }, data: dto });
+    const process = await this.findOneOwned(id, userId);
+    const updated = await this.prisma.productionProcess.update({
+      where: { id },
+      data: dto,
+    });
+    await this.redis.delMultiple([
+      `production-process:${id}`,
+      'production-processes:all',
+      `production-processes:product:${process.productId}`,
+    ]);
+    return updated;
   }
 
   async remove(id: string, userId: string) {
-    await this.findOneOwned(id, userId);
-    return this.prisma.productionProcess.delete({ where: { id } });
+    const process = await this.findOneOwned(id, userId);
+    await this.prisma.productionProcess.delete({ where: { id } });
+    await this.redis.delMultiple([
+      `production-process:${id}`,
+      'production-processes:all',
+      `production-processes:product:${process.productId}`,
+    ]);
   }
 }

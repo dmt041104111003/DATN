@@ -4,7 +4,7 @@ import { UpdateWarehouseStorageDto } from './dto/update-warehouse-storage.dto';
 export declare class WarehouseStorageController {
     private warehouseStorageService;
     constructor(warehouseStorageService: WarehouseStorageService);
-    findAll(): Promise<{
+    findAll(): Promise<string | {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -14,7 +14,7 @@ export declare class WarehouseStorageController {
         exitTime: Date | null;
         conditions: string | null;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -50,14 +50,5 @@ export declare class WarehouseStorageController {
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        productId: string;
-        warehouseId: string;
-        entryTime: Date;
-        exitTime: Date | null;
-        conditions: string | null;
-    }>;
+    }, id: string): Promise<void>;
 }

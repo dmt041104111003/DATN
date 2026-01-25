@@ -39,7 +39,7 @@ let AuthController = class AuthController {
     }
     async getMe(user) {
         const userData = await this.authService.validateUser(user.id);
-        if (!userData) {
+        if (!userData || typeof userData === 'string') {
             throw new common_1.UnauthorizedException('User not found');
         }
         return {
@@ -47,7 +47,7 @@ let AuthController = class AuthController {
                 id: userData.id,
                 address: userData.address,
                 walletName: userData.walletName,
-            }
+            },
         };
     }
     logout(res) {

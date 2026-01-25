@@ -1,53 +1,47 @@
 import { PrismaService } from '../prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 export declare class FeedbackService {
     private prisma;
-    constructor(prisma: PrismaService);
-    findAll(): Promise<{
+    private redis;
+    constructor(prisma: PrismaService, redis: RedisService);
+    findAll(): Promise<string | {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateFeedbackDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateFeedbackDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         productId: string;
         content: string;
         rating: number;
-    }>;
-    remove(id: string, userId: string): Promise<{
-        id: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        productId: string;
-        content: string;
-        rating: number;
     }>;
+    remove(id: string, userId: string): Promise<void>;
 }

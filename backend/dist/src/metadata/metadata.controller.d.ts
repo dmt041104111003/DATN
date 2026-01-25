@@ -4,20 +4,20 @@ import { UpdateMetadataDto } from './dto/update-metadata.dto';
 export declare class MetadataController {
     private metadataService;
     constructor(metadataService: MetadataService);
-    findAll(): Promise<{
+    findAll(): Promise<string | {
         id: string;
+        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        assetName: string | null;
         content: string;
         collectionId: string;
         nftReference: string[];
     }[]>;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
+        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        assetName: string | null;
         content: string;
         collectionId: string;
         nftReference: string[];
@@ -26,9 +26,9 @@ export declare class MetadataController {
         id: string;
     }, dto: CreateMetadataDto): Promise<{
         id: string;
+        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        assetName: string | null;
         content: string;
         collectionId: string;
         nftReference: string[];
@@ -37,22 +37,14 @@ export declare class MetadataController {
         id: string;
     }, id: string, dto: UpdateMetadataDto): Promise<{
         id: string;
+        assetName: string | null;
         createdAt: Date;
         updatedAt: Date;
-        assetName: string | null;
         content: string;
         collectionId: string;
         nftReference: string[];
     }>;
     remove(user: {
         id: string;
-    }, id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        assetName: string | null;
-        content: string;
-        collectionId: string;
-        nftReference: string[];
-    }>;
+    }, id: string): Promise<void>;
 }

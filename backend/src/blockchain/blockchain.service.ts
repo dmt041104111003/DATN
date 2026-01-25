@@ -205,8 +205,7 @@ export class BlockchainService {
             };
           }
         }
-      } catch {
-      }
+      } catch {}
 
       return null;
     } catch (error: unknown) {
