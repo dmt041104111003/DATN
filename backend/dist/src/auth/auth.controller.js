@@ -26,7 +26,7 @@ let AuthController = class AuthController {
         return this.authService.getNonce(dto.address);
     }
     async verifyWallet(dto, res) {
-        const result = await this.authService.verifyWallet(dto.address, dto.signature, dto.key);
+        const result = await this.authService.verifyWallet(dto.address, dto.signature, dto.key, dto.walletName);
         res.cookie('access_token', result.access_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -37,8 +37,15 @@ let AuthController = class AuthController {
             user: result.user,
         };
     }
-    getMe(user) {
-        return { user };
+    async getMe(user) {
+        const userData = await this.authService.validateUser(user.id);
+        return {
+            user: {
+                id: userData.id,
+                address: userData.address,
+                walletName: userData.walletName,
+            }
+        };
     }
     logout(res) {
         res.clearCookie('access_token');
@@ -68,7 +75,7 @@ __decorate([
     __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getMe", null);
 __decorate([
     (0, decorators_1.Public)(),

@@ -23,6 +23,7 @@ class VerifyWalletDto {
     address;
     signature;
     key;
+    walletName;
 }
 exports.VerifyWalletDto = VerifyWalletDto;
 __decorate([
@@ -37,4 +38,8 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], VerifyWalletDto.prototype, "key", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], VerifyWalletDto.prototype, "walletName", void 0);
 //# sourceMappingURL=verify-wallet.dto.js.map

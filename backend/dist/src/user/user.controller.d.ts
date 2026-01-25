@@ -11,6 +11,7 @@ export declare class UserController {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }>;
     updateMe(user: {
         id: string;
@@ -20,6 +21,7 @@ export declare class UserController {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }>;
     deleteMe(user: {
         id: string;
@@ -29,5 +31,6 @@ export declare class UserController {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }>;
 }

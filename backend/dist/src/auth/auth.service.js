@@ -35,7 +35,7 @@ let AuthService = class AuthService {
         });
         return { nonce };
     }
-    async verifyWallet(address, signature, key) {
+    async verifyWallet(address, signature, key, walletName) {
         const userAddress = address.trim();
         const walletNonce = await this.prisma.walletNonce.findUnique({
             where: { address: userAddress },
@@ -49,7 +49,13 @@ let AuthService = class AuthService {
         }
         let user = await this.prisma.user.findUnique({ where: { address: userAddress } });
         if (!user) {
-            user = await this.prisma.user.create({ data: { address: userAddress } });
+            user = await this.prisma.user.create({ data: { address: userAddress, walletName } });
+        }
+        else {
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: { walletName },
+            });
         }
         const newNonce = (0, core_1.generateNonce)('I agree to the term and conditions of the HSUPPLY: ');
         await this.prisma.walletNonce.update({
@@ -65,6 +71,7 @@ let AuthService = class AuthService {
             user: {
                 id: user.id,
                 address: user.address,
+                walletName: user.walletName,
             },
         };
     }

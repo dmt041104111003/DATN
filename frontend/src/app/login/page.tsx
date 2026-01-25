@@ -32,7 +32,7 @@ export default function LoginPage() {
     setLoadingWallet(walletName)
     try {
       const result = await connectWallet(walletName)
-      await login(result.wallet, result.address)
+      await login(result.wallet, result.address, walletName)
       await refreshAuth()
       router.refresh()
       router.push('/dashboard')

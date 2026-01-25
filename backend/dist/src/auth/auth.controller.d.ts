@@ -11,17 +11,19 @@ export declare class AuthController {
         user: {
             id: string;
             address: string;
+            walletName: string | null;
         };
     }>;
     getMe(user: {
         id: string;
         address: string;
-    }): {
+    }): Promise<{
         user: {
             id: string;
             address: string;
+            walletName: string | null;
         };
-    };
+    }>;
     logout(res: Response): {
         message: string;
     };

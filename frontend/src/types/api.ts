@@ -8,6 +8,7 @@ export interface VerifyWalletRequest {
   address: string
   signature: string
   key: string
+  walletName: string
 }
 
 export interface VerifyWalletResponse {
@@ -85,6 +86,10 @@ export interface Subscription {
   status: string
   startDate?: string
   endDate?: string
+  amount: number
+  currency: string
+  txHash?: string
+  paymentDate: string
   createdAt: string
   updatedAt: string
   service?: Service
@@ -96,6 +101,7 @@ export interface Service {
   description?: string
   price: number
   duration: number
+  maxProducts?: number | null
   createdAt: string
   updatedAt: string
 }
@@ -173,17 +179,6 @@ export interface WarehouseStorage {
   updatedAt: string
 }
 
-export interface Payment {
-  id: string
-  userId: string
-  subscriptionId: string
-  amount: number
-  currency: string
-  txHash?: string
-  paymentDate: string
-  createdAt: string
-  updatedAt: string
-}
 
 export interface ProductMaterial {
   id: string

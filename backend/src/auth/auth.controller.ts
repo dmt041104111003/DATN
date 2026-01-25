@@ -24,6 +24,7 @@ export class AuthController {
       dto.address,
       dto.signature,
       dto.key,
+      dto.walletName,
     );
 
     res.cookie('access_token', result.access_token, {
@@ -39,8 +40,15 @@ export class AuthController {
   }
 
   @Get('me')
-  getMe(@CurrentUser() user: { id: string; address: string }) {
-    return { user };
+  async getMe(@CurrentUser() user: { id: string; address: string }) {
+    const userData = await this.authService.validateUser(user.id);
+    return { 
+      user: {
+        id: userData.id,
+        address: userData.address,
+        walletName: userData.walletName,
+      }
+    };
   }
 
   @Public()

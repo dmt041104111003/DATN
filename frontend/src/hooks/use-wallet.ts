@@ -18,14 +18,15 @@ export function useWallet() {
       if (!walletAddress) throw new Error('No address found')
       return { wallet: walletInstance, address: walletAddress }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect wallet')
-      throw err
+      const message = err instanceof Error ? err.message : 'Failed to connect wallet'
+      setError(message)
+      throw new Error(message)
     } finally {
       setIsConnecting(false)
     }
   }
 
-  const login = async (wallet: BrowserWallet, address: string) => {
+  const login = async (wallet: BrowserWallet, address: string, walletName: string) => {
     setIsConnecting(true)
     setError(null)
     try {
@@ -36,6 +37,7 @@ export function useWallet() {
         address: userAddress,
         signature: signature.signature,
         key: signature.key,
+        walletName,
       })
     } catch (err) {
       const isCancelled = err instanceof Error && 

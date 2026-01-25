@@ -7,11 +7,12 @@ export declare class AuthService {
     getNonce(address: string): Promise<{
         nonce: string;
     }>;
-    verifyWallet(address: string, signature: string, key: string): Promise<{
+    verifyWallet(address: string, signature: string, key: string, walletName: string): Promise<{
         access_token: string;
         user: {
             id: string;
             address: string;
+            walletName: string | null;
         };
     }>;
     validateUser(userId: string): Promise<{
@@ -19,5 +20,6 @@ export declare class AuthService {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     } | null>;
 }

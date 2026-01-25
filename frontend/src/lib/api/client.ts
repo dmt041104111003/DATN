@@ -19,7 +19,6 @@ import {
   Metadata,
   Media,
   WarehouseStorage,
-  Payment,
   ProductMaterial,
   ContractInfo,
   MintAsset,
@@ -90,13 +89,12 @@ export const apiClient = {
   },
   subscriptions: {
     findAll: () => request<Subscription[]>('/subscriptions'),
-    findOne: (id: string) => request<Subscription>(`/subscriptions/${id}`),
-    create: (data: { servicePlanId: string; startDate?: string; endDate?: string; status?: string }) => 
-      request<Subscription>('/subscriptions', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Subscription>) => 
-      request<Subscription>(`/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    pay: (data: { servicePlanId: string; txHash: string }) => 
+      request<{ result: boolean; message: string; data: { subscription: Subscription } }>('/subscriptions/pay', { 
+        method: 'POST', 
+        body: JSON.stringify(data) 
+      }),
     cancel: (id: string) => request<Subscription>(`/subscriptions/${id}/cancel`, { method: 'POST' }),
-    remove: (id: string) => request<{ message: string }>(`/subscriptions/${id}`, { method: 'DELETE' }),
   },
   services: {
     findAll: () => request<Service[]>('/services'),
@@ -180,15 +178,6 @@ export const apiClient = {
     update: (id: string, data: Partial<WarehouseStorage>) => 
       request<WarehouseStorage>(`/warehouse-storages/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<{ message: string }>(`/warehouse-storages/${id}`, { method: 'DELETE' }),
-  },
-  payments: {
-    findAll: () => request<Payment[]>('/payments'),
-    findOne: (id: string) => request<Payment>(`/payments/${id}`),
-    create: (data: { subscriptionId: string; txHash?: string; amount?: number; currency?: string }) => 
-      request<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Payment>) => 
-      request<Payment>(`/payments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => request<{ message: string }>(`/payments/${id}`, { method: 'DELETE' }),
   },
   productMaterials: {
     findByProduct: (productId: string) => request<ProductMaterial[]>(`/product-materials?productId=${productId}`),

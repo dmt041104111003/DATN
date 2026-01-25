@@ -8,17 +8,20 @@ export declare class UserService {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }>;
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }>;
     remove(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }>;
 }

@@ -7,5 +7,6 @@ export declare class AppService {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }[]>;
 }

@@ -1,9 +1,10 @@
 import { PrismaService } from '../prisma.service';
-import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { BlockchainService } from '../blockchain/blockchain.service';
+import { PayDto } from './dto/pay.dto';
 export declare class SubscriptionService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private blockchain;
+    constructor(prisma: PrismaService, blockchain: BlockchainService);
     findAllByUser(userId: string): Promise<({
         service: {
             id: string;
@@ -19,13 +20,18 @@ export declare class SubscriptionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
-        status: string;
+        status: import("@prisma/client").$Enums.SubscriptionStatus;
+        currency: string;
+        paymentDate: Date;
     })[]>;
-    findOne(id: string, userId: string): Promise<{
+    updateExpiredSubscriptions(userId?: string): Promise<import("@prisma/client").Prisma.BatchPayload>;
+    getActiveSubscription(userId: string): Promise<({
         service: {
             id: string;
             name: string;
@@ -40,64 +46,16 @@ export declare class SubscriptionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
-        status: string;
-    }>;
-    create(userId: string, dto: CreateSubscriptionDto): Promise<{
-        service: {
-            id: string;
-            name: string;
-            description: string | null;
-            price: number;
-            duration: number;
-            maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        servicePlanId: string;
-        startDate: Date;
-        endDate: Date;
-        status: string;
-    }>;
-    update(id: string, userId: string, dto: UpdateSubscriptionDto): Promise<{
-        service: {
-            id: string;
-            name: string;
-            description: string | null;
-            price: number;
-            duration: number;
-            maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        servicePlanId: string;
-        startDate: Date;
-        endDate: Date;
-        status: string;
-    }>;
-    remove(id: string, userId: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        servicePlanId: string;
-        startDate: Date;
-        endDate: Date;
-        status: string;
-    }>;
+        status: import("@prisma/client").$Enums.SubscriptionStatus;
+        currency: string;
+        paymentDate: Date;
+    }) | null>;
     cancel(id: string, userId: string): Promise<{
         service: {
             id: string;
@@ -113,10 +71,45 @@ export declare class SubscriptionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
         userId: string;
         servicePlanId: string;
         startDate: Date;
         endDate: Date;
-        status: string;
+        status: import("@prisma/client").$Enums.SubscriptionStatus;
+        currency: string;
+        paymentDate: Date;
+    }>;
+    pay(userId: string, dto: PayDto): Promise<{
+        result: boolean;
+        message: string;
+        data: {
+            subscription: {
+                service: {
+                    id: string;
+                    name: string;
+                    description: string | null;
+                    price: number;
+                    duration: number;
+                    maxProducts: number | null;
+                    createdAt: Date;
+                    updatedAt: Date;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                txHash: string | null;
+                amount: number;
+                userId: string;
+                servicePlanId: string;
+                startDate: Date;
+                endDate: Date;
+                status: import("@prisma/client").$Enums.SubscriptionStatus;
+                currency: string;
+                paymentDate: Date;
+            };
+        };
     }>;
 }

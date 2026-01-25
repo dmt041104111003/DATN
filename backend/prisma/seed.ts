@@ -35,7 +35,7 @@ async function main() {
       description: 'Best for large scale uses and extended redistribution rights.',
       price: 499,
       duration: 365,
-      maxProducts: null, 
+      maxProducts: null,
     },
   ];
 

@@ -9,27 +9,19 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdatePaymentDto = void 0;
+exports.PayDto = void 0;
 const class_validator_1 = require("class-validator");
-class UpdatePaymentDto {
-    amount;
-    currency;
-    paymentDate;
+class PayDto {
+    servicePlanId;
+    txHash;
 }
-exports.UpdatePaymentDto = UpdatePaymentDto;
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], UpdatePaymentDto.prototype, "amount", void 0);
+exports.PayDto = PayDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], UpdatePaymentDto.prototype, "currency", void 0);
+], PayDto.prototype, "servicePlanId", void 0);
 __decorate([
-    (0, class_validator_1.IsDateString)(),
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], UpdatePaymentDto.prototype, "paymentDate", void 0);
-//# sourceMappingURL=update-payment.dto.js.map
+], PayDto.prototype, "txHash", void 0);
+//# sourceMappingURL=pay.dto.js.map

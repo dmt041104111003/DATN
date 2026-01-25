@@ -14,4 +14,7 @@ export class VerifyWalletDto {
 
   @IsString()
   key: string;
+
+  @IsString()
+  walletName: string;
 }

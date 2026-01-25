@@ -10,7 +10,6 @@ import { CertificationModule } from './certification/certification.module';
 import { MaterialModule } from './material/material.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { FeedbackModule } from './feedback/feedback.module';
-import { PaymentModule } from './payment/payment.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { WarehouseStorageModule } from './warehouse-storage/warehouse-storage.module';
 import { ServiceModule } from './service/service.module';
@@ -45,7 +44,6 @@ import { JwtAuthGuard } from './auth/guards';
     WarehouseStorageModule,
     FeedbackModule,
     ServiceModule,
-    PaymentModule,
     SubscriptionModule,
     BlockchainModule,
     ContractModule,

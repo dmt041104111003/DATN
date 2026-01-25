@@ -5,4 +5,5 @@ export declare class VerifyWalletDto {
     address: string;
     signature: string;
     key: string;
+    walletName: string;
 }

@@ -7,6 +7,7 @@ export declare class AppController {
         createdAt: Date;
         updatedAt: Date;
         address: string;
+        walletName: string | null;
     }[]>;
     health(): {
         status: string;

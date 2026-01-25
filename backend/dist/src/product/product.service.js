@@ -56,10 +56,17 @@ let ProductService = class ProductService {
         const maxProducts = subscription?.service.maxProducts ?? 5;
         if (maxProducts === null)
             return;
-        const currentCount = await this.prisma.product.count({ where: { userId } });
-        if (currentCount >= maxProducts) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayCount = await this.prisma.product.count({
+            where: {
+                userId,
+                createdAt: { gte: startOfDay },
+            },
+        });
+        if (todayCount >= maxProducts) {
             const tierName = subscription?.service.name ?? 'Free';
-            throw new common_1.ForbiddenException(`Bạn đã đạt giới hạn ${maxProducts} sản phẩm của gói ${tierName}. Nâng cấp gói để tạo thêm.`);
+            throw new common_1.ForbiddenException(`Bạn đã đạt giới hạn ${maxProducts} sản phẩm/ngày của gói ${tierName}. Nâng cấp gói để tạo thêm.`);
         }
     }
     async create(userId, dto) {
@@ -79,12 +86,19 @@ let ProductService = class ProductService {
     async getQuota(userId) {
         const subscription = await this.getActiveSubscription(userId);
         const maxProducts = subscription?.service.maxProducts ?? 5;
-        const currentCount = await this.prisma.product.count({ where: { userId } });
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayCount = await this.prisma.product.count({
+            where: {
+                userId,
+                createdAt: { gte: startOfDay },
+            },
+        });
         return {
             tier: subscription?.service.name ?? 'Free',
             maxProducts: maxProducts,
-            usedProducts: currentCount,
-            remainingProducts: maxProducts === null ? 'unlimited' : maxProducts - currentCount,
+            usedProducts: todayCount,
+            remainingProducts: maxProducts === null ? 'unlimited' : maxProducts - todayCount,
         };
     }
     async traceByNft(policyId, assetName) {

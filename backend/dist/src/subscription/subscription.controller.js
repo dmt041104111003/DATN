@@ -15,9 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionController = void 0;
 const common_1 = require("@nestjs/common");
 const subscription_service_1 = require("./subscription.service");
-const create_subscription_dto_1 = require("./dto/create-subscription.dto");
-const update_subscription_dto_1 = require("./dto/update-subscription.dto");
 const decorators_1 = require("../auth/decorators");
+const pay_dto_1 = require("./dto/pay.dto");
 let SubscriptionController = class SubscriptionController {
     subscriptionService;
     constructor(subscriptionService) {
@@ -26,17 +25,8 @@ let SubscriptionController = class SubscriptionController {
     findAll(user) {
         return this.subscriptionService.findAllByUser(user.id);
     }
-    findOne(user, id) {
-        return this.subscriptionService.findOne(id, user.id);
-    }
-    create(user, dto) {
-        return this.subscriptionService.create(user.id, dto);
-    }
-    update(user, id, dto) {
-        return this.subscriptionService.update(id, user.id, dto);
-    }
-    remove(user, id) {
-        return this.subscriptionService.remove(id, user.id);
+    pay(user, dto) {
+        return this.subscriptionService.pay(user.id, dto);
     }
     cancel(user, id) {
         return this.subscriptionService.cancel(id, user.id);
@@ -51,38 +41,13 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], SubscriptionController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, decorators_1.CurrentUser)()),
-    __param(1, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
-    __metadata("design:returntype", void 0)
-], SubscriptionController.prototype, "findOne", null);
-__decorate([
-    (0, common_1.Post)(),
+    (0, common_1.Post)('pay'),
     __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, create_subscription_dto_1.CreateSubscriptionDto]),
+    __metadata("design:paramtypes", [Object, pay_dto_1.PayDto]),
     __metadata("design:returntype", void 0)
-], SubscriptionController.prototype, "create", null);
-__decorate([
-    (0, common_1.Patch)(':id'),
-    __param(0, (0, decorators_1.CurrentUser)()),
-    __param(1, (0, common_1.Param)('id')),
-    __param(2, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, update_subscription_dto_1.UpdateSubscriptionDto]),
-    __metadata("design:returntype", void 0)
-], SubscriptionController.prototype, "update", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
-    __param(0, (0, decorators_1.CurrentUser)()),
-    __param(1, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String]),
-    __metadata("design:returntype", void 0)
-], SubscriptionController.prototype, "remove", null);
+], SubscriptionController.prototype, "pay", null);
 __decorate([
     (0, common_1.Post)(':id/cancel'),
     __param(0, (0, decorators_1.CurrentUser)()),
