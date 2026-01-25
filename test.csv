@@ -112,15 +112,15 @@ Test Flow,7,Update NFT Metadata,Update product info → Update metadata trên bl
 Test Flow,8,View Transaction History,Xem lịch sử transactions của NFT,-,-,Blockfrost.getAssetHistory() → All tx hashes actions amounts
 Test Flow,9,Collection Management,Tạo Collection → Link với Media → View collection details,-,-,-
 Test Flow,10,Burn NFT (Optional),Burn NFT nếu cần,-,-,"Burn cả 2 tokens → Spend reference token → Pay 1 ADA fee"
-Error Handling,Duplicate Asset Name,Check existing UTXO tại storeAddress,-,-,Error: Asset already exists
-Error Handling,Insufficient Payment,Verify amount < expected,-,-,"Status: expired, message: Insufficient payment"
-Error Handling,Transaction Not Confirmed,Retry up to 10 times (2s delay),-,-,"Status: pending, continue retry"
-Error Handling,No Active Subscription,Default to Free tier (5 products/day),-,-,Quota: 5 products/day
-Error Handling,Product Quota Exceeded,Check before create,-,-,403 Forbidden: Bạn đã đạt giới hạn...
-Error Handling,Asset Not Found (Burn/Update),Check storeAddress UTXO,-,-,Error: Asset not found
-Error Handling,No Collateral,Check UTXO >= 5 ADA,-,-,Error: No suitable UTxO for collateral
-Error Handling,Trace: Product Not in DB,Query blockchain only,-,-,Return blockchain info only
-Error Handling,Trace: Product Not on Chain,Query database only,-,-,Return database info only
+Error Handling,Duplicate Asset Name,Check existing UTXO tại storeAddress,-,-,Error: Asset already exists,Error message returned to user
+Error Handling,Insufficient Payment,Verify amount < expected,-,-,"Status: expired, message: Insufficient payment",Subscription status set to expired
+Error Handling,Transaction Not Confirmed,Retry up to 10 times (2s delay),-,-,"Status: pending, continue retry",Auto-retry mechanism with 2s delay
+Error Handling,No Active Subscription,Default to Free tier (5 products/day),-,-,Quota: 5 products/day,Default quota applied when no active subscription
+Error Handling,Product Quota Exceeded,Check before create,-,-,403 Forbidden: Bạn đã đạt giới hạn...,HTTP 403 error returned
+Error Handling,Asset Not Found (Burn/Update),Check storeAddress UTXO,-,-,Error: Asset not found,Asset does not exist at storeAddress
+Error Handling,No Collateral,Check UTXO >= 5 ADA,-,-,Error: No suitable UTxO for collateral,Need UTXO with >= 5 ADA and no other tokens
+Error Handling,Trace: Product Not in DB,Query blockchain only,-,-,Return blockchain info only,Product exists on blockchain but not in database
+Error Handling,Trace: Product Not on Chain,Query database only,-,-,Return database info only,Product exists in database but not minted as NFT
 User Management,10.1,Get current user info,GET /users/me,-,User,Get authenticated user information
 User Management,10.2,Update user profile,PATCH /users/me,-,User,Update user walletName
 User Management,10.3,Delete user account,DELETE /users/me,-,User,Delete user account và all related data
