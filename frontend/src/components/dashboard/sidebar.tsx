@@ -1,5 +1,6 @@
 "use client"
 
+import { memo, useMemo } from 'react'
 import { 
   SidebarContent, 
   SidebarGroup, 
@@ -21,20 +22,26 @@ import { cn } from "@/lib/utils"
 const menuItems = [
   { title: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { title: "Products", href: "/dashboard/products", icon: "inventory" },
-  { title: "Materials", href: "/dashboard/materials", icon: "category" },
+  { title: "Materials", href: "/dashboard/materials", icon: "layers" },
   { title: "Collections", href: "/dashboard/collections", icon: "collections" },
   { title: "Warehouses", href: "/dashboard/warehouses", icon: "warehouse" },
+  { title: "Media", href: "/dashboard/media", icon: "image" },
+  { title: "Billing", href: "/dashboard/billing", icon: "payments" },
   { title: "Settings", href: "/dashboard/settings", icon: "settings" },
-]
+] as const
 
-export function DashboardSidebar() {
+function DashboardSidebarComponent() {
   const { logout } = useAuth()
   const pathname = usePathname()
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') return pathname === '/dashboard'
-    return pathname.startsWith(href)
-  }
+  const activeStates = useMemo(() => {
+    return menuItems.reduce((acc, item) => {
+      acc[item.href] = item.href === '/dashboard' 
+        ? pathname === '/dashboard' 
+        : pathname.startsWith(item.href)
+      return acc
+    }, {} as Record<string, boolean>)
+  }, [pathname])
 
   return (
     <SidebarContent>
@@ -53,29 +60,32 @@ export function DashboardSidebar() {
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive(item.href)}
-                  className={cn(
-                    "w-full justify-start gap-3",
-                    isActive(item.href) && "bg-accent font-semibold"
-                  )}
-                >
-                  <Link href={item.href}>
-                    <Icon 
-                      name={item.icon} 
-                      size="sm" 
-                      className={cn(
-                        isActive(item.href) ? "text-foreground" : "text-muted-foreground"
-                      )}
-                    />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {menuItems.map((item) => {
+              const isActive = activeStates[item.href]
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    className={cn(
+                      "w-full justify-start gap-3",
+                      isActive && "bg-accent font-semibold"
+                    )}
+                  >
+                    <Link href={item.href}>
+                      <Icon 
+                        name={item.icon} 
+                        size="sm" 
+                        className={cn(
+                          isActive ? "text-foreground" : "text-muted-foreground"
+                        )}
+                      />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -93,3 +103,5 @@ export function DashboardSidebar() {
     </SidebarContent>
   )
 }
+
+export const DashboardSidebar = memo(DashboardSidebarComponent)

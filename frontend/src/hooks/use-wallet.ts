@@ -30,9 +30,9 @@ export function useWallet() {
     setError(null)
     try {
       const userAddress = address.trim()
-      const { nonce } = await apiClient.getNonce(userAddress)
+      const { nonce } = await apiClient.auth.getNonce(userAddress)
       const signature = await wallet.signData(nonce, userAddress)
-      return await apiClient.verifyWallet({
+      return await apiClient.auth.verifyWallet({
         address: userAddress,
         signature: signature.signature,
         key: signature.key,

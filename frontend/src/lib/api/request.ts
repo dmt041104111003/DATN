@@ -6,11 +6,16 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
   
+  const isFormData = options.body instanceof FormData
+  const headers: HeadersInit = isFormData 
+    ? { ...options.headers }
+    : { 'Content-Type': 'application/json', ...options.headers }
+  
   try {
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      headers,
       credentials: 'include',
     })
     clearTimeout(timeoutId)

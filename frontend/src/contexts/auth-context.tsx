@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const data = await apiClient.getMe()
+      const data = await apiClient.auth.getMe()
       setUser(data.user)
       return true
     } catch {
@@ -31,6 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
+    
+    if (user && pathname.startsWith('/dashboard')) {
+      return
+    }
+    
     setIsLoading(true)
     checkAuth().then((success) => {
       if (cancelled) return
@@ -46,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
     return () => { cancelled = true }
-  }, [pathname, isPublic, router])
+  }, [pathname, isPublic, router, user])
 
   const refreshAuth = async () => {
     setIsLoading(true)
@@ -57,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setIsLoading(false)
     try {
-      await apiClient.logout()
+      await apiClient.auth.logout()
     } catch {}
     window.location.href = '/'
   }
