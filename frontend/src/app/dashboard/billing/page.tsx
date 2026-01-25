@@ -138,8 +138,27 @@ export default function BillingPage() {
         </TabsList>
 
         <TabsContent value="services" className="mt-4 sm:mt-6">
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 justify-items-center">
-          {services.map((service) => {
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 justify-items-center items-start" style={{ display: 'grid' }}>
+          {(() => {
+            if (services.length === 0) return []
+            
+            const sortedByPrice = [...services].sort((a, b) => a.price - b.price)
+            const highestPriceService = sortedByPrice[sortedByPrice.length - 1]
+            const otherServices = sortedByPrice.filter(s => s.id !== highestPriceService.id)
+            
+            let sortedServices: typeof services = []
+            if (services.length === 3) {
+              sortedServices = [otherServices[0], highestPriceService, otherServices[1]]
+            } else if (services.length === 2) {
+              sortedServices = [otherServices[0], highestPriceService]
+            } else if (services.length > 3) {
+              const midIndex = Math.floor(otherServices.length / 2)
+              sortedServices = [...otherServices.slice(0, midIndex), highestPriceService, ...otherServices.slice(midIndex)]
+            } else {
+              sortedServices = sortedByPrice
+            }
+            
+            return sortedServices.map((service, index) => {
             const activeSub = subscriptions.find(s => s.status === 'active')
             const hasActive = subscriptions.some(s => s.servicePlanId === service.id && s.status === 'active')
             const isSamePlan = activeSub && activeSub.servicePlanId === service.id
@@ -161,6 +180,20 @@ export default function BillingPage() {
             const durationText = service.duration ? `${service.duration} ${service.duration === 1 ? 'day' : 'days'}` : 'N/A'
             const productText = service.maxProducts === null ? 'Unlimited / ngày' : service.maxProducts ? `${service.maxProducts} products / ngày` : 'N/A'
             
+            const isFeatured = service.id === highestPriceService?.id
+            const originalIndex = services.findIndex(s => s.id === service.id)
+            
+            let orderValue: number | undefined
+            if (services.length === 3) {
+              if (isFeatured) {
+                orderValue = 2
+              } else if (index === 0) {
+                orderValue = 1
+              } else {
+                orderValue = 3
+              }
+            }
+            
             return (
               <ServiceCard
                 key={service.id}
@@ -173,10 +206,16 @@ export default function BillingPage() {
                 disabled={isDisabled}
                 buttonText={buttonText}
                 onClick={() => !isDisabled && handleSubscribe(service.id)}
-                className={cn(isDisabled && !hasActive && 'opacity-60')}
+                className={cn(
+                  isDisabled && !hasActive && 'opacity-60',
+                  isFeatured && 'md:-mt-4 md:mb-4'
+                )}
+                style={orderValue ? { order: orderValue } : undefined}
+                isFeatured={isFeatured}
+                variant={(originalIndex % 3) as 0 | 1 | 2}
               />
             )
-          })}
+          })})()}
         </div>
         </TabsContent>
 

@@ -1,8 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import Image from "next/image"
-import { Icon } from "@/components/ui/icon"
+import { HeroButton } from "./hero-button"
 
 const bgImages = Array.from({ length: 120 }, (_, i) => `/images/hero/${(i % 12) + 1}.png`)
 
@@ -40,20 +39,12 @@ export function Hero() {
           Join businesses who&apos;ve discovered a better way to ensure product authenticity and origin transparency.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pointer-events-auto">
-          <Link 
-            href="/trace"
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-secondary text-secondary-foreground px-6 py-3 text-base font-semibold transition-colors hover:bg-secondary/90"
-          >
-            <Icon name="search" size="sm" />
-            Trace Product
-          </Link>
-          <Link 
-            href="/login"
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-6 py-3 text-base font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <Icon name="login" size="sm" />
-            Business Login
-          </Link>
+          <HeroButton href="/trace" variant="C">
+            TRACE PRODUCT
+          </HeroButton>
+          <HeroButton href="/login" variant="B">
+            BUSINESS LOGIN
+          </HeroButton>
         </div>
       </div>
     </section>

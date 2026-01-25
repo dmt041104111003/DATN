@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const publicRoutes = ['/', '/login']
+const publicRoutes = ['/', '/login', '/trace']
 const dashboardRoutes = ['/dashboard']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hasToken = request.cookies.get('access_token')
-  const isPublic = publicRoutes.includes(pathname)
+  const isPublic = publicRoutes.includes(pathname) || pathname.startsWith('/trace')
   const isDashboard = pathname.startsWith('/dashboard')
 
   if (hasToken && isPublic) {

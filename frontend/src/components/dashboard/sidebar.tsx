@@ -25,7 +25,6 @@ const menuItems = [
   { title: "Warehouses", href: "/dashboard/warehouses", icon: "warehouse" },
   { title: "Media", href: "/dashboard/media", icon: "image" },
   { title: "Billing", href: "/dashboard/billing", icon: "payments" },
-  { title: "Settings", href: "/dashboard/settings", icon: "settings" },
 ] as const
 
 function DashboardSidebarComponent() {

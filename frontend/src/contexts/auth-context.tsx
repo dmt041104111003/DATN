@@ -7,14 +7,14 @@ import { User, AuthContextType } from '@/types/auth'
 import { LoadingPage } from '@/components/ui/loading'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-const publicRoutes = ['/', '/login']
+const publicRoutes = ['/', '/login', '/trace']
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const isPublic = publicRoutes.includes(pathname)
+  const isPublic = publicRoutes.includes(pathname) || pathname.startsWith('/trace')
 
   const checkAuth = async () => {
     try {

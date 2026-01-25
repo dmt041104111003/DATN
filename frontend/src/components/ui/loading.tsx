@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 interface LoadingProps {
@@ -11,10 +10,12 @@ interface LoadingProps {
 }
 
 export function Loading({ className, size = "md", text }: LoadingProps) {
-  const sizeClasses = {
-    sm: "w-72 h-72",
-    md: "w-96 h-96",
-    lg: "w-[36rem] h-[36rem]",
+  const loadingId = React.useId()
+  
+  const sizeValues = {
+    sm: "2rem",
+    md: "2.8rem",
+    lg: "4rem",
   }
 
   const textSizeClasses = {
@@ -24,21 +25,132 @@ export function Loading({ className, size = "md", text }: LoadingProps) {
   }
 
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
-      <Image
-        src="/loading.gif"
-        alt="Loading"
-        width={size === "sm" ? 288 : size === "md" ? 384 : 576}
-        height={size === "sm" ? 288 : size === "md" ? 384 : 576}
-        className={cn("object-contain", sizeClasses[size])}
-        unoptimized
-      />
-      {text && (
-        <span className={cn("text-muted-foreground font-medium", textSizeClasses[size])}>
-          {text}
-        </span>
-      )}
-    </div>
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .dot-spinner-${loadingId} {
+            --uib-size: ${sizeValues[size]};
+            --uib-speed: .9s;
+            --uib-color: #183153;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: var(--uib-size);
+            width: var(--uib-size);
+          }
+
+          .dot-spinner__dot-${loadingId} {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            width: 100%;
+          }
+
+          .dot-spinner__dot-${loadingId}::before {
+            content: '';
+            height: 20%;
+            width: 20%;
+            border-radius: 50%;
+            background-color: var(--uib-color);
+            transform: scale(0);
+            opacity: 0.5;
+            animation: pulse0112-${loadingId} calc(var(--uib-speed) * 1.111) ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(18, 31, 53, 0.3);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(2) {
+            transform: rotate(45deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(2)::before {
+            animation-delay: calc(var(--uib-speed) * -0.875);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(3) {
+            transform: rotate(90deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(3)::before {
+            animation-delay: calc(var(--uib-speed) * -0.75);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(4) {
+            transform: rotate(135deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(4)::before {
+            animation-delay: calc(var(--uib-speed) * -0.625);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(5) {
+            transform: rotate(180deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(5)::before {
+            animation-delay: calc(var(--uib-speed) * -0.5);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(6) {
+            transform: rotate(225deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(6)::before {
+            animation-delay: calc(var(--uib-speed) * -0.375);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(7) {
+            transform: rotate(270deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(7)::before {
+            animation-delay: calc(var(--uib-speed) * -0.25);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(8) {
+            transform: rotate(315deg);
+          }
+
+          .dot-spinner__dot-${loadingId}:nth-child(8)::before {
+            animation-delay: calc(var(--uib-speed) * -0.125);
+          }
+
+          @keyframes pulse0112-${loadingId} {
+            0%,
+            100% {
+              transform: scale(0);
+              opacity: 0.5;
+            }
+
+            50% {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+        `
+      }} />
+      <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
+        <div className={`dot-spinner-${loadingId}`}>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+          <div className={`dot-spinner__dot-${loadingId}`}></div>
+        </div>
+        {text && (
+          <span className={cn("text-muted-foreground font-medium", textSizeClasses[size])}>
+            {text}
+          </span>
+        )}
+      </div>
+    </>
   )
 }
 

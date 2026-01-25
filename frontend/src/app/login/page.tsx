@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation'
 import { BrowserWallet } from '@meshsdk/core'
 import { WalletButton } from '@/components/ui/wallet-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Icon } from '@/components/ui/icon'
 import { useWallet } from '@/hooks/use-wallet'
 import { useAuth } from '@/contexts/auth-context'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
-import { Loading } from '@/components/ui/loading'
 
 export default function LoginPage() {
   const router = useRouter()

@@ -14,6 +14,8 @@ interface ServiceCardProps {
   disabled?: boolean
   buttonText?: string
   isActive?: boolean
+  isFeatured?: boolean
+  variant?: 0 | 1 | 2
 }
 
 export function ServiceCard({ 
@@ -26,245 +28,245 @@ export function ServiceCard({
   onClick,
   disabled = false,
   buttonText,
-  isActive = false
+  isActive = false,
+  isFeatured = false,
+  variant = 0
 }: ServiceCardProps) {
   const cardId = React.useId()
   
-  const bannerText1 = isActive ? 'ACTIVE' : 'SUBSCRIBE'
-  const bannerText2 = isActive ? 'ACTIVE' : 'JOIN US'
+  const colorSchemes = [
+    {
+      iconBg: '#7dd3fc',
+      buttonBg: '#60a5fa',
+      buttonHover: '#3b82f6',
+      innerBg: '#e0f2fe',
+      pricingBg: '#dbeafe',
+    },
+    {
+      iconBg: '#60a5fa',
+      buttonBg: '#3b82f6',
+      buttonHover: '#2563eb',
+      innerBg: '#dbeafe',
+      pricingBg: '#bfdbfe',
+    },
+    {
+      iconBg: '#3b82f6',
+      buttonBg: '#2563eb',
+      buttonHover: '#1d4ed8',
+      innerBg: '#bfdbfe',
+      pricingBg: '#93c5fd',
+    }
+  ]
+  
+  const colors = colorSchemes[variant]
   
   return (
     <>
       <style dangerouslySetInnerHTML={{
         __html: `
           .service-card-${cardId} {
-            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 30px 30px -25px rgba(0, 38, 255, 0.205);
+            padding: 10px;
+            background-color: #fff;
+            color: #697e91;
             max-width: 100%;
-            padding: 8px;
-            background: #fff;
-            border: 2px solid #000;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
             cursor: ${disabled ? 'default' : 'pointer'};
-            box-sizing: border-box;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
           }
-          @media (min-width: 640px) {
-            .service-card-${cardId} {
-              padding: 12px;
+          .service-card-featured-${cardId} {
+            transform: scale(1.05);
+            box-shadow: 0 40px 40px -25px rgba(0, 38, 255, 0.3);
+            z-index: 10;
+          }
+          @media (max-width: 768px) {
+            .service-card-featured-${cardId} {
+              transform: scale(1);
             }
           }
-          .service-card-${cardId}:active {
-            animation: shake-${cardId} 0.5s ease-in-out;
+          .service-card-${cardId} strong {
+            font-weight: 600;
+            color: #425275;
           }
-          @keyframes shake-${cardId} {
-            0% {
-              transform: translateX(0);
-            }
-            25% {
-              transform: translateX(-5px);
-            }
-            50% {
-              transform: translateX(5px);
-            }
-            75% {
-              transform: translateX(-5px);
-            }
-            100% {
-              transform: translateX(0);
-            }
-          }
-          .service-banner-${cardId} {
-            position: absolute;
-            top: 2px;
-            right: -80px;
-            background: ${isActive ? '#ef4444' : '#000'};
-            color: #fff;
-            padding: 18px;
-            width: 360px;
-            text-align: center;
-            transform: rotate(45deg);
-            font-weight: bold;
-            font-size: 22px;
-            letter-spacing: 2.5px;
-            overflow: hidden;
-            transition: background 0.5s ease;
-          }
-          @media (min-width: 640px) {
-            .service-banner-${cardId} {
-              padding: 20px;
-              font-size: 24px;
-            }
-          }
-          .service-banner-${cardId}:hover {
-            background: ${isActive ? '#dc2626' : '#ef4444'};
-          }
-          .service-banner-text-${cardId} {
-            display: inline-block;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            width: 100%;
-            position: absolute;
-            left: 13%;
-            top: 50%;
-            transform: translateY(-50%);
-          }
-          .service-banner-${cardId}:hover .service-banner-text-${cardId}:first-child {
-            opacity: 0;
-            transform: translateY(-100%);
-          }
-          .service-banner-${cardId}:hover .service-banner-text-${cardId}:last-child {
-            opacity: 1;
-            transform: translateY(-40%);
-          }
-          .service-banner-text-${cardId}:last-child {
-            opacity: 0;
-            transform: translateY(60%);
-          }
-          .service-title-${cardId} {
-            font-size: 22px;
-            font-weight: 700;
-            color: #000;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            display: block;
-            border-bottom: 2px solid #000;
-            width: 50%;
-          }
-          .service-subtitle-${cardId} {
-            font-size: 16px;
-            line-height: 1.4;
-            color: #333;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            width: 100%;
-            box-sizing: border-box;
-          }
-          .service-price-${cardId} {
-            font-size: 32px;
-            font-weight: 700;
-            color: #000;
-            margin-bottom: 10px;
-          }
-          .service-price-unit-${cardId} {
-            font-size: 18px;
-            font-weight: 500;
-            color: #666;
-            margin-left: 4px;
-          }
-          .service-info-${cardId} {
+          .service-inner-${cardId} {
+            align-items: flex-start;
+            padding: 20px;
+            padding-top: 40px;
+            background-color: ${colors.innerBg};
+            border-radius: 12px;
+            position: relative;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 12px;
           }
-          .service-info-item-${cardId} {
-            font-size: 14px;
-            color: #333;
+          .service-pricing-${cardId} {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: ${colors.pricingBg};
+            border-radius: 99em 0 0 99em;
+            display: flex;
+            align-items: center;
+            padding: 0.625em 0.75em;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #425475;
+          }
+          .service-pricing-${cardId} small {
+            color: #707a91;
+            font-size: 0.75em;
+            margin-left: 0.25em;
+          }
+          .service-title-${cardId} {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #425675;
+            margin: 0;
+          }
+          .service-title-${cardId} + * {
+            margin-top: 0.75rem;
+          }
+          .service-info-${cardId} {
+            color: #697e91;
+            margin: 0;
+            font-weight: 500;
+          }
+          .service-info-${cardId} + * {
+            margin-top: 1rem;
+          }
+          .service-features-${cardId} {
+            display: flex;
+            flex-direction: column;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+          }
+          .service-features-${cardId} li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+          }
+          .service-features-${cardId} li + * {
+            margin-top: 0.75rem;
+          }
+          .service-icon-${cardId} {
+            background-color: ${colors.iconBg};
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+          }
+          .service-icon-${cardId} svg {
+            width: 14px;
+            height: 14px;
+          }
+          .service-features-${cardId} + * {
+            margin-top: 1.25rem;
+          }
+          .service-action-${cardId} {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: end;
           }
           .service-button-${cardId} {
-            border: 2px solid #000;
-            background: #000;
+            background-color: ${colors.buttonBg};
+            border-radius: 6px;
             color: #fff;
-            padding: 10px;
-            font-size: 15px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 1.125rem;
+            text-align: center;
+            border: 0;
+            outline: 0;
             width: 100%;
+            padding: 0.625em 0.75em;
+            text-decoration: none;
+            cursor: ${disabled ? 'not-allowed' : 'pointer'};
+            transition: background-color 0.3s ease;
             box-sizing: border-box;
             word-break: break-word;
             overflow-wrap: break-word;
           }
-          @media (min-width: 640px) {
-            .service-title-${cardId} {
-              font-size: 32px;
-              margin-bottom: 12px;
-            }
-            .service-subtitle-${cardId} {
-              font-size: 20px;
-              margin-bottom: 16px;
-              padding-bottom: 10px;
-            }
-            .service-price-${cardId} {
-              font-size: 48px;
-              margin-bottom: 12px;
-            }
-            .service-price-unit-${cardId} {
-              font-size: 24px;
-            }
-            .service-info-${cardId} {
-              gap: 10px;
-              margin-bottom: 16px;
-            }
-            .service-info-item-${cardId} {
-              font-size: 18px;
-            }
-            .service-button-${cardId} {
-              padding: 14px;
-              font-size: 18px;
-              border: 2px solid #000;
-            }
-          }
-          .service-button-${cardId}:hover:not(:disabled) {
-            background: #fff;
-            color: #000;
-            transform: translateY(-4px);
-            box-shadow: 0 4px 0 #000;
-          }
-          .service-button-${cardId}:active:not(:disabled) {
-            animation: shake-${cardId} 0.5s ease-in-out;
-            transform: translateY(0);
-            box-shadow: none;
+          .service-button-${cardId}:hover:not(:disabled),
+          .service-button-${cardId}:focus:not(:disabled) {
+            background-color: ${colors.buttonHover};
           }
           .service-button-${cardId}:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            background: #666;
-            border-color: #666;
           }
         `
       }} />
       <div 
-        className={cn(`service-card-${cardId}`, className)}
+        className={cn(
+          `service-card-${cardId}`,
+          isFeatured && `service-card-featured-${cardId}`,
+          className
+        )}
         onClick={() => {
           if (!disabled && onClick) {
             onClick()
           }
         }}
       >
-        <div className={`service-banner-${cardId}`}>
-          <span className={`service-banner-text-${cardId}`}>{bannerText1}</span>
-          <span className={`service-banner-text-${cardId}`}>{bannerText2}</span>
-        </div>
-        <span className={`service-title-${cardId}`}>{name}</span>
-        <div className={`service-subtitle-${cardId}`}>
-          <div className={`service-price-${cardId}`}>
-            {price}
-            <span className={`service-price-unit-${cardId}`}>ADA</span>
+        <div className={`service-inner-${cardId}`}>
+          <div className={`service-pricing-${cardId}`}>
+            <span>
+              {price} ₳
+            </span>
           </div>
-          <div className={`service-info-${cardId}`}>
-            {duration && (
-              <div className={`service-info-item-${cardId}`}>Duration: {duration}</div>
-            )}
-            {product && (
-              <div className={`service-info-item-${cardId}`}>Products: {product}</div>
-            )}
-          </div>
+          <p className={`service-title-${cardId}`}>{name}</p>
+          {description && (
+            <p className={`service-info-${cardId}`}>{description}</p>
+          )}
+          {(duration || product) && (
+            <ul className={`service-features-${cardId}`}>
+              {duration && (
+                <li>
+                  <span className={`service-icon-${cardId}`}>
+                    <svg height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M0 0h24v24H0z" fill="none"></path>
+                      <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                    </svg>
+                  </span>
+                  <span>{duration}</span>
+                </li>
+              )}
+              {product && (
+                <li>
+                  <span className={`service-icon-${cardId}`}>
+                    <svg height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M0 0h24v24H0z" fill="none"></path>
+                      <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z"></path>
+                    </svg>
+                  </span>
+                  <span>{product}</span>
+                </li>
+              )}
+            </ul>
+          )}
+          {buttonText && (
+            <div className={`service-action-${cardId}`}>
+              <button
+                type="button"
+                className={`service-button-${cardId}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClick?.()
+                }}
+                disabled={disabled}
+              >
+                {buttonText}
+              </button>
+            </div>
+          )}
         </div>
-        {buttonText && (
-          <button
-            type="button"
-            className={`service-button-${cardId}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick?.()
-            }}
-            disabled={disabled}
-          >
-            {buttonText}
-          </button>
-        )}
       </div>
     </>
   )
