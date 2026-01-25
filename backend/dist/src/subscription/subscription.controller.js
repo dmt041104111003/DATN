@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const subscription_service_1 = require("./subscription.service");
 const create_subscription_dto_1 = require("./dto/create-subscription.dto");
 const update_subscription_dto_1 = require("./dto/update-subscription.dto");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let SubscriptionController = class SubscriptionController {
     subscriptionService;
     constructor(subscriptionService) {
@@ -45,14 +45,14 @@ let SubscriptionController = class SubscriptionController {
 exports.SubscriptionController = SubscriptionController;
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], SubscriptionController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
@@ -60,7 +60,7 @@ __decorate([
 ], SubscriptionController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, create_subscription_dto_1.CreateSubscriptionDto]),
@@ -68,7 +68,7 @@ __decorate([
 ], SubscriptionController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -77,7 +77,7 @@ __decorate([
 ], SubscriptionController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
@@ -85,7 +85,7 @@ __decorate([
 ], SubscriptionController.prototype, "remove", null);
 __decorate([
     (0, common_1.Post)(':id/cancel'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),

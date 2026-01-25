@@ -15,30 +15,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const isPublic = publicRoutes.includes(pathname)
 
-  useEffect(() => {
-    if (isPublic) {
+  const checkAuth = async () => {
+    try {
+      const data = await apiClient.getMe()
+      setUser(data.user)
+      return true
+    } catch {
+      setUser(null)
+      if (!isPublic) router.push('/login')
+      return false
+    } finally {
       setIsLoading(false)
-      return
     }
+  }
 
+  useEffect(() => {
     let cancelled = false
-    const checkAuth = async () => {
-      try {
-        const data = await apiClient.getMe()
-        if (!cancelled) setUser(data.user)
-      } catch {
-        if (!cancelled) {
-          setUser(null)
-          router.push('/login')
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false)
+    setIsLoading(true)
+    checkAuth().then((success) => {
+      if (cancelled) return
+      
+      if (success && isPublic) {
+        router.push('/dashboard')
+      } else if (success && !pathname.startsWith('/dashboard')) {
+        router.push('/dashboard')
+      } else if (!success && !isPublic) {
+        router.push('/login')
+      } else {
+        setIsLoading(false)
       }
-    }
-
-    checkAuth()
+    })
     return () => { cancelled = true }
   }, [pathname, isPublic, router])
+
+  const refreshAuth = async () => {
+    setIsLoading(true)
+    await checkAuth()
+  }
 
   const logout = () => {
     apiClient.logout().catch()
@@ -47,14 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   if (isLoading && !isPublic) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
+    return <div className="min-h-screen bg-white" />
   }
 
-  return <AuthContext.Provider value={{ user, isLoading, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, isLoading, logout, refreshAuth }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

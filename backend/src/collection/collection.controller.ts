@@ -10,8 +10,7 @@ import {
 import { CollectionService } from './collection.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
-import { Public } from '../auth/public.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { Public, CurrentUser } from '../auth/decorators';
 
 @Controller('collections')
 export class CollectionController {

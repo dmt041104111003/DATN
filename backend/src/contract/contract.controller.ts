@@ -3,7 +3,7 @@ import { ContractService } from './contract.service';
 import { MintDto } from './dto/mint.dto';
 import { BurnDto } from './dto/burn.dto';
 import { UpdateMetadataDto } from './dto/update-metadata.dto';
-import { Public } from '../auth/public.decorator';
+import { Public } from '../auth/decorators';
 
 @Controller('contract')
 export class ContractController {

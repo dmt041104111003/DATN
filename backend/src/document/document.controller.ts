@@ -10,8 +10,7 @@ import {
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import { Public } from '../auth/public.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { Public, CurrentUser } from '../auth/decorators';
 
 @Controller('documents')
 export class DocumentController {

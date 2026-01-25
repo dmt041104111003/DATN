@@ -33,7 +33,7 @@ const metadata_module_1 = require("./metadata/metadata.module");
 const document_module_1 = require("./document/document.module");
 const product_material_module_1 = require("./product-material/product-material.module");
 const core_1 = require("@nestjs/core");
-const jwt_auth_guard_1 = require("./auth/jwt-auth.guard");
+const guards_1 = require("./auth/guards");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -68,7 +68,7 @@ exports.AppModule = AppModule = __decorate([
             app_service_1.AppService,
             {
                 provide: core_1.APP_GUARD,
-                useClass: jwt_auth_guard_1.JwtAuthGuard,
+                useClass: guards_1.JwtAuthGuard,
             },
         ],
     })

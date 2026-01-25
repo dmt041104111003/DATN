@@ -16,7 +16,7 @@ exports.UserController = void 0;
 const common_1 = require("@nestjs/common");
 const user_service_1 = require("./user.service");
 const update_user_dto_1 = require("./dto/update-user.dto");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let UserController = class UserController {
     userService;
     constructor(userService) {
@@ -35,14 +35,14 @@ let UserController = class UserController {
 exports.UserController = UserController;
 __decorate([
     (0, common_1.Get)('me'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UserController.prototype, "getMe", null);
 __decorate([
     (0, common_1.Patch)('me'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, update_user_dto_1.UpdateUserDto]),
@@ -50,7 +50,7 @@ __decorate([
 ], UserController.prototype, "updateMe", null);
 __decorate([
     (0, common_1.Delete)('me'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)

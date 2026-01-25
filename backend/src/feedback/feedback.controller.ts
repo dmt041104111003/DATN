@@ -10,8 +10,7 @@ import {
 import { FeedbackService } from './feedback.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
-import { Public } from '../auth/public.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { Public, CurrentUser } from '../auth/decorators';
 
 @Controller('feedbacks')
 export class FeedbackController {

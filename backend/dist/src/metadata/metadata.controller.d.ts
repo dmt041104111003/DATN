@@ -8,18 +8,18 @@ export declare class MetadataController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        collectionId: string;
         assetName: string | null;
         content: string;
-        collectionId: string;
         nftReference: string[];
     }[]>;
     findOne(id: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        collectionId: string;
         assetName: string | null;
         content: string;
-        collectionId: string;
         nftReference: string[];
     }>;
     create(user: {
@@ -28,9 +28,9 @@ export declare class MetadataController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        collectionId: string;
         assetName: string | null;
         content: string;
-        collectionId: string;
         nftReference: string[];
     }>;
     update(user: {
@@ -39,9 +39,9 @@ export declare class MetadataController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        collectionId: string;
         assetName: string | null;
         content: string;
-        collectionId: string;
         nftReference: string[];
     }>;
     remove(user: {
@@ -50,9 +50,9 @@ export declare class MetadataController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        collectionId: string;
         assetName: string | null;
         content: string;
-        collectionId: string;
         nftReference: string[];
     }>;
 }

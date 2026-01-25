@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const supplier_service_1 = require("./supplier.service");
 const create_supplier_dto_1 = require("./dto/create-supplier.dto");
 const update_supplier_dto_1 = require("./dto/update-supplier.dto");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let SupplierController = class SupplierController {
     supplierService;
     constructor(supplierService) {
@@ -42,14 +42,14 @@ let SupplierController = class SupplierController {
 exports.SupplierController = SupplierController;
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], SupplierController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
@@ -57,7 +57,7 @@ __decorate([
 ], SupplierController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, create_supplier_dto_1.CreateSupplierDto]),
@@ -65,7 +65,7 @@ __decorate([
 ], SupplierController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -74,7 +74,7 @@ __decorate([
 ], SupplierController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),

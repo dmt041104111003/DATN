@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Icon } from '@/components/ui/icon'
 import { useWallet } from '@/hooks/use-wallet'
+import { useAuth } from '@/contexts/auth-context'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 
 export default function LoginPage() {
   const router = useRouter()
   const { error, connectWallet, login } = useWallet()
+  const { refreshAuth } = useAuth()
   const [wallets, setWallets] = useState<ReturnType<typeof BrowserWallet.getInstalledWallets>>([])
   const [loadingWallet, setLoadingWallet] = useState<string | null>(null)
 
@@ -31,6 +33,8 @@ export default function LoginPage() {
     try {
       const result = await connectWallet(walletName)
       await login(result.wallet, result.address)
+      await refreshAuth()
+      router.refresh()
       router.push('/dashboard')
     } catch {} finally {
       setLoadingWallet(null)

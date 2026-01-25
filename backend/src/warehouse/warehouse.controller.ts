@@ -10,7 +10,7 @@ import {
 import { WarehouseService } from './warehouse.service';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
-import { Public } from '../auth/public.decorator';
+import { Public } from '../auth/decorators';
 
 @Controller('warehouses')
 export class WarehouseController {

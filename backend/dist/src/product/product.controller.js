@@ -17,8 +17,7 @@ const common_1 = require("@nestjs/common");
 const product_service_1 = require("./product.service");
 const create_product_dto_1 = require("./dto/create-product.dto");
 const update_product_dto_1 = require("./dto/update-product.dto");
-const public_decorator_1 = require("../auth/public.decorator");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let ProductController = class ProductController {
     productService;
     constructor(productService) {
@@ -54,7 +53,7 @@ let ProductController = class ProductController {
 };
 exports.ProductController = ProductController;
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
@@ -62,20 +61,20 @@ __decorate([
 ], ProductController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('my'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "findMy", null);
 __decorate([
     (0, common_1.Get)('quota'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "getQuota", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)('trace/:policyId/:assetName'),
     __param(0, (0, common_1.Param)('policyId')),
     __param(1, (0, common_1.Param)('assetName')),
@@ -84,7 +83,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "trace", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(':id/history'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -92,7 +91,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ProductController.prototype, "getHistory", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -101,7 +100,7 @@ __decorate([
 ], ProductController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, create_product_dto_1.CreateProductDto]),
@@ -109,7 +108,7 @@ __decorate([
 ], ProductController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -118,7 +117,7 @@ __decorate([
 ], ProductController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),

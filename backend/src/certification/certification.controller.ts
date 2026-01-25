@@ -10,8 +10,7 @@ import {
 import { CertificationService } from './certification.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
-import { Public } from '../auth/public.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { Public, CurrentUser } from '../auth/decorators';
 
 @Controller('certifications')
 export class CertificationController {

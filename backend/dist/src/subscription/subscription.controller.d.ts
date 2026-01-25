@@ -10,12 +10,12 @@ export declare class SubscriptionController {
         service: {
             id: string;
             name: string;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
@@ -33,12 +33,12 @@ export declare class SubscriptionController {
         service: {
             id: string;
             name: string;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
@@ -56,12 +56,12 @@ export declare class SubscriptionController {
         service: {
             id: string;
             name: string;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
@@ -79,12 +79,12 @@ export declare class SubscriptionController {
         service: {
             id: string;
             name: string;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
@@ -114,12 +114,12 @@ export declare class SubscriptionController {
         service: {
             id: string;
             name: string;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;

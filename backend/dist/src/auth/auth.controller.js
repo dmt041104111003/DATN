@@ -16,8 +16,7 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const verify_wallet_dto_1 = require("./dto/verify-wallet.dto");
-const public_decorator_1 = require("./public.decorator");
-const current_user_decorator_1 = require("./current-user.decorator");
+const decorators_1 = require("./decorators");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -48,7 +47,7 @@ let AuthController = class AuthController {
 };
 exports.AuthController = AuthController;
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)('nonce'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
@@ -56,7 +55,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getNonce", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Post)('verify'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
@@ -66,13 +65,13 @@ __decorate([
 ], AuthController.prototype, "verifyWallet", null);
 __decorate([
     (0, common_1.Get)('me'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getMe", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Post)('logout'),
     __param(0, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),

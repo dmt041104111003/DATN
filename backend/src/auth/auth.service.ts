@@ -11,13 +11,13 @@ export class AuthService {
   ) {}
 
   async getNonce(address: string) {
-    const normalizedAddress = this.normalizeAddress(address);
-    const nonce = generateNonce('I agree to the term and conditions of the Mesh: ');
+    const userAddress = address.trim();
+    const nonce = generateNonce('I agree to the term and conditions of the HSUPPLY: ');
 
     await this.prisma.walletNonce.upsert({
-      where: { address: normalizedAddress },
+      where: { address: userAddress },
       update: { nonce },
-      create: { address: normalizedAddress, nonce },
+      create: { address: userAddress, nonce },
     });
 
     return { nonce };
@@ -25,27 +25,27 @@ export class AuthService {
 
   async verifyWallet(address: string, signature: string, key: string) {
     const userAddress = address.trim();
-    const normalizedAddress = this.normalizeAddress(address);
     const walletNonce = await this.prisma.walletNonce.findUnique({
-      where: { address: normalizedAddress },
+      where: { address: userAddress },
     });
 
     if (!walletNonce) {
       throw new UnauthorizedException('Nonce not found. Get nonce first.');
     }
 
-    if (!this.verifySignature(walletNonce.nonce, signature, key, userAddress)) {
+    const isValid = checkSignature(walletNonce.nonce, { signature, key }, userAddress);
+    if (!isValid) {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    let user = await this.prisma.user.findUnique({ where: { address: normalizedAddress } });
+    let user = await this.prisma.user.findUnique({ where: { address: userAddress } });
     if (!user) {
-      user = await this.prisma.user.create({ data: { address: normalizedAddress } });
+      user = await this.prisma.user.create({ data: { address: userAddress } });
     }
 
-    const newNonce = generateNonce('I agree to the term and conditions of the Mesh: ');
+    const newNonce = generateNonce('I agree to the term and conditions of the HSUPPLY: ');
     await this.prisma.walletNonce.update({
-      where: { address: normalizedAddress },
+      where: { address: userAddress },
       data: { nonce: newNonce },
     });
 
@@ -61,19 +61,6 @@ export class AuthService {
         address: user.address,
       },
     };
-  }
-
-  private normalizeAddress(address: string): string {
-    return address.trim().toLowerCase();
-  }
-
-  private verifySignature(nonce: string, signature: string, key: string, address: string): boolean {
-    try {
-      return checkSignature(nonce, { signature, key }, address.trim());
-    } catch (error) {
-      console.error('Signature verification error:', error instanceof Error ? error.message : String(error));
-      return false;
-    }
   }
 
   async validateUser(userId: string) {

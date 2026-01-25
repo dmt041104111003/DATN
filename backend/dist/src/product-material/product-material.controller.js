@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const product_material_service_1 = require("./product-material.service");
 const create_product_material_dto_1 = require("./dto/create-product-material.dto");
 const update_product_material_dto_1 = require("./dto/update-product-material.dto");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let ProductMaterialController = class ProductMaterialController {
     service;
     constructor(service) {
@@ -42,7 +42,7 @@ let ProductMaterialController = class ProductMaterialController {
 exports.ProductMaterialController = ProductMaterialController;
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Query)('productId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
@@ -50,7 +50,7 @@ __decorate([
 ], ProductMaterialController.prototype, "findByProduct", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
@@ -58,7 +58,7 @@ __decorate([
 ], ProductMaterialController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, create_product_material_dto_1.CreateProductMaterialDto]),
@@ -66,7 +66,7 @@ __decorate([
 ], ProductMaterialController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -75,7 +75,7 @@ __decorate([
 ], ProductMaterialController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),

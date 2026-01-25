@@ -2,13 +2,27 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const publicRoutes = ['/', '/login']
+const dashboardRoutes = ['/dashboard']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  if (publicRoutes.includes(pathname) || request.cookies.get('access_token')) {
-    return NextResponse.next()
+  const hasToken = request.cookies.get('access_token')
+  const isPublic = publicRoutes.includes(pathname)
+  const isDashboard = pathname.startsWith('/dashboard')
+
+  if (hasToken && isPublic) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
-  return NextResponse.redirect(new URL('/login', request.url))
+
+  if (!hasToken && !isPublic) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (hasToken && !isPublic && !isDashboard) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {

@@ -17,8 +17,7 @@ const common_1 = require("@nestjs/common");
 const feedback_service_1 = require("./feedback.service");
 const create_feedback_dto_1 = require("./dto/create-feedback.dto");
 const update_feedback_dto_1 = require("./dto/update-feedback.dto");
-const public_decorator_1 = require("../auth/public.decorator");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let FeedbackController = class FeedbackController {
     feedbackService;
     constructor(feedbackService) {
@@ -42,14 +41,14 @@ let FeedbackController = class FeedbackController {
 };
 exports.FeedbackController = FeedbackController;
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], FeedbackController.prototype, "findAll", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -58,7 +57,7 @@ __decorate([
 ], FeedbackController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, create_feedback_dto_1.CreateFeedbackDto]),
@@ -66,7 +65,7 @@ __decorate([
 ], FeedbackController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -75,7 +74,7 @@ __decorate([
 ], FeedbackController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),

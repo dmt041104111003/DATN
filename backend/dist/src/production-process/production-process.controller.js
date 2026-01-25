@@ -17,8 +17,7 @@ const common_1 = require("@nestjs/common");
 const production_process_service_1 = require("./production-process.service");
 const create_production_process_dto_1 = require("./dto/create-production-process.dto");
 const update_production_process_dto_1 = require("./dto/update-production-process.dto");
-const public_decorator_1 = require("../auth/public.decorator");
-const current_user_decorator_1 = require("../auth/current-user.decorator");
+const decorators_1 = require("../auth/decorators");
 let ProductionProcessController = class ProductionProcessController {
     productionProcessService;
     constructor(productionProcessService) {
@@ -42,14 +41,14 @@ let ProductionProcessController = class ProductionProcessController {
 };
 exports.ProductionProcessController = ProductionProcessController;
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ProductionProcessController.prototype, "findAll", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -58,7 +57,7 @@ __decorate([
 ], ProductionProcessController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, create_production_process_dto_1.CreateProductionProcessDto]),
@@ -66,7 +65,7 @@ __decorate([
 ], ProductionProcessController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -75,7 +74,7 @@ __decorate([
 ], ProductionProcessController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(0, (0, decorators_1.CurrentUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),

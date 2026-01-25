@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContractController = void 0;
 const common_1 = require("@nestjs/common");
 const contract_service_1 = require("./contract.service");
-const public_decorator_1 = require("../auth/public.decorator");
+const decorators_1 = require("../auth/decorators");
 let ContractController = class ContractController {
     contractService;
     constructor(contractService) {
@@ -39,7 +39,7 @@ let ContractController = class ContractController {
 };
 exports.ContractController = ContractController;
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)('info'),
     __param(0, (0, common_1.Query)('walletAddress')),
     __metadata("design:type", Function),
@@ -47,7 +47,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "getInfo", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Post)('mint'),
     __param(0, (0, common_1.Body)('walletAddress')),
     __param(1, (0, common_1.Body)('assets')),
@@ -56,7 +56,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "createMint", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Post)('burn'),
     __param(0, (0, common_1.Body)('walletAddress')),
     __param(1, (0, common_1.Body)('assets')),
@@ -65,7 +65,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "createBurn", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Post)('update'),
     __param(0, (0, common_1.Body)('walletAddress')),
     __param(1, (0, common_1.Body)('assets')),
@@ -74,7 +74,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "createUpdate", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Post)('payment'),
     __param(0, (0, common_1.Body)('walletAddress')),
     __param(1, (0, common_1.Body)('amount')),

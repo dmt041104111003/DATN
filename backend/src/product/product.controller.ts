@@ -10,9 +10,9 @@ import {
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Public } from '../auth/public.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { Public, CurrentUser } from '../auth/decorators';
 // import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+
 @Controller('products')
 export class ProductController {
   constructor(private productService: ProductService) {}

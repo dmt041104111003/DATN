@@ -2,8 +2,7 @@ import { Controller, Get, Post, Body, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { GetNonceDto, VerifyWalletDto } from './dto/verify-wallet.dto';
-import { Public } from './public.decorator';
-import { CurrentUser } from './current-user.decorator';
+import { Public, CurrentUser } from './decorators';
 
 @Controller('auth')
 export class AuthController {

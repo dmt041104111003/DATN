@@ -14,8 +14,6 @@ export declare class AuthService {
             address: string;
         };
     }>;
-    private normalizeAddress;
-    private verifySignature;
     validateUser(userId: string): Promise<{
         id: string;
         address: string;

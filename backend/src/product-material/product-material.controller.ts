@@ -11,7 +11,7 @@ import {
 import { ProductMaterialService } from './product-material.service';
 import { CreateProductMaterialDto } from './dto/create-product-material.dto';
 import { UpdateProductMaterialDto } from './dto/update-product-material.dto';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { CurrentUser } from '../auth/decorators';
 
 @Controller('product-materials')
 export class ProductMaterialController {

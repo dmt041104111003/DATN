@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ServiceController = void 0;
 const common_1 = require("@nestjs/common");
 const service_service_1 = require("./service.service");
-const public_decorator_1 = require("../auth/public.decorator");
+const decorators_1 = require("../auth/decorators");
 let ServiceController = class ServiceController {
     serviceService;
     constructor(serviceService) {
@@ -30,14 +30,14 @@ let ServiceController = class ServiceController {
 };
 exports.ServiceController = ServiceController;
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ServiceController.prototype, "findAll", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
+    (0, decorators_1.Public)(),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

@@ -6,58 +6,58 @@ export declare class WarehouseStorageController {
     constructor(warehouseStorageService: WarehouseStorageService);
     findAll(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(user: {
         id: string;
     }, dto: CreateWarehouseStorageDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateWarehouseStorageDto): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         productId: string;
         warehouseId: string;
         entryTime: Date;
         exitTime: Date | null;
         conditions: string | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }
