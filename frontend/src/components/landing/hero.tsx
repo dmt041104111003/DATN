@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { HeroButton } from "./hero-button"
+import { HeroButton } from "@/components/landing/hero-button"
 
 const bgImages = Array.from({ length: 120 }, (_, i) => `/images/hero/${(i % 12) + 1}.png`)
 

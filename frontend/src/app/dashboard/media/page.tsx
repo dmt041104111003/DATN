@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Media } from '@/types/api'
@@ -9,6 +9,15 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingPage, LoadingOverlay } from '@/components/ui/loading'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 
 export default function MediaPage() {
   const [media, setMedia] = useState<Media[]>([])
@@ -68,10 +77,21 @@ export default function MediaPage() {
     if (type.startsWith('image/')) return '🖼️'
     if (type.startsWith('video/')) return '🎥'
     if (type === 'application/pdf') return '📄'
-    return '📎'
+    return ''
   }
 
-  if (loading) return <LoadingPage />
+  const toGatewayUrl = (ipfsUrl: string): string => {
+    if (ipfsUrl.startsWith('ipfs://')) {
+      const cid = ipfsUrl.replace('ipfs://', '')
+      return `https://gateway.pinata.cloud/ipfs/${cid}`
+    }
+    return ipfsUrl
+  }
+
+  const truncateUrl = (url: string, maxLength: number = 40) => {
+    if (url.length <= maxLength) return url
+    return url.slice(0, maxLength) + '...'
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -121,50 +141,103 @@ export default function MediaPage() {
         </Dialog>
       </div>
 
-      {media.length === 0 ? (
+      {loading ? (
+        <LoadingPage />
+      ) : media.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center">
+          <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No media files yet</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {media.map((item) => (
-            <Card key={item.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <span>{getFileTypeIcon(item.type)}</span>
-                    <span className="truncate">{item.name}</span>
+        <>
+          <div className="hidden md:block border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {media.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span>{getFileTypeIcon(item.type)}</span>
+                        <span>{item.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{item.type}</TableCell>
+                    <TableCell>
+                      <a
+                        href={toGatewayUrl(item.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-mono text-xs break-all"
+                      >
+                        {truncateUrl(item.url)}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ActionsDropdown
+                        onDelete={() => handleDelete(item.id)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="md:hidden space-y-2">
+            {media.map((item) => (
+              <Card key={item.id}>
+                <CardHeader>
+                  <CardTitle className="flex items-start gap-2 min-w-0">
+                    <span className="flex-shrink-0 mt-0.5">{getFileTypeIcon(item.type)}</span>
+                    <span className="break-words min-w-0 flex-1 overflow-hidden text-ellipsis line-clamp-2">{item.name}</span>
                   </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
-                    Delete
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Type: {item.type}</p>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline block truncate"
-                  >
-                    {item.url}
-                  </a>
-                  {item.type.startsWith('image/') && (
-                    <img
-                      src={item.url}
-                      alt={item.name}
-                      className="w-full h-32 object-cover rounded mt-2"
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <CardDescription className="mt-1">{item.type}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="break-words overflow-hidden w-full">
+                      <span className="text-muted-foreground">URL: </span>
+                      <a
+                        href={toGatewayUrl(item.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline font-mono text-xs block break-all"
+                        style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}
+                      >
+                        {item.url}
+                      </a>
+                    </div>
+                    {item.type.startsWith('image/') && (
+                      <img
+                        src={toGatewayUrl(item.url)}
+                        alt={item.name}
+                        className="w-full h-32 object-cover rounded mt-2"
+                      />
+                    )}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-destructive hover:text-destructive flex-1"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

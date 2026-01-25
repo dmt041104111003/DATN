@@ -5,17 +5,21 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 interface HeroButtonProps {
-  href: string
+  href?: string
+  onClick?: () => void
   children: React.ReactNode
   variant?: "A" | "B" | "C"
   className?: string
+  disabled?: boolean
 }
 
 export function HeroButton({ 
   href, 
+  onClick,
   children, 
   variant = "C",
-  className 
+  className,
+  disabled = false
 }: HeroButtonProps) {
   const buttonId = React.useId()
 
@@ -54,6 +58,16 @@ export function HeroButton({
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            border: none;
+            background: transparent;
+            cursor: ${disabled ? 'not-allowed' : 'pointer'};
+          }
+          .hero-button-${buttonId}.hero-button-full-${buttonId} {
+            width: 100%;
+          }
+          .hero-button-${buttonId}:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
           }
           .hero-button-text-${buttonId} {
             display: flex;
@@ -276,16 +290,31 @@ export function HeroButton({
           }
         `
       }} />
-      <Link
-        href={href}
-        className={cn(`hero-button-${buttonId}`, className)}
-      >
-        <div className={`hero-button-line-${buttonId}`} />
-        <div className={`hero-button-line-${buttonId}`} />
-        <span className={`hero-button-text-${buttonId}`}>{children}</span>
-        <div className={`hero-button-drow1-${buttonId}`} />
-        <div className={`hero-button-drow2-${buttonId}`} />
-      </Link>
+      {href ? (
+        <Link
+          href={href}
+          className={cn(`hero-button-${buttonId}`, className)}
+        >
+          <div className={`hero-button-line-${buttonId}`} />
+          <div className={`hero-button-line-${buttonId}`} />
+          <span className={`hero-button-text-${buttonId}`}>{children}</span>
+          <div className={`hero-button-drow1-${buttonId}`} />
+          <div className={`hero-button-drow2-${buttonId}`} />
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={disabled}
+          className={cn(`hero-button-${buttonId}`, className)}
+        >
+          <div className={`hero-button-line-${buttonId}`} />
+          <div className={`hero-button-line-${buttonId}`} />
+          <span className={`hero-button-text-${buttonId}`}>{children}</span>
+          <div className={`hero-button-drow1-${buttonId}`} />
+          <div className={`hero-button-drow2-${buttonId}`} />
+        </button>
+      )}
     </>
   )
 }

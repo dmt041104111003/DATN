@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
-import { Collection } from '@/types/api'
+import { Collection, Media } from '@/types/api'
 import {
   Dialog,
   DialogContent,
@@ -29,23 +29,59 @@ import {
 } from '@/components/ui/table'
 import { ActionsDropdown } from '@/components/ui/actions-dropdown'
 import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export default function CollectionsPage() {
   const router = useRouter()
   const [collections, setCollections] = useState<Collection[]>([])
+  const [media, setMedia] = useState<Media[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Collection | null>(null)
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<{
+  const [thumbnailSource, setThumbnailSource] = useState<'media' | 'other'>('media')
+  const [selectedMediaId, setSelectedMediaId] = useState<string>('')
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<{
     name: string
     description?: string
     thumbnail?: string
   }>()
 
+  const thumbnailValue = watch('thumbnail')
 
   useEffect(() => {
     loadCollections()
+    loadMedia()
   }, [])
+
+  useEffect(() => {
+    if (open && editing) {
+      const currentThumbnail = editing.thumbnail || ''
+      const mediaItem = media.find(m => m.url === currentThumbnail)
+      if (mediaItem) {
+        setThumbnailSource('media')
+        setSelectedMediaId(mediaItem.id)
+        setValue('thumbnail', mediaItem.url)
+      } else if (currentThumbnail) {
+        setThumbnailSource('other')
+        setSelectedMediaId('')
+        setValue('thumbnail', currentThumbnail)
+      } else {
+        setThumbnailSource('media')
+        setSelectedMediaId('')
+        setValue('thumbnail', '')
+      }
+    } else if (open && !editing) {
+      setThumbnailSource('media')
+      setSelectedMediaId('')
+      setValue('thumbnail', '')
+    }
+  }, [open, editing, media, setValue])
 
   const loadCollections = async () => {
     try {
@@ -56,6 +92,23 @@ export default function CollectionsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadMedia = async () => {
+    try {
+      const data = await apiClient.media.findAll()
+      setMedia(Array.isArray(data) ? data : [])
+    } catch {
+      setMedia([])
+    }
+  }
+
+  const toGatewayUrl = (ipfsUrl: string): string => {
+    if (ipfsUrl.startsWith('ipfs://')) {
+      const cid = ipfsUrl.replace('ipfs://', '')
+      return `https://gateway.pinata.cloud/ipfs/${cid}`
+    }
+    return ipfsUrl
   }
 
   const [submitting, setSubmitting] = useState(false)
@@ -101,8 +154,28 @@ export default function CollectionsPage() {
 
   const handleCreate = () => {
     setEditing(null)
+    setThumbnailSource('media')
+    setSelectedMediaId('')
     reset()
     setOpen(true)
+  }
+
+  const handleThumbnailSourceChange = (source: 'media' | 'other') => {
+    setThumbnailSource(source)
+    if (source === 'media') {
+      setSelectedMediaId('')
+      setValue('thumbnail', '')
+    } else {
+      setSelectedMediaId('')
+    }
+  }
+
+  const handleMediaSelect = (mediaId: string) => {
+    setSelectedMediaId(mediaId)
+    const selectedMedia = media.find(m => m.id === mediaId)
+    if (selectedMedia) {
+      setValue('thumbnail', selectedMedia.url)
+    }
   }
 
   return (
@@ -148,13 +221,58 @@ export default function CollectionsPage() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="thumbnail">Thumbnail URL (Optional)</Label>
-                    <Input
-                      id="thumbnail"
-                      {...register('thumbnail')}
-                      placeholder="https://example.com/image.jpg"
-                      disabled={submitting}
-                    />
+                    <Label>Thumbnail (Optional)</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={thumbnailSource === 'media' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleThumbnailSourceChange('media')}
+                        disabled={submitting}
+                        className="flex-1"
+                      >
+                        Select from Media
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={thumbnailSource === 'other' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleThumbnailSourceChange('other')}
+                        disabled={submitting}
+                        className="flex-1"
+                      >
+                        Other URL
+                      </Button>
+                    </div>
+                    {thumbnailSource === 'media' ? (
+                      <Select
+                        value={selectedMediaId}
+                        onValueChange={handleMediaSelect}
+                        disabled={submitting}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a media file" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {media.length === 0 ? (
+                            <SelectItem value="" disabled>No media files available</SelectItem>
+                          ) : (
+                            media.map((item) => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        id="thumbnail"
+                        {...register('thumbnail')}
+                        placeholder="https://example.com/image.jpg"
+                        disabled={submitting}
+                      />
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
