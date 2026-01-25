@@ -8,4 +8,8 @@ export declare class AppController {
         updatedAt: Date;
         address: string;
     }[]>;
+    health(): {
+        status: string;
+        timestamp: string;
+    };
 }

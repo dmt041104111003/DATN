@@ -12,11 +12,15 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.use((0, cookie_parser_1.default)());
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: process.env.NODE_ENV === 'production'
+            ? (process.env.FRONTEND_URL || 'http://localhost:3000')
+            : true,
         credentials: true,
     });
     app.useGlobalPipes(new common_1.ValidationPipe());
-    await app.listen(process.env.PORT || 3000);
+    const port = process.env.PORT || 4000;
+    await app.listen(port, '0.0.0.0');
+    console.log(`Application is running on port ${port}`);
 }
 void bootstrap();
 //# sourceMappingURL=main.js.map

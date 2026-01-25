@@ -41,7 +41,7 @@ export async function login(ctx: TestContext): Promise<string> {
   const { nonce } = await nonceRes.json();
 
   // Sign nonce
-  const signedData = await ctx.wallet.signData(nonce, ctx.address);
+  const signedData = await ctx.wallet.signData(ctx.address, nonce);
 
   // Verify
   const verifyRes = await fetch(`${API_URL}/auth/verify`, {

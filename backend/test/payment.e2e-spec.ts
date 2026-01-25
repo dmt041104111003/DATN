@@ -33,7 +33,7 @@ describe('Payment Flow (e2e)', () => {
       `/auth/nonce?address=${walletAddress}`,
     );
     const nonce = nonceRes.body.nonce;
-    const signature = await wallet.signData(nonce, walletAddress);
+    const signature = await wallet.signData(walletAddress, nonce);
 
     const loginRes = await request(API_URL).post('/auth/verify').send({
       address: walletAddress,

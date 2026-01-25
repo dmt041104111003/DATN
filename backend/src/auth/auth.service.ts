@@ -1,8 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
-import { randomBytes } from 'crypto';
-import { checkSignature } from '@meshsdk/core';
+import { generateNonce, checkSignature } from '@meshsdk/core';
 @Injectable()
 export class AuthService {
   constructor(
@@ -11,46 +10,51 @@ export class AuthService {
   ) {}
 
   async getNonce(address: string) {
-    const nonce = randomBytes(32).toString('hex');
+    if (!address || typeof address !== 'string') {
+      throw new UnauthorizedException('Invalid address');
+    }
+    const normalizedAddress = address.trim().toLowerCase();
+    const nonce = generateNonce('I agree to the term and conditions of the Mesh: ');
 
     await this.prisma.walletNonce.upsert({
-      where: { address },
+      where: { address: normalizedAddress },
       update: { nonce },
-      create: { address, nonce },
+      create: { address: normalizedAddress, nonce },
     });
 
     return { nonce };
   }
 
   async verifyWallet(address: string, signature: string, key: string) {
+    if (!address || !signature || !key || typeof address !== 'string' || typeof signature !== 'string' || typeof key !== 'string') {
+      throw new UnauthorizedException('Invalid input');
+    }
+
+    const userAddress = address.trim();
+    const normalizedAddress = userAddress.toLowerCase();
     const walletNonce = await this.prisma.walletNonce.findUnique({
-      where: { address },
+      where: { address: normalizedAddress },
     });
 
     if (!walletNonce) {
       throw new UnauthorizedException('Nonce not found. Get nonce first.');
     }
 
-    const isValid = this.verifySignature(
-      walletNonce.nonce,
-      signature,
-      key,
-      address,
-    );
-
-    if (!isValid) {
+    if (!this.verifySignature(walletNonce.nonce, signature, key, userAddress)) {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    let user = await this.prisma.user.findUnique({ where: { address } });
-
+    let user = await this.prisma.user.findUnique({ where: { address: normalizedAddress } });
     if (!user) {
-      user = await this.prisma.user.create({ data: { address } });
+      user = await this.prisma.user.create({ data: { address: normalizedAddress } });
     }
 
-    await this.prisma.walletNonce.delete({ where: { address } });
+    const newNonce = generateNonce('I agree to the term and conditions of the Mesh: ');
+    await this.prisma.walletNonce.update({
+      where: { address: normalizedAddress },
+      data: { nonce: newNonce },
+    });
 
-    // Tạo JWT
     const token = this.jwtService.sign({
       sub: user.id,
       address: user.address,
@@ -65,21 +69,19 @@ export class AuthService {
     };
   }
 
-  private verifySignature(
-    nonce: string,
-    signature: string,
-    key: string,
-    address: string,
-  ): boolean {
+  private verifySignature(nonce: string, signature: string, key: string, address: string): boolean {
     try {
-      return checkSignature(nonce, { signature, key }, address);
+      const userAddress = address.trim();
+      if (!userAddress || userAddress.length === 0) {
+        return false;
+      }
+      return checkSignature(nonce, { signature, key }, userAddress);
     } catch (error) {
-      console.error('Signature verification failed:', error);
+      console.error('Signature verification error:', error instanceof Error ? error.message : String(error));
       return false;
     }
   }
 
-  // Lấy user từ JWT token
   async validateUser(userId: string) {
     return this.prisma.user.findUnique({ where: { id: userId } });
   }

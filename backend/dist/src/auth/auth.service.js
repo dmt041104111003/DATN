@@ -13,7 +13,6 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../prisma.service");
-const crypto_1 = require("crypto");
 const core_1 = require("@meshsdk/core");
 let AuthService = class AuthService {
     prisma;
@@ -23,30 +22,42 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async getNonce(address) {
-        const nonce = (0, crypto_1.randomBytes)(32).toString('hex');
+        if (!address || typeof address !== 'string') {
+            throw new common_1.UnauthorizedException('Invalid address');
+        }
+        const normalizedAddress = address.trim().toLowerCase();
+        const nonce = (0, core_1.generateNonce)('I agree to the term and conditions of the Mesh: ');
         await this.prisma.walletNonce.upsert({
-            where: { address },
+            where: { address: normalizedAddress },
             update: { nonce },
-            create: { address, nonce },
+            create: { address: normalizedAddress, nonce },
         });
         return { nonce };
     }
     async verifyWallet(address, signature, key) {
+        if (!address || !signature || !key || typeof address !== 'string' || typeof signature !== 'string' || typeof key !== 'string') {
+            throw new common_1.UnauthorizedException('Invalid input');
+        }
+        const userAddress = address.trim();
+        const normalizedAddress = userAddress.toLowerCase();
         const walletNonce = await this.prisma.walletNonce.findUnique({
-            where: { address },
+            where: { address: normalizedAddress },
         });
         if (!walletNonce) {
             throw new common_1.UnauthorizedException('Nonce not found. Get nonce first.');
         }
-        const isValid = this.verifySignature(walletNonce.nonce, signature, key, address);
-        if (!isValid) {
+        if (!this.verifySignature(walletNonce.nonce, signature, key, userAddress)) {
             throw new common_1.UnauthorizedException('Invalid signature');
         }
-        let user = await this.prisma.user.findUnique({ where: { address } });
+        let user = await this.prisma.user.findUnique({ where: { address: normalizedAddress } });
         if (!user) {
-            user = await this.prisma.user.create({ data: { address } });
+            user = await this.prisma.user.create({ data: { address: normalizedAddress } });
         }
-        await this.prisma.walletNonce.delete({ where: { address } });
+        const newNonce = (0, core_1.generateNonce)('I agree to the term and conditions of the Mesh: ');
+        await this.prisma.walletNonce.update({
+            where: { address: normalizedAddress },
+            data: { nonce: newNonce },
+        });
         const token = this.jwtService.sign({
             sub: user.id,
             address: user.address,
@@ -61,10 +72,14 @@ let AuthService = class AuthService {
     }
     verifySignature(nonce, signature, key, address) {
         try {
-            return (0, core_1.checkSignature)(nonce, { signature, key }, address);
+            const userAddress = address.trim();
+            if (!userAddress || userAddress.length === 0) {
+                return false;
+            }
+            return (0, core_1.checkSignature)(nonce, { signature, key }, userAddress);
         }
         catch (error) {
-            console.error('Signature verification failed:', error);
+            console.error('Signature verification error:', error instanceof Error ? error.message : String(error));
             return false;
         }
     }

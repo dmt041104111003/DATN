@@ -9,12 +9,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' 
+      ? (process.env.FRONTEND_URL || 'http://localhost:3000')
+      : true,
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe());
   
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 4000;
   await app.listen(port, '0.0.0.0');
   console.log(`Application is running on port ${port}`);
 }
