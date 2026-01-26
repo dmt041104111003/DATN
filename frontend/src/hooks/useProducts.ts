@@ -123,6 +123,7 @@ export function useProducts() {
       })))
       
       setCertifications(productCerts.map((c: any) => ({
+        certId: c.id,
         certName: c.certName,
         issueDate: c.issueDate,
         expiryDate: c.expiryDate,
@@ -178,9 +179,12 @@ export function useProducts() {
         ])
         const existingCerts = existingCertData.filter((c: any) => c.productId === product.id)
         
+        const certIdsToKeep = certifications.map(c => c.certId).filter(Boolean)
+        const certsToUnlink = existingCerts.filter((c: any) => !certIdsToKeep.includes(c.id))
+        
         await Promise.all([
           ...existingPmData.map((pm: any) => productMaterialsApi.remove(pm.id)),
-          ...existingCerts.map((c: any) => certificationsApi.remove(c.id)),
+          ...certsToUnlink.map((c: any) => certificationsApi.update(c.id, { productId: null })),
         ])
       } else {
         product = await productsApi.create(data)
@@ -194,14 +198,18 @@ export function useProducts() {
             quantity: 1,
           })
         ),
-        ...certifications.map(cert =>
-          certificationsApi.create({
-            productId: product.id,
-            certName: cert.certName,
-            issueDate: cert.issueDate,
-            expiryDate: cert.expiryDate,
-          })
-        ),
+        ...certifications.map(cert => {
+          if (cert.certId) {
+            return certificationsApi.update(cert.certId, { productId: product.id })
+          } else {
+            return certificationsApi.create({
+              productId: product.id,
+              certName: cert.certName,
+              issueDate: cert.issueDate,
+              expiryDate: cert.expiryDate,
+            })
+          }
+        }),
       ])
 
       handleClose()

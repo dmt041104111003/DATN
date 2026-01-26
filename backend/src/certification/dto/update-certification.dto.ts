@@ -3,6 +3,10 @@ import { IsString, IsOptional, IsDateString } from 'class-validator';
 export class UpdateCertificationDto {
   @IsString()
   @IsOptional()
+  productId?: string;
+
+  @IsString()
+  @IsOptional()
   certName?: string;
 
   @IsDateString()

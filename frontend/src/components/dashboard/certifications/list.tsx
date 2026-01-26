@@ -9,7 +9,6 @@ import { CertificationTable } from './table'
 export function List() {
   const {
     items: certifications,
-    products,
     loading,
     open,
     submitting,
@@ -28,14 +27,13 @@ export function List() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Certifications</h1>
-          <p className="text-muted-foreground">Manage product certifications</p>
+          <p className="text-muted-foreground">Manage certifications (link to products in product form)</p>
         </div>
         <Form
           open={open}
           submitting={submitting}
           editing={!!editing}
           form={form}
-          products={products}
           setOpen={setOpen}
           handleCreate={handleCreate}
           handleClose={handleClose}
@@ -58,7 +56,6 @@ export function List() {
       ) : (
         <CertificationTable
           certifications={certifications}
-          products={products}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

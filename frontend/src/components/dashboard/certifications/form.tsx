@@ -10,11 +10,10 @@ import {
 import { LoadingOverlay } from '@/components/ui/loading'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CertificationFormProps } from '@/types/certification'
 
 export function Form(props: CertificationFormProps) {
-  const { open, submitting, editing, form, products, setOpen, handleCreate, handleClose, onSubmit } = props
+  const { open, submitting, editing, form, setOpen, handleCreate, handleClose, onSubmit } = props
 
   const dialogTitle = editing ? 'Edit Certification' : 'Create Certification'
   const submitButtonText = submitting
@@ -34,26 +33,6 @@ export function Form(props: CertificationFormProps) {
         {submitting && <LoadingOverlay />}
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-4 px-4 py-4 min-w-0 w-full">
-            <div className="space-y-2">
-              <Label htmlFor="productId">Product</Label>
-              <Select
-                value={form.watch('productId') || ''}
-                onValueChange={(value) => form.setValue('productId', value)}
-                disabled={submitting || !!editing}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select product" />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.productId && (
-                <p className="text-sm text-destructive">{form.formState.errors.productId.message}</p>
-              )}
-            </div>
             <div className="space-y-2">
               <Label htmlFor="certName">Certification Name</Label>
               <Input

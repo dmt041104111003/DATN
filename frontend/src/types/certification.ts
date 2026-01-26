@@ -3,7 +3,7 @@ import { Product } from './product'
 
 export interface Certification {
   id: string
-  productId: string
+  productId?: string | null
   certName: string
   issueDate: string
   expiryDate?: string
@@ -13,10 +13,10 @@ export interface Certification {
 }
 
 export interface CertificationFormData {
-  productId: string
   certName: string
   issueDate: string
   expiryDate?: string
+  certHash?: string
 }
 
 export interface CertificationFormProps {
@@ -24,7 +24,6 @@ export interface CertificationFormProps {
   submitting: boolean
   editing: boolean
   form: UseFormReturn<CertificationFormData>
-  products: Product[]
   setOpen: (open: boolean) => void
   handleCreate: () => void
   handleClose: () => void
@@ -33,7 +32,6 @@ export interface CertificationFormProps {
 
 export interface CertificationTableProps {
   certifications: Certification[]
-  products: Product[]
   onEdit: (certification: Certification) => void
   onDelete: (id: string) => void
 }

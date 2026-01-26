@@ -57,8 +57,9 @@ export class CertificationService {
       include: { product: true },
     });
     if (!item) throw new NotFoundException('Certification not found');
-    if (item.product.userId !== userId)
+    if (item.product && item.product.userId !== userId) {
       throw new ForbiddenException('Access denied');
+    }
     return item;
   }
 
@@ -69,12 +70,14 @@ export class CertificationService {
       throw new BadRequestException('Expiry date must be after issue date');
     }
     
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
-    });
-    if (!product) throw new NotFoundException('Product not found');
-    if (product.userId !== userId)
-      throw new ForbiddenException('Not your product');
+    if (dto.productId) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: dto.productId },
+      });
+      if (!product) throw new NotFoundException('Product not found');
+      if (product.userId !== userId)
+        throw new ForbiddenException('Not your product');
+    }
 
     const certHash = hashCertification(
       dto.certName,
@@ -82,18 +85,27 @@ export class CertificationService {
       dto.expiryDate,
     );
 
+    const createData: any = {
+      certName: dto.certName,
+      certHash,
+      issueDate: new Date(dto.issueDate),
+      expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+    };
+
+    if (dto.productId) {
+      createData.productId = dto.productId;
+    }
+
     const certification = await this.prisma.certification.create({
-      data: {
-        ...dto,
-        certHash,
-        issueDate: new Date(dto.issueDate),
-        expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
-      },
+      data: createData,
     });
-    await this.redis.delMultiple([
-      'certifications:all',
-      `certifications:product:${dto.productId}`,
-    ]);
+    
+    const cacheKeys = ['certifications:all'];
+    if (dto.productId) {
+      cacheKeys.push(`certifications:product:${dto.productId}`);
+    }
+    await this.redis.delMultiple(cacheKeys);
+    
     return certification;
   }
 
@@ -101,6 +113,17 @@ export class CertificationService {
     await this.checkSubscriptionActive(userId);
     
     const certification = await this.findOneOwned(id, userId);
+    
+    if (dto.productId !== undefined) {
+      if (dto.productId) {
+        const product = await this.prisma.product.findUnique({
+          where: { id: dto.productId },
+        });
+        if (!product) throw new NotFoundException('Product not found');
+        if (product.userId !== userId)
+          throw new ForbiddenException('Not your product');
+      }
+    }
     
     const issueDate = dto.issueDate ? new Date(dto.issueDate) : certification.issueDate;
     const expiryDate = dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : certification.expiryDate;
@@ -116,30 +139,45 @@ export class CertificationService {
       expiryDate,
     );
     
+    const updateData: any = {
+      certHash,
+      issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
+      expiryDate: dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : undefined,
+    };
+    
+    if (dto.productId !== undefined) {
+      updateData.productId = dto.productId || null;
+    }
+    
+    if (dto.certName !== undefined) {
+      updateData.certName = dto.certName;
+    }
+    
     const updated = await this.prisma.certification.update({
       where: { id },
-      data: {
-        ...dto,
-        certHash,
-        issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
-        expiryDate: dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : undefined,
-      },
+      data: updateData,
     });
-    await this.redis.delMultiple([
-      `certification:${id}`,
-      'certifications:all',
-      `certifications:product:${certification.productId}`,
-    ]);
+    
+    const cacheKeys = [`certification:${id}`, 'certifications:all'];
+    if (certification.productId) {
+      cacheKeys.push(`certifications:product:${certification.productId}`);
+    }
+    if (dto.productId && dto.productId !== certification.productId) {
+      cacheKeys.push(`certifications:product:${dto.productId}`);
+    }
+    await this.redis.delMultiple(cacheKeys);
+    
     return updated;
   }
 
   async remove(id: string, userId: string) {
     const certification = await this.findOneOwned(id, userId);
     await this.prisma.certification.delete({ where: { id } });
-    await this.redis.delMultiple([
-      `certification:${id}`,
-      'certifications:all',
-      `certifications:product:${certification.productId}`,
-    ]);
+    
+    const cacheKeys = [`certification:${id}`, 'certifications:all'];
+    if (certification.productId) {
+      cacheKeys.push(`certifications:product:${certification.productId}`);
+    }
+    await this.redis.delMultiple(cacheKeys);
   }
 }

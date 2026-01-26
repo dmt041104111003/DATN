@@ -12,7 +12,7 @@ export const certificationsApi = {
     return request<Certification>(endpoint)
   },
 
-  create: (data: { productId: string; certName: string; issueDate: string; expiryDate?: string; certHash?: string }) => {
+  create: (data: { productId?: string; certName: string; issueDate: string; expiryDate?: string; certHash?: string }) => {
     const endpoint = '/certifications'
     const method = 'POST'
     const body = JSON.stringify(data)

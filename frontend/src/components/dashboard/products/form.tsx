@@ -16,7 +16,7 @@ import { ProductFormProps } from '@/types/product'
 import { X } from 'lucide-react'
 
 export function Form(props: ProductFormProps) {
-  const { open, submitting, editing, form, availableMaterials, availableCertifications, availableMedia, materials, certifications, media, onMaterialsChange, onCertificationsChange, onMediaChange, setOpen, handleCreate, handleClose, onSubmit } = props
+  const { open, submitting, editing, form, product, availableMaterials, availableCertifications, availableMedia, materials, certifications, media, onMaterialsChange, onCertificationsChange, onMediaChange, setOpen, handleCreate, handleClose, onSubmit } = props
   
   const [selectedMaterialId, setSelectedMaterialId] = useState('')
   const [selectedCertificationId, setSelectedCertificationId] = useState('')
@@ -49,8 +49,9 @@ export function Form(props: ProductFormProps) {
     setSelectedCertificationId(certId)
     if (certId) {
       const cert = availableCertifications.find(c => c.id === certId)
-      if (cert) {
+      if (cert && !certifications.find(c => c.certId === certId)) {
         const newItem = {
+          certId: cert.id,
           certName: cert.certName,
           issueDate: cert.issueDate,
           expiryDate: cert.expiryDate,
@@ -170,17 +171,24 @@ export function Form(props: ProductFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Certifications</Label>
+              <Label>Certifications (Select multiple)</Label>
               <Select value={selectedCertificationId} onValueChange={handleCertificationChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select certification" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCertifications.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.certName} ({new Date(c.issueDate).toLocaleDateString()})
-                    </SelectItem>
-                  ))}
+                  {availableCertifications
+                    .filter(c => {
+                      const isUnlinked = !c.productId || c.productId === null
+                      const isLinkedToThisProduct = editing && product && c.productId === product.id
+                      return isUnlinked || isLinkedToThisProduct
+                    })
+                    .filter(c => !certifications.find(selected => selected.certId === c.id))
+                    .map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.certName} ({new Date(c.issueDate).toLocaleDateString()})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {certifications.length > 0 && (

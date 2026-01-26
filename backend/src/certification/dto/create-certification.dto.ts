@@ -2,7 +2,8 @@ import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateCertificationDto {
   @IsString()
-  productId: string;
+  @IsOptional()
+  productId?: string;
 
   @IsString()
   certName: string;

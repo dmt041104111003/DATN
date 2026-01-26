@@ -51,6 +51,7 @@ export interface ProductMaterialItem {
 }
 
 export interface ProductCertificationItem {
+  certId?: string // ID of existing certification to link
   certName: string
   issueDate: string
   expiryDate?: string

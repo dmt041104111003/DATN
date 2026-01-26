@@ -7,7 +7,7 @@ exports.appNetwork = process.env.NEXT_PUBLIC_APP_NETWORK?.toLowerCase() || 'prep
 exports.appNetworkId = exports.appNetwork === 'mainnet' ? 1 : 0;
 exports.EXCHANGE_FEE_PRICE = process.env.EXCHANGE_FEE_PRICE || '1000000';
 exports.title = {
-    mint: 'mint.mint.mint',
-    store: 'store.store.spend',
+    mint: 'mint.product_mint.mint',
+    store: 'spending.traceability.spend',
 };
 //# sourceMappingURL=constants.js.map

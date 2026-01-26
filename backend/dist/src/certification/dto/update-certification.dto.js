@@ -12,12 +12,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateCertificationDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdateCertificationDto {
+    productId;
     certName;
     issueDate;
     expiryDate;
     certHash;
 }
 exports.UpdateCertificationDto = UpdateCertificationDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateCertificationDto.prototype, "productId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),

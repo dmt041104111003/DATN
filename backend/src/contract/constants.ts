@@ -11,6 +11,6 @@ export const appNetworkId = appNetwork === 'mainnet' ? 1 : 0;
 export const EXCHANGE_FEE_PRICE = process.env.EXCHANGE_FEE_PRICE || '1000000'; // 1 ADA
 
 export const title = {
-  mint: 'mint.mint.mint',
-  store: 'store.store.spend',
+  mint: 'mint.product_mint.mint',
+  store: 'spending.traceability.spend',
 };

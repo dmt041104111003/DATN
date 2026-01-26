@@ -1,7 +1,6 @@
 "use client"
 
 import { Certification, CertificationTableProps } from '@/types/certification'
-import { Product } from '@/types/product'
 import { formatDateDisplay } from '@/lib/utils/crud-helpers'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,21 +19,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 
-const getProductName = (products: Product[], productId: string) => {
-  const product = products.find(p => p.id === productId)
-  return product?.name || 'Unknown Product'
-}
-
-export function CertificationTable({ certifications, products, onEdit, onDelete }: CertificationTableProps) {
+export function CertificationTable({ certifications, onEdit, onDelete }: CertificationTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Certification Name</TableHead>
-            <TableHead>Product</TableHead>
             <TableHead className="hidden md:table-cell">Issue Date</TableHead>
             <TableHead className="hidden lg:table-cell">Expiry Date</TableHead>
+            <TableHead className="hidden lg:table-cell">Status</TableHead>
             <TableHead className="hidden lg:table-cell">Hash</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
@@ -52,14 +46,18 @@ export function CertificationTable({ certifications, products, onEdit, onDelete 
                 <TableCell className="font-medium max-w-[200px]">
                   <div className="truncate" title={certification.certName}>{certification.certName}</div>
                 </TableCell>
-                <TableCell>
-                  {getProductName(products, certification.productId)}
-                </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {formatDateDisplay(certification.issueDate)}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {certification.expiryDate ? formatDateDisplay(certification.expiryDate) : <span className="text-muted-foreground">-</span>}
+                </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                  {certification.productId ? (
+                    <span className="text-green-600">Linked</span>
+                  ) : (
+                    <span className="text-muted-foreground">Not linked</span>
+                  )}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell max-w-[150px]">
                   {certification.certHash ? (

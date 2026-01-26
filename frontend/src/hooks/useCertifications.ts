@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { certificationsApi } from '@/lib/api/certifications'
-import { productsApi } from '@/lib/api/products'
 import { Certification, CertificationFormData } from '@/types/certification'
-import { Product } from '@/types/product'
 import { handleApiError } from '@/lib/utils/error-handler'
 import { showAlert } from '@/lib/utils/alert'
 import { confirm } from '@/lib/utils/confirm'
@@ -13,7 +11,6 @@ import { formatDateOnlyForInput } from '@/lib/utils/crud-helpers'
 export function useCertifications() {
   const router = useRouter()
   const [certifications, setCertifications] = useState<Certification[]>([])
-  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -31,24 +28,13 @@ export function useCertifications() {
     }
   }
 
-  const loadProducts = async () => {
-    try {
-      const data = await productsApi.findMy()
-      setProducts(Array.isArray(data) ? data : [])
-    } catch {
-      setProducts([])
-    }
-  }
-
   useEffect(() => {
     loadData()
-    loadProducts()
   }, [])
 
   useEffect(() => {
     if (editing) {
       form.reset({
-        productId: editing.productId,
         certName: editing.certName,
         issueDate: formatDateOnlyForInput(editing.issueDate),
         expiryDate: formatDateOnlyForInput(editing.expiryDate),
@@ -77,9 +63,6 @@ export function useCertifications() {
   const onSubmit = async (data: CertificationFormData) => {
     setSubmitting(true)
     try {
-      if (!data.productId) {
-        throw new Error('Please select a product')
-      }
       if (editing) {
         await certificationsApi.update(editing.id, data)
       } else {
@@ -108,7 +91,6 @@ export function useCertifications() {
 
   return {
     items: certifications,
-    products,
     loading,
     open,
     submitting,

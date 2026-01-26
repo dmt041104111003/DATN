@@ -1,5 +1,5 @@
 export declare class CreateCertificationDto {
-    productId: string;
+    productId?: string;
     certName: string;
     issueDate: string;
     expiryDate?: string;
