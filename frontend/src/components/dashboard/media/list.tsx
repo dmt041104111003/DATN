@@ -2,6 +2,7 @@
 
 import { useMedia } from '@/hooks/useMedia'
 import { LoadingPage, LoadingOverlay } from '@/components/ui/loading'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -25,12 +26,12 @@ export function List() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Media Files</h1>
-        <p className="text-muted-foreground">Manage your media files</p>
-      </div>
-
-      <div className="flex justify-end mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Media Files</h1>
+          <p className="text-muted-foreground">Manage your media files</p>
+        </div>
+        <div className="flex justify-end sm:justify-end">
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">Upload</Button>
@@ -67,11 +68,19 @@ export function List() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {media.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">No media files yet</p>
+        <div className="flex flex-col items-center justify-center py-8">
+          <Image
+            src="/404.png"
+            alt="404"
+            height={500}
+            width={750}
+            className="mx-auto opacity-80"
+          />
+          <p className="-mt-2 text-xl text-muted-foreground">No media files found</p>
         </div>
       ) : (
         <MediaTable

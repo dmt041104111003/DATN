@@ -8,8 +8,4 @@ export class UpdateProductDto {
   @IsString()
   @IsOptional()
   name?: string;
-
-  @IsString()
-  @IsOptional()
-  historyHash?: string;
 }

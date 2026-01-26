@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 const subscription_service_1 = require("../subscription/subscription.service");
+const hash_util_1 = require("../utils/hash.util");
 let CertificationService = class CertificationService {
     prisma;
     redis;
@@ -73,7 +74,15 @@ let CertificationService = class CertificationService {
             throw new common_1.NotFoundException('Product not found');
         if (product.userId !== userId)
             throw new common_1.ForbiddenException('Not your product');
-        const certification = await this.prisma.certification.create({ data: dto });
+        const certHash = (0, hash_util_1.hashCertification)(dto.certName, dto.issueDate, dto.expiryDate);
+        const certification = await this.prisma.certification.create({
+            data: {
+                ...dto,
+                certHash,
+                issueDate: new Date(dto.issueDate),
+                expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+            },
+        });
         await this.redis.delMultiple([
             'certifications:all',
             `certifications:product:${dto.productId}`,
@@ -83,14 +92,21 @@ let CertificationService = class CertificationService {
     async update(id, userId, dto) {
         await this.checkSubscriptionActive(userId);
         const certification = await this.findOneOwned(id, userId);
-        const issueDate = dto.issueDate || certification.issueDate;
-        const expiryDate = dto.expiryDate !== undefined ? dto.expiryDate : certification.expiryDate;
-        if (expiryDate && new Date(expiryDate) <= new Date(issueDate)) {
+        const issueDate = dto.issueDate ? new Date(dto.issueDate) : certification.issueDate;
+        const expiryDate = dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : certification.expiryDate;
+        if (expiryDate && expiryDate <= issueDate) {
             throw new common_1.BadRequestException('Expiry date must be after issue date');
         }
+        const certName = dto.certName || certification.certName;
+        const certHash = (0, hash_util_1.hashCertification)(certName, issueDate, expiryDate);
         const updated = await this.prisma.certification.update({
             where: { id },
-            data: dto,
+            data: {
+                ...dto,
+                certHash,
+                issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
+                expiryDate: dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : undefined,
+            },
         });
         await this.redis.delMultiple([
             `certification:${id}`,

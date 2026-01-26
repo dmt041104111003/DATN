@@ -9,6 +9,7 @@ import { RedisService } from '../redis/redis.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateProductMaterialDto } from './dto/create-product-material.dto';
 import { UpdateProductMaterialDto } from './dto/update-product-material.dto';
+import { hashProductMaterial } from '../utils/hash.util';
 
 @Injectable()
 export class ProductMaterialService {
@@ -49,7 +50,7 @@ export class ProductMaterialService {
 
   async findOne(id: string, userId: string) {
     const cacheKey = `product-material:${id}`;
-    const cached = await this.redis.get<{ id: string; productId: string; materialId: string; quantity: number; unit: string | null; createdAt: Date; updatedAt: Date; product: { id: string; userId: string; name: string; policyId: string | null; assetName: string | null; historyHash: string | null; createdAt: Date; updatedAt: Date }; material: { id: string; userId: string; supplierId: string; name: string; harvestDate: Date | null; quantity: number; createdAt: Date; updatedAt: Date; supplier: { id: string; userId: string; name: string; location: string | null; gpsCoordinates: string | null; contactInfo: string | null; createdAt: Date; updatedAt: Date } } }>(cacheKey);
+    const cached = await this.redis.get<{ id: string; productId: string; materialId: string; quantity: number; unit: string | null; createdAt: Date; updatedAt: Date; product: { id: string; userId: string; name: string; policyId: string; assetName: string; createdAt: Date; updatedAt: Date }; material: { id: string; userId: string; supplierId: string; name: string; harvestDate: Date | null; createdAt: Date; updatedAt: Date; supplier: { id: string; userId: string; name: string; location: string | null; gpsCoordinates: string | null; contactInfo: string | null; createdAt: Date; updatedAt: Date } } }>(cacheKey);
     if (cached && typeof cached === 'object' && 'product' in cached) {
       if (cached.product.userId !== userId)
         throw new ForbiddenException('Not your product');
@@ -77,7 +78,7 @@ export class ProductMaterialService {
     await this.checkSubscriptionActive(userId);
     
     if (dto.quantity <= 0) {
-      throw new BadRequestException('Số lượng phải lớn hơn 0');
+      throw new BadRequestException('Quantity must be greater than 0');
     }
     
     await this.checkProductOwnership(dto.productId, userId);
@@ -96,8 +97,12 @@ export class ProductMaterialService {
       throw new BadRequestException('This material has already been added to the product. Please update the quantity instead of adding a new entry.');
     }
 
-    const pm = await this.prisma.productMaterial.create({
-      data: dto,
+    const pmHash = hashProductMaterial(dto.materialId, dto.quantity, dto.unit);
+    const pm = await (this.prisma as any).productMaterial.create({
+      data: {
+        ...dto,
+        pmHash,
+      },
       include: {
         material: {
           include: { supplier: true },
@@ -112,13 +117,20 @@ export class ProductMaterialService {
     await this.checkSubscriptionActive(userId);
     
     if (dto.quantity !== undefined && dto.quantity <= 0) {
-      throw new BadRequestException('Số lượng phải lớn hơn 0');
+      throw new BadRequestException('Quantity must be greater than 0');
     }
     
     const pm = await this.findOneOwned(id, userId);
-    const updated = await this.prisma.productMaterial.update({
+    const quantity = dto.quantity !== undefined ? dto.quantity : pm.quantity;
+    const unit = dto.unit !== undefined ? dto.unit : pm.unit;
+    const pmHash = hashProductMaterial(pm.materialId, quantity, unit);
+    
+    const updated = await (this.prisma as any).productMaterial.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        pmHash,
+      },
       include: {
         material: {
           include: { supplier: true },

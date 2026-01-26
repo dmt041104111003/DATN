@@ -113,8 +113,16 @@ export class ProductService {
   async create(userId: string, dto: CreateProductDto) {
     await this.checkSubscriptionActive(userId);
     await this.checkProductLimit(userId);
-    const product = await this.prisma.product.create({
-      data: { ...dto, userId },
+    const product = await (this.prisma as any).product.create({
+      data: {
+        ...dto,
+        userId,
+        policyId: '',
+        assetName: '',
+        materialsRoot: '',
+        certificationsRoot: '',
+        mediaRoot: '',
+      },
     });
     await this.redis.delMultiple(['products:all', `products:user:${userId}`]);
     return product;
@@ -139,7 +147,6 @@ export class ProductService {
     await this.checkSubscriptionActive(userId);
     const product = await this.findOneOwned(id, userId);
     
-    // Check if product is minted - warn but allow deletion
     const isMinted = product.policyId && product.assetName;
     
     await this.prisma.product.delete({ where: { id } });
@@ -149,7 +156,6 @@ export class ProductService {
       `products:user:${userId}`,
     ]);
     
-    // Return info about minted status for frontend warning
     return {
       success: true,
       message: 'Product deleted successfully',
@@ -229,7 +235,6 @@ export class ProductService {
             name: product.name,
             policyId: product.policyId,
             assetName: product.assetName,
-            historyHash: product.historyHash,
             certifications: product.certifications,
             materials: product.productMaterials.map((pm) => ({
               name: pm.material.name,

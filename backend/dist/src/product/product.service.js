@@ -103,7 +103,15 @@ let ProductService = class ProductService {
         await this.checkSubscriptionActive(userId);
         await this.checkProductLimit(userId);
         const product = await this.prisma.product.create({
-            data: { ...dto, userId },
+            data: {
+                ...dto,
+                userId,
+                policyId: '',
+                assetName: '',
+                materialsRoot: '',
+                certificationsRoot: '',
+                mediaRoot: '',
+            },
         });
         await this.redis.delMultiple(['products:all', `products:user:${userId}`]);
         return product;
@@ -198,7 +206,6 @@ let ProductService = class ProductService {
                     name: product.name,
                     policyId: product.policyId,
                     assetName: product.assetName,
-                    historyHash: product.historyHash,
                     certifications: product.certifications,
                     materials: product.productMaterials.map((pm) => ({
                         name: pm.material.name,

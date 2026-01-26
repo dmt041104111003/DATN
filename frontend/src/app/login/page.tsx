@@ -7,6 +7,7 @@ import { WalletButton } from '@/components/ui/wallet-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useWallet } from '@/hooks/use-wallet'
 import { useAuth } from '@/contexts/auth-context'
+import { authApi } from '@/lib/api/auth'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Label } from '@/components/ui/label'
@@ -60,19 +61,30 @@ export default function LoginPage() {
       const result = await connectWallet(walletName, selectedNetwork)
       await login(result.wallet, result.address, walletName)
       await refreshAuth()
-      router.refresh()
-      router.push('/dashboard')
+      
+      const userData = await authApi.getMe()
+      const role = userData.user.role
+      
+      if (role === 'AGENT') {
+        window.location.href = '/agent/products'
+      } else {
+        window.location.href = '/dashboard'
+      }
     } catch {} finally {
       setLoadingWallet(null)
     }
   }
 
+  const isLoggingIn = !!loadingWallet
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Header />
+      <div className={isLoggingIn ? "pointer-events-none opacity-50" : ""}>
+        <Header />
+      </div>
       
       <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
+        <Card className={`w-full max-w-md ${isLoggingIn ? "pointer-events-none opacity-50" : ""}`}>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Connect Wallet</CardTitle>
           </CardHeader>
@@ -129,7 +141,9 @@ export default function LoginPage() {
         </Card>
       </main>
 
-      <Footer />
+      <div className={isLoggingIn ? "pointer-events-none opacity-50" : ""}>
+        <Footer />
+      </div>
     </div>
   )
 }

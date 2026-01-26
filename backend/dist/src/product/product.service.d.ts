@@ -13,66 +13,55 @@ export declare class ProductService {
     private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findAllByUser(userId: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     private findOneOwned;
     private getActiveSubscription;
     private checkProductLimit;
-    create(userId: string, dto: CreateProductDto): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        policyId: string;
-        assetName: string;
-        materialsRoot: string;
-        certificationsRoot: string;
-        mediaRoot: string;
-    }>;
+    create(userId: string, dto: CreateProductDto): Promise<any>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<{
         success: boolean;
@@ -92,7 +81,6 @@ export declare class ProductService {
             name: string;
             policyId: string;
             assetName: string;
-            historyHash: any;
             certifications: {
                 id: string;
                 createdAt: Date;

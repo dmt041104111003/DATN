@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
+import { hashMaterial } from '../utils/hash.util';
 
 @Injectable()
 export class MaterialService {
@@ -51,7 +52,7 @@ export class MaterialService {
 
   async findOne(id: string, userId: string) {
     const cacheKey = `material:${id}`;
-    const cached = await this.redis.get<{ id: string; userId: string; supplierId: string; name: string; harvestDate: Date | null; quantity: number; createdAt: Date; updatedAt: Date; supplier: { id: string; userId: string; name: string; location: string | null; gpsCoordinates: string | null; contactInfo: string | null; createdAt: Date; updatedAt: Date } }>(cacheKey);
+    const cached = await this.redis.get<{ id: string; userId: string; supplierId: string; name: string; harvestDate: Date | null; createdAt: Date; updatedAt: Date; supplier: { id: string; userId: string; name: string; location: string | null; gpsCoordinates: string | null; contactInfo: string | null; createdAt: Date; updatedAt: Date } }>(cacheKey);
     if (cached && typeof cached === 'object' && 'supplier' in cached) {
       if (cached.supplier.userId !== userId)
         throw new ForbiddenException('Access denied');
@@ -78,12 +79,15 @@ export class MaterialService {
     if (supplier.userId !== userId)
       throw new ForbiddenException('Not your supplier');
 
-    const material = await this.prisma.material.create({
+    const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : null;
+    const materialHash = hashMaterial(dto.name, dto.supplierId, harvestDate);
+
+    const material = await (this.prisma as any).material.create({
       data: {
         supplierId: dto.supplierId,
         name: dto.name,
-        harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : null,
-        quantity: dto.quantity ?? 0,
+        harvestDate,
+        materialHash,
         userId,
       },
     });
@@ -95,14 +99,24 @@ export class MaterialService {
   }
 
   async update(id: string, userId: string, dto: UpdateMaterialDto) {
-    await this.findOne(id, userId);
+    const existing = await this.findOne(id, userId);
     const material = await this.prisma.material.findUnique({
       where: { id },
-      select: { supplierId: true },
+      select: { supplierId: true, name: true, harvestDate: true },
     });
-    const updated = await this.prisma.material.update({
+    
+    const name = dto.name || material?.name || '';
+    const supplierId = material?.supplierId || '';
+    const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : (material?.harvestDate || null);
+    const materialHash = hashMaterial(name, supplierId, harvestDate);
+    
+    const updated = await (this.prisma as any).material.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        materialHash,
+        harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : undefined,
+      },
     });
     if (material) {
       await this.redis.delMultiple([

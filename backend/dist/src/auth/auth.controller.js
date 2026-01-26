@@ -47,6 +47,7 @@ let AuthController = class AuthController {
                 id: userData.id,
                 address: userData.address,
                 walletName: userData.walletName,
+                role: userData.role,
             },
         };
     }

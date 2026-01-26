@@ -4,104 +4,74 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Package,
-  Users,
-  Boxes,
-  Image as ImageIcon,
-  CreditCard,
-  Award,
-  LogOut,
-} from 'lucide-react'
-import {
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator,
-} from '@/components/ui/sidebar'
+  BiHome,
+  BiPackage,
+  BiGroup,
+  BiBox,
+  BiUserCircle,
+  BiAward,
+  BiImage,
+  BiCreditCard,
+  BiLogOut,
+} from 'react-icons/bi'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { MenuToggle } from '@/components/ui/menu-toggle'
 import { useAuth } from '@/contexts/auth-context'
 import { productsApi } from '@/lib/api/products'
 import { ProductQuota } from '@/types/product'
 import { subscriptionsApi } from '@/lib/api/subscriptions'
 import { Subscription } from '@/types/subscription'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { cn } from '@/lib/utils'
 
 const menuItems = [
   {
-    title: 'Main',
-    items: [
-      {
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutDashboard,
-      },
-    ],
+    title: 'Dashboard',
+    url: '/dashboard',
+    icon: BiHome,
   },
   {
     title: 'Products',
-    items: [
-      {
-        title: 'Products',
-        url: '/dashboard/products',
-        icon: Package,
-      },
-    ],
+    url: '/dashboard/products',
+    icon: BiPackage,
   },
   {
-    title: 'Supply Chain',
-    items: [
-      {
-        title: 'Suppliers',
-        url: '/dashboard/suppliers',
-        icon: Users,
-      },
-      {
-        title: 'Materials',
-        url: '/dashboard/materials',
-        icon: Boxes,
-      },
-    ],
+    title: 'Suppliers',
+    url: '/dashboard/suppliers',
+    icon: BiGroup,
   },
   {
-    title: 'Production',
-    items: [
-      {
-        title: 'Certifications',
-        url: '/dashboard/certifications',
-        icon: Award,
-      },
-    ],
+    title: 'Materials',
+    url: '/dashboard/materials',
+    icon: BiBox,
+  },
+  {
+    title: 'Agents',
+    url: '/dashboard/agents',
+    icon: BiUserCircle,
+  },
+  {
+    title: 'Certifications',
+    url: '/dashboard/certifications',
+    icon: BiAward,
   },
   {
     title: 'Media',
-    items: [
-      {
-        title: 'Media',
-        url: '/dashboard/media',
-        icon: ImageIcon,
-      },
-    ],
+    url: '/dashboard/media',
+    icon: BiImage,
   },
   {
     title: 'Billing',
-    items: [
-      {
-        title: 'Billing',
-        url: '/dashboard/billing/services',
-        icon: CreditCard,
-      },
-    ],
+    url: '/dashboard/billing/services',
+    icon: BiCreditCard,
   },
 ]
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { logout, user } = useAuth()
+  const isMobile = useIsMobile()
+  const [open, setOpen] = useState(false)
   const [quota, setQuota] = useState<ProductQuota | null>(null)
   const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null)
 
@@ -114,7 +84,6 @@ export function DashboardSidebar() {
         ])
         setQuota(quotaData)
         
-        // Tìm subscription active
         const active = subscriptions.find((sub: Subscription) => sub.status === 'active')
         setActiveSubscription(active || null)
       } catch (error) {
@@ -141,80 +110,111 @@ export function DashboardSidebar() {
     return days > 0 ? days : 0
   }
 
-  return (
-    <>
-      <SidebarHeader className="border-b border-sidebar-border">
-        {user && (
-          <div className="px-2 pb-4 space-y-2">
-            <div className="text-xs">
-              <div className="text-muted-foreground mb-1">Address:</div>
-              <div className="font-mono text-xs break-all">{formatAddress(user.address)}</div>
-            </div>
-            {quota && (
-              <div className="text-xs">
-                <div className="text-muted-foreground mb-1">Quota:</div>
-                <div className="text-xs">
-                  <span className="font-medium">{quota.tier}</span>
-                  {' - '}
-                  <span>
-                    {quota.usedProducts}
-                    {quota.maxProducts !== null ? ` / ${quota.maxProducts}` : ' / ∞'}
-                  </span>
-                </div>
-              </div>
-            )}
-            {activeSubscription && activeSubscription.endDate && (
-              <div className="text-xs">
-                <div className="text-muted-foreground mb-1">Duration:</div>
-                <div className="text-xs">
-                  {(() => {
-                    const remainingDays = getRemainingDays(activeSubscription.endDate)
-                    if (remainingDays === null) return '-'
-                    if (remainingDays === 0) return 'Expired'
-                    return `${remainingDays} day${remainingDays !== 1 ? 's' : ''} remaining`
-                  })()}
-                </div>
-              </div>
-            )}
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {isMobile && (
+        <div className="p-4 border-b flex justify-end">
+          <MenuToggle checked={open} onCheckedChange={setOpen} />
+        </div>
+      )}
+      {user && (
+        <div className="p-6 border-b space-y-3">
+          <div className="text-sm">
+            <div className="text-muted-foreground mb-2 text-xs">Address:</div>
+            <div className="font-mono text-sm break-all">{formatAddress(user.address)}</div>
           </div>
-        )}
-      </SidebarHeader>
-      <SidebarContent>
-        {menuItems.map((group, groupIndex) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.url || pathname.startsWith(item.url + '/')
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                        <Link href={item.url}>
-                          <Icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-            {groupIndex < menuItems.length - 1 && <SidebarSeparator />}
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} tooltip="Logout">
-              <LogOut />
-              <span>Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </>
+          {quota && (
+            <div className="text-sm">
+              <div className="text-muted-foreground mb-2 text-xs">Quota:</div>
+              <div className="text-sm">
+                <span className="font-medium">{quota.tier}</span>
+                {' - '}
+                <span>
+                  {quota.usedProducts}
+                  {quota.maxProducts !== null ? ` / ${quota.maxProducts}` : ' / ∞'}
+                </span>
+              </div>
+            </div>
+          )}
+          {activeSubscription && activeSubscription.endDate && (
+            <div className="text-sm">
+              <div className="text-muted-foreground mb-2 text-xs">Duration:</div>
+              <div className="text-sm">
+                {(() => {
+                  const remainingDays = getRemainingDays(activeSubscription.endDate)
+                  if (remainingDays === null) return '-'
+                  if (remainingDays === 0) return 'Expired'
+                  return `${remainingDays} day${remainingDays !== 1 ? 's' : ''} remaining`
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
+        <ul className="space-y-2 p-4">
+          {menuItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.url || pathname.startsWith(item.url + '/')
+            return (
+              <li key={item.title}>
+                <Link
+                  href={item.url}
+                  className={cn(
+                    "flex items-center gap-x-4 py-3 px-4 text-base rounded-lg",
+                    isActive 
+                      ? "bg-gray-100 text-gray-900 font-medium" 
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                  onClick={() => isMobile && setOpen(false)}
+                >
+                  <Icon className="w-5 h-5" />
+                  {item.title}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+
+      <div className="p-4 border-t">
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-x-4 py-3 px-4 text-base text-gray-700 rounded-lg hover:bg-gray-100"
+        >
+          <BiLogOut className="w-5 h-5" />
+          Logout
+        </button>
+      </div>
+    </div>
+  )
+
+  if (isMobile) {
+    return (
+      <>
+        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+          <div className="bg-white rounded-full shadow-lg p-3 border border-gray-200">
+            <MenuToggle checked={open} onCheckedChange={setOpen} />
+          </div>
+        </div>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent 
+            side="left" 
+            noAnimation
+            showCloseButton={false}
+            className="w-72 p-0"
+          >
+            {sidebarContent}
+          </SheetContent>
+        </Sheet>
+      </>
+    )
+  }
+
+  return (
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:h-screen lg:fixed lg:top-0 lg:left-0 lg:z-50 bg-white border-r border-gray-200">
+      {sidebarContent}
+    </aside>
   )
 }

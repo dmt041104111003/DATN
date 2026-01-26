@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateMaterialDto {
   @IsString()
@@ -10,8 +10,4 @@ export class CreateMaterialDto {
   @IsDateString()
   @IsOptional()
   harvestDate?: string;
-
-  @IsNumber()
-  @IsOptional()
-  quantity?: number;
 }

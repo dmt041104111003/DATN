@@ -6,29 +6,29 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     getQuota(user: {
         id: string;
@@ -44,7 +44,6 @@ export declare class ProductController {
             name: string;
             policyId: string;
             assetName: string;
-            historyHash: any;
             certifications: {
                 id: string;
                 createdAt: Date;
@@ -109,43 +108,32 @@ export declare class ProductController {
     }>;
     findOne(id: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     create(user: {
         id: string;
-    }, dto: CreateProductDto): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        policyId: string;
-        assetName: string;
-        materialsRoot: string;
-        certificationsRoot: string;
-        mediaRoot: string;
-    }>;
+    }, dto: CreateProductDto): Promise<any>;
     update(user: {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
         policyId: string;
         assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(user: {
         id: string;

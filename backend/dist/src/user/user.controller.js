@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const user_service_1 = require("./user.service");
 const update_user_dto_1 = require("./dto/update-user.dto");
 const decorators_1 = require("../auth/decorators");
+const upsert_agent_dto_1 = require("./dto/upsert-agent.dto");
 let UserController = class UserController {
     userService;
     constructor(userService) {
@@ -24,6 +25,12 @@ let UserController = class UserController {
     }
     getMe(user) {
         return this.userService.findOne(user.id);
+    }
+    listAgents(user) {
+        return this.userService.listAgents(user.id);
+    }
+    upsertAgent(user, dto) {
+        return this.userService.upsertAgent(user.id, dto);
     }
     updateMe(user, dto) {
         return this.userService.update(user.id, dto);
@@ -40,6 +47,21 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UserController.prototype, "getMe", null);
+__decorate([
+    (0, common_1.Get)('agents'),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], UserController.prototype, "listAgents", null);
+__decorate([
+    (0, common_1.Post)('agents'),
+    __param(0, (0, decorators_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, upsert_agent_dto_1.UpsertAgentDto]),
+    __metadata("design:returntype", void 0)
+], UserController.prototype, "upsertAgent", null);
 __decorate([
     (0, common_1.Patch)('me'),
     __param(0, (0, decorators_1.CurrentUser)()),

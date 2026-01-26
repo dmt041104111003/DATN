@@ -59,9 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await authApi.getMe()
       setUser(data.user)
+      return data
     } catch {
       setUser(null)
       if (!isPublic) router.push('/login')
+      return null
     } finally {
       setIsLoading(false)
     }

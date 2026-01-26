@@ -29,7 +29,11 @@ export function Alert({ title, description, children, variant = 'default', class
       variant="flat"
       isClosable={!!onClose}
       onClose={onClose}
-      className={cn(className)}
+      className={cn("break-words overflow-wrap-anywhere", className)}
+      classNames={{
+        base: "break-words overflow-wrap-anywhere",
+        description: "break-words overflow-wrap-anywhere whitespace-normal"
+      }}
     >
       {children}
     </HeroUIAlert>

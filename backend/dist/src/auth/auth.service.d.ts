@@ -9,6 +9,7 @@ export declare class AuthService {
     getNonce(address: string): Promise<{
         nonce: string;
     }>;
+    private assignEnterpriseRoleIfNone;
     verifyWallet(address: string, signature: string, key: string, walletName: string): Promise<{
         access_token: string;
         user: {
@@ -21,5 +22,6 @@ export declare class AuthService {
         id: string;
         address: string;
         walletName: string | null;
+        role: string | null;
     } | null>;
 }

@@ -8,8 +8,4 @@ export class UpdateMaterialDto {
   @IsDateString()
   @IsOptional()
   harvestDate?: string;
-
-  @IsNumber()
-  @IsOptional()
-  quantity?: number;
 }

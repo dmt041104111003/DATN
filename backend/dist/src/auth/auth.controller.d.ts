@@ -22,6 +22,7 @@ export declare class AuthController {
             id: string;
             address: string;
             walletName: string | null;
+            role: string | null;
         };
     }>;
     logout(res: Response): {

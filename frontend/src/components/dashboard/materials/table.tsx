@@ -27,7 +27,6 @@ export function MaterialTable({ materials, onEdit, onDelete }: MaterialTableProp
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Supplier</TableHead>
-            <TableHead className="hidden md:table-cell">Quantity</TableHead>
             <TableHead className="hidden lg:table-cell">Harvest Date</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
@@ -35,7 +34,7 @@ export function MaterialTable({ materials, onEdit, onDelete }: MaterialTableProp
         <TableBody>
           {materials.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                 No materials found
               </TableCell>
             </TableRow>
@@ -47,9 +46,6 @@ export function MaterialTable({ materials, onEdit, onDelete }: MaterialTableProp
                 </TableCell>
                 <TableCell>
                   {material.supplier?.name || <span className="text-muted-foreground">No supplier</span>}
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {material.quantity || <span className="text-muted-foreground">-</span>}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {material.harvestDate ? formatDateDisplay(material.harvestDate) : <span className="text-muted-foreground">-</span>}

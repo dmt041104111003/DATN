@@ -7,7 +7,7 @@ export interface Material {
   supplierId: string
   name: string
   harvestDate?: string
-  quantity: number
+  materialHash: string
   createdAt: string
   updatedAt: string
   supplier?: Supplier
@@ -17,7 +17,6 @@ export interface MaterialFormData {
   supplierId: string
   name: string
   harvestDate?: string
-  quantity?: number
 }
 
 export interface MaterialFormProps {

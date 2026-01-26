@@ -75,10 +75,5 @@ export class SubscriptionSchedulerService {
     console.log(`[NOTIFICATION] User: ${subscription.user.address}`);
     console.log(`[NOTIFICATION] Message: ${notificationMessage}`);
 
-    // TODO: Implement actual notification system (email, push notification, etc.)
-    // For now, we just log it. You can integrate with:
-    // - Email service (SendGrid, AWS SES, etc.)
-    // - Push notification service
-    // - In-app notification system
   }
 }

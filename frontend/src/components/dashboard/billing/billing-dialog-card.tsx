@@ -161,6 +161,7 @@ export function BillingDialogCard({ service, onSubscribe, processing }: BillingD
             gap: 2px;
           }
 
+
           .billing-container-${cardId} .payments .details span:nth-child(odd) {
             font-size: 13px;
             font-weight: 600;
@@ -186,6 +187,8 @@ export function BillingDialogCard({ service, onSubscribe, processing }: BillingD
             justify-content: space-between;
             padding: 12px 12px 12px 24px;
             background-color: hsl(var(--muted));
+            flex-wrap: wrap;
+            gap: 12px;
           }
 
           .billing-container-${cardId} .price {
@@ -241,29 +244,43 @@ export function BillingDialogCard({ service, onSubscribe, processing }: BillingD
               font-size: 12px;
             }
 
+            .billing-container-${cardId} .payments .details {
+              grid-template-columns: 1fr 1fr;
+              gap: 8px 4px;
+            }
+
             .billing-container-${cardId} .payments .details span:nth-child(odd) {
               font-size: 12px;
             }
 
             .billing-container-${cardId} .payments .details span:nth-child(even) {
               font-size: 14px;
+              white-space: normal;
+              text-align: right;
             }
 
             .billing-container-${cardId} .footer {
-              padding: 10px 10px 10px 16px;
-              flex-wrap: wrap;
-              gap: 8px;
+              padding: 12px 16px;
+              flex-direction: column;
+              align-items: stretch;
+              gap: 12px;
             }
 
             .billing-container-${cardId} .price {
               font-size: 20px;
+              text-align: center;
+            }
+
+            .billing-container-${cardId} .checkout-btn-wrapper {
+              width: 100%;
+              justify-content: stretch;
             }
 
             .billing-container-${cardId} .checkout-btn-wrapper button,
             .billing-container-${cardId} .checkout-btn-wrapper a {
               width: 100% !important;
-              height: 38px !important;
-              font-size: 12px !important;
+              height: 42px !important;
+              font-size: 14px !important;
             }
           }
         `

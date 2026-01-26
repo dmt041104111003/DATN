@@ -10,6 +10,24 @@ const pool = new pg_1.Pool({
 const prisma = new client_1.PrismaClient({ adapter: new adapter_pg_1.PrismaPg(pool) });
 async function main() {
     console.log('Seeding database...');
+    const roles = [
+        {
+            code: 'ENTERPRISE',
+            name: 'Enterprise',
+        },
+        {
+            code: 'AGENT',
+            name: 'Agent',
+        },
+    ];
+    for (const role of roles) {
+        await prisma.role.upsert({
+            where: { code: role.code },
+            update: role,
+            create: role,
+        });
+        console.log(`Upserted role: ${role.name}`);
+    }
     const services = [
         {
             id: 'starter',

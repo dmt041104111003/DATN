@@ -8,36 +8,36 @@ export declare class MaterialController {
         id: string;
     }): Promise<string | ({
         supplier: {
-            id: string;
             name: string;
+            id: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            userId: string;
             gpsCoordinates: string | null;
             contactInfo: string | null;
         };
     } & {
-        id: string;
+        supplierId: string;
         name: string;
+        harvestDate: Date | null;
+        id: string;
+        userId: string;
+        materialHash: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
     })[]>;
     findBySupplier(user: {
         id: string;
     }, supplierId: string): Promise<string | {
-        id: string;
+        supplierId: string;
         name: string;
+        harvestDate: Date | null;
+        id: string;
+        userId: string;
+        materialHash: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
     }[]>;
     findOne(user: {
         id: string;
@@ -47,7 +47,6 @@ export declare class MaterialController {
         supplierId: string;
         name: string;
         harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
         supplier: {
@@ -60,51 +59,13 @@ export declare class MaterialController {
             createdAt: Date;
             updatedAt: Date;
         };
-    } | ({
-        supplier: {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            location: string | null;
-            userId: string;
-            gpsCoordinates: string | null;
-            contactInfo: string | null;
-        };
-    } & {
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
-    })>;
+    }>;
     create(user: {
         id: string;
-    }, dto: CreateMaterialDto): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
-    }>;
+    }, dto: CreateMaterialDto): Promise<any>;
     update(user: {
         id: string;
-    }, id: string, dto: UpdateMaterialDto): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
-    }>;
+    }, id: string, dto: UpdateMaterialDto): Promise<any>;
     remove(user: {
         id: string;
     }, id: string): Promise<void>;

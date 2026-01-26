@@ -9,6 +9,7 @@ import { RedisService } from '../redis/redis.service';
 import { IpfsService } from '../ipfs/ipfs.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { UpdateMediaDto } from './dto/update-media.dto';
+import { hashMedia } from '../utils/hash.util';
 
 @Injectable()
 export class MediaService {
@@ -72,12 +73,14 @@ export class MediaService {
         name: file.originalname,
       });
       const type = this.getFileType(file.mimetype);
-      const media = await this.prisma.media.create({
+      const mediaHash = hashMedia(url, type);
+      const media = await (this.prisma as any).media.create({
         data: {
           userId,
           name: file.originalname,
           type,
           url,
+          mediaHash,
         },
       });
 
@@ -91,7 +94,7 @@ export class MediaService {
     } catch (error) {
       if (error instanceof BadRequestException && error.message.includes('IPFS')) {
         throw new BadRequestException(
-          'Kết nối IPFS lỗi. Vui lòng thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.',
+          'IPFS connection error. Please try again later or contact technical support.',
         );
       }
       throw error;

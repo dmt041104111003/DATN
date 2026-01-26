@@ -5,7 +5,7 @@ export function handleApiError(err: unknown, router?: ReturnType<typeof useRoute
   const errorMessage = err instanceof Error ? err.message : 'An error occurred'
   
   if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
-    const message = `${errorMessage}. Please renew your subscription to continue.`
+    const message = errorMessage.includes('Please renew') ? errorMessage : `${errorMessage}. Please renew your subscription to continue.`
     if (router) {
       showAlert({ description: message, variant: 'warning' })
       router.push('/dashboard/billing')

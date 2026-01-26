@@ -13,6 +13,7 @@ exports.MaterialService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
+const hash_util_1 = require("../utils/hash.util");
 let MaterialService = class MaterialService {
     prisma;
     redis;
@@ -79,12 +80,14 @@ let MaterialService = class MaterialService {
             throw new common_1.NotFoundException('Supplier not found');
         if (supplier.userId !== userId)
             throw new common_1.ForbiddenException('Not your supplier');
+        const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : null;
+        const materialHash = (0, hash_util_1.hashMaterial)(dto.name, dto.supplierId, harvestDate);
         const material = await this.prisma.material.create({
             data: {
                 supplierId: dto.supplierId,
                 name: dto.name,
-                harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : null,
-                quantity: dto.quantity ?? 0,
+                harvestDate,
+                materialHash,
                 userId,
             },
         });
@@ -95,14 +98,22 @@ let MaterialService = class MaterialService {
         return material;
     }
     async update(id, userId, dto) {
-        await this.findOne(id, userId);
+        const existing = await this.findOne(id, userId);
         const material = await this.prisma.material.findUnique({
             where: { id },
-            select: { supplierId: true },
+            select: { supplierId: true, name: true, harvestDate: true },
         });
+        const name = dto.name || material?.name || '';
+        const supplierId = material?.supplierId || '';
+        const harvestDate = dto.harvestDate ? new Date(dto.harvestDate) : (material?.harvestDate || null);
+        const materialHash = (0, hash_util_1.hashMaterial)(name, supplierId, harvestDate);
         const updated = await this.prisma.material.update({
             where: { id },
-            data: dto,
+            data: {
+                ...dto,
+                materialHash,
+                harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : undefined,
+            },
         });
         if (material) {
             await this.redis.delMultiple([

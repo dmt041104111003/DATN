@@ -51,7 +51,6 @@ export function useMaterials() {
         supplierId: editing.supplierId,
         name: editing.name,
         harvestDate: formatDateOnlyForInput(editing.harvestDate),
-        quantity: editing.quantity,
       })
     }
   }, [editing, form])

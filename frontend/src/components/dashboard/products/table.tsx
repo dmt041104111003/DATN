@@ -29,14 +29,13 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
             <TableHead>Status</TableHead>
             <TableHead className="hidden md:table-cell">Policy ID</TableHead>
             <TableHead className="hidden lg:table-cell">Asset Name</TableHead>
-            <TableHead className="hidden lg:table-cell">History Hash</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {products.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                 No products found
               </TableCell>
             </TableRow>
@@ -45,25 +44,18 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>
-                  <StatusBadge status={product.policyId && product.assetName ? 'Minted' : 'Draft'} />
+                  <StatusBadge status={product.policyId !== '' && product.assetName !== '' ? 'Minted' : 'Draft'} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {product.policyId ? (
+                  {product.policyId && product.policyId !== '' ? (
                     <span className="font-mono text-xs break-all">{product.policyId}</span>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
-                  {product.assetName ? (
+                  {product.assetName && product.assetName !== '' ? (
                     <span className="font-mono text-xs break-all">{product.assetName}</span>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell">
-                  {product.historyHash ? (
-                    <span className="font-mono text-xs break-all">{product.historyHash}</span>
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}

@@ -7,7 +7,7 @@ export interface Certification {
   certName: string
   issueDate: string
   expiryDate?: string
-  certHash?: string
+  certHash: string
   createdAt: string
   updatedAt: string
 }
@@ -17,7 +17,6 @@ export interface CertificationFormData {
   certName: string
   issueDate: string
   expiryDate?: string
-  certHash?: string
 }
 
 export interface CertificationFormProps {

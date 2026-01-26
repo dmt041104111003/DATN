@@ -9,6 +9,7 @@ import { RedisService } from '../redis/redis.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { CreateCertificationDto } from './dto/create-certification.dto';
 import { UpdateCertificationDto } from './dto/update-certification.dto';
+import { hashCertification } from '../utils/hash.util';
 
 @Injectable()
 export class CertificationService {
@@ -75,7 +76,20 @@ export class CertificationService {
     if (product.userId !== userId)
       throw new ForbiddenException('Not your product');
 
-    const certification = await this.prisma.certification.create({ data: dto });
+    const certHash = hashCertification(
+      dto.certName,
+      dto.issueDate,
+      dto.expiryDate,
+    );
+
+    const certification = await this.prisma.certification.create({
+      data: {
+        ...dto,
+        certHash,
+        issueDate: new Date(dto.issueDate),
+        expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+      },
+    });
     await this.redis.delMultiple([
       'certifications:all',
       `certifications:product:${dto.productId}`,
@@ -88,16 +102,28 @@ export class CertificationService {
     
     const certification = await this.findOneOwned(id, userId);
     
-    const issueDate = dto.issueDate || certification.issueDate;
-    const expiryDate = dto.expiryDate !== undefined ? dto.expiryDate : certification.expiryDate;
+    const issueDate = dto.issueDate ? new Date(dto.issueDate) : certification.issueDate;
+    const expiryDate = dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : certification.expiryDate;
     
-    if (expiryDate && new Date(expiryDate) <= new Date(issueDate)) {
+    if (expiryDate && expiryDate <= issueDate) {
       throw new BadRequestException('Expiry date must be after issue date');
     }
     
+    const certName = dto.certName || certification.certName;
+    const certHash = hashCertification(
+      certName,
+      issueDate,
+      expiryDate,
+    );
+    
     const updated = await this.prisma.certification.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        certHash,
+        issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
+        expiryDate: dto.expiryDate !== undefined ? (dto.expiryDate ? new Date(dto.expiryDate) : null) : undefined,
+      },
     });
     await this.redis.delMultiple([
       `certification:${id}`,

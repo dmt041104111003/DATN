@@ -22,7 +22,11 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Request failed' }))
-      throw new Error(error.message || `HTTP error! status: ${response.status}`)
+      const errorMessage = error.message || `HTTP error! status: ${response.status}`
+      if (response.status === 404) {
+        throw new Error('404 - Page Not Found')
+      }
+      throw new Error(errorMessage)
     }
 
     return response.json()

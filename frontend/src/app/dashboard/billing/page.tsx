@@ -13,7 +13,6 @@ export default function BillingPage() {
       router.push('/login')
       return
     }
-    // Redirect to services page by default
     router.replace('/dashboard/billing/services')
   }, [user, router])
 

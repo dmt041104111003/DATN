@@ -14,7 +14,6 @@ const class_validator_1 = require("class-validator");
 class UpdateMaterialDto {
     name;
     harvestDate;
-    quantity;
 }
 exports.UpdateMaterialDto = UpdateMaterialDto;
 __decorate([
@@ -27,9 +26,4 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateMaterialDto.prototype, "harvestDate", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], UpdateMaterialDto.prototype, "quantity", void 0);
 //# sourceMappingURL=update-material.dto.js.map

@@ -13,13 +13,13 @@ export declare class MediaService {
     findAllByUser(userId: string): Promise<string | {
         gatewayUrl: string;
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
+        name: string;
         type: string;
         url: string;
         mediaHash: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -31,18 +31,7 @@ export declare class MediaService {
         createdAt: Date;
         updatedAt: Date;
     }>;
-    uploadToIpfs(userId: string, file: Express.Multer.File): Promise<{
-        cid: string;
-        gatewayUrl: string;
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        type: string;
-        url: string;
-        mediaHash: string;
-    }>;
+    uploadToIpfs(userId: string, file: Express.Multer.File): Promise<any>;
     uploadBatchToIpfs(userId: string, files: Express.Multer.File[]): Promise<{
         successful: any[];
         failed: number;
@@ -50,13 +39,13 @@ export declare class MediaService {
     }>;
     update(id: string, userId: string, dto: UpdateMediaDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
+        name: string;
         type: string;
         url: string;
         mediaHash: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<void>;
     private getFileType;

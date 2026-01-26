@@ -78,20 +78,6 @@ export function Form(props: MaterialFormProps) {
                 <p className="text-sm text-destructive">{form.formState.errors.harvestDate.message}</p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                step="0.01"
-                {...form.register('quantity', { valueAsNumber: true })}
-                placeholder="e.g. 100.5"
-                disabled={submitting}
-              />
-              {form.formState.errors.quantity && (
-                <p className="text-sm text-destructive">{form.formState.errors.quantity.message}</p>
-              )}
-            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={submitting}>

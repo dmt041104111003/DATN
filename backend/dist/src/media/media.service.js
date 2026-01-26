@@ -15,6 +15,7 @@ const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 const ipfs_service_1 = require("../ipfs/ipfs.service");
 const subscription_service_1 = require("../subscription/subscription.service");
+const hash_util_1 = require("../utils/hash.util");
 let MediaService = class MediaService {
     prisma;
     redis;
@@ -73,12 +74,14 @@ let MediaService = class MediaService {
                 name: file.originalname,
             });
             const type = this.getFileType(file.mimetype);
+            const mediaHash = (0, hash_util_1.hashMedia)(url, type);
             const media = await this.prisma.media.create({
                 data: {
                     userId,
                     name: file.originalname,
                     type,
                     url,
+                    mediaHash,
                 },
             });
             await this.redis.del(`media:user:${userId}`);
@@ -90,7 +93,7 @@ let MediaService = class MediaService {
         }
         catch (error) {
             if (error instanceof common_1.BadRequestException && error.message.includes('IPFS')) {
-                throw new common_1.BadRequestException('Kết nối IPFS lỗi. Vui lòng thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.');
+                throw new common_1.BadRequestException('IPFS connection error. Please try again later or contact technical support.');
             }
             throw error;
         }

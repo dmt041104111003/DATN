@@ -8,34 +8,34 @@ export declare class MaterialService {
     constructor(prisma: PrismaService, redis: RedisService);
     findAllByUser(userId: string): Promise<string | ({
         supplier: {
-            id: string;
             name: string;
+            id: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
-            userId: string;
             gpsCoordinates: string | null;
             contactInfo: string | null;
         };
     } & {
-        id: string;
+        supplierId: string;
         name: string;
+        harvestDate: Date | null;
+        id: string;
+        userId: string;
+        materialHash: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
     })[]>;
     findBySupplier(supplierId: string, userId: string): Promise<string | {
-        id: string;
+        supplierId: string;
         name: string;
+        harvestDate: Date | null;
+        id: string;
+        userId: string;
+        materialHash: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -43,7 +43,6 @@ export declare class MaterialService {
         supplierId: string;
         name: string;
         harvestDate: Date | null;
-        quantity: number;
         createdAt: Date;
         updatedAt: Date;
         supplier: {
@@ -56,46 +55,8 @@ export declare class MaterialService {
             createdAt: Date;
             updatedAt: Date;
         };
-    } | ({
-        supplier: {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            location: string | null;
-            userId: string;
-            gpsCoordinates: string | null;
-            contactInfo: string | null;
-        };
-    } & {
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
-    })>;
-    create(userId: string, dto: CreateMaterialDto): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
     }>;
-    update(id: string, userId: string, dto: UpdateMaterialDto): Promise<{
-        id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        userId: string;
-        supplierId: string;
-        harvestDate: Date | null;
-        materialHash: string;
-    }>;
+    create(userId: string, dto: CreateMaterialDto): Promise<any>;
+    update(id: string, userId: string, dto: UpdateMaterialDto): Promise<any>;
     remove(id: string, userId: string): Promise<void>;
 }

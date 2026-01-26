@@ -4,14 +4,14 @@ import { ReactNode, createContext, useContext, useEffect, useRef, useState } fro
 import { cn } from '@/lib/utils'
 
 interface TabsContextValue {
-  value: string
+  value: string | undefined
   onValueChange: (value: string) => void
 }
 
 const TabsContext = createContext<TabsContextValue | undefined>(undefined)
 
 interface TabsProps {
-  value: string
+  value: string | undefined
   onValueChange: (value: string) => void
   children: ReactNode
   className?: string

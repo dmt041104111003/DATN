@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { productsApi } from '@/lib/api/products'
 import { LoadingPage } from '@/components/ui/loading'
+import Image from 'next/image'
 import { TraceResult } from '@/types/trace'
 import { Certification } from '@/types/certification'
-import { Material } from '@/types/material'
 
 export default function TraceResultPage() {
   const params = useParams()
@@ -56,16 +56,15 @@ export default function TraceResultPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 w-full">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <h2 className="text-2xl font-bold text-destructive">Product Not Found</h2>
-                <p className="text-muted-foreground">{error || 'The product could not be traced with the provided information.'}</p>
-                <Button onClick={() => router.push('/trace')}>Back to Trace</Button>
-              </div>
-            </CardContent>
-          </Card>
+        <main className="flex-1 flex flex-col items-center justify-center">
+          <Image
+            src="/404.png"
+            alt="404"
+            height={500}
+            width={750}
+            className="mx-auto opacity-80"
+          />
+          <p className="-mt-2 text-xl text-muted-foreground">Not Found</p>
         </main>
         <Footer />
       </div>
@@ -106,7 +105,6 @@ export default function TraceResultPage() {
                     <div><span className="text-muted-foreground">Product Name: </span>{product.name}</div>
                     <div><span className="text-muted-foreground">Owner: </span><span className="font-mono text-sm">{product.owner}</span></div>
                     <div><span className="text-muted-foreground">Created At: </span>{new Date(product.createdAt).toLocaleDateString()}</div>
-                    <div><span className="text-muted-foreground">History Hash: </span><span className="font-mono text-xs break-all">{product.historyHash}</span></div>
                   </div>
                 </CardContent>
               </Card>
@@ -139,11 +137,11 @@ export default function TraceResultPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {product.materials.map((material: Material) => (
-                        <div key={material.id} className="border rounded p-2">
+                      {product.materials.map((material, index) => (
+                        <div key={index} className="border rounded p-2">
                           <div className="font-medium">{material.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            <div>Quantity: {material.quantity || '-'}</div>
+                            <div>Quantity: {material.quantity || '-'} {material.unit || ''}</div>
                             <div>Supplier: {material.supplier?.name || 'N/A'}</div>
                             {material.harvestDate && <div>Harvest Date: {new Date(material.harvestDate).toLocaleDateString()}</div>}
                           </div>

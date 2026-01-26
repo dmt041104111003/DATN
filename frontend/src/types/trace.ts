@@ -6,9 +6,17 @@ export interface TraceProduct {
   name: string
   policyId: string
   assetName: string
-  historyHash: string
   certifications: Certification[]
-  materials: Material[]
+  materials: Array<{
+    name: string
+    quantity: number
+    unit?: string
+    harvestDate?: string
+    supplier: {
+      name: string
+      location?: string
+    }
+  }>
   owner: string
   createdAt: string
   updatedAt: string

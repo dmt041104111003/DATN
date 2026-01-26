@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useServices } from '@/hooks/useServices'
 import { Service } from '@/types/subscription'
 import { cn } from '@/lib/utils'
@@ -12,21 +12,34 @@ import { BillingDialogCard } from '@/components/dashboard/billing/billing-dialog
 
 export function List() {
   const router = useRouter()
+  const pathname = usePathname()
   const { items: services, subscriptions, loading, processing, handleSubscribe } = useServices()
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+
+  const currentTab = useMemo(() => {
+    if (pathname === '/dashboard/billing/subscriptions' || pathname.startsWith('/dashboard/billing/subscriptions/')) {
+      return 'subscriptions'
+    }
+    if (pathname === '/dashboard/billing/services' || pathname.startsWith('/dashboard/billing/services/')) {
+      return 'services'
+    }
+    return undefined
+  }, [pathname])
 
   if (loading) return <LoadingPage />
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Billing</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
         <p className="text-muted-foreground">Manage services and subscriptions</p>
       </div>
 
-      <Tabs value="services" onValueChange={(value) => {
-        if (value === 'subscriptions') {
+      <Tabs value={currentTab} onValueChange={(value) => {
+        if (value === 'services') {
+          router.push('/dashboard/billing/services')
+        } else if (value === 'subscriptions') {
           router.push('/dashboard/billing/subscriptions')
         }
       }}>
@@ -79,7 +92,7 @@ export function List() {
           }
           
           const durationText = service.duration ? `${service.duration} ${service.duration === 1 ? 'day' : 'days'}` : 'N/A'
-          const productText = service.maxProducts === null ? 'Unlimited / ngày' : service.maxProducts ? `${service.maxProducts} products / ngày` : 'N/A'
+          const productText = service.maxProducts === null ? 'Unlimited / day' : service.maxProducts ? `${service.maxProducts} products / day` : 'N/A'
           
           const isFeatured = service.id === highestPriceService?.id
           const originalIndex = services.findIndex(s => s.id === service.id)

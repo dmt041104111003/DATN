@@ -11,7 +11,6 @@ import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Public, CurrentUser } from '../auth/decorators';
-// import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('products')
 export class ProductController {
@@ -53,7 +52,6 @@ export class ProductController {
   findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
-  // @UseGuards(JwtAuthGuard)
   @Post()
   create(@CurrentUser() user: { id: string }, @Body() dto: CreateProductDto) {
     return this.productService.create(user.id, dto);

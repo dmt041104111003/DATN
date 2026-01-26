@@ -33,6 +33,29 @@ export class AuthService {
     return { nonce };
   }
 
+  private async assignEnterpriseRoleIfNone(userId: string) {
+    const existing = await (this.prisma as any).userRole.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    if (existing.length > 0) return;
+
+    const enterpriseRole = await (this.prisma as any).role.findUnique({
+      where: { code: 'ENTERPRISE' },
+      select: { id: true },
+    });
+    if (!enterpriseRole) {
+      return;
+    }
+
+    await (this.prisma as any).userRole.create({
+      data: {
+        userId,
+        roleId: enterpriseRole.id,
+      },
+    });
+  }
+
   async verifyWallet(
     address: string,
     signature: string,
@@ -63,6 +86,8 @@ export class AuthService {
       create: { address: userAddress, walletName },
     });
 
+    await this.assignEnterpriseRoleIfNone(user.id);
+
     const newNonce = generateNonce(
       'I agree to the term and conditions of the HSUPPLY: ',
     );
@@ -88,11 +113,31 @@ export class AuthService {
 
   async validateUser(userId: string) {
     const cacheKey = `user:${userId}`;
-    const cached = await this.redis.get<{ id: string; address: string; walletName: string | null }>(cacheKey);
+    const cached = await this.redis.get<{ id: string; address: string; walletName: string | null; role: string | null }>(cacheKey);
     if (cached && typeof cached === 'object') return cached;
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (user) await this.redis.set(cacheKey, user, 600);
-    return user;
+    const user = await this.prisma.user.findUnique({ 
+      where: { id: userId },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+      },
+    });
+    
+    if (!user) return null;
+    
+    const roleCode = user.roles && user.roles.length > 0 ? user.roles[0].role.code : null;
+    const userData = {
+      id: user.id,
+      address: user.address,
+      walletName: user.walletName,
+      role: roleCode,
+    };
+    
+    await this.redis.set(cacheKey, userData, 600);
+    return userData;
   }
 }

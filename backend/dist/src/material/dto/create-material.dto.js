@@ -15,7 +15,6 @@ class CreateMaterialDto {
     supplierId;
     name;
     harvestDate;
-    quantity;
 }
 exports.CreateMaterialDto = CreateMaterialDto;
 __decorate([
@@ -31,9 +30,4 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateMaterialDto.prototype, "harvestDate", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], CreateMaterialDto.prototype, "quantity", void 0);
 //# sourceMappingURL=create-material.dto.js.map

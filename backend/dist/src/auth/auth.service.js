@@ -39,6 +39,27 @@ let AuthService = class AuthService {
         });
         return { nonce };
     }
+    async assignEnterpriseRoleIfNone(userId) {
+        const existing = await this.prisma.userRole.findMany({
+            where: { userId },
+            select: { id: true },
+        });
+        if (existing.length > 0)
+            return;
+        const enterpriseRole = await this.prisma.role.findUnique({
+            where: { code: 'ENTERPRISE' },
+            select: { id: true },
+        });
+        if (!enterpriseRole) {
+            return;
+        }
+        await this.prisma.userRole.create({
+            data: {
+                userId,
+                roleId: enterpriseRole.id,
+            },
+        });
+    }
     async verifyWallet(address, signature, key, walletName) {
         const userAddress = address.trim();
         const walletNonce = await this.prisma.walletNonce.findUnique({
@@ -56,6 +77,7 @@ let AuthService = class AuthService {
             update: { walletName },
             create: { address: userAddress, walletName },
         });
+        await this.assignEnterpriseRoleIfNone(user.id);
         const newNonce = (0, core_1.generateNonce)('I agree to the term and conditions of the HSUPPLY: ');
         await this.prisma.walletNonce.update({
             where: { address: userAddress },
@@ -79,10 +101,27 @@ let AuthService = class AuthService {
         const cached = await this.redis.get(cacheKey);
         if (cached && typeof cached === 'object')
             return cached;
-        const user = await this.prisma.user.findUnique({ where: { id: userId } });
-        if (user)
-            await this.redis.set(cacheKey, user, 600);
-        return user;
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                roles: {
+                    include: {
+                        role: true,
+                    },
+                },
+            },
+        });
+        if (!user)
+            return null;
+        const roleCode = user.roles && user.roles.length > 0 ? user.roles[0].role.code : null;
+        const userData = {
+            id: user.id,
+            address: user.address,
+            walletName: user.walletName,
+            role: roleCode,
+        };
+        await this.redis.set(cacheKey, userData, 600);
+        return userData;
     }
 };
 exports.AuthService = AuthService;

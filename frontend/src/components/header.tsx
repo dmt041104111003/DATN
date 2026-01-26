@@ -50,26 +50,10 @@ export function Header() {
                 <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary" />
               )}
             </Link>
-            {user && (
-              <Link 
-                href="/dashboard" 
-                className={cn(
-                  "text-sm font-medium transition-colors relative",
-                  isActive('/dashboard') ? "text-primary font-semibold" : "hover:text-primary"
-                )}
-              >
-                Dashboard
-                {isActive('/dashboard') && (
-                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary" />
-                )}
-              </Link>
-            )}
           </nav>
 
           <div className="flex items-center gap-4">
-            {user ? (
-              <Button variant="ghost" size="sm" onClick={logout} className="hidden sm:inline-flex">Logout</Button>
-            ) : (
+            {!user && (
               <Link href="/login">
                 <Button size="sm" className="hidden sm:inline-flex rounded-full px-6 bg-foreground text-background hover:bg-foreground/90">
                   Login

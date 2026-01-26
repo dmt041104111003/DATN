@@ -4,6 +4,7 @@ export interface Media {
   name: string
   type: string
   url: string
+  mediaHash: string
   createdAt: string
   updatedAt: string
 }

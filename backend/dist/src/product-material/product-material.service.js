@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 const subscription_service_1 = require("../subscription/subscription.service");
+const hash_util_1 = require("../utils/hash.util");
 let ProductMaterialService = class ProductMaterialService {
     prisma;
     redis;
@@ -74,7 +75,7 @@ let ProductMaterialService = class ProductMaterialService {
     async create(userId, dto) {
         await this.checkSubscriptionActive(userId);
         if (dto.quantity <= 0) {
-            throw new common_1.BadRequestException('Số lượng phải lớn hơn 0');
+            throw new common_1.BadRequestException('Quantity must be greater than 0');
         }
         await this.checkProductOwnership(dto.productId, userId);
         await this.checkMaterialOwnership(dto.materialId, userId);
@@ -89,8 +90,12 @@ let ProductMaterialService = class ProductMaterialService {
         if (existing) {
             throw new common_1.BadRequestException('This material has already been added to the product. Please update the quantity instead of adding a new entry.');
         }
+        const pmHash = (0, hash_util_1.hashProductMaterial)(dto.materialId, dto.quantity, dto.unit);
         const pm = await this.prisma.productMaterial.create({
-            data: dto,
+            data: {
+                ...dto,
+                pmHash,
+            },
             include: {
                 material: {
                     include: { supplier: true },
@@ -103,12 +108,18 @@ let ProductMaterialService = class ProductMaterialService {
     async update(id, userId, dto) {
         await this.checkSubscriptionActive(userId);
         if (dto.quantity !== undefined && dto.quantity <= 0) {
-            throw new common_1.BadRequestException('Số lượng phải lớn hơn 0');
+            throw new common_1.BadRequestException('Quantity must be greater than 0');
         }
         const pm = await this.findOneOwned(id, userId);
+        const quantity = dto.quantity !== undefined ? dto.quantity : pm.quantity;
+        const unit = dto.unit !== undefined ? dto.unit : pm.unit;
+        const pmHash = (0, hash_util_1.hashProductMaterial)(pm.materialId, quantity, unit);
         const updated = await this.prisma.productMaterial.update({
             where: { id },
-            data: dto,
+            data: {
+                ...dto,
+                pmHash,
+            },
             include: {
                 material: {
                     include: { supplier: true },

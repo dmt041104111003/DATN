@@ -1,10 +1,10 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
-import { Alert } from '@/components/ui/alert'
+import { Toaster } from '@/components/ui/toaster'
 import { setGlobalAlert } from '@/lib/utils/alert'
 
-interface AlertMessage {
+interface ToastMessage {
   id: string
   title?: string
   description: string
@@ -12,24 +12,33 @@ interface AlertMessage {
 }
 
 interface AlertContextType {
-  showAlert: (message: string | AlertMessage) => void
+  showAlert: (message: string | ToastMessage) => void
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined)
 
 export function AlertProvider({ children }: { children: ReactNode }) {
-  const [alerts, setAlerts] = useState<AlertMessage[]>([])
+  const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const showAlert = useCallback((message: string | { title?: string; description: string; variant?: 'default' | 'success' | 'warning' | 'error' }) => {
-    const alert: AlertMessage = typeof message === 'string'
-      ? { id: Date.now().toString(), description: message }
-      : { id: Date.now().toString(), description: message.description, title: message.title, variant: message.variant }
+    const description = typeof message === 'string' ? message : message.description
+    
+    setToasts((prev) => {
+      const existingToast = prev.find(t => t.description === description && t.variant === (typeof message === 'string' ? undefined : message.variant))
+      if (existingToast) {
+        return prev
+      }
+      
+      const toast: ToastMessage = typeof message === 'string'
+        ? { id: `${Date.now()}-${Math.random()}`, description: message }
+        : { id: `${Date.now()}-${Math.random()}`, description: message.description, title: message.title, variant: message.variant }
 
-    setAlerts((prev) => [...prev, alert])
-
-    setTimeout(() => {
-      setAlerts((prev) => prev.filter((a) => a.id !== alert.id))
-    }, 5000)
+      setTimeout(() => {
+        setToasts((current) => current.filter((t) => t.id !== toast.id))
+      }, 5000)
+      
+      return [...prev, toast]
+    })
   }, [])
 
   useEffect(() => {
@@ -37,25 +46,14 @@ export function AlertProvider({ children }: { children: ReactNode }) {
     return () => setGlobalAlert(null)
   }, [showAlert])
 
-  const removeAlert = useCallback((id: string) => {
-    setAlerts((prev) => prev.filter((a) => a.id !== id))
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
   return (
     <AlertContext.Provider value={{ showAlert }}>
       {children}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
-        {alerts.map((alert) => (
-          <Alert
-            key={alert.id}
-            title={alert.title}
-            description={alert.description}
-            variant={alert.variant}
-            onClose={() => removeAlert(alert.id)}
-            className="min-w-[300px] shadow-lg"
-          />
-        ))}
-      </div>
+      <Toaster toasts={toasts} onDismiss={removeToast} />
     </AlertContext.Provider>
   )
 }
