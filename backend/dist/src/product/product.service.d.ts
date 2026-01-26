@@ -17,9 +17,9 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }[]>;
     findAllByUser(userId: string): Promise<string | {
         id: string;
@@ -27,9 +27,9 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
@@ -37,9 +37,9 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }>;
     private findOneOwned;
     private getActiveSubscription;
@@ -50,9 +50,9 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
@@ -60,9 +60,9 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }>;
     remove(id: string, userId: string): Promise<{
         success: boolean;
@@ -84,12 +84,12 @@ export declare class ProductService {
             assetName: string | null;
             historyHash: string | null;
             documents: {
-                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
+                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {

@@ -14,7 +14,6 @@ const app_service_1 = require("./app.service");
 const prisma_module_1 = require("./prisma.module");
 const user_module_1 = require("./user/user.module");
 const product_module_1 = require("./product/product.module");
-const collection_module_1 = require("./collection/collection.module");
 const production_process_module_1 = require("./production-process/production-process.module");
 const certification_module_1 = require("./certification/certification.module");
 const material_module_1 = require("./material/material.module");
@@ -28,7 +27,6 @@ const blockchain_module_1 = require("./blockchain/blockchain.module");
 const contract_module_1 = require("./contract/contract.module");
 const ipfs_module_1 = require("./ipfs/ipfs.module");
 const media_module_1 = require("./media/media.module");
-const metadata_module_1 = require("./metadata/metadata.module");
 const document_module_1 = require("./document/document.module");
 const product_material_module_1 = require("./product-material/product-material.module");
 const redis_module_1 = require("./redis/redis.module");
@@ -48,8 +46,6 @@ exports.AppModule = AppModule = __decorate([
             user_module_1.UserModule,
             product_module_1.ProductModule,
             product_material_module_1.ProductMaterialModule,
-            collection_module_1.CollectionModule,
-            metadata_module_1.MetadataModule,
             media_module_1.MediaModule,
             document_module_1.DocumentModule,
             production_process_module_1.ProductionProcessModule,

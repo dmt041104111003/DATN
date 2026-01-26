@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { LoadingPage } from '@/components/ui/loading'
-import { InfoCard } from '@/components/dashboard/info-card'
-import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
+import { InfoCard } from '@/components/dashboard/shared/info-card'
+import { ResponsiveListView } from '@/components/dashboard/shared/responsive-list-view'
 import { TraceResult } from '@/types/trace'
 
 export default function TraceResultPage() {

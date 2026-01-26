@@ -6,7 +6,6 @@ import {
   AuthMeResponse,
   Product,
   Material,
-  Collection,
   Warehouse,
   Supplier,
   ProductQuota,
@@ -15,7 +14,6 @@ import {
   Document,
   Certification,
   ProductionProcess,
-  Metadata,
   Media,
   WarehouseStorage,
   ProductMaterial,
@@ -57,16 +55,6 @@ export const apiClient = {
     update: (id: string, data: Partial<Material>) => 
       request<Material>(`/materials/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<{ message: string }>(`/materials/${id}`, { method: 'DELETE' }),
-  },
-  collections: {
-    findAll: () => request<Collection[]>('/collections'),
-    findMy: () => request<Collection[]>('/collections/my'),
-    findOne: (id: string) => request<Collection>(`/collections/${id}`),
-    create: (data: { name: string; description?: string; thumbnail?: string }) => 
-      request<Collection>('/collections', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Collection>) => 
-      request<Collection>(`/collections/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => request<{ message: string }>(`/collections/${id}`, { method: 'DELETE' }),
   },
   warehouses: {
     findAll: () => request<Warehouse[]>('/warehouses'),
@@ -125,15 +113,6 @@ export const apiClient = {
     update: (id: string, data: Partial<ProductionProcess>) => 
       request<ProductionProcess>(`/production-processes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     remove: (id: string) => request<{ message: string }>(`/production-processes/${id}`, { method: 'DELETE' }),
-  },
-  metadata: {
-    findAll: () => request<Metadata[]>('/metadata'),
-    findOne: (id: string) => request<Metadata>(`/metadata/${id}`),
-    create: (data: { collectionId: string; assetName?: string; content: string; nftReference?: string[] }) => 
-      request<Metadata>('/metadata', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Metadata>) => 
-      request<Metadata>(`/metadata/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    remove: (id: string) => request<{ message: string }>(`/metadata/${id}`, { method: 'DELETE' }),
   },
   media: {
     findAll: () => request<Media[]>('/media'),

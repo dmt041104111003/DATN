@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api/client'
 import { useWallet } from './use-wallet'
 import { Product } from '@/types/api'
+import { showAlert } from '@/lib/utils/alert'
 
 export function useProductMint(product: Product | null, user: { address: string; walletName?: string } | null, onSuccess: () => void) {
   const router = useRouter()
@@ -10,29 +11,10 @@ export function useProductMint(product: Product | null, user: { address: string;
   const [minting, setMinting] = useState(false)
   const [mintError, setMintError] = useState<string | null>(null)
   const [mintStep, setMintStep] = useState<string>('')
-  const [preparedMetadata, setPreparedMetadata] = useState<any>(null)
-  const [reviewMetadata, setReviewMetadata] = useState(false)
-
-  const prepareMetadata = async () => {
-    if (!product) return
-    try {
-      const metadata = await apiClient.contract.prepareMetadata(product.id)
-      setPreparedMetadata(metadata)
-      setReviewMetadata(true)
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to prepare metadata'
-      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
-        alert(`${errorMessage}. Please renew your subscription to continue.`)
-        router.push('/dashboard/billing')
-      } else {
-        alert(errorMessage)
-      }
-    }
-  }
 
   const mint = async (assetName: string) => {
     if (!user?.address || !product || !assetName.trim()) {
-      alert('Please enter asset name')
+      showAlert({ description: 'Please enter asset name', variant: 'warning' })
       return
     }
     setMinting(true)
@@ -84,7 +66,7 @@ export function useProductMint(product: Product | null, user: { address: string;
       })
       reset()
       onSuccess()
-      alert(`NFT minted successfully! TX Hash: ${txHash}`)
+      showAlert({ description: `NFT minted successfully! TX Hash: ${txHash}`, variant: 'success' })
     } catch (err) {
       const isCancelled = err instanceof Error && 
         ['declined', 'rejected', 'cancelled', 'User'].some(s => err.message.includes(s))
@@ -115,8 +97,6 @@ export function useProductMint(product: Product | null, user: { address: string;
   }
 
   const reset = () => {
-    setPreparedMetadata(null)
-    setReviewMetadata(false)
     setMintError(null)
     setMintStep('')
   }
@@ -125,12 +105,7 @@ export function useProductMint(product: Product | null, user: { address: string;
     minting,
     mintError,
     mintStep,
-    preparedMetadata,
-    reviewMetadata,
-    prepareMetadata,
     mint,
     reset,
-    setReviewMetadata,
-    setPreparedMetadata,
   }
 }

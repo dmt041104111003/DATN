@@ -5,7 +5,6 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma.module';
 import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
-import { CollectionModule } from './collection/collection.module';
 import { ProductionProcessModule } from './production-process/production-process.module';
 import { CertificationModule } from './certification/certification.module';
 import { MaterialModule } from './material/material.module';
@@ -19,7 +18,6 @@ import { BlockchainModule } from './blockchain/blockchain.module';
 import { ContractModule } from './contract/contract.module';
 import { IpfsModule } from './ipfs/ipfs.module';
 import { MediaModule } from './media/media.module';
-import { MetadataModule } from './metadata/metadata.module';
 import { DocumentModule } from './document/document.module';
 import { ProductMaterialModule } from './product-material/product-material.module';
 import { RedisModule } from './redis/redis.module';
@@ -35,8 +33,6 @@ import { JwtAuthGuard } from './auth/guards';
     UserModule,
     ProductModule,
     ProductMaterialModule,
-    CollectionModule,
-    MetadataModule,
     MediaModule,
     DocumentModule,
     ProductionProcessModule,

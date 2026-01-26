@@ -10,9 +10,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }[]>;
     findMy(user: {
         id: string;
@@ -22,9 +22,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }[]>;
     getQuota(user: {
         id: string;
@@ -42,12 +42,12 @@ export declare class ProductController {
             assetName: string | null;
             historyHash: string | null;
             documents: {
-                url: string;
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 productId: string;
                 docType: string;
+                url: string;
                 hash: string | null;
             }[];
             productionProcesses: {
@@ -148,9 +148,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }>;
     create(user: {
         id: string;
@@ -160,9 +160,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }>;
     update(user: {
         id: string;
@@ -172,9 +172,9 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
+        policyId: string | null;
         assetName: string | null;
         historyHash: string | null;
-        policyId: string | null;
     }>;
     remove(user: {
         id: string;

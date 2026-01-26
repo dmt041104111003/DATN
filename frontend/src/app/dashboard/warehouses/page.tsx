@@ -17,9 +17,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
-import { PageHeader } from '@/components/dashboard/page-header'
-import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
-import { EmptyState } from '@/components/dashboard/empty-state'
+import { PageHeader } from '@/components/dashboard/shared/page-header'
+import { ResponsiveListView } from '@/components/dashboard/shared/responsive-list-view'
+import { EmptyState } from '@/components/dashboard/shared/empty-state'
 import { useCrud } from '@/hooks/use-crud'
 
 type WarehouseFormData = {

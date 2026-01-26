@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { handleApiError } from '@/lib/utils/error-handler'
+import { showAlert } from '@/lib/utils/alert'
+import { confirm } from '@/lib/utils/confirm'
 
 interface UseCrudOptions<T, TFormData> {
   loadData: () => Promise<void>
@@ -51,7 +53,7 @@ export function useCrud<T extends { id: string }, TFormData extends Record<strin
       await options.loadData()
     } catch (err) {
       const errorMessage = handleApiError(err, options.redirectOnSubscriptionError ? router : undefined)
-      alert(errorMessage)
+      showAlert({ description: errorMessage, variant: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -62,7 +64,7 @@ export function useCrud<T extends { id: string }, TFormData extends Record<strin
       ? options.getDeleteConfirmMessage(item)
       : 'Are you sure you want to delete this item?'
     
-    if (!confirm(confirmMessage)) return
+    if (!(await confirm(confirmMessage))) return
 
     try {
       if (options.onDelete) {
@@ -70,15 +72,15 @@ export function useCrud<T extends { id: string }, TFormData extends Record<strin
       } else {
         await options.loadData()
         if (item && options.getDeleteSuccessMessage) {
-          alert(options.getDeleteSuccessMessage(item))
+          showAlert({ description: options.getDeleteSuccessMessage(item), variant: 'success' })
         } else {
-          alert('Item deleted successfully.')
+          showAlert({ description: 'Item deleted successfully.', variant: 'success' })
         }
       }
       await options.loadData()
     } catch (err) {
       const errorMessage = handleApiError(err, options.redirectOnSubscriptionError ? router : undefined)
-      alert(errorMessage)
+      showAlert({ description: errorMessage, variant: 'error' })
     }
   }
 

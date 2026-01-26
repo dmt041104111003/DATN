@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { apiClient } from '@/lib/api/client'
 import { useWallet } from './use-wallet'
 import { Product } from '@/types/api'
+import { showAlert } from '@/lib/utils/alert'
 
 export function useProductBurn(product: Product | null, user: { address: string; walletName?: string } | null, onSuccess: () => void) {
   const { connectWallet } = useWallet()
@@ -11,12 +12,12 @@ export function useProductBurn(product: Product | null, user: { address: string;
 
   const burn = async (quantity: string) => {
     if (!user?.address || !product || !product.policyId || !product.assetName) {
-      alert('Product must be minted before burning')
+      showAlert({ description: 'Product must be minted before burning', variant: 'warning' })
       return
     }
 
     if (!quantity || parseInt(quantity) <= 0) {
-      alert('Please enter a valid quantity')
+      showAlert({ description: 'Please enter a valid quantity', variant: 'warning' })
       return
     }
 
@@ -51,7 +52,7 @@ export function useProductBurn(product: Product | null, user: { address: string;
 
       reset()
       onSuccess()
-      alert(`NFT burned successfully! TX Hash: ${txHash}`)
+      showAlert({ description: `NFT burned successfully! TX Hash: ${txHash}`, variant: 'success' })
     } catch (err) {
       const isCancelled = err instanceof Error && 
         ['declined', 'rejected', 'cancelled', 'User'].some(s => err.message.includes(s))

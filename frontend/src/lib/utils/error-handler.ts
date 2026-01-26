@@ -1,4 +1,5 @@
 import { useRouter } from 'next/navigation'
+import { showAlert } from './alert'
 
 export function handleApiError(err: unknown, router?: ReturnType<typeof useRouter>): string {
   const errorMessage = err instanceof Error ? err.message : 'An error occurred'
@@ -6,7 +7,7 @@ export function handleApiError(err: unknown, router?: ReturnType<typeof useRoute
   if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
     const message = `${errorMessage}. Please renew your subscription to continue.`
     if (router) {
-      alert(message)
+      showAlert({ description: message, variant: 'warning' })
       router.push('/dashboard/billing')
     }
     return message

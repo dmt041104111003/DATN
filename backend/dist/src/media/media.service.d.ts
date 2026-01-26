@@ -12,13 +12,13 @@ export declare class MediaService {
     private checkSubscriptionActive;
     findAllByUser(userId: string): Promise<string | {
         gatewayUrl: string;
-        url: string;
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         userId: string;
+        url: string;
+        type: string;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -33,13 +33,13 @@ export declare class MediaService {
     uploadToIpfs(userId: string, file: Express.Multer.File): Promise<{
         cid: string;
         gatewayUrl: string;
-        url: string;
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         userId: string;
+        url: string;
+        type: string;
     }>;
     uploadBatchToIpfs(userId: string, files: Express.Multer.File[]): Promise<{
         successful: any[];
@@ -47,13 +47,13 @@ export declare class MediaService {
         total: number;
     }>;
     update(id: string, userId: string, dto: UpdateMediaDto): Promise<{
-        url: string;
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        type: string;
         userId: string;
+        url: string;
+        type: string;
     }>;
     remove(id: string, userId: string): Promise<void>;
     private getFileType;

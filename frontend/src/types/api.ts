@@ -42,16 +42,6 @@ export interface Material {
   supplier?: Supplier
 }
 
-export interface Collection {
-  id: string
-  userId: string
-  name: string
-  description?: string
-  thumbnail?: string
-  createdAt: string
-  updatedAt: string
-}
-
 export interface Warehouse {
   id: string
   name: string
@@ -134,16 +124,6 @@ export interface ProductionProcess {
   startTime: string
   endTime?: string
   location?: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface Metadata {
-  id: string
-  collectionId: string
-  assetName?: string
-  content: string
-  nftReference?: string[]
   createdAt: string
   updatedAt: string
 }

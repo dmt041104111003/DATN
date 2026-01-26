@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api/client'
 import { useWallet } from './use-wallet'
 import { Product } from '@/types/api'
+import { showAlert } from '@/lib/utils/alert'
 
 export function useProductUpdate(product: Product | null, user: { address: string; walletName?: string } | null, onSuccess: () => void) {
   const router = useRouter()
@@ -10,32 +11,10 @@ export function useProductUpdate(product: Product | null, user: { address: strin
   const [updating, setUpdating] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateStep, setUpdateStep] = useState<string>('')
-  const [preparedMetadata, setPreparedMetadata] = useState<any>(null)
-  const [reviewMetadata, setReviewMetadata] = useState(false)
-
-  const prepareMetadata = async () => {
-    if (!product) return
-    
-    try {
-      const metadata = await apiClient.contract.prepareMetadata(product.id)
-      setPreparedMetadata(metadata)
-      setReviewMetadata(true)
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to prepare metadata'
-      if (errorMessage.includes('expired') || errorMessage.includes('Subscription')) {
-        alert(`${errorMessage}. Please renew your subscription to continue.`)
-        router.push('/dashboard/billing')
-      } else if (errorMessage.includes('Not your product') || errorMessage.includes('permission')) {
-        alert('You do not have permission to update this product.')
-      } else {
-        alert(errorMessage)
-      }
-    }
-  }
 
   const update = async () => {
     if (!user?.address || !product || !product.policyId || !product.assetName) {
-      alert('Product must be minted before updating metadata')
+      showAlert({ description: 'Product must be minted before updating metadata', variant: 'warning' })
       return
     }
 
@@ -92,7 +71,7 @@ export function useProductUpdate(product: Product | null, user: { address: strin
 
       reset()
       onSuccess()
-      alert(`Metadata updated successfully! Transaction Hash: ${txHash}\n\nYou can view this transaction on the blockchain explorer.`)
+      showAlert({ description: `Metadata updated successfully! Transaction Hash: ${txHash}\n\nYou can view this transaction on the blockchain explorer.`, variant: 'success' })
     } catch (err) {
       const isCancelled = err instanceof Error && 
         ['declined', 'rejected', 'cancelled', 'User'].some(s => err.message.includes(s))
@@ -127,8 +106,6 @@ export function useProductUpdate(product: Product | null, user: { address: strin
   }
 
   const reset = () => {
-    setPreparedMetadata(null)
-    setReviewMetadata(false)
     setUpdateError(null)
     setUpdateStep('')
   }
@@ -137,12 +114,7 @@ export function useProductUpdate(product: Product | null, user: { address: strin
     updating,
     updateError,
     updateStep,
-    preparedMetadata,
-    reviewMetadata,
-    prepareMetadata,
     update,
     reset,
-    setReviewMetadata,
-    setPreparedMetadata,
   }
 }

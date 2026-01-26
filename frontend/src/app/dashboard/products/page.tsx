@@ -17,16 +17,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { LoadingOverlay, LoadingPage } from '@/components/ui/loading'
-import { PageHeader } from '@/components/dashboard/page-header'
-import { ResponsiveListView } from '@/components/dashboard/responsive-list-view'
-import { EmptyState } from '@/components/dashboard/empty-state'
+import { PageHeader } from '@/components/dashboard/shared/page-header'
+import { ResponsiveListView } from '@/components/dashboard/shared/responsive-list-view'
+import { EmptyState } from '@/components/dashboard/shared/empty-state'
 import { useCrud } from '@/hooks/use-crud'
+import { showAlert } from '@/lib/utils/alert'
+import { useRouter } from 'next/navigation'
 
 type ProductFormData = {
   name: string
 }
 
 export default function ProductsPage() {
+  const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -55,7 +58,10 @@ export default function ProductsPage() {
   } = useCrud<Product, ProductFormData>({
     loadData: loadProducts,
     onCreate: async (data) => {
-      await apiClient.products.create(data)
+      const product = await apiClient.products.create(data)
+      // Redirect to product detail page after creation
+      router.push(`/dashboard/products/${product.id}`)
+      return product
     },
     onUpdate: async (id, data) => {
       await apiClient.products.update(id, data)
@@ -64,9 +70,9 @@ export default function ProductsPage() {
       const product = products.find(p => p.id === id)
       const result = await apiClient.products.remove(id)
       if (result?.wasMinted) {
-        alert(`Product deleted successfully.\n\n⚠️ Note: This product was minted as NFT. On-chain blockchain data cannot be deleted, but off-chain metadata has been removed.`)
+        showAlert({ description: `Product deleted successfully.\n\n⚠️ Note: This product was minted as NFT. On-chain blockchain data cannot be deleted, but off-chain metadata has been removed.`, variant: 'success' })
       } else {
-        alert('Product deleted successfully.')
+        showAlert({ description: 'Product deleted successfully.', variant: 'success' })
       }
     },
     getDeleteConfirmMessage: (product) => {
@@ -104,10 +110,13 @@ export default function ProductsPage() {
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <DialogHeader>
                   <DialogTitle>{editing ? 'Edit Product' : 'Create Product'}</DialogTitle>
+                  <DialogDescription>
+                    {editing ? 'Update product information' : 'Create a new product. You can add documents, processes, certifications, and materials later.'}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4 px-4 min-w-0 w-full">
                   <div className="grid gap-2">
-                    <Label htmlFor="name">Product Name</Label>
+                    <Label htmlFor="name">Product Name *</Label>
                     <Input
                       id="name"
                       {...form.register('name', { required: 'Product name is required' })}

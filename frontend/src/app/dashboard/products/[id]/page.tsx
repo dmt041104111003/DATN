@@ -3,20 +3,15 @@
 import { useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
-import { ProductDocuments } from '@/components/dashboard/product-documents'
-import { ProductCertifications } from '@/components/dashboard/product-certifications'
-import { ProductProcesses } from '@/components/dashboard/product-processes'
-import { ProductMaterials } from '@/components/dashboard/product-materials'
-import { ProductWarehouseStorages } from '@/components/dashboard/product-warehouse-storages'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { LoadingPage } from '@/components/ui/loading'
-import { DetailPageHeader } from '@/components/dashboard/detail-page-header'
-import { InfoCard } from '@/components/dashboard/info-card'
-import { NotFoundState } from '@/components/dashboard/not-found-state'
-import { MintDialog } from '@/components/dashboard/mint-dialog'
-import { UpdateMetadataDialog } from '@/components/dashboard/update-metadata-dialog'
-import { BurnDialog } from '@/components/dashboard/burn-dialog'
-import { HistoryDialog } from '@/components/dashboard/history-dialog'
+import { DetailPageHeader } from '@/components/dashboard/shared/detail-page-header'
+import { InfoCard } from '@/components/dashboard/shared/info-card'
+import { NotFoundState } from '@/components/dashboard/shared/not-found-state'
+import { MintDialog } from '@/components/dashboard/products/mint-dialog'
+import { UpdateMetadataDialog } from '@/components/dashboard/products/update-metadata-dialog'
+import { BurnDialog } from '@/components/dashboard/products/burn-dialog'
+import { HistoryDialog } from '@/components/dashboard/products/history-dialog'
 import { useProductData } from '@/hooks/use-product-data'
 
 export default function ProductDetailPage() {
@@ -26,11 +21,6 @@ export default function ProductDetailPage() {
 
   const {
     product,
-    documents,
-    certifications,
-    processes,
-    productMaterials,
-    warehouseStorages,
     loading,
     loadProduct,
   } = useProductData(productId)
@@ -113,14 +103,6 @@ export default function ProductDetailPage() {
             { label: 'Updated At', value: new Date(product.updatedAt).toLocaleString() },
           ]}
         />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <ProductDocuments productId={product.id} documents={documents} onRefresh={() => loadProduct(product.id, true)} />
-        <ProductCertifications productId={product.id} certifications={certifications} onRefresh={() => loadProduct(product.id, true)} />
-        <ProductProcesses productId={product.id} processes={processes} onRefresh={() => loadProduct(product.id, true)} />
-        <ProductMaterials productId={product.id} productMaterials={productMaterials} onRefresh={() => loadProduct(product.id, true)} />
-        <ProductWarehouseStorages productId={product.id} storages={warehouseStorages} onRefresh={() => loadProduct(product.id, true)} />
       </div>
     </div>
   )

@@ -5,11 +5,11 @@ import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { apiClient } from '@/lib/api/client'
 import { Warehouse, WarehouseStorage } from '@/types/api'
-import { WarehouseStorages } from '@/components/dashboard/warehouse-storages'
+import { WarehouseStorages } from '@/components/dashboard/warehouses/warehouse-storages'
 import { LoadingPage } from '@/components/ui/loading'
-import { DetailPageHeader } from '@/components/dashboard/detail-page-header'
-import { InfoCard } from '@/components/dashboard/info-card'
-import { NotFoundState } from '@/components/dashboard/not-found-state'
+import { DetailPageHeader } from '@/components/dashboard/shared/detail-page-header'
+import { InfoCard } from '@/components/dashboard/shared/info-card'
+import { NotFoundState } from '@/components/dashboard/shared/not-found-state'
 
 export default function WarehouseDetailPage() {
   const params = useParams()
