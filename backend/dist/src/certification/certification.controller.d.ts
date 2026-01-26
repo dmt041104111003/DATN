@@ -12,7 +12,7 @@ export declare class CertificationController {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
@@ -22,7 +22,7 @@ export declare class CertificationController {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }>;
     create(user: {
         id: string;
@@ -34,7 +34,7 @@ export declare class CertificationController {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }>;
     update(user: {
         id: string;
@@ -46,7 +46,7 @@ export declare class CertificationController {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }>;
     remove(user: {
         id: string;

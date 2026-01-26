@@ -8,5 +8,9 @@ export declare class AppService {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }[]>;
 }

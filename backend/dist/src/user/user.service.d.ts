@@ -9,6 +9,10 @@ export declare class UserService {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }>;
     update(id: string, dto: UpdateUserDto): Promise<{
         id: string;
@@ -16,6 +20,10 @@ export declare class UserService {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }>;
     remove(id: string): Promise<{
         id: string;
@@ -23,5 +31,9 @@ export declare class UserService {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }>;
 }

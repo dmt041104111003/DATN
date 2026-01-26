@@ -1,352 +1,171 @@
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
-use aiken/primitive/bytearray
-use cardano/address.{Address}
+use cardano/address.{Address, VerificationKey}
 use cardano/assets.{AssetName, PolicyId, flatten, lovelace_of, without_lovelace}
-use cardano/minting
-use cardano/transaction.{InlineDatum, Input, Output}
+use cardano/transaction.{Input, Output}
 use cardano/tx
-use contract/types
-use types/cip68.{CIP68}
-use validation/find
+use contract/types.{Roadmap, DistributionPlan, ProductState, Minted, InTransit, Confirmed, Completed}
 
-pub fn check_output_utxo(
-  output: Output,
-  issuer: VerificationKeyHash,
-  vks: List<VerificationKeyHash>,
+pub fn get_roadmap_agent(roadmap: Roadmap, index: Int) -> Option<Address> {
+  let Roadmap(agents) = roadmap
+  list.at(agents, index)
+}
+
+pub fn is_last_agent(roadmap: Roadmap, index: Int) -> Bool {
+  let Roadmap(agents) = roadmap
+  index == list.length(agents) - 1
+}
+
+pub fn roadmap_length(roadmap: Roadmap) -> Int {
+  let Roadmap(agents) = roadmap
+  list.length(agents)
+}
+
+pub fn validate_roadmap(roadmap: Roadmap) -> Bool {
+  roadmap_length(roadmap) > 0
+}
+
+pub fn validate_state_transition(
+  old_state: ProductState,
+  new_state: ProductState,
+  roadmap: Roadmap,
 ) -> Bool {
-  expect InlineDatum(data) = output.datum
-  expect metadatum: CIP68 = data
-  expect author: VerificationKeyHash = cip68.get(metadatum, types.author_key)
-  let output_value =
-    output.value
-      |> without_lovelace()
-      |> flatten()
-  and {
-    author == issuer,
-    tx.verify_signature(vks, author),
-    list.length(output_value) == 1,
-  }
-}
-
-pub fn find_output(
-  outputs: List<Output>,
-  price: Int,
-  address: Address,
-) -> Option<Output> {
-  list.find(
-    outputs,
-    fn(output) {
-      lovelace_of(output.value) >= price && output.address.payment_credential == address.payment_credential
-    },
-  )
-}
-
-pub fn check_output_remove(
-  outputs: List<Output>,
-  platform_address: Address,
-  platform_fee: Int,
-  user_address: Address,
-) -> Bool {
-  let outputs = list.filter(outputs, fn(output) { or {
-          and {
-            lovelace_of(output.value) >= platform_fee,
-            output.address.payment_credential == platform_address.payment_credential,
-          },
-          output.address.payment_credential == user_address.payment_credential,
-        } })
-
-  list.length(outputs) == 2
-}
-
-pub fn check_output_update(
-  inputs: List<Input>,
-  outputs: List<Output>,
-  address: Address,
-) -> Bool {
-  let utxo_outputs =
-    list.filter(outputs, fn(output) { output.address == address })
-
-  let utxo_inputs =
-    list.filter(inputs, fn(input) { input.output.address == address })
-
-  list.length(utxo_outputs) == list.length(utxo_inputs)
-}
-
-pub fn filter_and_pair(
-  flat: List<(PolicyId, AssetName, Int)>,
-  prefix100: ByteArray,
-  prefix222: ByteArray,
-) -> List<(PolicyId, AssetName, AssetName, Int)> {
-  let filter100 =
-    list.filter(
-      flat,
-      fn((_policy_id, asset_name, _amount)) {
-        bytearray.starts_with(asset_name, prefix100)
-      },
-    )
-  let filter222 =
-    list.filter(
-      flat,
-      fn((_policy_id, asset_name, _amount)) {
-        bytearray.starts_with(asset_name, prefix222)
-      },
-    )
-  let asset_names_amounts100 =
-    list.map(
-      filter100,
-      fn((policy_id, asset_name, amount)) { (policy_id, asset_name, amount) },
-    )
-  let asset_names_amounts222 =
-    list.map(
-      filter222,
-      fn((policy_id, asset_name, amount)) { (policy_id, asset_name, amount) },
-    )
-
-  let sorted100 =
-    list.sort(
-      asset_names_amounts100,
-      fn((_, name1, _), (_, name2, _)) { bytearray.compare(name1, name2) },
-    )
-  let sorted222 =
-    list.sort(
-      asset_names_amounts222,
-      fn((_, name1, _), (_, name2, _)) { bytearray.compare(name1, name2) },
-    )
-
-  let paired = list.zip(sorted100, sorted222)
-  list.map(
-    paired,
-    fn(((policy_id1, name1, amount1), (_policy_id2, name2, amount2))) {
-      (policy_id1, name1, name2, amount1 + amount2)
-    },
-  )
-}
-
-pub fn check_assets_prefix(
-  flatten: List<(PolicyId, AssetName, Int)>,
-  policy_id: PolicyId,
-  prefix: ByteArray,
-) -> Bool {
-  let filtered =
-    list.filter(
-      flatten,
-      fn((_policy_id, asset_name, _amount)) {
-        bytearray.starts_with(asset_name, prefix)
-      },
-    )
-
-  let pairs =
-    list.map(
-      filtered,
-      fn((_policy_id, asset_name, amount)) { (asset_name, -amount) },
-    )
-  list.foldl(
-    pairs,
-    True,
-    fn((asset_name, amount), acc) {
-      if !acc {
-        False
-      } else {
-        and {
-          minting.by_prefix(flatten, policy_id, cip68.prefix_222, -amount)?,
-          minting.exact(flatten, policy_id, asset_name, -amount)?,
-        }
-      }
-    },
-  )
-}
-
-pub fn find_input_reference_asset(
-  inputs: List<Input>,
-  vks: List<VerificationKeyHash>,
-) -> List<(PolicyId, AssetName, Int)> {
-  list.filter_map(
-    inputs,
-    fn(input) {
-      when input.output.datum is {
-        InlineDatum(data) -> {
-          expect metadatum: CIP68 = data
-          expect author: VerificationKeyHash =
-            cip68.get(metadatum, types.author_key)
-          if tx.verify_signature(vks, author) {
-            let reference_asset =
-              input.output.value
-                |> without_lovelace()
-                |> assets.flatten()
-            let exist =
-              list.find(
-                reference_asset,
-                fn((_policy_id, asset_name, _amount)) {
-                  bytearray.starts_with(asset_name, cip68.prefix_100)
-                },
-              )
-            when exist is {
-              Some((policy_id, asset_name, amount)) ->
-                Some((policy_id, asset_name, amount))
-              None -> None
-            }
-          } else {
-            None
-          }
-        }
-        _ -> None
-      }
-    },
-  )
-}
-
-pub fn check_asset_mint(
-  flatten: List<(PolicyId, AssetName, Int)>,
-  policy_id: PolicyId,
-  prefix100: ByteArray,
-  prefix222: ByteArray,
-  outputs: List<Output>,
-  store_address: Address,
-  issuer: VerificationKeyHash,
-  extra_signatories: List<VerificationKeyHash>,
-  has_reference: Bool,
-) -> Bool {
-  let pairs = filter_and_pair(flatten, prefix100, prefix222)
-
-  list.foldl(
-    pairs,
-    True,
-    fn((_policy_id, reference_asset_name, user_asset_name, amount), acc) {
-      if !acc {
-        False
-      } else {
-        let reference_value =
-          assets.from_asset(policy_id, reference_asset_name, 1)
-        let output_utxo_store =
-          find.output_by_addr_value(outputs, store_address, reference_value)
-        and {
-          check_output_utxo(output_utxo_store, issuer, extra_signatories)?,
-          check_pair_asset_name(reference_asset_name, user_asset_name),
-          check_minting_reference(
-            flatten,
-            policy_id,
-            reference_asset_name,
-            has_reference,
-          ),
-          minting.exact(flatten, policy_id, user_asset_name, amount - 1)?,
-          minting.by_prefix(flatten, policy_id, cip68.prefix_222, amount - 1)?,
-        }
-      }
-    },
-  )
-}
-
-pub fn check_asset_burn(
-  flatten: List<(PolicyId, AssetName, Int)>,
-  policy_id: PolicyId,
-  prefix100: ByteArray,
-  prefix222: ByteArray,
-) -> Bool {
-  let pairs = filter_and_pair(flatten, prefix100, prefix222)
-
-  list.foldl(
-    pairs,
-    True,
-    fn((_policy_id, reference_asset_name, user_asset_name, amount), acc) {
-      if !acc {
-        False
-      } else {
-        and {
-          check_pair_asset_name(reference_asset_name, user_asset_name),
-          minting.exact(flatten, policy_id, reference_asset_name, -1)?,
-          minting.exact(flatten, policy_id, user_asset_name, amount + 1)?,
-          minting.by_prefix(flatten, policy_id, cip68.prefix_100, -1)?,
-          minting.by_prefix(flatten, policy_id, cip68.prefix_222, amount + 1)?,
-        }
-      }
-    },
-  )
-}
-
-pub fn check_minting_reference(
-  flatten: List<(PolicyId, AssetName, Int)>,
-  policy_id: PolicyId,
-  reference_asset_name: AssetName,
-  has_reference: Bool,
-) -> Bool {
-  if has_reference {
-    True
-  } else {
-    and {
-      minting.exact(flatten, policy_id, reference_asset_name, 1)?,
-      minting.by_prefix(flatten, policy_id, cip68.prefix_100, 1),
+  when old_state is {
+    Minted -> when new_state is {
+      InTransit(0) -> True
+      _ -> False
     }
+    InTransit(index) -> when new_state is {
+      Confirmed(confirmed_index) -> confirmed_index == index
+      _ -> False
+    }
+    Confirmed(index) -> when new_state is {
+      InTransit(next_index) -> next_index == index + 1 && next_index < roadmap_length(roadmap)
+      Completed -> is_last_agent(roadmap, index)
+      _ -> False
+    }
+    Completed -> False
   }
 }
 
-pub fn check_pair_asset_name(
-  reference_asset_name: AssetName,
-  user_asset_name: AssetName,
+pub fn check_nft_at_address(
+  output: Output,
+  policy_id: PolicyId,
+  nft_asset_name: AssetName,
+  expected_address: Address,
 ) -> Bool {
-  bytearray.compare(
-    bytearray.drop(reference_asset_name, 4),
-    bytearray.drop(user_asset_name, 4),
-  ) == Equal
+  output.address == expected_address && {
+    let assets = output.value |> without_lovelace() |> flatten()
+    list.length(list.filter(assets, fn((pid, aname, amount)) {
+      pid == policy_id && aname == nft_asset_name && amount == 1
+    })) == 1
+  }
 }
 
-pub fn check_remove_asset(
+pub fn get_ft_amount(value, policy_id: PolicyId, ft_asset_name: AssetName) -> Int {
+  let assets = value |> without_lovelace() |> flatten()
+  let ft_list = list.filter(assets, fn((pid, aname, _amount)) {
+    pid == policy_id && aname == ft_asset_name
+  })
+  when list.head(ft_list) is {
+    Some((_pid, _aname, amount)) -> amount
+    None -> 0
+  }
+}
+
+pub fn check_ft_supply_conservation(
   inputs: List<Input>,
-  extra_signatories: List<VerificationKeyHash>,
+  outputs: List<Output>,
+  policy_id: PolicyId,
+  ft_asset_name: AssetName,
 ) -> Bool {
-  let flatten =
-    list.filter_map(
-      inputs,
-      fn(input) {
-        when input.output.datum is {
-          InlineDatum(data) -> {
-            expect metadatum: CIP68 = data
-            expect author: VerificationKeyHash =
-              cip68.get(metadatum, types.author_key)
-            if tx.verify_signature(extra_signatories, author) {
-              let reference_asset =
-                input.output.value
-                  |> without_lovelace()
-                  |> assets.flatten()
-              let exist =
-                list.find(
-                  reference_asset,
-                  fn((_policy_id, asset_name, _amount)) { or {
-                      bytearray.starts_with(asset_name, cip68.prefix_100),
-                      bytearray.starts_with(asset_name, cip68.prefix_222),
-                    } },
-                )
+  let input_total = list.foldl(inputs, 0, fn(input, acc) {
+    acc + get_ft_amount(input.output.value, policy_id, ft_asset_name)
+  })
+  let output_total = list.foldl(outputs, 0, fn(output, acc) {
+    acc + get_ft_amount(output.value, policy_id, ft_asset_name)
+  })
+  input_total == output_total
+}
 
-              when exist is {
-                Some((policy_id, asset_name, amount)) ->
-                  Some((policy_id, asset_name, amount))
-                None -> None
-              }
-            } else {
-              None
-            }
-          }
-          _ -> None
-        }
-      },
-    )
-  let pairs = filter_and_pair(flatten, cip68.prefix_100, cip68.prefix_222)
+pub fn verify_agent_signature(
+  extra_signatories: List<VerificationKeyHash>,
+  expected_address: Address,
+) -> Bool {
+  when expected_address.payment_credential is {
+    VerificationKey(pkh) -> tx.verify_signature(extra_signatories, pkh)
+    _ -> False
+  }
+}
 
-  list.foldl(
-    pairs,
-    True,
-    fn((policy_id, reference_asset_name, user_asset_name, amount), acc) {
-      if !acc {
-        False
-      } else {
-        and {
-          check_pair_asset_name(reference_asset_name, user_asset_name),
-          minting.exact(flatten, policy_id, reference_asset_name, -1)?,
-          minting.exact(flatten, policy_id, user_asset_name, amount + 1)?,
-          minting.by_prefix(flatten, policy_id, cip68.prefix_100, -1)?,
-          minting.by_prefix(flatten, policy_id, cip68.prefix_222, amount + 1)?,
-        }
-      }
-    },
-  )
+pub fn verify_enterprise_signature(
+  extra_signatories: List<VerificationKeyHash>,
+  enterprise: VerificationKeyHash,
+) -> Bool {
+  tx.verify_signature(extra_signatories, enterprise)
+}
+
+pub fn check_minimum_ada(output: Output) -> Bool {
+  lovelace_of(output.value) >= types.min_ada_in_utxo
+}
+
+pub fn find_nft_output(
+  outputs: List<Output>,
+  policy_id: PolicyId,
+  nft_asset_name: AssetName,
+  script_address: Address,
+) -> Option<Output> {
+  list.find(outputs, fn(output) {
+    check_nft_at_address(output, policy_id, nft_asset_name, script_address)
+  })
+}
+
+pub fn get_ft_at_address(
+  outputs: List<Output>,
+  address: Address,
+  policy_id: PolicyId,
+  ft_asset_name: AssetName,
+) -> Int {
+  let agent_outputs = list.filter(outputs, fn(output) { output.address == address })
+  list.foldl(agent_outputs, 0, fn(output, acc) {
+    acc + get_ft_amount(output.value, policy_id, ft_asset_name)
+  })
+}
+
+pub fn get_distribution_amount(plan: DistributionPlan, index: Int) -> Option<Int> {
+  let DistributionPlan(amounts) = plan
+  list.at(amounts, index)
+}
+
+pub fn get_remaining_supply(
+  plan: DistributionPlan,
+  current_index: Int,
+  total_supply: Int,
+) -> Int {
+  let DistributionPlan(amounts) = plan
+  let allocated_up_to_index = {
+    let take_n = list.take(amounts, current_index + 1)
+    list.foldl(take_n, 0, fn(amount, acc) { acc + amount })
+  }
+  total_supply - allocated_up_to_index
+}
+
+pub fn validate_distribution_plan(
+  plan: DistributionPlan,
+  roadmap: Roadmap,
+  total_supply: Int,
+) -> Bool {
+  let DistributionPlan(amounts) = plan
+  let roadmap_len = roadmap_length(roadmap)
+  let plan_len = list.length(amounts)
+  let lengths_match = roadmap_len == plan_len
+  let total_matches = {
+    let plan_total = list.foldl(amounts, 0, fn(amount, acc) { acc + amount })
+    plan_total == total_supply
+  }
+  let all_positive = {
+    let negative_count = list.length(list.filter(amounts, fn(amount) { amount < 0 }))
+    negative_count == 0
+  }
+  lengths_match && total_matches && all_positive
 }

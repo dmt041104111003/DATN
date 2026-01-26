@@ -12,8 +12,8 @@ export declare class MaterialController {
             name: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
             location: string | null;
+            userId: string;
             gpsCoordinates: string | null;
             contactInfo: string | null;
         };
@@ -23,9 +23,9 @@ export declare class MaterialController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     })[]>;
     findBySupplier(user: {
         id: string;
@@ -35,9 +35,9 @@ export declare class MaterialController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     }[]>;
     findOne(user: {
         id: string;
@@ -60,7 +60,27 @@ export declare class MaterialController {
             createdAt: Date;
             updatedAt: Date;
         };
-    }>;
+    } | ({
+        supplier: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            location: string | null;
+            userId: string;
+            gpsCoordinates: string | null;
+            contactInfo: string | null;
+        };
+    } & {
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        materialHash: string;
+    })>;
     create(user: {
         id: string;
     }, dto: CreateMaterialDto): Promise<{
@@ -69,9 +89,9 @@ export declare class MaterialController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     }>;
     update(user: {
         id: string;
@@ -81,9 +101,9 @@ export declare class MaterialController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     }>;
     remove(user: {
         id: string;

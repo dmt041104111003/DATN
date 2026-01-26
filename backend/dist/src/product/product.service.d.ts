@@ -17,9 +17,11 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }[]>;
     findAllByUser(userId: string): Promise<string | {
         id: string;
@@ -27,9 +29,11 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
@@ -37,9 +41,11 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }>;
     private findOneOwned;
     private getActiveSubscription;
@@ -50,9 +56,11 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
@@ -60,14 +68,16 @@ export declare class ProductService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }>;
     remove(id: string, userId: string): Promise<{
         success: boolean;
         message: string;
-        wasMinted: string | null;
+        wasMinted: string;
         warning: string | null;
     }>;
     getQuota(userId: string): Promise<{
@@ -80,9 +90,9 @@ export declare class ProductService {
         product: {
             id: string;
             name: string;
-            policyId: string | null;
-            assetName: string | null;
-            historyHash: string | null;
+            policyId: string;
+            assetName: string;
+            historyHash: any;
             certifications: {
                 id: string;
                 createdAt: Date;
@@ -91,7 +101,7 @@ export declare class ProductService {
                 certName: string;
                 issueDate: Date;
                 expiryDate: Date | null;
-                certHash: string | null;
+                certHash: string;
             }[];
             materials: {
                 name: string;

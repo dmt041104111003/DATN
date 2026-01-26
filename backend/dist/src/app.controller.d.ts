@@ -8,6 +8,10 @@ export declare class AppController {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }[]>;
     health(): {
         status: string;

@@ -10,9 +10,11 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }[]>;
     findMy(user: {
         id: string;
@@ -22,9 +24,11 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }[]>;
     getQuota(user: {
         id: string;
@@ -38,9 +42,9 @@ export declare class ProductController {
         product: {
             id: string;
             name: string;
-            policyId: string | null;
-            assetName: string | null;
-            historyHash: string | null;
+            policyId: string;
+            assetName: string;
+            historyHash: any;
             certifications: {
                 id: string;
                 createdAt: Date;
@@ -49,7 +53,7 @@ export declare class ProductController {
                 certName: string;
                 issueDate: Date;
                 expiryDate: Date | null;
-                certHash: string | null;
+                certHash: string;
             }[];
             materials: {
                 name: string;
@@ -109,9 +113,11 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }>;
     create(user: {
         id: string;
@@ -121,9 +127,11 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }>;
     update(user: {
         id: string;
@@ -133,16 +141,18 @@ export declare class ProductController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        policyId: string | null;
-        assetName: string | null;
-        historyHash: string | null;
+        policyId: string;
+        assetName: string;
+        materialsRoot: string;
+        certificationsRoot: string;
+        mediaRoot: string;
     }>;
     remove(user: {
         id: string;
     }, id: string): Promise<{
         success: boolean;
         message: string;
-        wasMinted: string | null;
+        wasMinted: string;
         warning: string | null;
     }>;
 }

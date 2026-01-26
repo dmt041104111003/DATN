@@ -12,8 +12,8 @@ export declare class MaterialService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
             location: string | null;
+            userId: string;
             gpsCoordinates: string | null;
             contactInfo: string | null;
         };
@@ -23,9 +23,9 @@ export declare class MaterialService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     })[]>;
     findBySupplier(supplierId: string, userId: string): Promise<string | {
         id: string;
@@ -33,9 +33,9 @@ export declare class MaterialService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -56,16 +56,36 @@ export declare class MaterialService {
             createdAt: Date;
             updatedAt: Date;
         };
-    }>;
+    } | ({
+        supplier: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            location: string | null;
+            userId: string;
+            gpsCoordinates: string | null;
+            contactInfo: string | null;
+        };
+    } & {
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        materialHash: string;
+    })>;
     create(userId: string, dto: CreateMaterialDto): Promise<{
         id: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     }>;
     update(id: string, userId: string, dto: UpdateMaterialDto): Promise<{
         id: string;
@@ -73,9 +93,9 @@ export declare class MaterialService {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        quantity: number;
         supplierId: string;
         harvestDate: Date | null;
+        materialHash: string;
     }>;
     remove(id: string, userId: string): Promise<void>;
 }

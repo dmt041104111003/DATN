@@ -14,6 +14,7 @@ export declare class MediaController {
         userId: string;
         type: string;
         url: string;
+        mediaHash: string;
     }[]>;
     findOne(user: {
         id: string;
@@ -39,6 +40,7 @@ export declare class MediaController {
         userId: string;
         type: string;
         url: string;
+        mediaHash: string;
     }>;
     uploadFiles(user: {
         id: string;
@@ -57,6 +59,7 @@ export declare class MediaController {
         userId: string;
         type: string;
         url: string;
+        mediaHash: string;
     }>;
     remove(user: {
         id: string;

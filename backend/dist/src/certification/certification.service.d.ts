@@ -17,7 +17,7 @@ export declare class CertificationService {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
@@ -27,7 +27,7 @@ export declare class CertificationService {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateCertificationDto): Promise<{
@@ -38,7 +38,7 @@ export declare class CertificationService {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }>;
     update(id: string, userId: string, dto: UpdateCertificationDto): Promise<{
         id: string;
@@ -48,7 +48,7 @@ export declare class CertificationService {
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
-        certHash: string | null;
+        certHash: string;
     }>;
     remove(id: string, userId: string): Promise<void>;
 }

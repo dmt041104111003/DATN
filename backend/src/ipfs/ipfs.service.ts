@@ -85,7 +85,6 @@ export class IpfsService {
     }
   }
 
-  // Convert ipfs:// URL to HTTP gateway URL
   toGatewayUrl(ipfsUrl: string): string {
     if (ipfsUrl.startsWith('ipfs://')) {
       const cid = ipfsUrl.replace('ipfs://', '');

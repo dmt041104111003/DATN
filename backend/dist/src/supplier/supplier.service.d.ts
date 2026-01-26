@@ -11,8 +11,8 @@ export declare class SupplierService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         location: string | null;
+        userId: string;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }[]>;
@@ -21,8 +21,8 @@ export declare class SupplierService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         location: string | null;
+        userId: string;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;
@@ -31,8 +31,8 @@ export declare class SupplierService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         location: string | null;
+        userId: string;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;
@@ -41,8 +41,8 @@ export declare class SupplierService {
         name: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
         location: string | null;
+        userId: string;
         gpsCoordinates: string | null;
         contactInfo: string | null;
     }>;

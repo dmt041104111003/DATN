@@ -12,6 +12,10 @@ export declare class UserController {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }>;
     updateMe(user: {
         id: string;
@@ -22,6 +26,10 @@ export declare class UserController {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }>;
     deleteMe(user: {
         id: string;
@@ -32,5 +40,9 @@ export declare class UserController {
         updatedAt: Date;
         address: string;
         walletName: string | null;
+        displayName: string | null;
+        location: string | null;
+        gpsLatitude: number | null;
+        gpsLongitude: number | null;
     }>;
 }

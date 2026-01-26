@@ -16,8 +16,8 @@ export declare class ProductMaterialService {
                 name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                userId: string;
                 location: string | null;
+                userId: string;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
@@ -27,9 +27,9 @@ export declare class ProductMaterialService {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            quantity: number;
             supplierId: string;
             harvestDate: Date | null;
+            materialHash: string;
         };
     } & {
         id: string;
@@ -39,6 +39,7 @@ export declare class ProductMaterialService {
         materialId: string;
         quantity: number;
         unit: string | null;
+        pmHash: string;
     })[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -78,16 +79,27 @@ export declare class ProductMaterialService {
                 updatedAt: Date;
             };
         };
-    }>;
-    create(userId: string, dto: CreateProductMaterialDto): Promise<{
+    } | ({
+        product: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: string;
+            policyId: string;
+            assetName: string;
+            materialsRoot: string;
+            certificationsRoot: string;
+            mediaRoot: string;
+        };
         material: {
             supplier: {
                 id: string;
                 name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                userId: string;
                 location: string | null;
+                userId: string;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
@@ -97,9 +109,9 @@ export declare class ProductMaterialService {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            quantity: number;
             supplierId: string;
             harvestDate: Date | null;
+            materialHash: string;
         };
     } & {
         id: string;
@@ -109,6 +121,17 @@ export declare class ProductMaterialService {
         materialId: string;
         quantity: number;
         unit: string | null;
+        pmHash: string;
+    })>;
+    create(userId: string, dto: CreateProductMaterialDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        materialId: string;
+        quantity: number;
+        unit: string | null;
+        pmHash: string;
     }>;
     update(id: string, userId: string, dto: UpdateProductMaterialDto): Promise<{
         material: {
@@ -117,8 +140,8 @@ export declare class ProductMaterialService {
                 name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                userId: string;
                 location: string | null;
+                userId: string;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
@@ -128,9 +151,9 @@ export declare class ProductMaterialService {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            quantity: number;
             supplierId: string;
             harvestDate: Date | null;
+            materialHash: string;
         };
     } & {
         id: string;
@@ -140,6 +163,7 @@ export declare class ProductMaterialService {
         materialId: string;
         quantity: number;
         unit: string | null;
+        pmHash: string;
     }>;
     remove(id: string, userId: string): Promise<void>;
     private findOneOwned;

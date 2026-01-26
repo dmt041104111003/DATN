@@ -19,6 +19,7 @@ export declare class MediaService {
         userId: string;
         type: string;
         url: string;
+        mediaHash: string;
     }[]>;
     findOne(id: string, userId: string): Promise<{
         id: string;
@@ -40,6 +41,7 @@ export declare class MediaService {
         userId: string;
         type: string;
         url: string;
+        mediaHash: string;
     }>;
     uploadBatchToIpfs(userId: string, files: Express.Multer.File[]): Promise<{
         successful: any[];
@@ -54,6 +56,7 @@ export declare class MediaService {
         userId: string;
         type: string;
         url: string;
+        mediaHash: string;
     }>;
     remove(id: string, userId: string): Promise<void>;
     private getFileType;
