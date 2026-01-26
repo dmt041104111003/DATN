@@ -15,7 +15,6 @@ interface ServiceCardProps {
   onClick?: () => void
   disabled?: boolean
   buttonText?: string
-  isActive?: boolean
   isFeatured?: boolean
   variant?: 0 | 1 | 2
 }
@@ -30,7 +29,6 @@ export function ServiceCard({
   onClick,
   disabled = false,
   buttonText,
-  isActive = false,
   isFeatured = false,
   variant = 0
 }: ServiceCardProps) {

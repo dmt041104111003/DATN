@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { apiClient } from '@/lib/api/client'
+import { productsApi } from '@/lib/api/products'
+import { supplierApi } from '@/lib/api/supplier'
 import { LoadingOverlay } from '@/components/ui/loading'
-import { PageHeader } from '@/components/dashboard/shared/page-header'
-import { StatsCard } from '@/components/dashboard/shared/stats-card'
 export default function DashboardPage() {
   const [productsCount, setProductsCount] = useState(0)
   const [suppliersCount, setSuppliersCount] = useState(0)
@@ -15,8 +14,8 @@ export default function DashboardPage() {
     const loadData = async () => {
       try {
         const [products, suppliers] = await Promise.all([
-          apiClient.products.findMy().catch(() => []),
-          apiClient.suppliers.findAll().catch(() => [])
+          productsApi.findMy().catch(() => []),
+          supplierApi.findAll().catch(() => [])
         ])
         setProductsCount(Array.isArray(products) ? products.length : 0)
         setSuppliersCount(Array.isArray(suppliers) ? suppliers.length : 0)
@@ -32,15 +31,21 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6 relative">
-      <PageHeader
-        title="Welcome"
-        description="Welcome to your traceability dashboard"
-      />
+      <div>
+        <h1 className="text-2xl font-bold">Welcome</h1>
+        <p className="text-muted-foreground">Welcome to your traceability dashboard</p>
+      </div>
 
       <div className="w-full h-[calc(100vh-12rem)] flex gap-4 sm:gap-6">
         <div className="w-80 space-y-4">
-          <StatsCard title="Total Products" value={productsCount} />
-          <StatsCard title="Total Suppliers" value={suppliersCount} />
+          <div className="border rounded p-4">
+            <div className="text-sm text-muted-foreground">Total Products</div>
+            <div className="text-2xl font-bold">{productsCount}</div>
+          </div>
+          <div className="border rounded p-4">
+            <div className="text-sm text-muted-foreground">Total Suppliers</div>
+            <div className="text-2xl font-bold">{suppliersCount}</div>
+          </div>
         </div>
 
         <div className="flex-1 flex items-center justify-center">

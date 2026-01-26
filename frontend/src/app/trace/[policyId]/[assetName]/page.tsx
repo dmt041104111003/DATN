@@ -6,11 +6,11 @@ import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { apiClient } from '@/lib/api/client'
+import { productsApi } from '@/lib/api/products'
 import { LoadingPage } from '@/components/ui/loading'
-import { InfoCard } from '@/components/dashboard/shared/info-card'
-import { ResponsiveListView } from '@/components/dashboard/shared/responsive-list-view'
 import { TraceResult } from '@/types/trace'
+import { Certification } from '@/types/certification'
+import { Material } from '@/types/material'
 
 export default function TraceResultPage() {
   const params = useParams()
@@ -33,10 +33,10 @@ export default function TraceResultPage() {
     setError('')
 
     try {
-      const data = await apiClient.products.trace(policyId, assetName)
+      const data = await productsApi.trace(policyId, assetName)
       setResult(data)
-    } catch (err: any) {
-      setError(err?.message || 'Product not found or failed to load trace information')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Product not found or failed to load trace information')
     } finally {
       setLoading(false)
     }
@@ -97,39 +97,19 @@ export default function TraceResultPage() {
 
           {product ? (
             <>
-              <InfoCard
-                title="Product Information"
-                items={[
-                  { label: 'Product Name', value: product.name },
-                  { label: 'Owner', value: <span className="font-mono text-sm">{product.owner}</span> },
-                  { label: 'Created At', value: new Date(product.createdAt).toLocaleDateString() },
-                  { label: 'History Hash', value: <span className="font-mono text-xs break-all">{product.historyHash}</span> },
-                ]}
-              />
-
-              {product.documents && product.documents.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Documents ({product.documents.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveListView
-                      items={product.documents.map((doc: any) => ({ ...doc, id: doc.id || doc.name }))}
-                      columns={[
-                        { key: 'name', header: 'Name', render: (doc: any) => doc.name || doc.docType },
-                        { key: 'type', header: 'Type', render: (doc: any) => doc.type || doc.docType },
-                        { key: 'createdAt', header: 'Date', render: (doc: any) => new Date(doc.createdAt).toLocaleDateString() },
-                      ]}
-                      mobileCardTitle={(doc: any) => doc.name || doc.docType}
-                      mobileCardDescription={(doc: any) => (
-                        <span className="text-xs text-muted-foreground">
-                          {doc.type || doc.docType} • {new Date(doc.createdAt).toLocaleDateString()}
-                        </span>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Product Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div><span className="text-muted-foreground">Product Name: </span>{product.name}</div>
+                    <div><span className="text-muted-foreground">Owner: </span><span className="font-mono text-sm">{product.owner}</span></div>
+                    <div><span className="text-muted-foreground">Created At: </span>{new Date(product.createdAt).toLocaleDateString()}</div>
+                    <div><span className="text-muted-foreground">History Hash: </span><span className="font-mono text-xs break-all">{product.historyHash}</span></div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {product.certifications && product.certifications.length > 0 && (
                 <Card>
@@ -137,53 +117,13 @@ export default function TraceResultPage() {
                     <CardTitle>Certifications ({product.certifications.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveListView
-                      items={product.certifications.map((cert: any) => ({ ...cert, id: cert.id || cert.certName }))}
-                      columns={[
-                        { key: 'name', header: 'Name', render: (cert: any) => cert.name || cert.certName },
-                        { key: 'issuer', header: 'Issuer', render: (cert: any) => cert.issuer || '-' },
-                        { key: 'issuedDate', header: 'Date', render: (cert: any) => new Date(cert.issuedDate || cert.issueDate).toLocaleDateString() },
-                      ]}
-                      mobileCardTitle={(cert: any) => cert.name || cert.certName}
-                      mobileCardDescription={(cert: any) => (
-                        <span className="text-xs text-muted-foreground">
-                          {cert.issuer || '-'} • {new Date(cert.issuedDate || cert.issueDate).toLocaleDateString()}
-                        </span>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {product.productionProcesses && product.productionProcesses.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Production Processes ({product.productionProcesses.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {product.productionProcesses.map((process: any) => (
-                        <div key={process.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold">{process.name}</h4>
-                            {process.status && (
-                              <span className="text-xs font-medium px-2 py-1 rounded bg-muted">{process.status}</span>
-                            )}
-                          </div>
-                          {process.description && (
-                            <p className="text-sm text-muted-foreground mb-2">{process.description}</p>
-                          )}
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Start:</span>{' '}
-                              <span>{new Date(process.startDate).toLocaleDateString()}</span>
-                            </div>
-                            {process.endDate && (
-                              <div>
-                                <span className="text-muted-foreground">End:</span>{' '}
-                                <span>{new Date(process.endDate).toLocaleDateString()}</span>
-                              </div>
-                            )}
+                    <div className="space-y-2">
+                      {product.certifications.map((cert: Certification) => (
+                        <div key={cert.id} className="border rounded p-2">
+                          <div className="font-medium">{cert.certName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            <div>Issue Date: {new Date(cert.issueDate).toLocaleDateString()}</div>
+                            {cert.expiryDate && <div>Expiry Date: {new Date(cert.expiryDate).toLocaleDateString()}</div>}
                           </div>
                         </div>
                       ))}
@@ -198,50 +138,22 @@ export default function TraceResultPage() {
                     <CardTitle>Materials ({product.materials.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveListView
-                      items={product.materials.map((material: any, index: number) => ({ ...material, id: material.id || `material-${index}` }))}
-                      columns={[
-                        { key: 'name', header: 'Name', render: (m: any) => m.name },
-                        { key: 'quantity', header: 'Quantity', render: (m: any) => `${m.quantity} ${m.unit || ''}` },
-                        { key: 'supplier', header: 'Supplier', render: (m: any) => m.supplier?.name || 'N/A' },
-                        { key: 'location', header: 'Location', render: (m: any) => m.supplier?.location || 'N/A' },
-                      ]}
-                      mobileCardTitle={(m: any) => m.name}
-                      mobileCardDescription={(m: any) => (
-                        <span className="text-xs text-muted-foreground">
-                          {m.quantity} {m.unit || ''} • {m.supplier?.name || 'N/A'}
-                        </span>
-                      )}
-                    />
+                    <div className="space-y-2">
+                      {product.materials.map((material: Material) => (
+                        <div key={material.id} className="border rounded p-2">
+                          <div className="font-medium">{material.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            <div>Quantity: {material.quantity || '-'}</div>
+                            <div>Supplier: {material.supplier?.name || 'N/A'}</div>
+                            {material.harvestDate && <div>Harvest Date: {new Date(material.harvestDate).toLocaleDateString()}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
-              {product.warehouseStorages && product.warehouseStorages.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Warehouse Storage ({product.warehouseStorages.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveListView
-                      items={product.warehouseStorages.map((storage: any) => ({ ...storage, id: storage.id || `storage-${storage.warehouseId}` }))}
-                      columns={[
-                        { key: 'warehouse', header: 'Warehouse', render: (s: any) => s.warehouse?.name || 'N/A' },
-                        { key: 'location', header: 'Location', render: (s: any) => s.warehouse?.location || 'N/A' },
-                        { key: 'entryDate', header: 'Entry Date', render: (s: any) => new Date(s.entryDate || s.entryTime).toLocaleDateString() },
-                        { key: 'exitDate', header: 'Exit Date', render: (s: any) => s.exitDate || s.exitTime ? new Date(s.exitDate || s.exitTime).toLocaleDateString() : 'Current' },
-                      ]}
-                      mobileCardTitle={(s: any) => s.warehouse?.name || 'N/A'}
-                      mobileCardDescription={(s: any) => (
-                        <span className="text-xs text-muted-foreground">
-                          {s.warehouse?.location || 'N/A'} • Entry: {new Date(s.entryDate || s.entryTime).toLocaleDateString()}
-                          {s.exitDate || s.exitTime ? ` • Exit: ${new Date(s.exitDate || s.exitTime).toLocaleDateString()}` : ' • Current'}
-                        </span>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
             </>
           ) : (
             <Card>

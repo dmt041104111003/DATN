@@ -33,7 +33,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    setGlobalAlert(showAlert as any)
+    setGlobalAlert(showAlert)
     return () => setGlobalAlert(null)
   }, [showAlert])
 

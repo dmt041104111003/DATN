@@ -83,25 +83,6 @@ export declare class ProductService {
             policyId: string | null;
             assetName: string | null;
             historyHash: string | null;
-            documents: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                productId: string;
-                docType: string;
-                url: string;
-                hash: string | null;
-            }[];
-            productionProcesses: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                productId: string;
-                stepName: string;
-                startTime: Date;
-                endTime: Date | null;
-                location: string | null;
-            }[];
             certifications: {
                 id: string;
                 createdAt: Date;
@@ -112,26 +93,6 @@ export declare class ProductService {
                 expiryDate: Date | null;
                 certHash: string | null;
             }[];
-            warehouseStorages: ({
-                warehouse: {
-                    id: string;
-                    name: string;
-                    createdAt: Date;
-                    updatedAt: Date;
-                    userId: string;
-                    location: string | null;
-                    capacity: number;
-                };
-            } & {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                productId: string;
-                warehouseId: string;
-                entryTime: Date;
-                exitTime: Date | null;
-                conditions: string | null;
-            })[];
             materials: {
                 name: string;
                 quantity: number;

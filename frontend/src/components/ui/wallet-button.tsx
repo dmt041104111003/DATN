@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from 'next/image'
 import { cn } from "@/lib/utils"
 
 interface WalletButtonProps extends React.ComponentProps<"button"> {
@@ -120,7 +121,7 @@ function WalletButton({ className, children = "Wallet", icon, ...props }: Wallet
           <div className="wallet-overlay"></div>
           <div className="wallet-circle">
             {icon ? (
-              <img src={icon} alt="" className="wallet-icon" />
+              <Image src={icon} alt="" width={30} height={30} className="wallet-icon" unoptimized />
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="23 29 78 60" height="60px" width="78px">
                 <defs></defs>

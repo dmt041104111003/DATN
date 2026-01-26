@@ -2,8 +2,6 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Icon } from "@/components/ui/icon"
-import { useAuth } from "@/contexts/auth-context"
 
 export function Footer() {
   return (

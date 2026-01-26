@@ -14,12 +14,9 @@ const app_service_1 = require("./app.service");
 const prisma_module_1 = require("./prisma.module");
 const user_module_1 = require("./user/user.module");
 const product_module_1 = require("./product/product.module");
-const production_process_module_1 = require("./production-process/production-process.module");
 const certification_module_1 = require("./certification/certification.module");
 const material_module_1 = require("./material/material.module");
 const supplier_module_1 = require("./supplier/supplier.module");
-const warehouse_module_1 = require("./warehouse/warehouse.module");
-const warehouse_storage_module_1 = require("./warehouse-storage/warehouse-storage.module");
 const service_module_1 = require("./service/service.module");
 const subscription_module_1 = require("./subscription/subscription.module");
 const auth_module_1 = require("./auth/auth.module");
@@ -27,7 +24,6 @@ const blockchain_module_1 = require("./blockchain/blockchain.module");
 const contract_module_1 = require("./contract/contract.module");
 const ipfs_module_1 = require("./ipfs/ipfs.module");
 const media_module_1 = require("./media/media.module");
-const document_module_1 = require("./document/document.module");
 const product_material_module_1 = require("./product-material/product-material.module");
 const redis_module_1 = require("./redis/redis.module");
 const core_1 = require("@nestjs/core");
@@ -47,13 +43,9 @@ exports.AppModule = AppModule = __decorate([
             product_module_1.ProductModule,
             product_material_module_1.ProductMaterialModule,
             media_module_1.MediaModule,
-            document_module_1.DocumentModule,
-            production_process_module_1.ProductionProcessModule,
             certification_module_1.CertificationModule,
             material_module_1.MaterialModule,
             supplier_module_1.SupplierModule,
-            warehouse_module_1.WarehouseModule,
-            warehouse_storage_module_1.WarehouseStorageModule,
             service_module_1.ServiceModule,
             subscription_module_1.SubscriptionModule,
             blockchain_module_1.BlockchainModule,

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductionProcessController = void 0;
 const common_1 = require("@nestjs/common");
@@ -69,7 +70,7 @@ __decorate([
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, update_production_process_dto_1.UpdateProductionProcessDto]),
+    __metadata("design:paramtypes", [Object, String, typeof (_a = typeof update_production_process_dto_1.UpdateProductionProcessDto !== "undefined" && update_production_process_dto_1.UpdateProductionProcessDto) === "function" ? _a : Object]),
     __metadata("design:returntype", void 0)
 ], ProductionProcessController.prototype, "update", null);
 __decorate([

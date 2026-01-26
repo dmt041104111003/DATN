@@ -2,7 +2,7 @@
 
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Sidebar } from "@/components/ui/sidebar"
-import { DashboardSidebar } from "@/components/dashboard/shared/sidebar"
+import { DashboardSidebar } from "@/components/dashboard/sidebar"
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (

@@ -12,8 +12,8 @@ export declare class MediaController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
         type: string;
+        url: string;
     }[]>;
     findOne(user: {
         id: string;
@@ -37,8 +37,8 @@ export declare class MediaController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
         type: string;
+        url: string;
     }>;
     uploadFiles(user: {
         id: string;
@@ -55,8 +55,8 @@ export declare class MediaController {
         createdAt: Date;
         updatedAt: Date;
         userId: string;
-        url: string;
         type: string;
+        url: string;
     }>;
     remove(user: {
         id: string;

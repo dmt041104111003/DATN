@@ -1,14 +1,14 @@
+import { Certification } from './certification'
+import { Material } from './material'
+
 export interface TraceProduct {
   id: string
   name: string
   policyId: string
   assetName: string
   historyHash: string
-  documents: any[]
-  productionProcesses: any[]
-  certifications: any[]
-  warehouseStorages: any[]
-  materials: any[]
+  certifications: Certification[]
+  materials: Material[]
   owner: string
   createdAt: string
   updatedAt: string
@@ -17,8 +17,8 @@ export interface TraceProduct {
 export interface TraceBlockchain {
   policyId: string
   assetName: string
-  assetInfo: any
-  onChainMetadata: any
+  assetInfo: Record<string, unknown>
+  onChainMetadata: Record<string, unknown>
 }
 
 export interface TraceResult {

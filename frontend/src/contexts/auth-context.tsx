@@ -1,8 +1,8 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { apiClient } from '@/lib/api/client'
+import { authApi } from '@/lib/api/auth'
 import { User, AuthContextType } from '@/types/auth'
 import { LoadingPage } from '@/components/ui/loading'
 
@@ -16,9 +16,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const isPublic = publicRoutes.includes(pathname) || pathname.startsWith('/trace')
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
-      const data = await apiClient.auth.getMe()
+      const data = await authApi.getMe()
       setUser(data.user)
       return true
     } catch {
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [isPublic, router])
 
   useEffect(() => {
     let cancelled = false
@@ -52,18 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
     return () => { cancelled = true }
-  }, [pathname, isPublic, router, user])
+  }, [pathname, isPublic, router, user, checkAuth])
 
   const refreshAuth = async () => {
     setIsLoading(true)
-    await checkAuth()
+    try {
+      const data = await authApi.getMe()
+      setUser(data.user)
+    } catch {
+      setUser(null)
+      if (!isPublic) router.push('/login')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const logout = async () => {
     setUser(null)
     setIsLoading(false)
     try {
-      await apiClient.auth.logout()
+      await authApi.logout()
     } catch {}
     window.location.href = '/'
   }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BrowserWallet } from '@meshsdk/core'
-import { apiClient } from '@/lib/api/client'
+import { authApi } from '@/lib/api/auth'
 
 type Network = 'mainnet' | 'preprod'
 
@@ -43,9 +43,9 @@ export function useWallet() {
     setError(null)
     try {
       const userAddress = address.trim()
-      const { nonce } = await apiClient.auth.getNonce(userAddress)
+      const { nonce } = await authApi.getNonce(userAddress)
       const signature = await wallet.signData(nonce, userAddress)
-      return await apiClient.auth.verifyWallet({
+      return await authApi.verifyWallet({
         address: userAddress,
         signature: signature.signature,
         key: signature.key,

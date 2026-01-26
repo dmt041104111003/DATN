@@ -1,5 +1,6 @@
 "use client"
 
+import Image from 'next/image'
 import {
   Accordion,
   AccordionContent,
@@ -48,10 +49,13 @@ export function FAQ() {
           </Accordion>
         </div>
         <div className="hidden lg:flex lg:w-[500px] shrink-0 self-stretch">
-          <img
+          <Image
             src="/faq.gif"
             alt="faq"
+            width={500}
+            height={400}
             className="w-full h-full object-contain"
+            unoptimized
           />
         </div>
       </div>

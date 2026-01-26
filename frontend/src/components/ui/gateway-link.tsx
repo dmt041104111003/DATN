@@ -30,7 +30,7 @@ export function GatewayLink({ url, className = '', maxLength = 40, truncate = tr
       href={gatewayUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`text-primary hover:underline break-all text-sm font-mono ${className}`}
+      className={`text-primary hover:underline truncate whitespace-nowrap text-sm font-mono ${className}`}
       title={gatewayUrl}
     >
       {displayUrl}

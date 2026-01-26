@@ -164,12 +164,7 @@ let ProductService = class ProductService {
         const product = await this.prisma.product.findFirst({
             where: { policyId, assetName },
             include: {
-                documents: true,
-                productionProcesses: true,
                 certifications: true,
-                warehouseStorages: {
-                    include: { warehouse: true },
-                },
                 productMaterials: {
                     include: {
                         material: {
@@ -204,10 +199,7 @@ let ProductService = class ProductService {
                     policyId: product.policyId,
                     assetName: product.assetName,
                     historyHash: product.historyHash,
-                    documents: product.documents,
-                    productionProcesses: product.productionProcesses,
                     certifications: product.certifications,
-                    warehouseStorages: product.warehouseStorages,
                     materials: product.productMaterials.map((pm) => ({
                         name: pm.material.name,
                         quantity: pm.quantity,

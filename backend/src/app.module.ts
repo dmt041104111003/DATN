@@ -5,12 +5,9 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma.module';
 import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
-import { ProductionProcessModule } from './production-process/production-process.module';
 import { CertificationModule } from './certification/certification.module';
 import { MaterialModule } from './material/material.module';
 import { SupplierModule } from './supplier/supplier.module';
-import { WarehouseModule } from './warehouse/warehouse.module';
-import { WarehouseStorageModule } from './warehouse-storage/warehouse-storage.module';
 import { ServiceModule } from './service/service.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { AuthModule } from './auth/auth.module';
@@ -18,7 +15,6 @@ import { BlockchainModule } from './blockchain/blockchain.module';
 import { ContractModule } from './contract/contract.module';
 import { IpfsModule } from './ipfs/ipfs.module';
 import { MediaModule } from './media/media.module';
-import { DocumentModule } from './document/document.module';
 import { ProductMaterialModule } from './product-material/product-material.module';
 import { RedisModule } from './redis/redis.module';
 import { APP_GUARD } from '@nestjs/core';
@@ -34,13 +30,9 @@ import { JwtAuthGuard } from './auth/guards';
     ProductModule,
     ProductMaterialModule,
     MediaModule,
-    DocumentModule,
-    ProductionProcessModule,
     CertificationModule,
     MaterialModule,
     SupplierModule,
-    WarehouseModule,
-    WarehouseStorageModule,
     ServiceModule,
     SubscriptionModule,
     BlockchainModule,

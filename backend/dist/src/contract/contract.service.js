@@ -52,8 +52,6 @@ let ContractService = class ContractService {
         const product = await this.prisma.product.findUnique({
             where: { id: productId },
             include: {
-                documents: true,
-                productionProcesses: true,
                 certifications: true,
                 productMaterials: {
                     include: {
@@ -74,13 +72,6 @@ let ContractService = class ContractService {
             productId: product.id,
             description: `Product: ${product.name}`,
         };
-        if (product.documents && product.documents.length > 0) {
-            metadata.documents = product.documents.map((doc) => ({
-                type: doc.docType,
-                url: doc.url,
-                hash: doc.hash || '',
-            }));
-        }
         if (product.productMaterials && product.productMaterials.length > 0) {
             metadata.materials = product.productMaterials.map((pm) => ({
                 name: pm.material.name,
@@ -91,14 +82,6 @@ let ContractService = class ContractService {
                     name: pm.material.supplier.name,
                     location: pm.material.supplier.location || '',
                 },
-            }));
-        }
-        if (product.productionProcesses && product.productionProcesses.length > 0) {
-            metadata.productionProcesses = product.productionProcesses.map((proc) => ({
-                stepName: proc.stepName,
-                startTime: proc.startTime.toISOString(),
-                endTime: proc.endTime?.toISOString() || '',
-                location: proc.location || '',
             }));
         }
         if (product.certifications && product.certifications.length > 0) {

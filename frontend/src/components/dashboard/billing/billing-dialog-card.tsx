@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Service } from "@/types/api"
+import { Service } from "@/types/subscription"
 import { HeroButton } from "@/components/landing/hero-button"
 
 interface BillingDialogCardProps {
