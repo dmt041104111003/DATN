@@ -2,10 +2,14 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpsertAgentDto } from './dto/upsert-agent.dto';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   private async getRoleCode(userId: string): Promise<'ENTERPRISE' | 'AGENT' | null> {
     const roles = await (this.prisma as any).userRole.findMany({
@@ -22,13 +26,22 @@ export class UserService {
   }
 
   async findOne(id: string) {
+    const cacheKey = `user:${id}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
+    await this.redis.set(cacheKey, user, 300);
     return user;
   }
 
   async listAgents(enterpriseUserId: string) {
     await this.assertEnterprise(enterpriseUserId);
+    const cacheKey = 'agents:all';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
     const agents = await (this.prisma as any).userRole.findMany({
       where: { role: { code: 'AGENT' } },
       select: {
@@ -45,7 +58,9 @@ export class UserService {
         },
       },
     });
-    return agents.map((r: any) => r.user);
+    const result = agents.map((r: any) => r.user);
+    await this.redis.set(cacheKey, result, 300);
+    return result;
   }
 
   async upsertAgent(enterpriseUserId: string, dto: UpsertAgentDto) {
@@ -75,7 +90,7 @@ export class UserService {
       });
     }
 
-    return (this.prisma as any).user.update({
+    const updated = await (this.prisma as any).user.update({
       where: { id: agentUser.id },
       data: {
         displayName: dto.displayName,
@@ -84,15 +99,27 @@ export class UserService {
         gpsLongitude: dto.gpsLongitude,
       },
     });
+
+    await this.redis.delMultiple([
+      `user:${agentUser.id}`,
+      'agents:all',
+      'users:all',
+    ]);
+
+    return updated;
   }
 
   async update(id: string, dto: UpdateUserDto) {
     await this.findOne(id);
-    return this.prisma.user.update({ where: { id }, data: dto });
+    const updated = await this.prisma.user.update({ where: { id }, data: dto });
+    await this.redis.delMultiple([`user:${id}`, 'users:all']);
+    return updated;
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.user.delete({ where: { id } });
+    const deleted = await this.prisma.user.delete({ where: { id } });
+    await this.redis.delMultiple([`user:${id}`, 'users:all', 'agents:all']);
+    return deleted;
   }
 }

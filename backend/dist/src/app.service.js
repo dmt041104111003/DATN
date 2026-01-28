@@ -12,18 +12,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("./prisma.service");
+const redis_service_1 = require("./redis/redis.service");
 let AppService = class AppService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async getUsers() {
-        return this.prisma.user.findMany();
+        const cacheKey = 'users:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
+        const users = await this.prisma.user.findMany();
+        await this.redis.set(cacheKey, users, 300);
+        return users;
     }
 };
 exports.AppService = AppService;
 exports.AppService = AppService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], AppService);
 //# sourceMappingURL=app.service.js.map

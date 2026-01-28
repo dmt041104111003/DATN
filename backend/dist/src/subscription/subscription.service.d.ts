@@ -22,15 +22,15 @@ export declare class SubscriptionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
+        servicePlanId: string;
         userId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
-        amount: number;
         currency: string;
-        txHash: string | null;
         paymentDate: Date;
-        servicePlanId: string;
     })[]>;
     updateExpiredSubscriptions(userId?: string): Promise<import("@prisma/client").Prisma.BatchPayload>;
     getActiveSubscription(userId: string): Promise<({
@@ -48,15 +48,15 @@ export declare class SubscriptionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
+        servicePlanId: string;
         userId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
-        amount: number;
         currency: string;
-        txHash: string | null;
         paymentDate: Date;
-        servicePlanId: string;
     }) | null>;
     cancel(id: string, userId: string): Promise<{
         service: {
@@ -73,15 +73,15 @@ export declare class SubscriptionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
+        servicePlanId: string;
         userId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
-        amount: number;
         currency: string;
-        txHash: string | null;
         paymentDate: Date;
-        servicePlanId: string;
     }>;
     pay(userId: string, dto: PayDto): Promise<{
         result: boolean;
@@ -102,15 +102,15 @@ export declare class SubscriptionService {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
+                txHash: string | null;
+                amount: number;
+                servicePlanId: string;
                 userId: string;
                 startDate: Date;
                 endDate: Date;
                 status: import("@prisma/client").$Enums.SubscriptionStatus;
-                amount: number;
                 currency: string;
-                txHash: string | null;
                 paymentDate: Date;
-                servicePlanId: string;
             };
         };
     }>;

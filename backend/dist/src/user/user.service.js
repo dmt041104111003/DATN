@@ -12,10 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let UserService = class UserService {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         this.prisma = prisma;
+        this.redis = redis;
     }
     async getRoleCode(userId) {
         const roles = await this.prisma.userRole.findMany({
@@ -32,13 +35,22 @@ let UserService = class UserService {
             throw new common_1.BadRequestException('Enterprise role required');
     }
     async findOne(id) {
+        const cacheKey = `user:${id}`;
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user)
             throw new common_1.NotFoundException('User not found');
+        await this.redis.set(cacheKey, user, 300);
         return user;
     }
     async listAgents(enterpriseUserId) {
         await this.assertEnterprise(enterpriseUserId);
+        const cacheKey = 'agents:all';
+        const cached = await this.redis.get(cacheKey);
+        if (cached)
+            return cached;
         const agents = await this.prisma.userRole.findMany({
             where: { role: { code: 'AGENT' } },
             select: {
@@ -55,7 +67,9 @@ let UserService = class UserService {
                 },
             },
         });
-        return agents.map((r) => r.user);
+        const result = agents.map((r) => r.user);
+        await this.redis.set(cacheKey, result, 300);
+        return result;
     }
     async upsertAgent(enterpriseUserId, dto) {
         await this.assertEnterprise(enterpriseUserId);
@@ -80,7 +94,7 @@ let UserService = class UserService {
                 data: { userId: agentUser.id, roleId: role.id },
             });
         }
-        return this.prisma.user.update({
+        const updated = await this.prisma.user.update({
             where: { id: agentUser.id },
             data: {
                 displayName: dto.displayName,
@@ -89,19 +103,30 @@ let UserService = class UserService {
                 gpsLongitude: dto.gpsLongitude,
             },
         });
+        await this.redis.delMultiple([
+            `user:${agentUser.id}`,
+            'agents:all',
+            'users:all',
+        ]);
+        return updated;
     }
     async update(id, dto) {
         await this.findOne(id);
-        return this.prisma.user.update({ where: { id }, data: dto });
+        const updated = await this.prisma.user.update({ where: { id }, data: dto });
+        await this.redis.delMultiple([`user:${id}`, 'users:all']);
+        return updated;
     }
     async remove(id) {
         await this.findOne(id);
-        return this.prisma.user.delete({ where: { id } });
+        const deleted = await this.prisma.user.delete({ where: { id } });
+        await this.redis.delMultiple([`user:${id}`, 'users:all', 'agents:all']);
+        return deleted;
     }
 };
 exports.UserService = UserService;
 exports.UserService = UserService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], UserService);
 //# sourceMappingURL=user.service.js.map

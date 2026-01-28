@@ -20,15 +20,15 @@ export declare class SubscriptionController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
+        servicePlanId: string;
         userId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
-        amount: number;
         currency: string;
-        txHash: string | null;
         paymentDate: Date;
-        servicePlanId: string;
     })[]>;
     pay(user: {
         id: string;
@@ -51,15 +51,15 @@ export declare class SubscriptionController {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
+                txHash: string | null;
+                amount: number;
+                servicePlanId: string;
                 userId: string;
                 startDate: Date;
                 endDate: Date;
                 status: import("@prisma/client").$Enums.SubscriptionStatus;
-                amount: number;
                 currency: string;
-                txHash: string | null;
                 paymentDate: Date;
-                servicePlanId: string;
             };
         };
     }>;
@@ -80,14 +80,14 @@ export declare class SubscriptionController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        txHash: string | null;
+        amount: number;
+        servicePlanId: string;
         userId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
-        amount: number;
         currency: string;
-        txHash: string | null;
         paymentDate: Date;
-        servicePlanId: string;
     }>;
 }

@@ -1,16 +1,18 @@
 import { PrismaService } from './prisma.service';
+import { RedisService } from './redis/redis.service';
 export declare class AppService {
     private prisma;
-    constructor(prisma: PrismaService);
-    getUsers(): Promise<{
+    private redis;
+    constructor(prisma: PrismaService, redis: RedisService);
+    getUsers(): Promise<string | {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         address: string;
         walletName: string | null;
         displayName: string | null;
         location: string | null;
         gpsLatitude: number | null;
         gpsLongitude: number | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
 }

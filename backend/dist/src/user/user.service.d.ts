@@ -1,12 +1,14 @@
 import { PrismaService } from '../prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpsertAgentDto } from './dto/upsert-agent.dto';
+import { RedisService } from '../redis/redis.service';
 export declare class UserService {
     private prisma;
-    constructor(prisma: PrismaService);
+    private redis;
+    constructor(prisma: PrismaService, redis: RedisService);
     private getRoleCode;
     private assertEnterprise;
-    findOne(id: string): Promise<{
+    findOne(id: string): Promise<string | {
         id: string;
         address: string;
         walletName: string | null;

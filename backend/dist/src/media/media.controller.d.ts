@@ -7,14 +7,14 @@ export declare class MediaController {
         id: string;
     }): Promise<string | {
         gatewayUrl: string;
-        id: string;
-        userId: string;
-        name: string;
-        type: string;
         url: string;
-        mediaHash: string;
+        id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
+        type: string;
+        userId: string;
+        mediaHash: string;
     }[]>;
     findOne(user: {
         id: string;
@@ -41,14 +41,14 @@ export declare class MediaController {
     update(user: {
         id: string;
     }, id: string, dto: UpdateMediaDto): Promise<{
-        id: string;
-        userId: string;
-        name: string;
-        type: string;
         url: string;
-        mediaHash: string;
+        id: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
+        type: string;
+        userId: string;
+        mediaHash: string;
     }>;
     remove(user: {
         id: string;

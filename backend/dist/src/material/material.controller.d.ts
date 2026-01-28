@@ -8,36 +8,36 @@ export declare class MaterialController {
         id: string;
     }): Promise<string | ({
         supplier: {
-            name: string;
             id: string;
-            userId: string;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             location: string | null;
+            userId: string;
             gpsCoordinates: string | null;
             contactInfo: string | null;
         };
     } & {
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
         id: string;
-        userId: string;
-        materialHash: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        materialHash: string;
     })[]>;
     findBySupplier(user: {
         id: string;
     }, supplierId: string): Promise<string | {
-        supplierId: string;
-        name: string;
-        harvestDate: Date | null;
         id: string;
-        userId: string;
-        materialHash: string;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
+        userId: string;
+        supplierId: string;
+        harvestDate: Date | null;
+        materialHash: string;
     }[]>;
     findOne(user: {
         id: string;

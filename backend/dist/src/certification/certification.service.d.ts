@@ -11,44 +11,44 @@ export declare class CertificationService {
     private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     private findOneOwned;
     create(userId: string, dto: CreateCertificationDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     update(id: string, userId: string, dto: UpdateCertificationDto): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         productId: string;
         certName: string;
         issueDate: Date;
         expiryDate: Date | null;
         certHash: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<void>;
 }

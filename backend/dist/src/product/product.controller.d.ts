@@ -6,29 +6,29 @@ export declare class ProductController {
     constructor(productService: ProductService);
     findAll(): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string;
-        assetName: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        assetName: string;
+        policyId: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     findMy(user: {
         id: string;
     }): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string;
-        assetName: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        assetName: string;
+        policyId: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
-        createdAt: Date;
-        updatedAt: Date;
     }[]>;
     getQuota(user: {
         id: string;
@@ -108,15 +108,15 @@ export declare class ProductController {
     }>;
     findOne(id: string): Promise<string | {
         id: string;
-        userId: string;
-        policyId: string;
-        assetName: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        assetName: string;
+        policyId: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     create(user: {
         id: string;
@@ -125,15 +125,15 @@ export declare class ProductController {
         id: string;
     }, id: string, dto: UpdateProductDto): Promise<{
         id: string;
-        userId: string;
-        policyId: string;
-        assetName: string;
         name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        assetName: string;
+        policyId: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     remove(user: {
         id: string;

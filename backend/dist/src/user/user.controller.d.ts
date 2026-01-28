@@ -7,7 +7,7 @@ export declare class UserController {
     getMe(user: {
         id: string;
         address: string;
-    }): Promise<{
+    }): Promise<string | {
         id: string;
         address: string;
         walletName: string | null;
