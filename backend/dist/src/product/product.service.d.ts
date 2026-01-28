@@ -13,39 +13,39 @@ export declare class ProductService {
     private checkSubscriptionActive;
     findAll(): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
-        assetName: string;
         policyId: string;
+        assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findAllByUser(userId: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
-        assetName: string;
         policyId: string;
+        assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
     findOne(id: string): Promise<string | {
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
-        assetName: string;
         policyId: string;
+        assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     private findOneOwned;
     private getActiveSubscription;
@@ -53,15 +53,15 @@ export declare class ProductService {
     create(userId: string, dto: CreateProductDto): Promise<any>;
     update(id: string, userId: string, dto: UpdateProductDto): Promise<{
         id: string;
-        name: string;
-        createdAt: Date;
-        updatedAt: Date;
         userId: string;
-        assetName: string;
         policyId: string;
+        assetName: string;
+        name: string;
         materialsRoot: string;
         certificationsRoot: string;
         mediaRoot: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     remove(id: string, userId: string): Promise<{
         success: boolean;
@@ -71,7 +71,7 @@ export declare class ProductService {
     }>;
     getQuota(userId: string): Promise<{
         tier: string;
-        maxProducts: number;
+        maxProducts: number | null;
         usedProducts: number;
         remainingProducts: string | number;
     }>;

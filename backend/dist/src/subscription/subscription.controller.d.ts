@@ -8,27 +8,27 @@ export declare class SubscriptionController {
     }): Promise<string | ({
         service: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        txHash: string | null;
-        amount: number;
-        servicePlanId: string;
         userId: string;
+        servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     })[]>;
     pay(user: {
         id: string;
@@ -39,27 +39,27 @@ export declare class SubscriptionController {
             subscription: {
                 service: {
                     id: string;
+                    createdAt: Date;
+                    updatedAt: Date;
                     name: string;
                     description: string | null;
                     price: number;
                     duration: number;
                     maxProducts: number | null;
-                    createdAt: Date;
-                    updatedAt: Date;
                 };
             } & {
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                txHash: string | null;
-                amount: number;
-                servicePlanId: string;
                 userId: string;
+                servicePlanId: string;
                 startDate: Date;
                 endDate: Date;
                 status: import("@prisma/client").$Enums.SubscriptionStatus;
+                amount: number;
                 currency: string;
+                txHash: string | null;
                 paymentDate: Date;
+                createdAt: Date;
+                updatedAt: Date;
             };
         };
     }>;
@@ -68,26 +68,26 @@ export declare class SubscriptionController {
     }, id: string): Promise<{
         service: {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             name: string;
             description: string | null;
             price: number;
             duration: number;
             maxProducts: number | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        txHash: string | null;
-        amount: number;
-        servicePlanId: string;
         userId: string;
+        servicePlanId: string;
         startDate: Date;
         endDate: Date;
         status: import("@prisma/client").$Enums.SubscriptionStatus;
+        amount: number;
         currency: string;
+        txHash: string | null;
         paymentDate: Date;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
 }

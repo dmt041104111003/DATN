@@ -9,10 +9,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const auth_controller_1 = require("./auth.controller");
-const auth_service_1 = require("./auth.service");
 const passport_1 = require("@nestjs/passport");
 const guards_1 = require("./guards");
+const auth_controller_1 = require("./agent/auth.controller");
+const auth_controller_2 = require("./enterprise/auth.controller");
+const auth_service_1 = require("./agent/auth.service");
+const auth_service_2 = require("./auth.service");
+const auth_service_3 = require("./enterprise/auth.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -25,9 +28,9 @@ exports.AuthModule = AuthModule = __decorate([
                 signOptions: { expiresIn: '7d' },
             }),
         ],
-        controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, guards_1.JwtStrategy],
-        exports: [auth_service_1.AuthService, jwt_1.JwtModule, passport_1.PassportModule],
+        controllers: [auth_controller_2.AuthController, auth_controller_1.AuthController],
+        providers: [auth_service_2.AuthService, auth_service_3.AuthService, auth_service_1.AgentAuthService, guards_1.JwtStrategy],
+        exports: [auth_service_2.AuthService, auth_service_3.AuthService, auth_service_1.AgentAuthService, jwt_1.JwtModule, passport_1.PassportModule],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

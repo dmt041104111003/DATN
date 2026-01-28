@@ -8,18 +8,22 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthService } from './auth.service';
-import { GetNonceDto, VerifyWalletDto } from './dto/verify-wallet.dto';
-import { Public, CurrentUser } from './decorators';
+import { AuthService as EnterpriseAuthService } from './auth.service';
+import { AuthService } from '../auth.service';
+import { GetNonceDto, VerifyWalletDto } from '../dto/verify-wallet.dto';
+import { Public, CurrentUser } from '../decorators';
 
-@Controller('auth')
+@Controller('enterprise/auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private enterpriseAuth: EnterpriseAuthService,
+    private authService: AuthService,
+  ) {}
 
   @Public()
   @Get('nonce')
   getNonce(@Query() dto: GetNonceDto) {
-    return this.authService.getNonce(dto.address);
+    return this.enterpriseAuth.getNonce(dto.address);
   }
 
   @Public()
@@ -28,7 +32,7 @@ export class AuthController {
     @Body() dto: VerifyWalletDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.verifyWallet(
+    const result = await this.enterpriseAuth.verifyWallet(
       dto.address,
       dto.signature,
       dto.key,
@@ -70,3 +74,4 @@ export class AuthController {
     return { message: 'Logged out' };
   }
 }
+

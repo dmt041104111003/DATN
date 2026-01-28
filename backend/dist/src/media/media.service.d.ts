@@ -12,13 +12,13 @@ export declare class MediaService {
     private checkSubscriptionActive;
     findAllByUser(userId: string): Promise<string | {
         gatewayUrl: string;
-        url: string;
         id: string;
-        name: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         type: string;
-        userId: string;
+        url: string;
         mediaHash: string;
     }[]>;
     findOne(id: string, userId: string): Promise<{
@@ -38,13 +38,13 @@ export declare class MediaService {
         total: number;
     }>;
     update(id: string, userId: string, dto: UpdateMediaDto): Promise<{
-        url: string;
         id: string;
-        name: string;
+        userId: string;
         createdAt: Date;
         updatedAt: Date;
+        name: string;
         type: string;
-        userId: string;
+        url: string;
         mediaHash: string;
     }>;
     remove(id: string, userId: string): Promise<void>;

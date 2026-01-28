@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 export function Header() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const pathname = usePathname()
 
   const isActive = (path: string) => {
@@ -52,15 +52,7 @@ export function Header() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-4">
-            {!user && (
-              <Link href="/login">
-                <Button size="sm" className="hidden sm:inline-flex rounded-full px-6 bg-foreground text-background hover:bg-foreground/90">
-                  Login
-                </Button>
-              </Link>
-            )}
-          </div>
+          <div className="flex items-center gap-4" />
         </div>
       </div>
     </header>

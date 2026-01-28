@@ -7,7 +7,7 @@ import { User, AuthContextType } from '@/types/auth'
 import { LoadingPage } from '@/components/ui/loading'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-const publicRoutes = ['/', '/login', '/trace']
+const publicRoutes = ['/', '/enterprise/login', '/agent/login', '/trace']
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -16,43 +16,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const isPublic = publicRoutes.includes(pathname) || pathname.startsWith('/trace')
 
-  const checkAuth = useCallback(async () => {
+  const getLoginPath = useCallback((path: string) => {
+    return path.startsWith('/agent/') ? '/agent/login' : '/enterprise/login'
+  }, [])
+
+  const getDashboardPath = useCallback((u: User | null) => {
+    if (!u?.role) return '/enterprise/dashboard'
+    if (u.role === 'AGENT') return '/agent/dashboard'
+    return '/enterprise/dashboard'
+  }, [])
+
+  const isAnyDashboardPath = (path: string) => {
+    return (
+      path === '/dashboard' ||
+      path.startsWith('/dashboard/') ||
+      path === '/enterprise/dashboard' ||
+      path.startsWith('/enterprise/dashboard/') ||
+      path === '/agent/dashboard' ||
+      path.startsWith('/agent/dashboard/')
+    )
+  }
+
+  const checkAuth = useCallback(async (): Promise<User | null> => {
     try {
       const data = await authApi.getMe()
       setUser(data.user)
-      return true
+      return data.user
     } catch {
       setUser(null)
-      if (!isPublic) router.push('/login')
-      return false
+      if (!isPublic) router.push(getLoginPath(pathname))
+      return null
     } finally {
       setIsLoading(false)
     }
-  }, [isPublic, router])
+  }, [getLoginPath, isPublic, pathname, router])
 
   useEffect(() => {
     let cancelled = false
     
-    if (user && pathname.startsWith('/dashboard')) {
+    if (user && isAnyDashboardPath(pathname)) {
       return
     }
     
     setIsLoading(true)
-    checkAuth().then((success) => {
+    checkAuth().then((authedUser) => {
       if (cancelled) return
       
+      const target = getDashboardPath(authedUser)
+      const success = !!authedUser
+
       if (success && isPublic) {
-        router.push('/dashboard')
-      } else if (success && !pathname.startsWith('/dashboard')) {
-        router.push('/dashboard')
+        router.replace(target)
+      } else if (success && !isAnyDashboardPath(pathname)) {
+        router.replace(target)
+      } else if (success && pathname === '/dashboard') {
+        router.replace(target)
       } else if (!success && !isPublic) {
-        router.push('/login')
+        router.push(getLoginPath(pathname))
       } else {
         setIsLoading(false)
       }
     })
     return () => { cancelled = true }
-  }, [pathname, isPublic, router, user, checkAuth])
+  }, [pathname, isPublic, router, user, checkAuth, getDashboardPath])
 
   const refreshAuth = async () => {
     setIsLoading(true)
@@ -62,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data
     } catch {
       setUser(null)
-      if (!isPublic) router.push('/login')
+      if (!isPublic) router.push(getLoginPath(pathname))
       return null
     } finally {
       setIsLoading(false)
@@ -75,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout()
     } catch {}
-    window.location.href = '/'
+    window.location.href = getLoginPath(pathname)
   }
 
   if (isLoading && !isPublic) {

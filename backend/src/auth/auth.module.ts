@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './guards';
+import { AuthController as AgentAuthController } from './agent/auth.controller';
+import { AuthController as EnterpriseAuthController } from './enterprise/auth.controller';
+import { AgentAuthService } from './agent/auth.service';
+import { AuthService } from './auth.service';
+import { AuthService as EnterpriseAuthService } from './enterprise/auth.service';
 
 @Module({
   imports: [
@@ -13,8 +16,8 @@ import { JwtStrategy } from './guards';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule, PassportModule],
+  controllers: [EnterpriseAuthController, AgentAuthController],
+  providers: [AuthService, EnterpriseAuthService, AgentAuthService, JwtStrategy],
+  exports: [AuthService, EnterpriseAuthService, AgentAuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

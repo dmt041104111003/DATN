@@ -17,7 +17,10 @@ async function bootstrap() {
             : true,
         credentials: true,
     });
-    app.useGlobalPipes(new common_1.ValidationPipe());
+    app.useGlobalPipes(new common_1.ValidationPipe({
+        whitelist: true,
+        transform: true,
+    }));
     const port = process.env.PORT || 4000;
     await app.listen(port, '0.0.0.0');
     console.log(`Application is running on port ${port}`);

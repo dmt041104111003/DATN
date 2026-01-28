@@ -83,7 +83,9 @@ let ProductService = class ProductService {
     }
     async checkProductLimit(userId) {
         const subscription = await this.getActiveSubscription(userId);
-        const maxProducts = subscription?.service.maxProducts ?? 5;
+        const maxProducts = subscription?.service.maxProducts === undefined
+            ? 5
+            : subscription?.service.maxProducts;
         if (maxProducts === null)
             return;
         const now = new Date();
@@ -104,7 +106,7 @@ let ProductService = class ProductService {
         await this.checkProductLimit(userId);
         const product = await this.prisma.product.create({
             data: {
-                ...dto,
+                name: dto.name,
                 userId,
                 policyId: '',
                 assetName: '',
@@ -119,9 +121,14 @@ let ProductService = class ProductService {
     async update(id, userId, dto) {
         await this.checkSubscriptionActive(userId);
         await this.findOneOwned(id, userId);
+        const data = {};
+        if (dto.name !== undefined)
+            data.name = dto.name;
+        if (dto.assetName !== undefined)
+            data.assetName = dto.assetName;
         const product = await this.prisma.product.update({
             where: { id },
-            data: dto,
+            data,
         });
         await this.redis.delMultiple([
             `product:${id}`,
@@ -151,7 +158,9 @@ let ProductService = class ProductService {
     }
     async getQuota(userId) {
         const subscription = await this.getActiveSubscription(userId);
-        const maxProducts = subscription?.service.maxProducts ?? 5;
+        const maxProducts = subscription?.service.maxProducts === undefined
+            ? 5
+            : subscription?.service.maxProducts;
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const todayCount = await this.prisma.product.count({

@@ -8,8 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useWallet } from '@/hooks/use-wallet'
 import { useAuth } from '@/contexts/auth-context'
 import { authApi } from '@/lib/api/auth'
-import { Header } from '@/components/header'
-import { Footer } from '@/components/footer'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -24,7 +22,6 @@ type Network = 'mainnet' | 'preprod'
 const NETWORK_STORAGE_KEY = 'selected_network'
 
 export default function LoginPage() {
-  const router = useRouter()
   const { error, connectWallet, login } = useWallet()
   const { refreshAuth } = useAuth()
   const [wallets, setWallets] = useState<ReturnType<typeof BrowserWallet.getInstalledWallets>>([])
@@ -66,9 +63,9 @@ export default function LoginPage() {
       const role = userData.user.role
       
       if (role === 'AGENT') {
-        window.location.href = '/agent/products'
+        window.location.href = '/agent/dashboard'
       } else {
-        window.location.href = '/dashboard'
+        window.location.href = '/enterprise/dashboard'
       }
     } catch {} finally {
       setLoadingWallet(null)
@@ -79,10 +76,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className={isLoggingIn ? "pointer-events-none opacity-50" : ""}>
-        <Header />
-      </div>
-      
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <Card className={`w-full max-w-md ${isLoggingIn ? "pointer-events-none opacity-50" : ""}`}>
           <CardHeader className="text-center">
@@ -140,10 +133,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </main>
-
-      <div className={isLoggingIn ? "pointer-events-none opacity-50" : ""}>
-        <Footer />
-      </div>
     </div>
   )
 }

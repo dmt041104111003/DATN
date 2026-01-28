@@ -85,7 +85,10 @@ export class ProductService {
 
   private async checkProductLimit(userId: string) {
     const subscription = await this.getActiveSubscription(userId);
-    const maxProducts = subscription?.service.maxProducts ?? 5;
+    const maxProducts =
+      subscription?.service.maxProducts === undefined
+        ? 5
+        : subscription?.service.maxProducts;
     if (maxProducts === null) return;
 
     const now = new Date();
@@ -115,7 +118,7 @@ export class ProductService {
     await this.checkProductLimit(userId);
     const product = await (this.prisma as any).product.create({
       data: {
-        ...dto,
+        name: dto.name,
         userId,
         policyId: '',
         assetName: '',
@@ -131,9 +134,12 @@ export class ProductService {
   async update(id: string, userId: string, dto: UpdateProductDto) {
     await this.checkSubscriptionActive(userId);
     await this.findOneOwned(id, userId);
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.assetName !== undefined) data.assetName = dto.assetName;
     const product = await this.prisma.product.update({
       where: { id },
-      data: dto,
+      data,
     });
     await this.redis.delMultiple([
       `product:${id}`,
@@ -168,7 +174,10 @@ export class ProductService {
 
   async getQuota(userId: string) {
     const subscription = await this.getActiveSubscription(userId);
-    const maxProducts = subscription?.service.maxProducts ?? 5;
+    const maxProducts =
+      subscription?.service.maxProducts === undefined
+        ? 5
+        : subscription?.service.maxProducts;
 
     const now = new Date();
     const startOfDay = new Date(

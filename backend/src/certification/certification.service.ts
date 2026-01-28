@@ -69,15 +69,16 @@ export class CertificationService {
     if (dto.expiryDate && new Date(dto.expiryDate) <= new Date(dto.issueDate)) {
       throw new BadRequestException('Expiry date must be after issue date');
     }
-    
-    if (dto.productId) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: dto.productId },
-      });
-      if (!product) throw new NotFoundException('Product not found');
-      if (product.userId !== userId)
-        throw new ForbiddenException('Not your product');
+
+    if (!dto.productId) {
+      throw new BadRequestException('Product is required');
     }
+
+    const product = await this.prisma.product.findUnique({
+      where: { id: dto.productId },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+    if (product.userId !== userId) throw new ForbiddenException('Not your product');
 
     const certHash = hashCertification(
       dto.certName,
@@ -90,20 +91,15 @@ export class CertificationService {
       certHash,
       issueDate: new Date(dto.issueDate),
       expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+      productId: dto.productId,
     };
-
-    if (dto.productId) {
-      createData.productId = dto.productId;
-    }
 
     const certification = await this.prisma.certification.create({
       data: createData,
     });
     
     const cacheKeys = ['certifications:all'];
-    if (dto.productId) {
-      cacheKeys.push(`certifications:product:${dto.productId}`);
-    }
+    cacheKeys.push(`certifications:product:${dto.productId}`);
     await this.redis.delMultiple(cacheKeys);
     
     return certification;

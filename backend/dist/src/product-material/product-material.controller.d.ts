@@ -10,20 +10,20 @@ export declare class ProductMaterialController {
         material: {
             supplier: {
                 id: string;
-                name: string;
+                userId: string;
                 createdAt: Date;
                 updatedAt: Date;
+                name: string;
                 location: string | null;
-                userId: string;
                 gpsCoordinates: string | null;
                 contactInfo: string | null;
             };
         } & {
             id: string;
-            name: string;
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
+            name: string;
             supplierId: string;
             harvestDate: Date | null;
             materialHash: string;
