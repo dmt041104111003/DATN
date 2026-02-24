@@ -6,6 +6,8 @@ import styles from '../styles/Login.module.css';
 import { AdminHeader } from './AdminHeader';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 
+const AUTH_COOKIE = 'auth_token';
+
 export default function AdminLoginForm() {
   const router = useRouter();
   const {
@@ -18,7 +20,7 @@ export default function AdminLoginForm() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (document.cookie.includes('admin_token=')) {
+    if (document.cookie.includes(`${AUTH_COOKIE}=`)) {
       router.replace('/admin');
       return;
     }

@@ -10,6 +10,8 @@ import type { Role, ProfileSetupState } from '../types/index';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
 
+const AUTH_COOKIE = 'auth_token';
+
 export default function ProfilePage() {
   const router = useRouter();
 
@@ -23,7 +25,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-      document.cookie = 'admin_token=; path=/; max-age=0';
+      document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
       window.sessionStorage.removeItem('admin_profile_setup');
       window.location.assign('/');
       return;
@@ -90,7 +92,7 @@ export default function ProfilePage() {
       }
 
       if (data?.token) {
-        document.cookie = `admin_token=${data.token}; path=/; max-age=604800`;
+        document.cookie = `${AUTH_COOKIE}=${data.token}; path=/; max-age=604800`;
       }
 
       if (typeof window !== 'undefined') {

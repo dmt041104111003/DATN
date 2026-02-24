@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import styles from '../styles/Layout.module.css';
 import { ADMIN_NAV_ITEMS } from '../constants/admin';
 
+const AUTH_COOKIE = 'auth_token';
+
 export default function AdminLayoutClient({
   children,
 }: {
@@ -14,6 +16,46 @@ export default function AdminLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const cookie = document.cookie
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${AUTH_COOKIE}=`));
+
+    const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+    if (!token) return;
+
+    const parts = token.split('.');
+    if (parts.length < 2) return;
+
+    const payloadPart = parts[1];
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      '=',
+    );
+
+    try {
+      const json = atob(padded);
+      const payload = JSON.parse(json) as { role?: unknown };
+      if (typeof payload.role === 'string') {
+        setRole(payload.role);
+      }
+    } catch {
+      return;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (role) {
+      document.title = `Lab3 - ${role}`;
+    }
+  }, [role]);
 
   useEffect(() => {
     if (menuOpen) {
@@ -29,7 +71,7 @@ export default function AdminLayoutClient({
   const handleLogout = () => {
     if (typeof document !== 'undefined') {
       document.cookie =
-        'admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        `${AUTH_COOKIE}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     }
     if (typeof window !== 'undefined') {
       window.location.assign('/');
@@ -43,7 +85,7 @@ export default function AdminLayoutClient({
   return (
     <div className={styles.layoutContainer}>
       <div className={styles.mobileHeader}>
-        <h2 className={styles.sidebarTitle}>Admin</h2>
+        <h2 className={styles.sidebarTitle}>{role}</h2>
         <button
           type="button"
           className={styles.menuToggle}
@@ -64,7 +106,7 @@ export default function AdminLayoutClient({
       )}
       <aside className={`${styles.sidebar} ${menuOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
-          <h2 className={styles.sidebarTitle}>Admin</h2>
+          <h2 className={styles.sidebarTitle}>{role}</h2>
           <button
             type="button"
             className={styles.menuClose}

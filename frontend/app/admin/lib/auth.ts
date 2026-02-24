@@ -19,7 +19,7 @@ function getJwtPayload(token: string): unknown {
 
 export async function verifyAdmin(): Promise<boolean> {
   const cookieStore = await cookies();
-  const token = cookieStore.get('admin_token');
+  const token = cookieStore.get('auth_token');
   if (!token?.value) return false;
   const payload = getJwtPayload(token.value) as
     | { role?: unknown; profileId?: unknown }

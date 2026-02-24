@@ -6,6 +6,8 @@ import type { Role } from '../types/index';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
 
+const AUTH_COOKIE = 'auth_token';
+
 type UseWalletAuthState = {
   error: string;
   loading: boolean;
@@ -134,7 +136,7 @@ export function useWalletAuth(): UseWalletAuthReturn {
       }
 
       if (verifyData?.token) {
-        document.cookie = `admin_token=${verifyData.token}; path=/; max-age=604800`;
+        document.cookie = `${AUTH_COOKIE}=${verifyData.token}; path=/; max-age=604800`;
       }
 
       router.replace('/admin');
