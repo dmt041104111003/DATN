@@ -64,6 +64,18 @@ let ConfigService = class ConfigService {
         var _a;
         return (_a = process.env.JWT_SECRET) !== null && _a !== void 0 ? _a : "";
     }
+    get cloudinaryCloudName() {
+        var _a;
+        return (_a = process.env.CLOUDINARY_CLOUD_NAME) !== null && _a !== void 0 ? _a : "";
+    }
+    get cloudinaryApiKey() {
+        var _a;
+        return (_a = process.env.CLOUDINARY_API_KEY) !== null && _a !== void 0 ? _a : "";
+    }
+    get cloudinaryApiSecret() {
+        var _a;
+        return (_a = process.env.CLOUDINARY_API_SECRET) !== null && _a !== void 0 ? _a : "";
+    }
     getPlutus() {
         if (!this._plutus) {
             const path = (0, path_1.join)(process.cwd(), "plutus.json");

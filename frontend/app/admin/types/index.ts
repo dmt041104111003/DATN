@@ -6,6 +6,15 @@ export type Product = {
   imageUrl: string | null;
 };
 
+export type Account = {
+  id: number;
+  displayName: string;
+  stakeAddress: string;
+  glnCodeRoot: string | null;
+  roleCode: string;
+  avatarUrl?: string | null;
+};
+
 export type ProductListItem = {
   id: number;
   slug: string;
@@ -36,4 +45,20 @@ export type RoleSelectProps = {
 export type ProfileSetupState = {
   stakeAddress: string;
   roles: Role[];
+};
+
+export type AccountProfileProps = {
+  account: Account | null;
+  isMobile: boolean;
+  uploading: boolean;
+  loading: boolean;
+  error: string;
+  saved: boolean;
+  displayName: string;
+  glnCodeRoot: string;
+  showGln: boolean;
+  onChangeDisplayName: (value: string) => void;
+  onChangeGlnCodeRoot: (value: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onChangeAvatar: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };

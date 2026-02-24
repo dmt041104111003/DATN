@@ -65,6 +65,18 @@ export class ConfigService {
     return process.env.JWT_SECRET ?? "";
   }
 
+  get cloudinaryCloudName(): string {
+    return process.env.CLOUDINARY_CLOUD_NAME ?? "";
+  }
+
+  get cloudinaryApiKey(): string {
+    return process.env.CLOUDINARY_API_KEY ?? "";
+  }
+
+  get cloudinaryApiSecret(): string {
+    return process.env.CLOUDINARY_API_SECRET ?? "";
+  }
+
   getPlutus(): Plutus {
     if (!this._plutus) {
       const path = join(process.cwd(), "plutus.json");

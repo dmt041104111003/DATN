@@ -52,10 +52,11 @@ export default function AdminLayoutClient({
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (role) {
-      document.title = `Lab3 - ${role}`;
-    }
-  }, [role]);
+    const current = ADMIN_NAV_ITEMS.find((item) => item.href === pathname);
+    const pageName = current?.label ?? 'Admin';
+    const rolePart = role ?? 'Admin';
+    document.title = `trace.lab3 - ${rolePart} - ${pageName}`;
+  }, [role, pathname]);
 
   useEffect(() => {
     if (menuOpen) {

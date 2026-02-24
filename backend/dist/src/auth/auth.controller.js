@@ -40,14 +40,35 @@ let AuthController = class AuthController {
     }
     async createProfile(body) {
         const { stakeAddress, roleId, displayName, glnCodeRoot } = body;
-        if (!stakeAddress || !roleId || !displayName || !glnCodeRoot) {
+        if (!stakeAddress || !roleId || !displayName) {
             throw new common_1.HttpException({ error: "Missing profile information" }, common_1.HttpStatus.BAD_REQUEST);
         }
         return this.authService.createProfileAndIssueToken({
             stakeAddress,
             roleId,
             displayName,
-            glnCodeRoot,
+            glnCodeRoot: glnCodeRoot !== null && glnCodeRoot !== void 0 ? glnCodeRoot : "",
+        });
+    }
+    async updateProfile(body) {
+        const { token, displayName, glnCodeRoot } = body;
+        if (!token || !displayName) {
+            throw new common_1.HttpException({ error: "Missing profile update information" }, common_1.HttpStatus.BAD_REQUEST);
+        }
+        return this.authService.updateProfileFromToken({
+            token,
+            displayName,
+            glnCodeRoot: glnCodeRoot !== null && glnCodeRoot !== void 0 ? glnCodeRoot : "",
+        });
+    }
+    async uploadAvatar(body) {
+        const { token, imageDataUrl } = body;
+        if (!token || !imageDataUrl) {
+            throw new common_1.HttpException({ error: "Missing avatar upload information" }, common_1.HttpStatus.BAD_REQUEST);
+        }
+        return this.authService.uploadProfileAvatarFromToken({
+            token,
+            imageDataUrl,
         });
     }
 };
@@ -73,6 +94,20 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "createProfile", null);
+__decorate([
+    (0, common_1.Patch)("profile"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateProfile", null);
+__decorate([
+    (0, common_1.Post)("profile/avatar"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "uploadAvatar", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

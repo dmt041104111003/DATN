@@ -1,10 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpException,
-  HttpStatus,
-  Post,
-} from "@nestjs/common";
+import { Body, Controller, HttpException, HttpStatus, Post, Patch } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
 @Controller("auth")
@@ -65,7 +59,7 @@ export class AuthController {
   ) {
     const { stakeAddress, roleId, displayName, glnCodeRoot } = body;
 
-    if (!stakeAddress || !roleId || !displayName || !glnCodeRoot) {
+    if (!stakeAddress || !roleId || !displayName) {
       throw new HttpException(
         { error: "Missing profile information" },
         HttpStatus.BAD_REQUEST
@@ -76,7 +70,55 @@ export class AuthController {
       stakeAddress,
       roleId,
       displayName,
-      glnCodeRoot,
+      glnCodeRoot: glnCodeRoot ?? "",
+    });
+  }
+
+  @Patch("profile")
+  async updateProfile(
+    @Body()
+    body: {
+      token?: string;
+      displayName?: string;
+      glnCodeRoot?: string;
+    }
+  ) {
+    const { token, displayName, glnCodeRoot } = body;
+
+    if (!token || !displayName) {
+      throw new HttpException(
+        { error: "Missing profile update information" },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    return this.authService.updateProfileFromToken({
+      token,
+      displayName,
+      glnCodeRoot: glnCodeRoot ?? "",
+    });
+  }
+
+  @Post("profile/avatar")
+  async uploadAvatar(
+    @Body()
+    body: {
+      token?: string;
+      imageDataUrl?: string;
+    }
+  ) {
+    const { token, imageDataUrl } = body;
+
+    if (!token || !imageDataUrl) {
+      throw new HttpException(
+        { error: "Missing avatar upload information" },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    return this.authService.uploadProfileAvatarFromToken({
+      token,
+      imageDataUrl,
     });
   }
 }

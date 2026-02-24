@@ -39,11 +39,12 @@ model Role {
 }
 
 model Profile {
-  id           Int     @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   walletAddress String  @unique
-  roleId       Int
-  displayName  String
-  glnCodeRoot  String
+  roleId        Int
+  displayName   String
+  glnCodeRoot   String
+  avatarUrl     String?
 
   wallet Wallet @relation(fields: [walletAddress], references: [address])
   role   Role   @relation(fields: [roleId], references: [id])

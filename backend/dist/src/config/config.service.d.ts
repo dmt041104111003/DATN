@@ -21,5 +21,8 @@ export declare class ConfigService {
     get validatorTitle(): typeof VALIDATOR_TITLE;
     get cip68Prefix(): typeof CIP68_PREFIX;
     get jwtSecret(): string;
+    get cloudinaryCloudName(): string;
+    get cloudinaryApiKey(): string;
+    get cloudinaryApiSecret(): string;
     getPlutus(): Plutus;
 }

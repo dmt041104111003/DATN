@@ -17,6 +17,7 @@ export declare class AuthController {
             role: string;
             displayName: string;
             glnCodeRoot: string;
+            avatarUrl: string | null;
         };
     } | {
         needProfile: true;
@@ -37,6 +38,34 @@ export declare class AuthController {
             role: string;
             displayName: string;
             glnCodeRoot: string;
+            avatarUrl: string | null;
+        };
+    }>;
+    updateProfile(body: {
+        token?: string;
+        displayName?: string;
+        glnCodeRoot?: string;
+    }): Promise<{
+        token: string;
+        profile: {
+            id: number;
+            role: string;
+            displayName: string;
+            glnCodeRoot: string;
+            avatarUrl: string | null;
+        };
+    }>;
+    uploadAvatar(body: {
+        token?: string;
+        imageDataUrl?: string;
+    }): Promise<{
+        token: string;
+        profile: {
+            id: number;
+            role: string;
+            displayName: string;
+            glnCodeRoot: string;
+            avatarUrl: string | null;
         };
     }>;
 }
