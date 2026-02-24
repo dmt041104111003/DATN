@@ -1,0 +1,223 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ShipmentStatus {
+  MANUFACTURED
+  IN_TRANSIT
+  RECEIVED
+}
+
+enum TxStatus {
+  PENDING
+  CONFIRMED
+}
+
+model Wallet {
+  address   String   @id
+  nonce     String?  @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  lastLogin DateTime?
+
+  profiles          Profile[]
+  shipmentsMinted   Shipment[]            @relation("ShipmentsMinter")
+  shipmentsAsAgent  Shipment[]            @relation("ShipmentsAgent")
+  labReports        LabReport[]           @relation("LabReportVerifier")
+  transitLogs       TransitConfirmation[]
+  actionLogs        ActionLog[]
+  ownershipHistories OwnershipHistory[]
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  code String @unique
+
+  profiles Profile[]
+}
+
+model Profile {
+  id           Int     @id @default(autoincrement())
+  walletAddress String  @unique
+  roleId       Int
+  displayName  String
+  glnCodeRoot  String
+
+  wallet Wallet @relation(fields: [walletAddress], references: [address])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  facilities  Facility[]
+  certificates Certificate[]
+}
+
+model Facility {
+  id        Int     @id @default(autoincrement())
+  profileId Int
+  glnCode   String
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean @default(false)
+
+  profile   Profile @relation(fields: [profileId], references: [id])
+  receivers ShipmentReceiver[]
+
+  @@unique([profileId, glnCode])
+}
+
+model ProductTemplate {
+  gtin     String  @id
+  name     String
+  imageUrl String?
+
+  batches     ProductionBatch[]
+  compliances ProductCompliance[]
+}
+
+model Standard {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  compliances ProductCompliance[]
+}
+
+model ProductCompliance {
+  id          Int    @id @default(autoincrement())
+  productGtin String
+  standardId  Int
+
+  product  ProductTemplate @relation(fields: [productGtin], references: [gtin])
+  standard Standard        @relation(fields: [standardId], references: [id])
+
+  @@unique([productGtin, standardId])
+}
+
+model Certificate {
+  id        Int      @id @default(autoincrement())
+  profileId Int?
+  title     String?
+  issuedAt  DateTime?
+  expiresAt DateTime?
+
+  profile  Profile?          @relation(fields: [profileId], references: [id])
+  mappings BatchCertMapping[]
+}
+
+model LabReport {
+  reportId        String @id
+  ipfsHash        String @unique
+  verifierAddress String?
+
+  verifier Wallet?          @relation("LabReportVerifier", fields: [verifierAddress], references: [address])
+  mappings BatchCertMapping[]
+}
+
+model BatchCertMapping {
+  id               Int     @id @default(autoincrement())
+  productionBatchId String
+  certificateId    Int?
+  labReportId      String?
+
+  productionBatch ProductionBatch @relation(fields: [productionBatchId], references: [soLoMe])
+  certificate     Certificate?    @relation(fields: [certificateId], references: [id])
+  labReport       LabReport?      @relation(fields: [labReportId], references: [reportId])
+}
+
+model ProductionBatch {
+  soLoMe          String   @id
+  gtin            String
+  manufactureDate DateTime
+  expiryDate      DateTime?
+
+  product      ProductTemplate  @relation(fields: [gtin], references: [gtin])
+  certificates BatchCertMapping[]
+  shipments    Shipment[]
+}
+
+model Shipment {
+  id            Int            @id @default(autoincrement())
+  batchId       String
+  minterAddress String
+  agentAddress  String?
+  status        ShipmentStatus @default(MANUFACTURED)
+  policyId      String?
+  assetName     String?
+
+  batch   ProductionBatch @relation(fields: [batchId], references: [soLoMe])
+  minter  Wallet          @relation("ShipmentsMinter", fields: [minterAddress], references: [address])
+  agent   Wallet?         @relation("ShipmentsAgent", fields: [agentAddress], references: [address])
+
+  receivers           ShipmentReceiver[]
+  transitConfirmations TransitConfirmation[]
+  metadataSnapshots    MetadataSnapshot[]
+  transactions         OnchainTransaction[]
+  ownershipHistories   OwnershipHistory[]
+
+  @@unique([policyId, assetName])
+}
+
+model ShipmentReceiver {
+  id         Int @id @default(autoincrement())
+  shipmentId Int
+  facilityId Int
+  stopOrder  Int
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  @@unique([shipmentId, facilityId])
+}
+
+model TransitConfirmation {
+  id             Int      @id @default(autoincrement())
+  shipmentId     Int
+  transitAddress String
+  timestamp      DateTime @default(now())
+  txHash         String
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  transit  Wallet  @relation(fields: [transitAddress], references: [address])
+}
+
+model MetadataSnapshot {
+  id         Int      @id @default(autoincrement())
+  shipmentId Int
+  json       Json
+  createdAt  DateTime @default(now())
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+}
+
+model OnchainTransaction {
+  id          Int      @id @default(autoincrement())
+  shipmentId  Int?
+  txHash      String   @unique
+  status      TxStatus @default(PENDING)
+  submittedAt DateTime @default(now())
+  confirmedAt DateTime?
+
+  shipment Shipment? @relation(fields: [shipmentId], references: [id])
+}
+
+model ActionLog {
+  id            Int      @id @default(autoincrement())
+  walletAddress String
+  action        String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletAddress], references: [address])
+}
+
+model OwnershipHistory {
+  id           Int      @id @default(autoincrement())
+  shipmentId   Int
+  ownerAddress String
+  fromTime     DateTime
+  toTime       DateTime?
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  owner    Wallet  @relation(fields: [ownerAddress], references: [address])
+}
+

@@ -27,7 +27,7 @@ function createReadOnlyWallet(changeAddress, fetcher) {
                 return Number(lovelace !== null && lovelace !== void 0 ? lovelace : 0) >= MIN_COLLATERAL_LOVELACE;
             });
             if (!collateral) {
-                throw new common_1.BadRequestException(`Không tìm thấy UTXO đủ làm collateral (>= ${MIN_COLLATERAL_LOVELACE} lovelace) tại changeAddress`);
+                throw new common_1.BadRequestException(`No UTXO with sufficient collateral (>= ${MIN_COLLATERAL_LOVELACE} lovelace) found at changeAddress`);
             }
             return [collateral];
         },

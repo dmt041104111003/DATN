@@ -10,7 +10,33 @@ export declare class AuthController {
         nonce?: string;
         signature?: string;
         key?: string;
-    }): {
+    }): Promise<{
         token: string;
-    };
+        profile: {
+            id: number;
+            role: string;
+            displayName: string;
+            glnCodeRoot: string;
+        };
+    } | {
+        needProfile: true;
+        roles: {
+            id: number;
+            code: string;
+        }[];
+    }>;
+    createProfile(body: {
+        stakeAddress?: string;
+        roleId?: number;
+        displayName?: string;
+        glnCodeRoot?: string;
+    }): Promise<{
+        token: string;
+        profile: {
+            id: number;
+            role: string;
+            displayName: string;
+            glnCodeRoot: string;
+        };
+    }>;
 }

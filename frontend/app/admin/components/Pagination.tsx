@@ -55,16 +55,16 @@ export default function Pagination(props: PaginationProps) {
     <div className={styles.wrap}>
       {totalItems != null && (
         <span className={styles.info}>
-          {totalItems === 0 ? 'Không có dữ liệu' : `Hiển thị ${start}-${end} / ${totalItems}`}
+          {totalItems === 0 ? 'No data' : `Showing ${start}-${end} of ${totalItems}`}
         </span>
       )}
-      <nav className={styles.nav} aria-label="Phân trang">
+      <nav className={styles.nav} aria-label="Pagination">
         <button
           type="button"
           className={styles.btn}
           disabled={!hasPrev}
           onClick={() => onPageChange(currentPage - 1)}
-          aria-label="Trang trước"
+          aria-label="Previous page"
         >
           &#8249;
         </button>
@@ -77,7 +77,7 @@ export default function Pagination(props: PaginationProps) {
               type="button"
               className={p === currentPage ? styles.btnActive : styles.btn}
               onClick={() => onPageChange(p)}
-              aria-label={`Trang ${p}`}
+              aria-label={`Page ${p}`}
               aria-current={p === currentPage ? 'page' : undefined}
             >
               {p}
@@ -89,7 +89,7 @@ export default function Pagination(props: PaginationProps) {
           className={styles.btn}
           disabled={!hasNext}
           onClick={() => onPageChange(currentPage + 1)}
-          aria-label="Trang sau"
+          aria-label="Next page"
         >
           &#8250;
         </button>

@@ -17,7 +17,7 @@ export class AuthController {
   ): { nonce: string } {
     if (!stakeAddress) {
       throw new HttpException(
-        { error: "Thiếu stakeAddress" },
+        { error: "Missing stakeAddress" },
         HttpStatus.BAD_REQUEST
       );
     }
@@ -35,12 +35,12 @@ export class AuthController {
       signature?: string;
       key?: string;
     }
-  ): { token: string } {
+  ) {
     const { stakeAddress, nonce, signature, key } = body;
 
     if (!stakeAddress || !nonce || !signature || !key) {
       throw new HttpException(
-        { error: "Thiếu tham số xác thực" },
+        { error: "Missing authentication parameters" },
         HttpStatus.BAD_REQUEST
       );
     }
@@ -50,6 +50,33 @@ export class AuthController {
       nonce,
       signature,
       key,
+    });
+  }
+
+  @Post("profile")
+  async createProfile(
+    @Body()
+    body: {
+      stakeAddress?: string;
+      roleId?: number;
+      displayName?: string;
+      glnCodeRoot?: string;
+    }
+  ) {
+    const { stakeAddress, roleId, displayName, glnCodeRoot } = body;
+
+    if (!stakeAddress || !roleId || !displayName || !glnCodeRoot) {
+      throw new HttpException(
+        { error: "Missing profile information" },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    return this.authService.createProfileAndIssueToken({
+      stakeAddress,
+      roleId,
+      displayName,
+      glnCodeRoot,
     });
   }
 }

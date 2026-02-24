@@ -21,7 +21,7 @@ function createReadOnlyWallet(
       });
       if (!collateral) {
         throw new BadRequestException(
-          `Không tìm thấy UTXO đủ làm collateral (>= ${MIN_COLLATERAL_LOVELACE} lovelace) tại changeAddress`
+          `No UTXO with sufficient collateral (>= ${MIN_COLLATERAL_LOVELACE} lovelace) found at changeAddress`
         );
       }
       return [collateral];
@@ -188,7 +188,6 @@ export class TraceService {
     return { unsignedTx };
   }
 
-  /** Gửi signed tx lên chain (client ký xong gửi hex). Không dùng mnemonic. */
   async submitSignedTx(signedTxHex: string): Promise<{ txHash: string }> {
     const txHash = await this.cardano.blockfrostProvider.submitTx(signedTxHex);
     return { txHash };

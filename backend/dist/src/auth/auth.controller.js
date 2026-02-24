@@ -21,7 +21,7 @@ let AuthController = class AuthController {
     }
     createNonce(stakeAddress) {
         if (!stakeAddress) {
-            throw new common_1.HttpException({ error: "Thiếu stakeAddress" }, common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException({ error: "Missing stakeAddress" }, common_1.HttpStatus.BAD_REQUEST);
         }
         const nonce = this.authService.generateNonce(stakeAddress);
         return { nonce };
@@ -29,13 +29,25 @@ let AuthController = class AuthController {
     verifySignature(body) {
         const { stakeAddress, nonce, signature, key } = body;
         if (!stakeAddress || !nonce || !signature || !key) {
-            throw new common_1.HttpException({ error: "Thiếu tham số xác thực" }, common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException({ error: "Missing authentication parameters" }, common_1.HttpStatus.BAD_REQUEST);
         }
         return this.authService.verifyAndIssueToken({
             stakeAddress,
             nonce,
             signature,
             key,
+        });
+    }
+    async createProfile(body) {
+        const { stakeAddress, roleId, displayName, glnCodeRoot } = body;
+        if (!stakeAddress || !roleId || !displayName || !glnCodeRoot) {
+            throw new common_1.HttpException({ error: "Missing profile information" }, common_1.HttpStatus.BAD_REQUEST);
+        }
+        return this.authService.createProfileAndIssueToken({
+            stakeAddress,
+            roleId,
+            displayName,
+            glnCodeRoot,
         });
     }
 };
@@ -52,8 +64,15 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Object)
+    __metadata("design:returntype", void 0)
 ], AuthController.prototype, "verifySignature", null);
+__decorate([
+    (0, common_1.Post)("profile"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "createProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import styles from '../styles/Login.module.css';
 
 export function AdminHeader() {
