@@ -25,8 +25,10 @@ export default function ProfilePage() {
     if (typeof window !== 'undefined') {
       document.cookie = 'admin_token=; path=/; max-age=0';
       window.sessionStorage.removeItem('admin_profile_setup');
+      window.location.assign('/');
+      return;
     }
-    router.push('/');
+    router.replace('/');
   };
 
   useEffect(() => {
