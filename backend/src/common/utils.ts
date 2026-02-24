@@ -20,7 +20,7 @@ export function parseHttpError(error: unknown): string {
       status: error.response.status,
     });
   }
-  if (error.request && !(error.request instanceof XMLHttpRequest)) {
+  if (error.request) {
     return JSON.stringify(error.request);
   }
   return JSON.stringify({

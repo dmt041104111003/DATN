@@ -1,0 +1,32 @@
+.service .globe {
+  left: 5% !important;
+  top: -5% !important;
+  transform: translate(0, 0) !important;
+}
+
+.service {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+@media (min-width: 769px) {
+  .service .globe svg {
+    transform: scale(1.25);
+    transform-origin: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .service .globe {
+    position: absolute !important;
+    right: 8% !important;
+    bottom: -14% !important;
+    left: auto !important;
+    top: auto !important;
+    display: block !important;
+    transform: scale(1);
+    transform-origin: center;
+  }
+}
+

@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
+import { verifyAdmin } from "./admin/lib/auth";
+import AdminLoginForm from "./admin/components/AdminLoginForm";
 
-export default function HomePage() {
-  redirect("/admin");
+export default async function HomePage() {
+  const ok = await verifyAdmin();
+  if (ok) {
+    redirect("/admin/products");
+  }
+  return <AdminLoginForm />;
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Admin',
+  title: 'Lab3 - Admin',
 };
 
 export default function AdminRootLayout({

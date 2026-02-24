@@ -61,6 +61,10 @@ export class ConfigService {
     return CIP68_PREFIX;
   }
 
+  get jwtSecret(): string {
+    return process.env.JWT_SECRET ?? "";
+  }
+
   getPlutus(): Plutus {
     if (!this._plutus) {
       const path = join(process.cwd(), "plutus.json");
