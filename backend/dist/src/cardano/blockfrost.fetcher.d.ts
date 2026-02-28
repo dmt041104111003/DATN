@@ -11,6 +11,8 @@ export declare class BlockfrostFetcher {
     private readonly _parseHttpError;
     constructor(projectIdOrBaseUrl: string, version?: number, deps?: BlockfrostFetcherDeps);
     private _get;
+    private _postBinary;
+    submitTx(cborBuffer: Buffer): Promise<string>;
     fetchAddressDetail(address: string): Promise<unknown>;
     fetchSpecificAsset(asset: string): Promise<unknown>;
     isAssetRevoked(policyId: string, assetName: string): Promise<boolean>;

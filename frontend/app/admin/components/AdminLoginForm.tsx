@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../styles/Login.module.css';
-import { AdminHeader } from './AdminHeader';
+import { AdminHeader } from './Header';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 
 const AUTH_COOKIE = 'auth_token';

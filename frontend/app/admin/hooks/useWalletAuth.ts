@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { stringToHex } from '../utils/stringToHex';
 import type { Role } from '../types/index';
+
+function stringToHex(str: string): string {
+  return Array.from(str)
+    .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
+    .join('');
+}
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';

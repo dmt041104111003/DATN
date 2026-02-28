@@ -14,9 +14,33 @@ const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const pg_1 = require("pg");
 const adapter_pg_1 = require("@prisma/adapter-pg");
-const pool = new pg_1.Pool({
-    connectionString: process.env.DATABASE_URL,
-});
+function createPgPool() {
+    var _a;
+    const url = process.env.DATABASE_URL;
+    if (!url) {
+        throw new Error("Missing DATABASE_URL for Prisma/Postgres connection");
+    }
+    let ssl = undefined;
+    try {
+        const parsed = new URL(url);
+        const sslmode = ((_a = parsed.searchParams.get("sslmode")) !== null && _a !== void 0 ? _a : "").toLowerCase();
+        if (sslmode && sslmode !== "disable") {
+            ssl = {
+                rejectUnauthorized: sslmode === "verify-full",
+            };
+        }
+    }
+    catch (_b) {
+    }
+    return new pg_1.Pool({
+        connectionString: url,
+        ssl,
+        max: 10,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+    });
+}
+const pool = createPgPool();
 let PrismaService = class PrismaService extends client_1.PrismaClient {
     constructor() {
         const adapter = new adapter_pg_1.PrismaPg(pool);

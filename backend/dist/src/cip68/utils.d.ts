@@ -8,4 +8,3 @@ export declare function decodeReceivers(receiversStr: string | undefined): {
 }[];
 export declare function ensureReceiversRaw(metadata: Record<string, string>): Record<string, string>;
 export declare function metadataForDatum(metadata: Record<string, string>): Record<string, string>;
-export declare function parseHttpErrorCip68(error: unknown): string;

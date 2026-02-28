@@ -220,7 +220,7 @@ export class Cip68Contract extends MeshAdapter {
     unsignedTx
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .changeAddress(walletAddress)
-      .selectUtxosFrom(utxos)
+      .selectUtxosFrom(utxos, "largestFirst", "7500000", true)
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
@@ -267,7 +267,7 @@ export class Cip68Contract extends MeshAdapter {
     unsignedTx
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .changeAddress(walletAddress)
-      .selectUtxosFrom(utxos)
+      .selectUtxosFrom(utxos, "largestFirst", "7500000", true)
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
@@ -304,7 +304,7 @@ export class Cip68Contract extends MeshAdapter {
     unsignedTx
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .changeAddress(walletAddress)
-      .selectUtxosFrom(utxos)
+      .selectUtxosFrom(utxos, "largestFirst", "7500000", true)
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,

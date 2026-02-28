@@ -18,7 +18,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  const roleCodes = ["ENTERPRISE", "TRANSIT", "AGENT"] as const;
+  const roleCodes = ["ENTERPRISE", "TRANSIT", "AGENT", "SHIPPER"] as const;
 
   for (const code of roleCodes) {
     await prisma.role.upsert({

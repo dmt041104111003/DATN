@@ -2,6 +2,12 @@ import { AuthService } from "./auth.service";
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
+    listProfiles(token?: string): Promise<{
+        walletAddress: string;
+        displayName: string;
+        location: string | null;
+        coordinates: string | null;
+    }[]>;
     createNonce(stakeAddress?: string): {
         nonce: string;
     };
@@ -16,8 +22,9 @@ export declare class AuthController {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     } | {
         needProfile: true;
@@ -30,29 +37,33 @@ export declare class AuthController {
         stakeAddress?: string;
         roleId?: number;
         displayName?: string;
-        glnCodeRoot?: string;
+        location?: string;
+        coordinates?: string;
     }): Promise<{
         token: string;
         profile: {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     }>;
     updateProfile(body: {
         token?: string;
         displayName?: string;
-        glnCodeRoot?: string;
+        location?: string;
+        coordinates?: string;
     }): Promise<{
         token: string;
         profile: {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     }>;
     uploadAvatar(body: {
@@ -64,8 +75,9 @@ export declare class AuthController {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     }>;
 }

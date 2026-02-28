@@ -21,6 +21,8 @@ export default function ProfilePage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [displayName, setDisplayName] = useState('');
+  const [location, setLocation] = useState('');
+  const [coordinates, setCoordinates] = useState('');
   const [glnCodeRoot, setGlnCodeRoot] = useState('');
 
   const handleLogout = () => {
@@ -57,15 +59,7 @@ export default function ProfilePage() {
 
   const handleSubmit = async () => {
     setError('');
-    const selectedRole = roles.find((r) => r.id === selectedRoleId);
-    const requireGln = selectedRole?.code === 'ENTERPRISE';
-
-    if (
-      !stakeAddress ||
-      !selectedRoleId ||
-      !displayName ||
-      (requireGln && !glnCodeRoot)
-    ) {
+    if (!stakeAddress || !selectedRoleId || !displayName) {
       setError('Please select a role and fill in all required fields.');
       return;
     }
@@ -79,7 +73,8 @@ export default function ProfilePage() {
           stakeAddress,
           roleId: selectedRoleId,
           displayName,
-          glnCodeRoot,
+          location: location.trim() || undefined,
+          coordinates: coordinates.trim() || undefined,
         }),
       });
 
@@ -111,9 +106,6 @@ export default function ProfilePage() {
     }
   };
 
-  const selectedRole = roles.find((r) => r.id === selectedRoleId);
-  const showGln = selectedRole?.code === 'ENTERPRISE';
-
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -133,11 +125,12 @@ export default function ProfilePage() {
           {selectedRoleId && (
             <ProfileForm
               displayName={displayName}
-              glnCodeRoot={glnCodeRoot}
               onChangeDisplayName={setDisplayName}
-              onChangeGlnCodeRoot={setGlnCodeRoot}
+              location={location}
+              onChangeLocation={setLocation}
+              coordinates={coordinates}
+              onChangeCoordinates={setCoordinates}
               disabled={loading}
-              showGln={showGln}
             />
           )}
 
@@ -146,10 +139,7 @@ export default function ProfilePage() {
             className={styles.primaryBtn}
             onClick={handleSubmit}
             disabled={
-              loading ||
-              !selectedRoleId ||
-              !displayName.trim() ||
-              (showGln && !glnCodeRoot.trim())
+              loading || !selectedRoleId || !displayName.trim()
             }
           >
             {loading ? 'Creating account...' : 'Create account'}

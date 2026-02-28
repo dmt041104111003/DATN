@@ -40,16 +40,17 @@ export class AuthService {
     signature: string;
     key: string;
   }): Promise<
-    | {
-        token: string;
-        profile: {
-          id: number;
-          role: string;
-          displayName: string;
-          glnCodeRoot: string;
-          avatarUrl: string | null;
-        };
-      }
+        | {
+            token: string;
+            profile: {
+              id: number;
+              role: string;
+              displayName: string;
+              avatarUrl: string | null;
+              location: string | null;
+              coordinates: string | null;
+            };
+          }
     | {
         needProfile: true;
         roles: { id: number; code: string }[];
@@ -107,8 +108,9 @@ export class AuthService {
       profileId: profile.id,
       role: profile.role.code,
       displayName: profile.displayName,
-      glnCodeRoot: profile.glnCodeRoot,
       avatarUrl: profile.avatarUrl,
+      location: profile.location,
+      coordinates: profile.coordinates,
     };
     const token = jwt.sign(payload, secret, { expiresIn: "7d" });
 
@@ -118,8 +120,9 @@ export class AuthService {
         id: profile.id,
         role: profile.role.code,
         displayName: profile.displayName,
-        glnCodeRoot: profile.glnCodeRoot,
         avatarUrl: profile.avatarUrl,
+        location: profile.location ?? null,
+        coordinates: profile.coordinates ?? null,
       },
     };
   }
@@ -128,18 +131,20 @@ export class AuthService {
     stakeAddress: StakeAddress;
     roleId: number;
     displayName: string;
-    glnCodeRoot: string;
+    location?: string;
+    coordinates?: string;
   }): Promise<{
     token: string;
     profile: {
       id: number;
       role: string;
       displayName: string;
-      glnCodeRoot: string;
       avatarUrl: string | null;
+      location: string | null;
+      coordinates: string | null;
     };
   }> {
-    const { stakeAddress, roleId, displayName, glnCodeRoot } = params;
+    const { stakeAddress, roleId, displayName, location, coordinates } = params;
 
     const wallet = await this.prisma.wallet.upsert({
       where: { address: stakeAddress },
@@ -165,13 +170,15 @@ export class AuthService {
       update: {
         roleId: role.id,
         displayName,
-        glnCodeRoot,
+        location: location ?? null,
+        coordinates: coordinates ?? null,
       },
       create: {
         walletAddress: wallet.address,
         roleId: role.id,
         displayName,
-        glnCodeRoot,
+        location: location ?? null,
+        coordinates: coordinates ?? null,
       },
       include: { role: true },
     });
@@ -187,8 +194,9 @@ export class AuthService {
       profileId: profile.id,
       role: profile.role.code,
       displayName: profile.displayName,
-      glnCodeRoot: profile.glnCodeRoot,
       avatarUrl: profile.avatarUrl,
+      location: profile.location,
+      coordinates: profile.coordinates,
     };
     const token = jwt.sign(payload, secret, { expiresIn: "7d" });
 
@@ -198,8 +206,9 @@ export class AuthService {
         id: profile.id,
         role: profile.role.code,
         displayName: profile.displayName,
-        glnCodeRoot: profile.glnCodeRoot,
         avatarUrl: profile.avatarUrl,
+        location: profile.location ?? null,
+        coordinates: profile.coordinates ?? null,
       },
     };
   }
@@ -207,18 +216,20 @@ export class AuthService {
   async updateProfileFromToken(params: {
     token: string;
     displayName: string;
-    glnCodeRoot: string;
+    location?: string;
+    coordinates?: string;
   }): Promise<{
     token: string;
     profile: {
       id: number;
       role: string;
       displayName: string;
-      glnCodeRoot: string;
       avatarUrl: string | null;
+      location: string | null;
+      coordinates: string | null;
     };
   }> {
-    const { token, displayName, glnCodeRoot } = params;
+    const { token, displayName, location, coordinates } = params;
 
     const secret = this.config.jwtSecret;
     if (!secret) {
@@ -246,7 +257,8 @@ export class AuthService {
       where: { id: profileId },
       data: {
         displayName,
-        glnCodeRoot,
+        ...(location !== undefined && { location: location || null }),
+        ...(coordinates !== undefined && { coordinates: coordinates || null }),
       },
       include: { role: true, wallet: true },
     });
@@ -257,8 +269,9 @@ export class AuthService {
       profileId: profile.id,
       role: profile.role.code,
       displayName: profile.displayName,
-      glnCodeRoot: profile.glnCodeRoot,
       avatarUrl: profile.avatarUrl,
+      location: profile.location,
+      coordinates: profile.coordinates,
     };
 
     const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
@@ -269,8 +282,9 @@ export class AuthService {
         id: profile.id,
         role: profile.role.code,
         displayName: profile.displayName,
-        glnCodeRoot: profile.glnCodeRoot,
         avatarUrl: profile.avatarUrl,
+        location: profile.location ?? null,
+        coordinates: profile.coordinates ?? null,
       },
     };
   }
@@ -284,8 +298,9 @@ export class AuthService {
       id: number;
       role: string;
       displayName: string;
-      glnCodeRoot: string;
       avatarUrl: string | null;
+      location: string | null;
+      coordinates: string | null;
     };
   }> {
     const { token, imageDataUrl } = params;
@@ -336,8 +351,9 @@ export class AuthService {
       profileId: profile.id,
       role: profile.role.code,
       displayName: profile.displayName,
-      glnCodeRoot: profile.glnCodeRoot,
       avatarUrl: profile.avatarUrl,
+      location: profile.location,
+      coordinates: profile.coordinates,
     };
 
     const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
@@ -348,10 +364,59 @@ export class AuthService {
         id: profile.id,
         role: profile.role.code,
         displayName: profile.displayName,
-        glnCodeRoot: profile.glnCodeRoot,
         avatarUrl: profile.avatarUrl,
+        location: profile.location ?? null,
+        coordinates: profile.coordinates ?? null,
       },
     };
+  }
+
+  async getProfileIdFromToken(token: string): Promise<number> {
+    const secret = this.config.jwtSecret;
+    if (!secret) throw new UnauthorizedException("JWT_SECRET is not configured.");
+    let payload: unknown;
+    try {
+      payload = jwt.verify(token, secret) as unknown;
+    } catch {
+      throw new UnauthorizedException("Invalid token.");
+    }
+    if (!payload || typeof payload !== "object" || typeof (payload as any).profileId !== "number") {
+      throw new UnauthorizedException("Invalid token payload.");
+    }
+    return (payload as any).profileId as number;
+  }
+
+  async listProfilesFromToken(token: string): Promise<
+    { walletAddress: string; displayName: string; location: string | null; coordinates: string | null }[]
+  > {
+    const secret = this.config.jwtSecret;
+    if (!secret) throw new UnauthorizedException("JWT_SECRET is not configured.");
+    let payload: unknown;
+    try {
+      payload = jwt.verify(token, secret) as unknown;
+    } catch {
+      throw new UnauthorizedException("Invalid token.");
+    }
+    if (!payload || typeof payload !== "object" || typeof (payload as any).profileId !== "number") {
+      throw new UnauthorizedException("Invalid token payload.");
+    }
+    const profiles = await this.prisma.profile.findMany({
+      select: {
+        walletAddress: true,
+        displayName: true,
+        location: true,
+        coordinates: true,
+        role: { select: { code: true } },
+      },
+      orderBy: { displayName: "asc" },
+    });
+    return profiles.map((p) => ({
+      walletAddress: p.walletAddress,
+      displayName: p.displayName,
+      location: p.location ?? null,
+      coordinates: p.coordinates ?? null,
+      role: p.role?.code ?? null,
+    }));
   }
 }
 

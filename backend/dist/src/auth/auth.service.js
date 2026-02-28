@@ -38,6 +38,7 @@ let AuthService = class AuthService {
         return nonce;
     }
     async verifyAndIssueToken(params) {
+        var _a, _b;
         const { stakeAddress, nonce, signature, key } = params;
         const expectedNonce = this.nonceStore.get(stakeAddress);
         if (!expectedNonce || expectedNonce !== nonce) {
@@ -81,8 +82,9 @@ let AuthService = class AuthService {
             profileId: profile.id,
             role: profile.role.code,
             displayName: profile.displayName,
-            glnCodeRoot: profile.glnCodeRoot,
             avatarUrl: profile.avatarUrl,
+            location: profile.location,
+            coordinates: profile.coordinates,
         };
         const token = jwt.sign(payload, secret, { expiresIn: "7d" });
         return {
@@ -91,13 +93,15 @@ let AuthService = class AuthService {
                 id: profile.id,
                 role: profile.role.code,
                 displayName: profile.displayName,
-                glnCodeRoot: profile.glnCodeRoot,
                 avatarUrl: profile.avatarUrl,
+                location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
+                coordinates: (_b = profile.coordinates) !== null && _b !== void 0 ? _b : null,
             },
         };
     }
     async createProfileAndIssueToken(params) {
-        const { stakeAddress, roleId, displayName, glnCodeRoot } = params;
+        var _a, _b;
+        const { stakeAddress, roleId, displayName, location, coordinates } = params;
         const wallet = await this.prisma.wallet.upsert({
             where: { address: stakeAddress },
             update: {
@@ -119,13 +123,15 @@ let AuthService = class AuthService {
             update: {
                 roleId: role.id,
                 displayName,
-                glnCodeRoot,
+                location: location !== null && location !== void 0 ? location : null,
+                coordinates: coordinates !== null && coordinates !== void 0 ? coordinates : null,
             },
             create: {
                 walletAddress: wallet.address,
                 roleId: role.id,
                 displayName,
-                glnCodeRoot,
+                location: location !== null && location !== void 0 ? location : null,
+                coordinates: coordinates !== null && coordinates !== void 0 ? coordinates : null,
             },
             include: { role: true },
         });
@@ -139,8 +145,9 @@ let AuthService = class AuthService {
             profileId: profile.id,
             role: profile.role.code,
             displayName: profile.displayName,
-            glnCodeRoot: profile.glnCodeRoot,
             avatarUrl: profile.avatarUrl,
+            location: profile.location,
+            coordinates: profile.coordinates,
         };
         const token = jwt.sign(payload, secret, { expiresIn: "7d" });
         return {
@@ -149,13 +156,15 @@ let AuthService = class AuthService {
                 id: profile.id,
                 role: profile.role.code,
                 displayName: profile.displayName,
-                glnCodeRoot: profile.glnCodeRoot,
                 avatarUrl: profile.avatarUrl,
+                location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
+                coordinates: (_b = profile.coordinates) !== null && _b !== void 0 ? _b : null,
             },
         };
     }
     async updateProfileFromToken(params) {
-        const { token, displayName, glnCodeRoot } = params;
+        var _a, _b;
+        const { token, displayName, location, coordinates } = params;
         const secret = this.config.jwtSecret;
         if (!secret) {
             throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
@@ -164,7 +173,7 @@ let AuthService = class AuthService {
         try {
             payload = jwt.verify(token, secret);
         }
-        catch (_a) {
+        catch (_c) {
             throw new common_1.UnauthorizedException("Invalid token.");
         }
         if (!payload ||
@@ -175,10 +184,7 @@ let AuthService = class AuthService {
         const profileId = payload.profileId;
         const profile = await this.prisma.profile.update({
             where: { id: profileId },
-            data: {
-                displayName,
-                glnCodeRoot,
-            },
+            data: Object.assign(Object.assign({ displayName }, (location !== undefined && { location: location || null })), (coordinates !== undefined && { coordinates: coordinates || null })),
             include: { role: true, wallet: true },
         });
         const nextPayload = {
@@ -187,8 +193,9 @@ let AuthService = class AuthService {
             profileId: profile.id,
             role: profile.role.code,
             displayName: profile.displayName,
-            glnCodeRoot: profile.glnCodeRoot,
             avatarUrl: profile.avatarUrl,
+            location: profile.location,
+            coordinates: profile.coordinates,
         };
         const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
         return {
@@ -197,12 +204,14 @@ let AuthService = class AuthService {
                 id: profile.id,
                 role: profile.role.code,
                 displayName: profile.displayName,
-                glnCodeRoot: profile.glnCodeRoot,
                 avatarUrl: profile.avatarUrl,
+                location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
+                coordinates: (_b = profile.coordinates) !== null && _b !== void 0 ? _b : null,
             },
         };
     }
     async uploadProfileAvatarFromToken(params) {
+        var _a, _b;
         const { token, imageDataUrl } = params;
         const secret = this.config.jwtSecret;
         if (!secret) {
@@ -212,7 +221,7 @@ let AuthService = class AuthService {
         try {
             payload = jwt.verify(token, secret);
         }
-        catch (_a) {
+        catch (_c) {
             throw new common_1.UnauthorizedException("Invalid token.");
         }
         if (!payload ||
@@ -242,8 +251,9 @@ let AuthService = class AuthService {
             profileId: profile.id,
             role: profile.role.code,
             displayName: profile.displayName,
-            glnCodeRoot: profile.glnCodeRoot,
             avatarUrl: profile.avatarUrl,
+            location: profile.location,
+            coordinates: profile.coordinates,
         };
         const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
         return {
@@ -252,10 +262,62 @@ let AuthService = class AuthService {
                 id: profile.id,
                 role: profile.role.code,
                 displayName: profile.displayName,
-                glnCodeRoot: profile.glnCodeRoot,
                 avatarUrl: profile.avatarUrl,
+                location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
+                coordinates: (_b = profile.coordinates) !== null && _b !== void 0 ? _b : null,
             },
         };
+    }
+    async getProfileIdFromToken(token) {
+        const secret = this.config.jwtSecret;
+        if (!secret)
+            throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
+        let payload;
+        try {
+            payload = jwt.verify(token, secret);
+        }
+        catch (_a) {
+            throw new common_1.UnauthorizedException("Invalid token.");
+        }
+        if (!payload || typeof payload !== "object" || typeof payload.profileId !== "number") {
+            throw new common_1.UnauthorizedException("Invalid token payload.");
+        }
+        return payload.profileId;
+    }
+    async listProfilesFromToken(token) {
+        const secret = this.config.jwtSecret;
+        if (!secret)
+            throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
+        let payload;
+        try {
+            payload = jwt.verify(token, secret);
+        }
+        catch (_a) {
+            throw new common_1.UnauthorizedException("Invalid token.");
+        }
+        if (!payload || typeof payload !== "object" || typeof payload.profileId !== "number") {
+            throw new common_1.UnauthorizedException("Invalid token payload.");
+        }
+        const profiles = await this.prisma.profile.findMany({
+            select: {
+                walletAddress: true,
+                displayName: true,
+                location: true,
+                coordinates: true,
+                role: { select: { code: true } },
+            },
+            orderBy: { displayName: "asc" },
+        });
+        return profiles.map((p) => {
+            var _a, _b, _c, _d;
+            return ({
+                walletAddress: p.walletAddress,
+                displayName: p.displayName,
+                location: (_a = p.location) !== null && _a !== void 0 ? _a : null,
+                coordinates: (_b = p.coordinates) !== null && _b !== void 0 ? _b : null,
+                role: (_d = (_c = p.role) === null || _c === void 0 ? void 0 : _c.code) !== null && _d !== void 0 ? _d : null,
+            });
+        });
     }
 };
 exports.AuthService = AuthService;

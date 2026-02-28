@@ -6,9 +6,7 @@ exports.getPkHash = getPkHash;
 exports.decodeReceivers = decodeReceivers;
 exports.ensureReceiversRaw = ensureReceiversRaw;
 exports.metadataForDatum = metadataForDatum;
-exports.parseHttpErrorCip68 = parseHttpErrorCip68;
 const cbor_1 = require("cbor");
-const axios_1 = require("axios");
 const config_service_1 = require("../config/config.service");
 function buildRef100Unit(policyId, assetName) {
     const hexName = Buffer.from(assetName, "utf8").toString("hex");
@@ -100,24 +98,5 @@ function metadataForDatum(metadata) {
     }
     const receiversRawAsUtf8Hex = Buffer.from(metaWithRaw.receivers_raw, "utf8").toString("hex");
     return Object.assign(Object.assign({}, metaWithRaw), { receivers_raw: receiversRawAsUtf8Hex });
-}
-function parseHttpErrorCip68(error) {
-    if (!axios_1.default.isAxiosError(error)) {
-        return JSON.stringify(error);
-    }
-    if (error.response) {
-        return JSON.stringify({
-            data: error.response.data,
-            headers: error.response.headers,
-            status: error.response.status,
-        });
-    }
-    if (error.request) {
-        return JSON.stringify(error.request);
-    }
-    return JSON.stringify({
-        code: error.code,
-        message: error.message,
-    });
 }
 //# sourceMappingURL=utils.js.map

@@ -1,48 +1,38 @@
-import type { PolicyAssetRow, BuildMetadataInput } from "./trace.service";
 import { TraceService } from "./trace.service";
+import { AuthService } from "../auth/auth.service";
+import { MintTraceDto, UpdateTraceDto, RevokeTraceDto, MintConfirmDto, UpdateConfirmDto, RevokeConfirmDto, SubmitTxDto } from "./dto/trace.dto";
 export declare class TraceController {
     private readonly trace;
-    constructor(trace: TraceService);
-    listByPolicy(policyId: string): Promise<{
-        policyId: string;
+    private readonly auth;
+    constructor(trace: TraceService, auth: AuthService);
+    listBatches(token?: string): Promise<{
         total: number;
-        assets: PolicyAssetRow[];
+        items: {
+            id: string;
+            name: string;
+            image: string | null;
+            createdAt: Date;
+        }[];
     }>;
-    buildMetadata(body: BuildMetadataInput): Record<string, string>;
-    mint(body: {
-        changeAddress: string;
-        assetName: string;
-        metadata: Record<string, string>;
-        receiver?: string;
-    }): Promise<{
+    mint(body: MintTraceDto): Promise<{
         unsignedTx: string;
     }>;
-    update(body: {
-        changeAddress: string;
-        assetName: string;
-        metadata: Record<string, string>;
-        txHash?: string;
-    }): Promise<{
+    update(body: UpdateTraceDto): Promise<{
         unsignedTx: string;
     }>;
-    burn(body: {
-        changeAddress: string;
-        assetName: string;
-        quantity?: string;
-        txHash?: string;
-    }): Promise<{
+    revoke(body: RevokeTraceDto): Promise<{
         unsignedTx: string;
     }>;
-    revoke(body: {
-        changeAddress: string;
-        assetName: string;
-        txHash?: string;
-    }): Promise<{
-        unsignedTx: string;
+    mintConfirm(body: MintConfirmDto): Promise<{
+        ok: boolean;
     }>;
-    submit(body: {
-        signedTx: string;
-    }): Promise<{
+    updateConfirm(body: UpdateConfirmDto): Promise<{
+        ok: boolean;
+    }>;
+    revokeConfirm(body: RevokeConfirmDto): Promise<{
+        ok: boolean;
+    }>;
+    submit(body: SubmitTxDto): Promise<{
         txHash: string;
     }>;
 }

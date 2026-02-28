@@ -6,18 +6,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Cip68Module = void 0;
+exports.MultisigModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_module_1 = require("../config/config.module");
-const cip68_utils_service_1 = require("./cip68-utils.service");
-let Cip68Module = class Cip68Module {
+const multisig_service_1 = require("./multisig.service");
+let MultisigModule = class MultisigModule {
 };
-exports.Cip68Module = Cip68Module;
-exports.Cip68Module = Cip68Module = __decorate([
+exports.MultisigModule = MultisigModule;
+exports.MultisigModule = MultisigModule = __decorate([
     (0, common_1.Module)({
         imports: [config_module_1.ConfigModule],
-        providers: [cip68_utils_service_1.Cip68UtilsService],
-        exports: [cip68_utils_service_1.Cip68UtilsService],
+        providers: [multisig_service_1.MultisigService],
+        exports: [multisig_service_1.MultisigService],
     })
-], Cip68Module);
-//# sourceMappingURL=cip68.module.js.map
+], MultisigModule);
+//# sourceMappingURL=multisig.module.js.map
