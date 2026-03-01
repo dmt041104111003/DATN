@@ -12,7 +12,7 @@ export async function getProfilesByRole(
   role: string,
 ): Promise<ProfileByRole[]> {
   const res = await fetch(
-    `${BACKEND_URL}/auth/profiles/by-role?role=${encodeURIComponent(role)}&token=${encodeURIComponent(token)}`,
+    `${BACKEND_URL}/profile/profiles/by-role?role=${encodeURIComponent(role)}&token=${encodeURIComponent(token)}`,
   );
   const data = await res.json();
   if (!res.ok) {

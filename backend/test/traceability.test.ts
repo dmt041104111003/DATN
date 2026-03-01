@@ -29,7 +29,6 @@ function buildBaseMetadata(opts: {
     const properties = {
         ngayHetHan: "2023-07-18T17:00:00Z",
         current_holder_id: opts.pk,
-        certificate_hash: "ipfs://<hash_ket_qua_kiem_nghiem>",
     };
 
     return {

@@ -17,8 +17,8 @@ export function ProductsCards({ styles, items, onEdit, onRevoke }: Props) {
             <span className={styles.tableCardValue}>{p.id}</span>
           </div>
           <div className={styles.tableCardRow}>
-            <span className={styles.tableCardLabel}>Slug</span>
-            <span className={styles.tableCardValue}>{p.slug}</span>
+            <span className={styles.tableCardLabel}>Code</span>
+            <span className={styles.tableCardValue}>{p.code}</span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Name</span>

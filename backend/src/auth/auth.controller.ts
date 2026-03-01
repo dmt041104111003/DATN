@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, HttpException, HttpStatus, Post } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
 function normalizeAddress(
@@ -14,38 +14,6 @@ function normalizeAddress(
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @Get("profiles")
-  async listProfiles(@Query("token") token?: string) {
-    if (!token) {
-      throw new HttpException(
-        { error: "Missing token" },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-    return this.authService.listProfilesFromToken(token);
-  }
-
-  @Get("profiles/by-role")
-  async listProfilesByRole(
-    @Query("role") role?: string,
-    @Query("token") token?: string,
-  ) {
-    if (!role?.trim()) {
-      throw new HttpException(
-        { error: "Missing role" },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-    if (!token?.trim()) {
-      throw new HttpException(
-        { error: "Missing token" },
-        HttpStatus.UNAUTHORIZED
-      );
-    }
-    await this.authService.getProfileIdFromToken(token.trim());
-    return this.authService.listProfilesByRoleCode(role.trim());
-  }
 
   @Post("nonce")
   createNonce(
@@ -120,54 +88,5 @@ export class AuthController {
     });
   }
 
-  @Patch("profile")
-  async updateProfile(
-    @Body()
-    body: {
-      token?: string;
-      displayName?: string;
-      location?: string;
-      coordinates?: string;
-    }
-  ) {
-    const { token, displayName, location, coordinates } = body;
-
-    if (!token || !displayName) {
-      throw new HttpException(
-        { error: "Missing profile update information" },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-
-    return this.authService.updateProfileFromToken({
-      token,
-      displayName,
-      location,
-      coordinates,
-    });
-  }
-
-  @Post("profile/avatar")
-  async uploadAvatar(
-    @Body()
-    body: {
-      token?: string;
-      imageDataUrl?: string;
-    }
-  ) {
-    const { token, imageDataUrl } = body;
-
-    if (!token || !imageDataUrl) {
-      throw new HttpException(
-        { error: "Missing avatar upload information" },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-
-    return this.authService.uploadProfileAvatarFromToken({
-      token,
-      imageDataUrl,
-    });
-  }
 }
 

@@ -5,7 +5,7 @@ import { deserializeAddress, MeshWallet, resolvePaymentKeyHash, stringToHex, cst
 import type { UTxO } from "@meshsdk/core";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { MultisigContract } from "@app/multisig/multisig.contract";
+import { OrderContract } from "@app/order/order.contract";
 import { Cip68Contract } from "@app/cip68/cip68.contract";
 import type { Plutus } from "@app/types";
 import { buildRef100Unit, datumToJson, getPkHash } from "@app/cip68/utils";
@@ -154,9 +154,9 @@ async function getMinterPkFromRef100(policyId: string, assetName: string): Promi
   return minterPk;
 }
 
-describe("Multisig - Lock", function () {
+describe("Order - Lock", function () {
   let wallet: MeshWallet;
-  let contract: MultisigContract;
+  let contract: OrderContract;
 
   beforeEach(async function () {
     wallet = new MeshWallet({
@@ -165,7 +165,7 @@ describe("Multisig - Lock", function () {
       submitter: blockfrostProvider,
       key: { type: "mnemonic", words: USER_WORDS },
     });
-    contract = new MultisigContract();
+    contract = new OrderContract();
   });
   jest.setTimeout(60000);
 
@@ -235,9 +235,9 @@ describe("Multisig - Lock", function () {
   });
 });
 
-describe("Multisig - Unlock", function () {
+describe("Order - Unlock", function () {
   let wallet: MeshWallet;
-  let contract: MultisigContract;
+  let contract: OrderContract;
 
   beforeEach(async function () {
     wallet = new MeshWallet({
@@ -247,7 +247,7 @@ describe("Multisig - Unlock", function () {
       key: { type: "mnemonic", words: USER_WORDS },
     });
     const opts = getMultisigContractOpts();
-    contract = new MultisigContract(opts);
+    contract = new OrderContract(opts);
   });
   jest.setTimeout(60000);
   test("Unlock", async function () {

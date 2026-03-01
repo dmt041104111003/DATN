@@ -214,7 +214,7 @@ export async function signAndSubmitWithEternl(unsignedTx: string): Promise<strin
   const signedTxBase64 = btoa(binary);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
-  const res = await fetch(`${backendUrl}/trace/submit`, {
+  const res = await fetch(`${backendUrl}/product/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ signedTxBase64 }),
@@ -232,7 +232,6 @@ export async function signAndSubmitWithEternl(unsignedTx: string): Promise<strin
 export async function signTxPartial(unsignedTx: string): Promise<string> {
   const wallet = await getMeshWallet();
   if (wallet && typeof (wallet as any).signTx === 'function') {
-    // Mesh adapter merge witness với tx → luôn trả về full tx (đúng cho cosign)
     const rawSigned = await (wallet as any).signTx(unsignedTx, true);
     if (rawSigned && typeof rawSigned === 'string') {
       return rawSigned;
@@ -271,7 +270,6 @@ export async function signTxPartial(unsignedTx: string): Promise<string> {
   } else {
     throw new Error('Wallet returned unexpected sign format.');
   }
-  // Eternl CIP-30 có thể trả về chỉ witness set; nếu ngắn hơn nhiều so với input thì merge với tx gốc
   const inputLen = unsignedTx.trim().replace(/^0x/, '').length;
   const outLen = signedHex.trim().replace(/^0x/, '').length;
   if (outLen < inputLen * 0.6 && inputLen > 500) {
@@ -280,16 +278,11 @@ export async function signTxPartial(unsignedTx: string): Promise<string> {
       const merged = (BrowserWallet as any).addBrowserWitnesses(unsignedTx, signedHex);
       if (merged && typeof merged === 'string') return merged;
     } catch {
-      // fallback: trả về như cũ
     }
   }
   return signedHex;
 }
 
-/**
- * Dùng khi bạn là người ký thứ 2: nhận partial signed tx (hex), ký rồi merge witness để không mất chữ ký 1.
- * Một số ví (Eternl) khi signTx(partialTx, true) trả về full tx nhưng CHỈ có witness của mình → cần merge thủ công.
- */
 export async function signTxPartialForCosign(partialTxHex: string): Promise<string> {
   const cleanPartial = partialTxHex.trim().replace(/^0x/, '');
   const partialLen = cleanPartial.length;
@@ -315,7 +308,6 @@ export async function signTxPartialForCosign(partialTxHex: string): Promise<stri
     const merged = (BrowserWallet as any).addBrowserWitnesses(partialTxHex, wsHex);
     if (merged && typeof merged === 'string') return merged;
   } catch (_e) {
-    // Nếu merge lỗi (ví đã merge đúng rồi) thì trả về result
   }
   return result;
 }
@@ -345,7 +337,7 @@ export async function submitSignedTxHex(signedTxHex: string): Promise<string> {
   const signedTxBase64 = btoa(binary);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
-  const res = await fetch(`${backendUrl}/trace/submit`, {
+  const res = await fetch(`${backendUrl}/product/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ signedTxBase64 }),

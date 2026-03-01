@@ -1,8 +1,11 @@
- 'use client';
+'use client';
 
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { parseCoords, parseLocations } from '../../utils/coordinates';
+import { moveItem } from '../../utils/array';
+import { shortenAddress } from '../../utils/string';
 
 type Props = {
   coordinates: string;
@@ -13,41 +16,6 @@ type Props = {
   minterLocation?: string;
   onChange: (coords: string, locations: string, addresses?: string, displayNames?: string) => void;
 };
-
-function parseCoords(input: string): [number, number][] {
-  return input
-    .split(';')
-    .map((chunk) => chunk.trim())
-    .filter(Boolean)
-    .map((chunk) => {
-      const [latStr, lngStr] = chunk.split(',').map((s) => s.trim());
-      const lat = Number(latStr);
-      const lng = Number(lngStr);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-      return [lat, lng] as [number, number];
-    })
-    .filter((x): x is [number, number] => x != null);
-}
-
-function parseLocations(input: string): string[] {
-  return input
-    .split(';')
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
-}
-
-function moveItem<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
-  const out = [...arr];
-  const [removed] = out.splice(fromIndex, 1);
-  out.splice(toIndex, 0, removed);
-  return out;
-}
-
-function shortenAddress(addr: string, head = 12, tail = 8): string {
-  const s = addr.trim();
-  if (s.length <= head + tail) return s;
-  return `${s.slice(0, head)}…${s.slice(-tail)}`;
-}
 
 export function ReceiversMap({ coordinates, locations, receiverList = [], receiverDisplayNames = [], minterCoordinates, minterLocation, onChange }: Props) {
   const mapRef = useRef<any | null>(null);

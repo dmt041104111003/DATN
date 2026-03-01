@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 type Props = {
   coordinates: string;
@@ -18,29 +16,45 @@ export function LocationMap({ coordinates, tooltipText, onChange }: Props) {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const defaultLat = 21.0285;
-    const defaultLng = 105.8542;
+    let mounted = true;
 
-    const initialCenter = (() => {
-      const parts = coordinates.split(',');
-      if (parts.length === 2) {
-        const lat = Number(parts[0]);
-        const lng = Number(parts[1]);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          return [lat, lng] as [number, number];
+    void import('leaflet').then((mod) => {
+      if (typeof document !== 'undefined') {
+        const id = 'leaflet-css';
+        if (!document.getElementById(id)) {
+          const link = document.createElement('link');
+          link.id = id;
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(link);
         }
       }
-      return [defaultLat, defaultLng] as [number, number];
-    })();
+      const L = mod.default;
+      if (!mounted || !containerRef.current || mapRef.current) return;
 
-    const map = L.map(containerRef.current).setView(initialCenter, 5);
-    mapRef.current = map;
+      const defaultLat = 21.0285;
+      const defaultLng = 105.8542;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+      const initialCenter = (() => {
+        const parts = coordinates.split(',');
+        if (parts.length === 2) {
+          const lat = Number(parts[0]);
+          const lng = Number(parts[1]);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            return [lat, lng] as [number, number];
+          }
+        }
+        return [defaultLat, defaultLng] as [number, number];
+      })();
 
-    const markerIcon = L.divIcon({
+      const map = L.map(containerRef.current).setView(initialCenter, 5);
+      mapRef.current = map;
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(map);
+
+      const markerIcon = L.divIcon({
       className: '',
       html:
         '<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">' +
@@ -93,11 +107,15 @@ export function LocationMap({ coordinates, tooltipText, onChange }: Props) {
       }
       onChange(coordString, label);
     });
+    });
 
     return () => {
-      map.remove();
-      mapRef.current = null;
-      markerRef.current = null;
+      mounted = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+      }
     };
   }, [coordinates, tooltipText, onChange]);
 

@@ -1,13 +1,6 @@
 import type { ChangeEvent, FormEvent, RefObject } from 'react';
+import type { ProfileOption } from '../../types';
 import { ReceiversMap } from './ReceiversMap';
-
-export type ProfileOption = {
-  walletAddress: string;
-  displayName: string;
-  location: string | null;
-  coordinates: string | null;
-  role?: string | null;
-};
 
 type Props = {
   styles: Record<string, string>;
@@ -16,11 +9,10 @@ type Props = {
   error: string;
   loading: boolean;
   uploading: boolean;
-  slug: string;
+  code: string;
   nameEn: string;
   descriptionEn: string;
   expiryDate: string;
-  certificateHash: string;
   receiverList: string[];
   receiverDisplayNames: string[];
   receiverLocations: string;
@@ -35,7 +27,6 @@ type Props = {
   onNameChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onExpiryChange: (v: string) => void;
-  onCertificateHashChange: (v: string) => void;
   onAddReceiverFromProfile: (profile: ProfileOption) => void;
   onReceiverLocationsChange: (v: string) => void;
   onReceiverCoordinatesChange: (v: string) => void;
@@ -54,11 +45,10 @@ export function ProductDialog(props: Props) {
     error,
     loading,
     uploading,
-    slug,
+    code,
     nameEn,
     descriptionEn,
     expiryDate,
-    certificateHash,
     receiverList,
     receiverDisplayNames,
     receiverLocations,
@@ -73,7 +63,6 @@ export function ProductDialog(props: Props) {
     onNameChange,
     onDescriptionChange,
     onExpiryChange,
-    onCertificateHashChange,
     onAddReceiverFromProfile,
     onReceiverLocationsChange,
     onReceiverCoordinatesChange,
@@ -113,12 +102,12 @@ export function ProductDialog(props: Props) {
           <form onSubmit={onSubmit}>
             {error && <p className={styles.error}>{error}</p>}
             <div className={styles.formGroup}>
-              <label className={styles.label}>Slug</label>
+              <label className={styles.label}>Code</label>
               <input
                 className={styles.input}
-                value={slug}
+                value={code}
                 readOnly
-                placeholder="Auto-generated asset name"
+                placeholder="Code lô sản phẩm (auto-generated)"
               />
             </div>
             <div className={styles.formGroup}>
@@ -149,15 +138,6 @@ export function ProductDialog(props: Props) {
                 value={expiryDate}
                 onChange={(e) => onExpiryChange(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Certificate hash</label>
-              <input
-                className={styles.input}
-                value={certificateHash}
-                onChange={(e) => onCertificateHashChange(e.target.value)}
-                placeholder="ipfs://<hash_ket_qua_kiem_nghiem>"
               />
             </div>
             <div className={styles.formGroup}>
@@ -231,7 +211,7 @@ export function ProductDialog(props: Props) {
                   className={styles.input}
                   value={imageUrl}
                   onChange={(e) => onImageUrlChange(e.target.value)}
-                  placeholder="Image URL or click Upload"
+                  placeholder="Upload image or paste ipfs:// hash"
                   style={{ flex: '1 1 200px' }}
                 />
                 <input
@@ -247,7 +227,7 @@ export function ProductDialog(props: Props) {
                   onClick={onUploadClick}
                   disabled={uploading}
                 >
-                  {uploading ? 'Uploading...' : 'Upload image'}
+                  {uploading ? 'Uploading...' : 'Upload'}
                 </button>
               </div>
             </div>
