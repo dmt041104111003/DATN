@@ -18,13 +18,14 @@ export function Trace() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const id = policyId || assetName || 'demo';
+    window.location.href = `/trace/${encodeURIComponent(id)}`;
   };
 
   return (
     <section className="relative w-full h-screen flex flex-col overflow-hidden bg-[#f6f6f6] dark:bg-gray-900 service trace-section">
       <Header />
 
-      {/* Globe: con trực tiếp của section như Network → containing block = section, hiện đúng trên mobile */}
       <Globe />
 
       <div className="relative z-10 flex-1 flex items-center justify-center md:justify-center md:pl-[50%] px-4 py-20 md:py-24 min-h-0">
