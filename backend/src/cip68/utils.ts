@@ -1,5 +1,4 @@
 import { decodeFirst } from "cbor";
-import axios from "axios";
 import { CIP68_PREFIX } from "../config/config.service";
 
 export function buildRef100Unit(policyId: string, assetName: string): string {
@@ -106,24 +105,4 @@ export function metadataForDatum(
     "utf8"
   ).toString("hex");
   return { ...metaWithRaw, receivers_raw: receiversRawAsUtf8Hex };
-}
-
-export function parseHttpErrorCip68(error: unknown): string {
-  if (!axios.isAxiosError(error)) {
-    return JSON.stringify(error);
-  }
-  if (error.response) {
-    return JSON.stringify({
-      data: error.response.data,
-      headers: error.response.headers,
-      status: error.response.status,
-    });
-  }
-  if (error.request) {
-    return JSON.stringify(error.request);
-  }
-  return JSON.stringify({
-    code: error.code,
-    message: error.message,
-  });
 }

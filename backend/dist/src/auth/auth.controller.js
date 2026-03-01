@@ -19,6 +19,12 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
+    async listProfiles(token) {
+        if (!token) {
+            throw new common_1.HttpException({ error: "Missing token" }, common_1.HttpStatus.BAD_REQUEST);
+        }
+        return this.authService.listProfilesFromToken(token);
+    }
     createNonce(stakeAddress) {
         if (!stakeAddress) {
             throw new common_1.HttpException({ error: "Missing stakeAddress" }, common_1.HttpStatus.BAD_REQUEST);
@@ -39,7 +45,7 @@ let AuthController = class AuthController {
         });
     }
     async createProfile(body) {
-        const { stakeAddress, roleId, displayName, glnCodeRoot } = body;
+        const { stakeAddress, roleId, displayName, location, coordinates } = body;
         if (!stakeAddress || !roleId || !displayName) {
             throw new common_1.HttpException({ error: "Missing profile information" }, common_1.HttpStatus.BAD_REQUEST);
         }
@@ -47,18 +53,20 @@ let AuthController = class AuthController {
             stakeAddress,
             roleId,
             displayName,
-            glnCodeRoot: glnCodeRoot !== null && glnCodeRoot !== void 0 ? glnCodeRoot : "",
+            location: location !== null && location !== void 0 ? location : undefined,
+            coordinates: coordinates !== null && coordinates !== void 0 ? coordinates : undefined,
         });
     }
     async updateProfile(body) {
-        const { token, displayName, glnCodeRoot } = body;
+        const { token, displayName, location, coordinates } = body;
         if (!token || !displayName) {
             throw new common_1.HttpException({ error: "Missing profile update information" }, common_1.HttpStatus.BAD_REQUEST);
         }
         return this.authService.updateProfileFromToken({
             token,
             displayName,
-            glnCodeRoot: glnCodeRoot !== null && glnCodeRoot !== void 0 ? glnCodeRoot : "",
+            location,
+            coordinates,
         });
     }
     async uploadAvatar(body) {
@@ -73,6 +81,13 @@ let AuthController = class AuthController {
     }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.Get)("profiles"),
+    __param(0, (0, common_1.Query)("token")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "listProfiles", null);
 __decorate([
     (0, common_1.Post)("nonce"),
     __param(0, (0, common_1.Body)("stakeAddress")),

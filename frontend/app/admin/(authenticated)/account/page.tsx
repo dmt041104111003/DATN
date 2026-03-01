@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Account } from '../../types/index';
-import { readAccountFromToken } from '../../utils/account';
+import { readAccountFromToken } from '../../lib/account';
 import { AccountProfile } from '../../components/AccountProfile';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
@@ -11,7 +11,8 @@ const AUTH_COOKIE = 'auth_token';
 export default function AdminAccountPage() {
   const [account, setAccount] = useState<Account | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [glnCodeRoot, setGlnCodeRoot] = useState('');
+  const [location, setLocation] = useState('');
+  const [coordinates, setCoordinates] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +24,8 @@ export default function AdminAccountPage() {
     if (!fromToken) return;
     setAccount(fromToken);
     setDisplayName(fromToken.displayName);
-    setGlnCodeRoot(fromToken.glnCodeRoot ?? '');
+    setLocation(fromToken.location ?? '');
+    setCoordinates(fromToken.coordinates ?? '');
   }, []);
 
   useEffect(() => {
@@ -141,7 +143,8 @@ export default function AdminAccountPage() {
         body: JSON.stringify({
           token,
           displayName: displayName.trim(),
-          glnCodeRoot: showGln ? glnCodeRoot.trim() : '',
+          location: location.trim() || undefined,
+          coordinates: coordinates.trim() || undefined,
         }),
       });
 
@@ -163,7 +166,8 @@ export default function AdminAccountPage() {
             ? {
                 ...prev,
                 displayName: data.profile.displayName,
-                glnCodeRoot: data.profile.glnCodeRoot ?? null,
+                location: data.profile.location ?? null,
+                coordinates: data.profile.coordinates ?? null,
               }
             : prev,
         );
@@ -181,8 +185,6 @@ export default function AdminAccountPage() {
     }
   };
 
-  const showGln = account?.roleCode === 'ENTERPRISE';
-
   return (
     <AccountProfile
       account={account}
@@ -192,10 +194,11 @@ export default function AdminAccountPage() {
       error={error}
       saved={saved}
       displayName={displayName}
-      glnCodeRoot={glnCodeRoot}
-      showGln={showGln}
       onChangeDisplayName={setDisplayName}
-      onChangeGlnCodeRoot={setGlnCodeRoot}
+      location={location}
+      onChangeLocation={setLocation}
+      coordinates={coordinates}
+      onChangeCoordinates={setCoordinates}
       onSubmit={handleSubmit}
       onChangeAvatar={handleChangeAvatar}
     />

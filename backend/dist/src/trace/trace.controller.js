@@ -15,117 +15,211 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TraceController = void 0;
 const common_1 = require("@nestjs/common");
 const trace_service_1 = require("./trace.service");
+const auth_service_1 = require("../auth/auth.service");
+const trace_dto_1 = require("./dto/trace.dto");
 let TraceController = class TraceController {
-    constructor(trace) {
+    constructor(trace, auth) {
         this.trace = trace;
+        this.auth = auth;
     }
-    async listByPolicy(policyId) {
-        if (!/^[a-fA-F0-9]{56}$/.test(policyId)) {
-            throw new common_1.BadRequestException("policyId phải là 56 ký tự hex");
+    async listBatches(token) {
+        if (!token || typeof token !== "string" || !token.trim()) {
+            throw new common_1.UnauthorizedException("Missing or invalid token.");
         }
-        const assets = await this.trace.listAssetsByPolicy(policyId);
-        return {
-            policyId,
-            total: assets.length,
-            assets,
-        };
-    }
-    buildMetadata(body) {
-        if (!body.pk ||
-            body.receivers === undefined ||
-            !body.receiver_locations ||
-            !body.receiver_coordinates ||
-            !body.minter_location ||
-            !body.minter_coordinates ||
-            !body.name ||
-            !body.image) {
-            throw new common_1.BadRequestException("Thiếu: pk, receivers, receiver_locations, receiver_coordinates, minter_location, minter_coordinates, name, image");
-        }
-        return this.trace.buildMetadata(body);
+        const profileId = await this.auth.getProfileIdFromToken(token.trim());
+        const items = await this.trace.listBatches(profileId);
+        return { total: items.length, items };
     }
     async mint(body) {
-        if (!body.changeAddress || !body.assetName || !body.metadata) {
-            throw new common_1.BadRequestException("Thiếu changeAddress, assetName hoặc metadata");
-        }
-        return this.trace.mint(body);
-    }
-    async update(body) {
-        if (!body.changeAddress || !body.assetName || !body.metadata) {
-            throw new common_1.BadRequestException("Thiếu changeAddress, assetName hoặc metadata");
-        }
-        return this.trace.update(body);
-    }
-    async burn(body) {
+        var _a;
         if (!body.changeAddress || !body.assetName) {
             throw new common_1.BadRequestException("Thiếu changeAddress hoặc assetName");
         }
-        return this.trace.burn(body);
+        if (!body.metadata && (!body.name ||
+            !body.image ||
+            !((_a = body.receivers) === null || _a === void 0 ? void 0 : _a.length) ||
+            !body.receiverLocations ||
+            !body.receiverCoordinates ||
+            !body.minterLocation ||
+            !body.minterCoordinates)) {
+            throw new common_1.BadRequestException("Thiếu metadata hoặc (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
+        }
+        return this.trace.mint({
+            changeAddress: body.changeAddress,
+            assetName: body.assetName,
+            metadata: body.metadata,
+            receiver: body.receiver,
+            name: body.name,
+            image: body.image,
+            receivers: body.receivers,
+            receiverLocations: body.receiverLocations,
+            receiverCoordinates: body.receiverCoordinates,
+            minterLocation: body.minterLocation,
+            minterCoordinates: body.minterCoordinates,
+            propertiesJson: body.propertiesJson,
+            walletUtxos: body.walletUtxos,
+            utxoAddresses: body.utxoAddresses,
+        });
+    }
+    async update(body) {
+        var _a;
+        if (!body.changeAddress || !body.assetName) {
+            throw new common_1.BadRequestException("Thiếu changeAddress hoặc assetName");
+        }
+        if (!body.metadata && (!body.name ||
+            !body.image ||
+            !((_a = body.receivers) === null || _a === void 0 ? void 0 : _a.length) ||
+            !body.receiverLocations ||
+            !body.receiverCoordinates ||
+            !body.minterLocation ||
+            !body.minterCoordinates)) {
+            throw new common_1.BadRequestException("Thiếu metadata hoặc (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
+        }
+        return this.trace.update({
+            changeAddress: body.changeAddress,
+            assetName: body.assetName,
+            txHash: body.txHash,
+            metadata: body.metadata,
+            name: body.name,
+            image: body.image,
+            receivers: body.receivers,
+            receiverLocations: body.receiverLocations,
+            receiverCoordinates: body.receiverCoordinates,
+            minterLocation: body.minterLocation,
+            minterCoordinates: body.minterCoordinates,
+            propertiesJson: body.propertiesJson,
+            walletUtxos: body.walletUtxos,
+            utxoAddresses: body.utxoAddresses,
+        });
     }
     async revoke(body) {
         if (!body.changeAddress || !body.assetName) {
             throw new common_1.BadRequestException("Thiếu changeAddress hoặc assetName");
         }
-        return this.trace.revoke(body);
+        return this.trace.revoke({
+            changeAddress: body.changeAddress,
+            assetName: body.assetName,
+            txHash: body.txHash,
+            walletUtxos: body.walletUtxos,
+            utxoAddresses: body.utxoAddresses,
+        });
+    }
+    async mintConfirm(body) {
+        var _a;
+        if (!body.txHash || !body.assetName || !body.name || body.minterProfileId == null) {
+            throw new common_1.BadRequestException("Thiếu txHash, assetName, name hoặc minterProfileId");
+        }
+        await this.trace.recordTx({
+            action: "MINT",
+            txHash: body.txHash,
+            assetName: body.assetName,
+            profileId: body.minterProfileId,
+            name: body.name,
+            image: (_a = body.image) !== null && _a !== void 0 ? _a : "",
+            standard: body.standard,
+            properties: body.properties,
+            metadata: body.metadata,
+        });
+        return { ok: true };
+    }
+    async updateConfirm(body) {
+        if (!body.txHash || !body.assetName || body.profileId == null) {
+            throw new common_1.BadRequestException("Thiếu txHash, assetName hoặc profileId");
+        }
+        await this.trace.recordTx({
+            action: "UPDATE",
+            txHash: body.txHash,
+            assetName: body.assetName,
+            profileId: body.profileId,
+            name: body.name,
+            image: body.image,
+            standard: body.standard,
+            properties: body.properties,
+            metadata: body.metadata,
+        });
+        return { ok: true };
+    }
+    async revokeConfirm(body) {
+        if (!body.txHash || !body.assetName || body.profileId == null) {
+            throw new common_1.BadRequestException("Thiếu txHash, assetName hoặc profileId");
+        }
+        await this.trace.recordTx({
+            action: "REVOKE",
+            txHash: body.txHash,
+            assetName: body.assetName,
+            profileId: body.profileId,
+        });
+        return { ok: true };
     }
     async submit(body) {
-        if (!body.signedTx) {
-            throw new common_1.BadRequestException("Thiếu signedTx (hex CBOR đã ký)");
+        var _a;
+        const raw = (_a = body.signedTxBase64) !== null && _a !== void 0 ? _a : body.signedTx;
+        if (!raw || typeof raw !== "string") {
+            throw new common_1.BadRequestException("Thiếu signedTx hoặc signedTxBase64");
         }
-        return this.trace.submitSignedTx(body.signedTx);
+        return this.trace.submitSignedTx(raw, !!body.signedTxBase64);
     }
 };
 exports.TraceController = TraceController;
 __decorate([
-    (0, common_1.Get)("policy/:policyId"),
-    __param(0, (0, common_1.Param)("policyId")),
+    (0, common_1.Get)("batches"),
+    __param(0, (0, common_1.Query)("token")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
-], TraceController.prototype, "listByPolicy", null);
-__decorate([
-    (0, common_1.Post)("metadata/build"),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Object)
-], TraceController.prototype, "buildMetadata", null);
+], TraceController.prototype, "listBatches", null);
 __decorate([
     (0, common_1.Post)("mint"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [trace_dto_1.MintTraceDto]),
     __metadata("design:returntype", Promise)
 ], TraceController.prototype, "mint", null);
 __decorate([
     (0, common_1.Post)("update"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [trace_dto_1.UpdateTraceDto]),
     __metadata("design:returntype", Promise)
 ], TraceController.prototype, "update", null);
-__decorate([
-    (0, common_1.Post)("burn"),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], TraceController.prototype, "burn", null);
 __decorate([
     (0, common_1.Post)("revoke"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [trace_dto_1.RevokeTraceDto]),
     __metadata("design:returntype", Promise)
 ], TraceController.prototype, "revoke", null);
+__decorate([
+    (0, common_1.Post)("mint/confirm"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [trace_dto_1.MintConfirmDto]),
+    __metadata("design:returntype", Promise)
+], TraceController.prototype, "mintConfirm", null);
+__decorate([
+    (0, common_1.Post)("update/confirm"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [trace_dto_1.UpdateConfirmDto]),
+    __metadata("design:returntype", Promise)
+], TraceController.prototype, "updateConfirm", null);
+__decorate([
+    (0, common_1.Post)("revoke/confirm"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [trace_dto_1.RevokeConfirmDto]),
+    __metadata("design:returntype", Promise)
+], TraceController.prototype, "revokeConfirm", null);
 __decorate([
     (0, common_1.Post)("submit"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [trace_dto_1.SubmitTxDto]),
     __metadata("design:returntype", Promise)
 ], TraceController.prototype, "submit", null);
 exports.TraceController = TraceController = __decorate([
     (0, common_1.Controller)("trace"),
-    __metadata("design:paramtypes", [trace_service_1.TraceService])
+    __metadata("design:paramtypes", [trace_service_1.TraceService,
+        auth_service_1.AuthService])
 ], TraceController);
 //# sourceMappingURL=trace.controller.js.map

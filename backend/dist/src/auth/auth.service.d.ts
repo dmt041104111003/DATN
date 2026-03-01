@@ -18,8 +18,9 @@ export declare class AuthService {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     } | {
         needProfile: true;
@@ -32,29 +33,33 @@ export declare class AuthService {
         stakeAddress: StakeAddress;
         roleId: number;
         displayName: string;
-        glnCodeRoot: string;
+        location?: string;
+        coordinates?: string;
     }): Promise<{
         token: string;
         profile: {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     }>;
     updateProfileFromToken(params: {
         token: string;
         displayName: string;
-        glnCodeRoot: string;
+        location?: string;
+        coordinates?: string;
     }): Promise<{
         token: string;
         profile: {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     }>;
     uploadProfileAvatarFromToken(params: {
@@ -66,9 +71,17 @@ export declare class AuthService {
             id: number;
             role: string;
             displayName: string;
-            glnCodeRoot: string;
             avatarUrl: string | null;
+            location: string | null;
+            coordinates: string | null;
         };
     }>;
+    getProfileIdFromToken(token: string): Promise<number>;
+    listProfilesFromToken(token: string): Promise<{
+        walletAddress: string;
+        displayName: string;
+        location: string | null;
+        coordinates: string | null;
+    }[]>;
 }
 export {};

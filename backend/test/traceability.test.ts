@@ -27,11 +27,7 @@ function buildBaseMetadata(opts: {
     minter_coordinates: string;
 }): Record<string, string> {
     const properties = {
-        gtin: "8936024810009",
-        soLoMe: "TAM2606",
         ngayHetHan: "2023-07-18T17:00:00Z",
-        glnCode: "8934692000005",
-        status: "MANUFACTURED",
         current_holder_id: opts.pk,
         certificate_hash: "ipfs://<hash_ket_qua_kiem_nghiem>",
     };
@@ -271,42 +267,4 @@ describe("CIP68 - Reference 100 + NFT 222", function () {
         });
     });
 
-    describe("Reference Script", function () {
-    return;
-        test("Mint Reference Script", async function () {
-            if (!hasAppWallet) {
-                console.log("Skip: set APP_MNEMONIC để chạy test reference script.");
-                return;
-            }
-            const cip68Contract = new Cip68Contract({ wallet });
-            const refAddress = process.env.REF_SCRIPT_ADDRESS ?? "";
-            if (!refAddress) {
-                console.log("Skip: set REF_SCRIPT_ADDRESS nếu muốn submit tx reference script.");
-                return;
-            }
-            const unsignedTx = await cip68Contract.createReferenceScriptMint(refAddress);
-            const signedTx = await wallet.signTx(unsignedTx, true);
-            const txHash = await wallet.submitTx(signedTx);
-            console.log("Tx:", "https://preview.cexplorer.io/tx/" + txHash);
-            expect(txHash.length).toBe(64);
-        });
-
-        test("Store Reference Script", async function () {
-            if (!hasAppWallet) {
-                console.log("Skip: set APP_MNEMONIC để chạy test reference script.");
-                return;
-            }
-            const cip68Contract = new Cip68Contract({ wallet });
-            const refAddress = process.env.REF_SCRIPT_ADDRESS ?? "";
-            if (!refAddress) {
-                console.log("Skip: set REF_SCRIPT_ADDRESS nếu muốn submit tx reference script.");
-                return;
-            }
-            const unsignedTx = await cip68Contract.createReferenceScriptStore(refAddress);
-            const signedTx = await wallet.signTx(unsignedTx, true);
-            const txHash = await wallet.submitTx(signedTx);
-            console.log("Tx:", "https://preview.cexplorer.io/tx/" + txHash);
-            expect(txHash.length).toBe(64);
-        });
-    });
 });

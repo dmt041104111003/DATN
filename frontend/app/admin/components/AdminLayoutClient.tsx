@@ -119,7 +119,11 @@ export default function AdminLayoutClient({
         </div>
         <div className={styles.navBody}>
           <ul className={styles.navList}>
-            {ADMIN_NAV_ITEMS.map((item) => (
+            {ADMIN_NAV_ITEMS.filter((item) => {
+              if (!('roles' in item) || !item.roles) return true;
+              if (!role) return false;
+              return (item.roles as readonly string[]).includes(role);
+            }).map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}

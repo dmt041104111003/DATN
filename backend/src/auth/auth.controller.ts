@@ -1,9 +1,20 @@
-import { Body, Controller, HttpException, HttpStatus, Post, Patch } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, HttpStatus, Patch, Post, Query } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get("profiles")
+  async listProfiles(@Query("token") token?: string) {
+    if (!token) {
+      throw new HttpException(
+        { error: "Missing token" },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    return this.authService.listProfilesFromToken(token);
+  }
 
   @Post("nonce")
   createNonce(
@@ -54,10 +65,11 @@ export class AuthController {
       stakeAddress?: string;
       roleId?: number;
       displayName?: string;
-      glnCodeRoot?: string;
+      location?: string;
+      coordinates?: string;
     }
   ) {
-    const { stakeAddress, roleId, displayName, glnCodeRoot } = body;
+    const { stakeAddress, roleId, displayName, location, coordinates } = body;
 
     if (!stakeAddress || !roleId || !displayName) {
       throw new HttpException(
@@ -70,7 +82,8 @@ export class AuthController {
       stakeAddress,
       roleId,
       displayName,
-      glnCodeRoot: glnCodeRoot ?? "",
+      location: location ?? undefined,
+      coordinates: coordinates ?? undefined,
     });
   }
 
@@ -80,10 +93,11 @@ export class AuthController {
     body: {
       token?: string;
       displayName?: string;
-      glnCodeRoot?: string;
+      location?: string;
+      coordinates?: string;
     }
   ) {
-    const { token, displayName, glnCodeRoot } = body;
+    const { token, displayName, location, coordinates } = body;
 
     if (!token || !displayName) {
       throw new HttpException(
@@ -95,7 +109,8 @@ export class AuthController {
     return this.authService.updateProfileFromToken({
       token,
       displayName,
-      glnCodeRoot: glnCodeRoot ?? "",
+      location,
+      coordinates,
     });
   }
 

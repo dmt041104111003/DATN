@@ -19,11 +19,7 @@ function assetNameForUpdateBurnRevoke() {
 }
 function buildBaseMetadata(opts) {
     const properties = {
-        gtin: "8936024810009",
-        soLoMe: "TAM2606",
         ngayHetHan: "2023-07-18T17:00:00Z",
-        glnCode: "8934692000005",
-        status: "MANUFACTURED",
         current_holder_id: opts.pk,
         certificate_hash: "ipfs://<hash_ket_qua_kiem_nghiem>",
     };
@@ -254,45 +250,6 @@ const ADDR_E = "addr_test1qqexzg0fv0g3hdrhgng620tx09s6rgr3m29njh6mwdc6csvga0grgd
                 }
                 throw e;
             }
-        });
-    });
-    (0, globals_1.describe)("Reference Script", function () {
-        return;
-        (0, globals_1.test)("Mint Reference Script", async function () {
-            var _a;
-            if (!hasAppWallet) {
-                console.log("Skip: set APP_MNEMONIC để chạy test reference script.");
-                return;
-            }
-            const cip68Contract = new cip68_contract_1.Cip68Contract({ wallet });
-            const refAddress = (_a = process.env.REF_SCRIPT_ADDRESS) !== null && _a !== void 0 ? _a : "";
-            if (!refAddress) {
-                console.log("Skip: set REF_SCRIPT_ADDRESS nếu muốn submit tx reference script.");
-                return;
-            }
-            const unsignedTx = await cip68Contract.createReferenceScriptMint(refAddress);
-            const signedTx = await wallet.signTx(unsignedTx, true);
-            const txHash = await wallet.submitTx(signedTx);
-            console.log("Tx:", "https://preview.cexplorer.io/tx/" + txHash);
-            (0, globals_1.expect)(txHash.length).toBe(64);
-        });
-        (0, globals_1.test)("Store Reference Script", async function () {
-            var _a;
-            if (!hasAppWallet) {
-                console.log("Skip: set APP_MNEMONIC để chạy test reference script.");
-                return;
-            }
-            const cip68Contract = new cip68_contract_1.Cip68Contract({ wallet });
-            const refAddress = (_a = process.env.REF_SCRIPT_ADDRESS) !== null && _a !== void 0 ? _a : "";
-            if (!refAddress) {
-                console.log("Skip: set REF_SCRIPT_ADDRESS nếu muốn submit tx reference script.");
-                return;
-            }
-            const unsignedTx = await cip68Contract.createReferenceScriptStore(refAddress);
-            const signedTx = await wallet.signTx(unsignedTx, true);
-            const txHash = await wallet.submitTx(signedTx);
-            console.log("Tx:", "https://preview.cexplorer.io/tx/" + txHash);
-            (0, globals_1.expect)(txHash.length).toBe(64);
         });
     });
 });

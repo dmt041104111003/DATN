@@ -1,13 +1,15 @@
 import styles from '../styles/ProfileForm.module.css';
 import type { ProfileFormProps } from '../types/index';
+import { LocationMap } from './LocationMap';
 
 export function ProfileForm({
   displayName,
-  glnCodeRoot,
   onChangeDisplayName,
-  onChangeGlnCodeRoot,
+  location,
+  onChangeLocation,
+  coordinates,
+  onChangeCoordinates,
   disabled,
-  showGln,
 }: ProfileFormProps) {
   return (
     <>
@@ -25,23 +27,17 @@ export function ProfileForm({
           placeholder="e.g. TraceLab3 Co., Ltd."
         />
       </div>
-
-      {showGln && (
-        <div className={styles.field}>
-          <label htmlFor="glnCodeRoot" className={styles.label}>
-            Root GLN
-          </label>
-          <input
-            id="glnCodeRoot"
-            type="text"
-            value={glnCodeRoot}
-            onChange={(e) => onChangeGlnCodeRoot(e.target.value)}
-            disabled={disabled}
-            className={styles.input}
-            placeholder="e.g. 8938500000000"
-          />
-        </div>
-      )}
+      <div className={styles.field}>
+        <label className={styles.label}>Location</label>
+        <LocationMap
+          coordinates={coordinates}
+          tooltipText={location || undefined}
+          onChange={(coords, label) => {
+            onChangeCoordinates(coords);
+            onChangeLocation(label);
+          }}
+        />
+      </div>
     </>
   );
 }

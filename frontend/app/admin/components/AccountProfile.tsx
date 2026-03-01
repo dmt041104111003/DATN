@@ -16,10 +16,11 @@ export function AccountProfile({
   error,
   saved,
   displayName,
-  glnCodeRoot,
-  showGln,
   onChangeDisplayName,
-  onChangeGlnCodeRoot,
+  location,
+  onChangeLocation,
+  coordinates,
+  onChangeCoordinates,
   onSubmit,
   onChangeAvatar,
 }: AccountProfileProps) {
@@ -81,11 +82,12 @@ export function AccountProfile({
 
             <ProfileForm
               displayName={displayName}
-              glnCodeRoot={glnCodeRoot}
               onChangeDisplayName={onChangeDisplayName}
-              onChangeGlnCodeRoot={onChangeGlnCodeRoot}
+              location={location}
+              onChangeLocation={onChangeLocation}
+              coordinates={coordinates}
+              onChangeCoordinates={onChangeCoordinates}
               disabled={loading}
-              showGln={showGln}
             />
 
             <div className={styles.accountActions}>

@@ -128,7 +128,7 @@ class Cip68Contract extends mesh_adapter_1.MeshAdapter {
             unsignedTx
                 .requiredSignerHash((0, core_1.deserializeAddress)(walletAddress).pubKeyHash)
                 .changeAddress(walletAddress)
-                .selectUtxosFrom(utxos)
+                .selectUtxosFrom(utxos, "largestFirst", "7500000", true)
                 .txInCollateral(collateral.input.txHash, collateral.input.outputIndex, collateral.output.amount, collateral.output.address)
                 .setNetwork(this.appNetwork);
             return await unsignedTx.complete();
@@ -159,7 +159,7 @@ class Cip68Contract extends mesh_adapter_1.MeshAdapter {
             unsignedTx
                 .requiredSignerHash((0, core_1.deserializeAddress)(walletAddress).pubKeyHash)
                 .changeAddress(walletAddress)
-                .selectUtxosFrom(utxos)
+                .selectUtxosFrom(utxos, "largestFirst", "7500000", true)
                 .txInCollateral(collateral.input.txHash, collateral.input.outputIndex, collateral.output.amount, collateral.output.address)
                 .setNetwork(this.appNetwork);
             return await unsignedTx.complete();
@@ -187,7 +187,7 @@ class Cip68Contract extends mesh_adapter_1.MeshAdapter {
             unsignedTx
                 .requiredSignerHash((0, core_1.deserializeAddress)(walletAddress).pubKeyHash)
                 .changeAddress(walletAddress)
-                .selectUtxosFrom(utxos)
+                .selectUtxosFrom(utxos, "largestFirst", "7500000", true)
                 .txInCollateral(collateral.input.txHash, collateral.input.outputIndex, collateral.output.amount, collateral.output.address)
                 .setNetwork(this.appNetwork);
             return await unsignedTx.complete();

@@ -40,6 +40,33 @@ class BlockfrostFetcher {
             throw this._parseHttpError(error);
         }
     }
+    async _postBinary(path, body) {
+        var _a;
+        try {
+            const { data, status } = await this._axiosInstance.post(path, body, {
+                headers: { "Content-Type": "application/cbor" },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity,
+                transformRequest: [(d) => d],
+            });
+            if (status !== 200 && status !== 202)
+                throw this._parseHttpError(data);
+            if (typeof data === "string" && /^[a-fA-F0-9]{64}$/.test(data))
+                return data;
+            if (data && typeof data === "object") {
+                const v = (_a = data.tx_id) !== null && _a !== void 0 ? _a : data.transaction_id;
+                if (typeof v === "string" && /^[a-fA-F0-9]{64}$/.test(v))
+                    return v;
+            }
+            throw this._parseHttpError(data);
+        }
+        catch (error) {
+            throw this._parseHttpError(error);
+        }
+    }
+    async submitTx(cborBuffer) {
+        return this._postBinary("/tx/submit", cborBuffer);
+    }
     async fetchAddressDetail(address) {
         return this._get(`/addresses/${address}/total`);
     }

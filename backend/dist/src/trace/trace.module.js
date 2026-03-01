@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TraceModule = void 0;
 const common_1 = require("@nestjs/common");
 const cardano_module_1 = require("../cardano/cardano.module");
+const auth_module_1 = require("../auth/auth.module");
 const trace_service_1 = require("./trace.service");
 const trace_controller_1 = require("./trace.controller");
 let TraceModule = class TraceModule {
@@ -16,7 +17,7 @@ let TraceModule = class TraceModule {
 exports.TraceModule = TraceModule;
 exports.TraceModule = TraceModule = __decorate([
     (0, common_1.Module)({
-        imports: [cardano_module_1.CardanoModule],
+        imports: [cardano_module_1.CardanoModule, auth_module_1.AuthModule],
         controllers: [trace_controller_1.TraceController],
         providers: [trace_service_1.TraceService],
         exports: [trace_service_1.TraceService],

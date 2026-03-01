@@ -11,15 +11,15 @@ const common_1 = require("@nestjs/common");
 const config_module_1 = require("./config/config.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const cardano_module_1 = require("./cardano/cardano.module");
-const cip68_module_1 = require("./cip68/cip68.module");
 const trace_module_1 = require("./trace/trace.module");
 const auth_module_1 = require("./auth/auth.module");
+const multisig_module_1 = require("./multisig/multisig.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [config_module_1.ConfigModule, prisma_module_1.PrismaModule, cardano_module_1.CardanoModule, cip68_module_1.Cip68Module, trace_module_1.TraceModule, auth_module_1.AuthModule],
+        imports: [config_module_1.ConfigModule, prisma_module_1.PrismaModule, cardano_module_1.CardanoModule, trace_module_1.TraceModule, auth_module_1.AuthModule, multisig_module_1.MultisigModule],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import formStyles from '../../styles/Form.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import buttonStyles from '../../styles/Buttons.module.css';
@@ -8,26 +9,94 @@ import dialogStyles from '../../styles/Dialog.module.css';
 import paginationStyles from '../../styles/Pagination.module.css';
 import Pagination from '../../components/Pagination';
 import type { Product } from '../../types';
-import { MOCK_PRODUCTS } from '../../constants/mock';
+import { randomAssetName } from '../../utils/asset';
+import { nowForDateTimeLocal } from '../../utils/date';
+import { readAccountFromToken } from '../../lib/account';
+import { getWalletChangeAddress, getWalletUtxoAddresses, signAndSubmitWithEternl } from '../../utils/wallet';
+import { ProductsHeader } from '../../components/product/ProductsHeader';
+import { ProductsSearch } from '../../components/product/ProductsSearch';
+import { ProductsTable } from '../../components/product/ProductsTable';
+import { ProductsCards } from '../../components/product/ProductsCards';
+import { ProductDialog, type ProfileOption } from '../../components/product/ProductDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
 const PAGE_SIZE = 10;
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+const AUTH_COOKIE = 'auth_token';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [slug, setSlug] = useState('');
-  const [nameEn, setNameEn] = useState('');
-  const [descriptionEn, setDescriptionEn] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [nameEn, setNameEn] = useState('Cam sành XNK 1.5kg');
+  const [descriptionEn, setDescriptionEn] = useState('Sample traceability product');
+  const [imageUrl, setImageUrl] = useState('ipfs://<hash_anh_dai_dien>');
+  const [expiryDate, setExpiryDate] = useState(nowForDateTimeLocal);
+  const [certificateHash, setCertificateHash] = useState(
+    'ipfs://<hash_ket_qua_kiem_nghiem>',
+  );
+  const [receiverList, setReceiverList] = useState<string[]>([]);
+  const [receiverDisplayNames, setReceiverDisplayNames] = useState<string[]>([]);
+  const [receiverLocations, setReceiverLocations] = useState('');
+  const [receiverCoordinates, setReceiverCoordinates] = useState('');
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
+  const [minterLocation, setMinterLocation] = useState('');
+  const [minterCoordinates, setMinterCoordinates] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const account = readAccountFromToken();
+    if (!account || account.roleCode?.toUpperCase() !== 'ENTERPRISE') {
+      router.replace('/admin');
+      return;
+    }
+  }, [router]);
+
+  const loadBatches = async () => {
+    const account = readAccountFromToken();
+    if (!account || account.roleCode?.toUpperCase() !== 'ENTERPRISE') return;
+    const cookie = typeof document !== 'undefined'
+      ? document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${AUTH_COOKIE}=`))
+      : null;
+    const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+    if (!token) {
+      setProducts([]);
+      return;
+    }
+    const res = await fetch(`${BACKEND_URL}/trace/batches?token=${encodeURIComponent(token)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setProducts([]);
+      return;
+    }
+    const items: any[] = Array.isArray(data?.items) ? data.items : [];
+    const mapped: Product[] = items
+      .map((b, i) => ({
+        id: i + 1,
+        slug: String(b?.id ?? ''),
+        nameEn: String(b?.name ?? ''),
+        descriptionEn: null,
+        imageUrl: b?.image ? String(b.image) : null,
+      }))
+      .filter((p) => !!p.slug);
+    setProducts(mapped);
+  };
+
+  useEffect(() => {
+    void loadBatches();
+  }, []);
 
   useEffect(() => {
     setPage(1);
@@ -51,18 +120,58 @@ export default function ProductsPage() {
     if (page > totalPages) setPage(1);
   }, [page, totalPages]);
 
+  const addReceiverFromProfile = (profile: ProfileOption) => {
+    if (!profile.coordinates) return;
+    setReceiverList((prev) => {
+      if (prev.includes(profile.walletAddress)) return prev;
+      setReceiverDisplayNames((names) => [...names, profile.displayName]);
+      setReceiverLocations((locPrev) =>
+        locPrev ? `${locPrev}; ${profile.location ?? ''}` : (profile.location ?? '')
+      );
+      setReceiverCoordinates((coordPrev) =>
+        coordPrev ? `${coordPrev};${profile.coordinates}` : (profile.coordinates ?? '')
+      );
+      return [...prev, profile.walletAddress];
+    });
+  };
+
   const resetForm = () => {
     setEditingId(null);
     setSlug('');
-    setNameEn('');
-    setDescriptionEn('');
-    setImageUrl('');
+    setNameEn('Cam sành XNK 1.5kg');
+    setDescriptionEn('Sample traceability product');
+    setImageUrl('ipfs://<hash_anh_dai_dien>');
+    setExpiryDate(nowForDateTimeLocal());
+    setCertificateHash('ipfs://<hash_ket_qua_kiem_nghiem>');
+    setReceiverList([]);
+    setReceiverDisplayNames([]);
+    setReceiverLocations('');
+    setReceiverCoordinates('');
+    setMinterLocation('');
+    setMinterCoordinates('');
     setError('');
     setOpen(false);
   };
 
+  const loadProfiles = async () => {
+    const cookie = typeof document !== 'undefined'
+      ? document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${AUTH_COOKIE}=`))
+      : null;
+    const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+    if (!token) return;
+    const res = await fetch(`${BACKEND_URL}/auth/profiles?token=${encodeURIComponent(token)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setProfiles(Array.isArray(data) ? data : []);
+  };
+
   const openAdd = () => {
     resetForm();
+    setSlug(randomAssetName());
+    const account = readAccountFromToken();
+    setMinterLocation(account?.location ?? '');
+    setMinterCoordinates(account?.coordinates ?? '');
+    void loadProfiles();
     setOpen(true);
   };
 
@@ -73,36 +182,178 @@ export default function ProductsPage() {
     setDescriptionEn(p.descriptionEn ?? '');
     setImageUrl(p.imageUrl ?? '');
     setError('');
+    const account = readAccountFromToken();
+    setMinterLocation(account?.location ?? '');
+    setMinterCoordinates(account?.coordinates ?? '');
+    void loadProfiles();
     setOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    const base: Omit<Product, 'id'> = {
-      slug: slug.trim(),
-      nameEn,
-      descriptionEn: descriptionEn || null,
-      imageUrl: imageUrl || null,
+    if (!nameEn.trim()) {
+      setError('Name is required.');
+      return;
+    }
+
+    let assetName = slug.trim();
+    if (!assetName) {
+      assetName = randomAssetName();
+      setSlug(assetName);
+    }
+
+    const account = readAccountFromToken();
+    if (!account || !account.stakeAddress) {
+      setError('Missing wallet address from token.');
+      return;
+    }
+
+    let effectiveExpiry = expiryDate.trim();
+    if (!effectiveExpiry) {
+      effectiveExpiry = '2023-07-18T17:00:00Z';
+    } else {
+      const parsed = new Date(effectiveExpiry);
+      if (!Number.isNaN(parsed.getTime())) {
+        effectiveExpiry = parsed.toISOString();
+      }
+    }
+    const effectiveCertificateHash =
+      certificateHash.trim() || 'ipfs://<hash_ket_qua_kiem_nghiem>';
+    const properties: Record<string, unknown> = {
+      ngayHetHan: effectiveExpiry,
+      current_holder_id: account.stakeAddress,
+      certificate_hash: effectiveCertificateHash,
     };
 
-    setProducts((prev) => {
-      if (editingId) {
-        return prev.map((p) => (p.id === editingId ? { ...p, ...base } : p));
-      }
-      const nextId = prev.length ? Math.max(...prev.map((p) => p.id)) + 1 : 1;
-      return [...prev, { id: nextId, ...base }];
-    });
+    setLoading(true);
+    try {
+      const changeAddress = await getWalletChangeAddress();
+      const utxoAddresses = await getWalletUtxoAddresses();
 
-    resetForm();
-    setLoading(false);
+      const isEdit = editingId !== null;
+      const url = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}`;
+      const body: any = {
+        changeAddress,
+        utxoAddresses,
+        assetName,
+        name: nameEn,
+        image: imageUrl || '',
+        receivers: receiverList.length ? receiverList : [account.stakeAddress],
+        receiverLocations,
+        receiverCoordinates,
+        minterLocation,
+        minterCoordinates,
+        propertiesJson: JSON.stringify(properties),
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || `Unable to ${isEdit ? 'update' : 'mint'} product.`,
+        );
+      }
+
+      if (data?.unsignedTx) {
+        const txHash = await signAndSubmitWithEternl(data.unsignedTx);
+        const profileId = account.id;
+        const confirmUrl = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}/confirm`;
+        const confirmBody = isEdit
+          ? {
+              txHash,
+              assetName,
+              profileId,
+              name: nameEn,
+              image: imageUrl || '',
+              standard: 'Traceability-v1',
+              properties,
+            }
+          : { txHash, assetName, name: nameEn, image: imageUrl || '', minterProfileId: profileId };
+        const confirmRes = await fetch(confirmUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(confirmBody),
+        });
+        if (!confirmRes.ok) {
+          const confirmData = await confirmRes.json();
+          throw new Error(confirmData?.message || confirmData?.error || 'Confirm failed.');
+        }
+      }
+
+      await loadBatches();
+
+      resetForm();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred while saving the product.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id: number) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const handleRevoke = async (id: number) => {
+    const target = products.find((p) => p.id === id);
+    if (!target) return;
+    if (!confirm('Are you sure you want to revoke this product?')) return;
+
+    const account = readAccountFromToken();
+    if (!account) {
+      setError('Missing account from token.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const changeAddress = await getWalletChangeAddress();
+      const res = await fetch(`${BACKEND_URL}/trace/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          changeAddress,
+          utxoAddresses: await getWalletUtxoAddresses(),
+          assetName: target.slug,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          data?.message || data?.error || 'Unable to revoke product.',
+        );
+      }
+
+      if (data?.unsignedTx) {
+        const txHash = await signAndSubmitWithEternl(data.unsignedTx);
+        const confirmRes = await fetch(`${BACKEND_URL}/trace/revoke/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txHash, assetName: target.slug, profileId: account.id }),
+        });
+        if (!confirmRes.ok) {
+          const confirmData = await confirmRes.json();
+          throw new Error(confirmData?.message || confirmData?.error || 'Confirm revoke failed.');
+        }
+      }
+
+      await loadBatches();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred while revoking the product.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,90 +378,27 @@ export default function ProductsPage() {
 
   return (
     <>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Products</h1>
-        <button type="button" className={styles.addIcon} onClick={openAdd} aria-label="Add product" title="Add product">
-          +
-        </button>
-      </div>
+      <ProductsHeader styles={styles} onAdd={openAdd} />
 
-      <div style={{ marginBottom: 12, display: 'flex', gap: 12, flexWrap: 'nowrap', alignItems: 'center' }}>
-        <input
-          type="search"
-          placeholder="Search by name or ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={styles.input}
-          style={{ flex: 2, minWidth: 0 }}
-        />
-      </div>
+      <ProductsSearch
+        styles={styles}
+        query={searchQuery}
+        onChange={setSearchQuery}
+      />
 
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Slug</th>
-              <th>Name</th>
-              <th>Image</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedList.map((p) => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>{p.slug}</td>
-                <td>{p.nameEn}</td>
-                <td>{p.imageUrl ? 'Yes' : '—'}</td>
-                <td>
-                  <div className={styles.actions}>
-                    <button type="button" className={styles.btnSecondary} onClick={() => openEdit(p)}>
-                      Edit
-                    </button>
-                    <button type="button" className={styles.btnDanger} onClick={() => handleDelete(p.id)}>
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProductsTable
+        styles={styles}
+        items={paginatedList}
+        onEdit={openEdit}
+        onRevoke={handleRevoke}
+      />
 
-      <div className={styles.tableCards}>
-        {paginatedList.map((p) => (
-          <div key={p.id} className={styles.tableCard}>
-            <div className={styles.tableCardRow}>
-              <span className={styles.tableCardLabel}>ID</span>
-              <span className={styles.tableCardValue}>{p.id}</span>
-            </div>
-            <div className={styles.tableCardRow}>
-              <span className={styles.tableCardLabel}>Slug</span>
-              <span className={styles.tableCardValue}>{p.slug}</span>
-            </div>
-            <div className={styles.tableCardRow}>
-              <span className={styles.tableCardLabel}>Name</span>
-              <span className={styles.tableCardValue}>{p.nameEn}</span>
-            </div>
-            <div className={styles.tableCardRow}>
-              <span className={styles.tableCardLabel}>Image</span>
-              <span className={styles.tableCardValue}>{p.imageUrl ? 'Yes' : '—'}</span>
-            </div>
-            <div className={styles.tableCardActions}>
-              <div className={styles.actions}>
-                <button type="button" className={styles.btnSecondary} onClick={() => openEdit(p)}>
-                  Edit
-                </button>
-                <button type="button" className={styles.btnDanger} onClick={() => handleDelete(p.id)}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ProductsCards
+        styles={styles}
+        items={paginatedList}
+        onEdit={openEdit}
+        onRevoke={handleRevoke}
+      />
 
       <Pagination
         currentPage={page}
@@ -220,91 +408,42 @@ export default function ProductsPage() {
         pageSize={PAGE_SIZE}
       />
 
-      {open && (
-        <div className={styles.dialogBackdrop} onClick={() => setOpen(false)}>
-          <div className={styles.dialogPanel} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.dialogHeader}>
-              <h2 className={styles.dialogTitle}>{editingId ? 'Edit product' : 'Add product'}</h2>
-              <button type="button" className={styles.dialogClose} onClick={() => setOpen(false)} aria-label="Close">
-                ×
-              </button>
-            </div>
-            <div className={styles.dialogBody}>
-              <form onSubmit={handleSubmit}>
-                {error && <p className={styles.error}>{error}</p>}
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Slug (URL)</label>
-                  <input
-                    className={styles.input}
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="e.g. soft-drink-can-330"
-                    required
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Name</label>
-                  <input
-                    className={styles.input}
-                    value={nameEn}
-                    onChange={(e) => setNameEn(e.target.value)}
-                    placeholder="Enter product name"
-                    required
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Description</label>
-                  <textarea
-                    className={styles.textarea}
-                    rows={4}
-                    value={descriptionEn}
-                    onChange={(e) => setDescriptionEn(e.target.value)}
-                    placeholder="Enter product description"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Image (URL or upload)</label>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <input
-                      className={styles.input}
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Image URL or click Upload"
-                      style={{ flex: '1 1 200px' }}
-                    />
-                    <input
-                      ref={imageInputRef}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={handleImageUpload}
-                    />
-                    <button
-                      type="button"
-                      className={styles.btnSecondary}
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={uploading}
-                    >
-                      {uploading ? 'Uploading...' : 'Upload image'}
-                    </button>
-                  </div>
-                  {imageUrl && (
-                    <img src={imageUrl} alt="Preview" className={styles.imagePreview} style={{ marginTop: 8 }} />
-                  )}
-                </div>
-                <div className={styles.headerActions} style={{ marginTop: '1rem' }}>
-                  <button type="submit" className={styles.btnPrimary} disabled={loading}>
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
-                  <button type="button" className={styles.btnSecondary} onClick={() => setOpen(false)}>
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProductDialog
+        styles={styles}
+        open={open}
+        editingId={editingId}
+        error={error}
+        loading={loading}
+        uploading={uploading}
+        slug={slug}
+        nameEn={nameEn}
+        descriptionEn={descriptionEn}
+        expiryDate={expiryDate}
+        certificateHash={certificateHash}
+        receiverList={receiverList}
+        receiverDisplayNames={receiverDisplayNames}
+        receiverLocations={receiverLocations}
+        receiverCoordinates={receiverCoordinates}
+        profiles={profiles}
+        minterLocation={minterLocation}
+        minterCoordinates={minterCoordinates}
+        imageUrl={imageUrl}
+        imageInputRef={imageInputRef}
+        onClose={() => setOpen(false)}
+        onSubmit={handleSubmit}
+        onNameChange={setNameEn}
+        onDescriptionChange={setDescriptionEn}
+        onExpiryChange={setExpiryDate}
+        onCertificateHashChange={setCertificateHash}
+        onAddReceiverFromProfile={addReceiverFromProfile}
+        onReceiverLocationsChange={setReceiverLocations}
+        onReceiverCoordinatesChange={setReceiverCoordinates}
+        onReceiverListChange={setReceiverList}
+        onReceiverDisplayNamesChange={setReceiverDisplayNames}
+        onImageUrlChange={setImageUrl}
+        onUploadClick={() => imageInputRef.current?.click()}
+        onImageUpload={handleImageUpload}
+      />
     </>
   );
 }

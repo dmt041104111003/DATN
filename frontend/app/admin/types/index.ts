@@ -10,9 +10,10 @@ export type Account = {
   id: number;
   displayName: string;
   stakeAddress: string;
-  glnCodeRoot: string | null;
   roleCode: string;
   avatarUrl?: string | null;
+  location?: string | null;
+  coordinates?: string | null;
 };
 
 export type ProductListItem = {
@@ -28,11 +29,12 @@ export type Role = {
 
 export type ProfileFormProps = {
   displayName: string;
-  glnCodeRoot: string;
   onChangeDisplayName: (value: string) => void;
-  onChangeGlnCodeRoot: (value: string) => void;
+  location: string;
+  onChangeLocation: (value: string) => void;
+  coordinates: string;
+  onChangeCoordinates: (value: string) => void;
   disabled?: boolean;
-  showGln: boolean;
 };
 
 export type RoleSelectProps = {
@@ -55,10 +57,11 @@ export type AccountProfileProps = {
   error: string;
   saved: boolean;
   displayName: string;
-  glnCodeRoot: string;
-  showGln: boolean;
   onChangeDisplayName: (value: string) => void;
-  onChangeGlnCodeRoot: (value: string) => void;
+  location: string;
+  onChangeLocation: (value: string) => void;
+  coordinates: string;
+  onChangeCoordinates: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onChangeAvatar: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
