@@ -1,6 +1,16 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Patch, Post, Query } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
+function normalizeAddress(
+  raw: string | { address?: string } | undefined
+): string | undefined {
+  if (typeof raw === "string") return raw;
+  if (raw && typeof (raw as { address?: string }).address === "string") {
+    return (raw as { address: string }).address;
+  }
+  return undefined;
+}
+
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -16,18 +26,39 @@ export class AuthController {
     return this.authService.listProfilesFromToken(token);
   }
 
+  @Get("profiles/by-role")
+  async listProfilesByRole(
+    @Query("role") role?: string,
+    @Query("token") token?: string,
+  ) {
+    if (!role?.trim()) {
+      throw new HttpException(
+        { error: "Missing role" },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    if (!token?.trim()) {
+      throw new HttpException(
+        { error: "Missing token" },
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    await this.authService.getProfileIdFromToken(token.trim());
+    return this.authService.listProfilesByRoleCode(role.trim());
+  }
+
   @Post("nonce")
   createNonce(
-    @Body("stakeAddress") stakeAddress?: string
+    @Body("stakeAddress") stakeAddress?: string | { address?: string }
   ): { nonce: string } {
-    if (!stakeAddress) {
+    const addr = normalizeAddress(stakeAddress);
+    if (!addr) {
       throw new HttpException(
         { error: "Missing stakeAddress" },
         HttpStatus.BAD_REQUEST
       );
     }
-
-    const nonce = this.authService.generateNonce(stakeAddress);
+    const nonce = this.authService.generateNonce(addr);
     return { nonce };
   }
 
@@ -35,15 +66,16 @@ export class AuthController {
   verifySignature(
     @Body()
     body: {
-      stakeAddress?: string;
+      stakeAddress?: string | { address?: string };
       nonce?: string;
       signature?: string;
       key?: string;
     }
   ) {
     const { stakeAddress, nonce, signature, key } = body;
+    const addr = normalizeAddress(stakeAddress);
 
-    if (!stakeAddress || !nonce || !signature || !key) {
+    if (!addr || !nonce || !signature || !key) {
       throw new HttpException(
         { error: "Missing authentication parameters" },
         HttpStatus.BAD_REQUEST
@@ -51,7 +83,7 @@ export class AuthController {
     }
 
     return this.authService.verifyAndIssueToken({
-      stakeAddress,
+      stakeAddress: addr,
       nonce,
       signature,
       key,
@@ -62,7 +94,7 @@ export class AuthController {
   async createProfile(
     @Body()
     body: {
-      stakeAddress?: string;
+      stakeAddress?: string | { address?: string };
       roleId?: number;
       displayName?: string;
       location?: string;
@@ -70,8 +102,9 @@ export class AuthController {
     }
   ) {
     const { stakeAddress, roleId, displayName, location, coordinates } = body;
+    const addr = normalizeAddress(stakeAddress);
 
-    if (!stakeAddress || !roleId || !displayName) {
+    if (!addr || !roleId || !displayName) {
       throw new HttpException(
         { error: "Missing profile information" },
         HttpStatus.BAD_REQUEST
@@ -79,7 +112,7 @@ export class AuthController {
     }
 
     return this.authService.createProfileAndIssueToken({
-      stakeAddress,
+      stakeAddress: addr,
       roleId,
       displayName,
       location: location ?? undefined,

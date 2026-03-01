@@ -13,5 +13,5 @@ async function bootstrap() {
     });
     await app.listen((_b = process.env.PORT) !== null && _b !== void 0 ? _b : 3000);
 }
-bootstrap().catch(console.error);
+bootstrap().catch(() => process.exit(1));
 //# sourceMappingURL=main.js.map

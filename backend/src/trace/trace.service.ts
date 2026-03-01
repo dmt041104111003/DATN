@@ -65,7 +65,7 @@ export class TraceService {
     propertiesJson?: string;
     walletUtxos?: UTxO[];
     utxoAddresses?: string[];
-  }): Promise<{ unsignedTx: string }> {
+  }): Promise<{ unsignedTx: string; policyId?: string }> {
     const contract = this.createContract(params.changeAddress, {
       walletUtxos: params.walletUtxos,
       utxoAddresses: params.utxoAddresses,
@@ -86,7 +86,7 @@ export class TraceService {
         !params.minterCoordinates
       ) {
         throw new BadRequestException(
-          "Cần metadata hoặc đủ (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
+          "Need metadata or all of (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
         );
       }
       const addrObj = deserializeAddress(params.changeAddress);
@@ -108,7 +108,8 @@ export class TraceService {
     const unsignedTx = await contract.mint([
       { assetName: params.assetName, metadata, quantity: "1", receiver },
     ]);
-    return { unsignedTx };
+    const policyId = (contract as { policyId?: string }).policyId ?? undefined;
+    return { unsignedTx, policyId };
   }
 
   async update(params: {
@@ -145,7 +146,7 @@ export class TraceService {
         !params.minterCoordinates
       ) {
         throw new BadRequestException(
-          "Cần metadata hoặc đủ (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
+          "Need metadata or all of (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
         );
       }
       const addrObj = deserializeAddress(params.changeAddress);
@@ -196,6 +197,8 @@ export class TraceService {
     standard?: string;
     properties?: object;
     metadata?: object;
+    policyId?: string;
+    receivers?: string[];
   }): Promise<void> {
     const { action, txHash, assetName, profileId } = params;
     const prisma = this.prisma as any;
@@ -203,6 +206,11 @@ export class TraceService {
     if (action === "MINT") {
       const name = params.name ?? "";
       const image = params.image ?? "";
+      const properties = params.properties != null ? params.properties : {};
+      const metadata =
+        params.metadata != null && typeof params.metadata === "object"
+          ? params.metadata
+          : { name, image, standard: params.standard ?? "Traceability-v1" };
       await prisma.productBatch.upsert({
         where: { id: assetName },
         create: {
@@ -210,9 +218,10 @@ export class TraceService {
           name,
           image: image || null,
           standard: params.standard ?? "Traceability-v1",
-          properties: params.properties ?? undefined,
-          metadata: params.metadata ?? undefined,
+          properties,
+          metadata,
           mintTxHash: txHash,
+          policyId: params.policyId ?? undefined,
           minterProfileId: profileId,
         },
         update: {
@@ -220,13 +229,26 @@ export class TraceService {
           name,
           image: image || null,
           standard: params.standard ?? "Traceability-v1",
-          properties: params.properties ?? undefined,
-          metadata: params.metadata ?? undefined,
+          properties,
+          metadata,
+          policyId: params.policyId ?? undefined,
         },
       });
       await prisma.movementLog.create({
         data: { batchId: assetName, action: "MINT", roleAtHop: "minter", txHash, fromProfileId: profileId },
       });
+      const receivers = params.receivers ?? [];
+      if (receivers.length > 0) {
+        await prisma.roadmap.createMany({
+          data: receivers.map((receiverAddress, hopIndex) => ({
+            batchId: assetName,
+            receiverAddress,
+            hopIndex,
+            action: "MINT" as const,
+            txHash,
+          })),
+        });
+      }
       return;
     }
 
@@ -243,23 +265,36 @@ export class TraceService {
               lastUpdateTxHash: txHash,
               lastUpdateAt: new Date().toISOString(),
             });
+      const nextProperties =
+        params.properties != null ? params.properties : (batch.properties as object) ?? {};
       await prisma.productBatch.update({
         where: { id: assetName },
         data: {
           name: params.name ?? batch.name,
           image: params.image ?? batch.image,
           standard: params.standard ?? batch.standard,
-          properties: params.properties ?? batch.properties,
+          properties: nextProperties,
           metadata: nextMetadata,
         },
       });
       await prisma.movementLog.create({
         data: { batchId: assetName, action: "UPDATE", roleAtHop: "updater", txHash, fromProfileId: profileId },
       });
+      const receivers = params.receivers ?? [];
+      if (receivers.length > 0) {
+        await prisma.roadmap.createMany({
+          data: receivers.map((receiverAddress, hopIndex) => ({
+            batchId: assetName,
+            receiverAddress,
+            hopIndex,
+            action: "UPDATE" as const,
+            txHash,
+          })),
+        });
+      }
       return;
     }
 
-    // REVOKE
     await prisma.productBatch.update({
       where: { id: assetName },
       data: {
@@ -273,6 +308,18 @@ export class TraceService {
     await prisma.movementLog.create({
       data: { batchId: assetName, action: "REVOKE", roleAtHop: "revoker", txHash, fromProfileId: profileId },
     });
+    const receivers = params.receivers ?? [];
+    if (receivers.length > 0) {
+      await prisma.roadmap.createMany({
+        data: receivers.map((receiverAddress, hopIndex) => ({
+          batchId: assetName,
+          receiverAddress,
+          hopIndex,
+          action: "REVOKE" as const,
+          txHash,
+        })),
+      });
+    }
   }
 
   async submitSignedTx(signedTxInput: string, fromBase64 = false): Promise<{ txHash: string }> {
@@ -281,7 +328,7 @@ export class TraceService {
       try {
         cborBuffer = Buffer.from(signedTxInput, "base64");
       } catch {
-        throw new BadRequestException("signedTxBase64 không hợp lệ");
+        throw new BadRequestException("signedTxBase64 is invalid");
       }
     } else {
       let signedTxHex: string;
@@ -309,7 +356,7 @@ export class TraceService {
           const bytes = Buffer.from(s, "base64");
           signedTxHex = Buffer.from(bytes).toString("hex");
         } catch {
-          throw new BadRequestException("signedTx phải là hex hoặc base64");
+          throw new BadRequestException("signedTx must be hex or base64");
         }
       }
       cborBuffer = Buffer.from(signedTxHex, "hex");
@@ -319,7 +366,7 @@ export class TraceService {
     const isCborListLong = first === 0x98 && cborBuffer.length > 1;
     if (!isCborList && !isCborListLong) {
       throw new BadRequestException(
-        `signedTx không phải CBOR tx hợp lệ (byte đầu 0x${first.toString(16).padStart(2, "0")}, độ dài ${cborBuffer.length}). Ví có thể trả format khác.`
+        `signedTx is not valid CBOR tx (first byte 0x${first.toString(16).padStart(2, "0")}, length ${cborBuffer.length}). Wallet may return a different format.`
       );
     }
     const txHash = await this.cardano.blockfrostFetcher.submitTx(cborBuffer);

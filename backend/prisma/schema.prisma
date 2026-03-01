@@ -47,6 +47,7 @@ model ProductBatch {
   properties      Json?
   metadata        Json?
   mintTxHash      String?
+  policyId        String?
   createdAt       DateTime @default(now())
 
   minterProfileId Int
@@ -54,6 +55,7 @@ model ProductBatch {
 
   movements       MovementLog[]
   certificates    Certificate[]
+  roadmaps        Roadmap[]
 }
 
 enum MovementAction {
@@ -97,5 +99,17 @@ model Certificate {
 
   issuerProfileId  Int
   issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
+}
+
+model Roadmap {
+  id              Int      @id @default(autoincrement())
+  batchId         String
+  receiverAddress String
+  hopIndex        Int      @default(0)
+  action          MovementAction
+  txHash          String?
+  createdAt       DateTime @default(now())
+
+  batch           ProductBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 }
 

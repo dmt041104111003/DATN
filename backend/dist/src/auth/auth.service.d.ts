@@ -83,5 +83,10 @@ export declare class AuthService {
         location: string | null;
         coordinates: string | null;
     }[]>;
+    listProfilesByRoleCode(roleCode: string): Promise<{
+        id: number;
+        displayName: string;
+        walletAddress: string;
+    }[]>;
 }
 export {};

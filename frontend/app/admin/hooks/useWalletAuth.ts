@@ -64,30 +64,37 @@ export function useWalletAuth(): UseWalletAuthReturn {
         setWalletName(anyWindow.cardano.eternl.name ?? 'Eternl');
       }
 
-      const [rewardAddresses, usedAddresses]: [string[], string[]] =
+      const [changeAddressRaw, rewardAddresses]: [unknown, string[]] =
         await Promise.all([
+          api.getChangeAddress(),
           api.getRewardAddresses(),
-          api.getUsedAddresses(),
         ]);
 
-      if (!rewardAddresses || rewardAddresses.length === 0) {
-        throw new Error('Unable to get stake address from wallet.');
+      const changeAddress =
+        typeof changeAddressRaw === 'string'
+          ? changeAddressRaw
+          : (changeAddressRaw && typeof (changeAddressRaw as { address?: string }).address === 'string')
+            ? (changeAddressRaw as { address: string }).address
+            : '';
+
+      if (!changeAddress) {
+        throw new Error('Unable to get payment address from wallet.');
       }
 
-      const stake = rewardAddresses[0];
-      setStakeAddress(stake);
+      const walletAddress = changeAddress;
+      setStakeAddress(walletAddress);
 
       const nonceRes = await fetch(`${BACKEND_URL}/auth/nonce`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stakeAddress: stake }),
+        body: JSON.stringify({ stakeAddress: walletAddress }),
       });
 
       const nonceData = await nonceRes.json();
 
       if (!nonceRes.ok || !nonceData?.nonce) {
         throw new Error(
-          nonceData?.error || 'Failed to get nonce from backend.',
+          nonceData?.message || nonceData?.error || 'Failed to get nonce from backend.',
         );
       }
 
@@ -102,13 +109,14 @@ export function useWalletAuth(): UseWalletAuthReturn {
         throw new Error('Wallet does not support CIP-8 signData.');
       }
 
-      const signed = await signer(stake, payloadHex);
+      const signAddress = rewardAddresses?.[0] ?? walletAddress;
+      const signed = await signer(signAddress, payloadHex);
 
       const verifyRes = await fetch(`${BACKEND_URL}/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          stakeAddress: stake,
+          stakeAddress: walletAddress,
           nonce,
           signature: signed.signature,
           key: signed.key,
@@ -128,7 +136,7 @@ export function useWalletAuth(): UseWalletAuthReturn {
       if (verifyData?.needProfile) {
         if (typeof window !== 'undefined') {
           const setup = {
-            stakeAddress: stake,
+            stakeAddress: walletAddress,
             roles: (Array.isArray(verifyData.roles) ? verifyData.roles : []) as Role[],
           };
           window.sessionStorage.setItem(

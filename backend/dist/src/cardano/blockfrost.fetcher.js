@@ -123,7 +123,6 @@ class BlockfrostFetcher {
         return this._get(`/accounts/${rewardAddress}/addresses/assets`);
     }
     async fetchUtxoByAddress(address) {
-        var _a;
         const allUtxos = [];
         const pageSize = 100;
         let currentPage = 1;
@@ -140,10 +139,6 @@ class BlockfrostFetcher {
             return allUtxos;
         }
         catch (err) {
-            if (axios_1.default.isAxiosError(err) && ((_a = err.response) === null || _a === void 0 ? void 0 : _a.status) === 404) {
-                const baseUrl = this._axiosInstance.defaults.baseURL || "";
-                console.error("[Blockfrost 404] GET /addresses/{address}/utxos — address:", address.slice(0, 40) + "...", "| baseURL:", baseUrl);
-            }
             throw this._parseHttpError(err);
         }
     }

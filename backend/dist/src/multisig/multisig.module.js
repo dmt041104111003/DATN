@@ -10,12 +10,14 @@ exports.MultisigModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_module_1 = require("../config/config.module");
 const multisig_service_1 = require("./multisig.service");
+const multisig_controller_1 = require("./multisig.controller");
 let MultisigModule = class MultisigModule {
 };
 exports.MultisigModule = MultisigModule;
 exports.MultisigModule = MultisigModule = __decorate([
     (0, common_1.Module)({
         imports: [config_module_1.ConfigModule],
+        controllers: [multisig_controller_1.MultisigController],
         providers: [multisig_service_1.MultisigService],
         exports: [multisig_service_1.MultisigService],
     })

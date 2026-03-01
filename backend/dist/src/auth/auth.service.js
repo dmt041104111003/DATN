@@ -13,9 +13,40 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const crypto_1 = require("crypto");
 const jwt = require("jsonwebtoken");
+const bech32_1 = require("bech32");
 const config_service_1 = require("../config/config.service");
 const prisma_service_1 = require("../prisma/prisma.service");
 const cloudinary_1 = require("cloudinary");
+function isPaymentAddress(addr) {
+    const s = (addr || "").trim();
+    return s.startsWith("addr_test1") || s.startsWith("addr1");
+}
+function hexToBech32Address(hex, network) {
+    const raw = (hex || "").trim().toLowerCase();
+    if (!/^[0-9a-f]+$/.test(raw))
+        return null;
+    const len = raw.length;
+    let bytes;
+    if (len === 56) {
+        const pkh = Buffer.from(raw, "hex");
+        const header = network === "mainnet" ? 0x21 : 0x20;
+        bytes = Buffer.concat([Buffer.from([header]), pkh]);
+    }
+    else if (len === 58 || len === 114) {
+        bytes = Buffer.from(raw, "hex");
+    }
+    else {
+        return null;
+    }
+    try {
+        const words = bech32_1.bech32.toWords(bytes);
+        const hrp = network === "mainnet" ? "addr" : "addr_test";
+        return bech32_1.bech32.encode(hrp, words, 1000);
+    }
+    catch (_a) {
+        return null;
+    }
+}
 let AuthService = class AuthService {
     constructor(config, prisma) {
         this.config = config;
@@ -33,28 +64,52 @@ let AuthService = class AuthService {
         }
     }
     generateNonce(stakeAddress) {
+        let addr = (stakeAddress || "").trim();
+        if (!isPaymentAddress(addr)) {
+            const network = this.config.appNetwork === "mainnet" ? "mainnet" : "preprod";
+            const fromHex = hexToBech32Address(addr, network);
+            if (fromHex)
+                addr = fromHex;
+        }
+        if (!isPaymentAddress(addr)) {
+            const hint = addr.length > 0
+                ? ` Received: ${addr.slice(0, 30)}${addr.length > 30 ? "..." : ""}`
+                : " Received empty or invalid type.";
+            throw new common_1.BadRequestException("Address must be a payment address (addr_test1... or addr1...) or a valid hex (56, 58 or 114 chars)." +
+                hint);
+        }
         const nonce = (0, crypto_1.randomBytes)(32).toString("hex");
-        this.nonceStore.set(stakeAddress, nonce);
+        this.nonceStore.set(addr, nonce);
         return nonce;
     }
     async verifyAndIssueToken(params) {
         var _a, _b;
         const { stakeAddress, nonce, signature, key } = params;
-        const expectedNonce = this.nonceStore.get(stakeAddress);
+        let addr = (stakeAddress || "").trim();
+        if (!isPaymentAddress(addr)) {
+            const network = this.config.appNetwork === "mainnet" ? "mainnet" : "preprod";
+            const fromHex = hexToBech32Address(addr, network);
+            if (fromHex)
+                addr = fromHex;
+        }
+        if (!isPaymentAddress(addr)) {
+            throw new common_1.BadRequestException("Address must be a payment address (addr_test1... or addr1...) or a valid hex (56, 58 or 114 chars).");
+        }
+        const expectedNonce = this.nonceStore.get(addr);
         if (!expectedNonce || expectedNonce !== nonce) {
             throw new common_1.UnauthorizedException("Invalid or expired nonce.");
         }
-        this.nonceStore.delete(stakeAddress);
+        this.nonceStore.delete(addr);
         if (!signature || !key) {
             throw new common_1.UnauthorizedException("Missing signature or public key.");
         }
         const wallet = await this.prisma.wallet.upsert({
-            where: { address: stakeAddress },
+            where: { address: addr },
             update: {
                 lastLogin: new Date(),
             },
             create: {
-                address: stakeAddress,
+                address: addr,
                 lastLogin: new Date(),
             },
         });
@@ -77,8 +132,8 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
         }
         const payload = {
-            sub: stakeAddress,
-            stakeAddress,
+            sub: addr,
+            stakeAddress: addr,
             profileId: profile.id,
             role: profile.role.code,
             displayName: profile.displayName,
@@ -102,13 +157,23 @@ let AuthService = class AuthService {
     async createProfileAndIssueToken(params) {
         var _a, _b;
         const { stakeAddress, roleId, displayName, location, coordinates } = params;
+        let addr = (stakeAddress || "").trim();
+        if (!isPaymentAddress(addr)) {
+            const network = this.config.appNetwork === "mainnet" ? "mainnet" : "preprod";
+            const fromHex = hexToBech32Address(addr, network);
+            if (fromHex)
+                addr = fromHex;
+        }
+        if (!isPaymentAddress(addr)) {
+            throw new common_1.BadRequestException("Address must be a payment address (addr_test1... or addr1...) or a valid hex (56, 58 or 114 chars).");
+        }
         const wallet = await this.prisma.wallet.upsert({
-            where: { address: stakeAddress },
+            where: { address: addr },
             update: {
                 lastLogin: new Date(),
             },
             create: {
-                address: stakeAddress,
+                address: addr,
                 lastLogin: new Date(),
             },
         });
@@ -140,8 +205,8 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
         }
         const payload = {
-            sub: stakeAddress,
-            stakeAddress,
+            sub: addr,
+            stakeAddress: addr,
             profileId: profile.id,
             role: profile.role.code,
             displayName: profile.displayName,
@@ -316,6 +381,27 @@ let AuthService = class AuthService {
                 location: (_a = p.location) !== null && _a !== void 0 ? _a : null,
                 coordinates: (_b = p.coordinates) !== null && _b !== void 0 ? _b : null,
                 role: (_d = (_c = p.role) === null || _c === void 0 ? void 0 : _c.code) !== null && _d !== void 0 ? _d : null,
+            });
+        });
+    }
+    async listProfilesByRoleCode(roleCode) {
+        const code = (roleCode || "").trim().toUpperCase();
+        if (!code)
+            return [];
+        const role = await this.prisma.role.findUnique({ where: { code } });
+        if (!role)
+            return [];
+        const profiles = await this.prisma.profile.findMany({
+            where: { roleId: role.id },
+            select: { id: true, displayName: true, walletAddress: true },
+            orderBy: { displayName: "asc" },
+        });
+        return profiles.map((p) => {
+            var _a;
+            return ({
+                id: p.id,
+                displayName: (_a = p.displayName) !== null && _a !== void 0 ? _a : "",
+                walletAddress: p.walletAddress,
             });
         });
     }

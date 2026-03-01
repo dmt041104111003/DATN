@@ -30,6 +30,7 @@ export declare class TraceService {
         utxoAddresses?: string[];
     }): Promise<{
         unsignedTx: string;
+        policyId?: string;
     }>;
     update(params: {
         changeAddress: string;
@@ -68,6 +69,8 @@ export declare class TraceService {
         standard?: string;
         properties?: object;
         metadata?: object;
+        policyId?: string;
+        receivers?: string[];
     }): Promise<void>;
     submitSignedTx(signedTxInput: string, fromBase64?: boolean): Promise<{
         txHash: string;

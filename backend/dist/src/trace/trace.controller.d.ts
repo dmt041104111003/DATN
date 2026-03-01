@@ -16,6 +16,7 @@ export declare class TraceController {
     }>;
     mint(body: MintTraceDto): Promise<{
         unsignedTx: string;
+        policyId?: string;
     }>;
     update(body: UpdateTraceDto): Promise<{
         unsignedTx: string;

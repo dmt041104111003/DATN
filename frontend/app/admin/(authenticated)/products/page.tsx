@@ -52,6 +52,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const lastAddedReceiverRef = useRef<string | null>(null);
 
   useEffect(() => {
     const account = readAccountFromToken();
@@ -99,6 +100,25 @@ export default function ProductsPage() {
   }, []);
 
   useEffect(() => {
+    const n = receiverList.length;
+    if (receiverDisplayNames.length > n) {
+      setReceiverDisplayNames((names) => names.slice(0, n));
+    }
+    if (receiverLocations) {
+      const parts = receiverLocations.split(';').map((s) => s.trim()).filter(Boolean);
+      if (parts.length > n) {
+        setReceiverLocations(parts.slice(0, n).join('; '));
+      }
+    }
+    if (receiverCoordinates) {
+      const parts = receiverCoordinates.split(';').map((s) => s.trim()).filter(Boolean);
+      if (parts.length > n) {
+        setReceiverCoordinates(parts.slice(0, n).join(';'));
+      }
+    }
+  }, [receiverList.length]);
+
+  useEffect(() => {
     setPage(1);
   }, [searchQuery]);
 
@@ -122,8 +142,16 @@ export default function ProductsPage() {
 
   const addReceiverFromProfile = (profile: ProfileOption) => {
     if (!profile.coordinates) return;
+    if (lastAddedReceiverRef.current === profile.walletAddress) {
+      lastAddedReceiverRef.current = null;
+      return;
+    }
+    lastAddedReceiverRef.current = profile.walletAddress;
     setReceiverList((prev) => {
-      if (prev.includes(profile.walletAddress)) return prev;
+      if (prev.includes(profile.walletAddress)) {
+        lastAddedReceiverRef.current = null;
+        return prev;
+      }
       setReceiverDisplayNames((names) => [...names, profile.displayName]);
       setReceiverLocations((locPrev) =>
         locPrev ? `${locPrev}; ${profile.location ?? ''}` : (profile.location ?? '')
@@ -131,6 +159,9 @@ export default function ProductsPage() {
       setReceiverCoordinates((coordPrev) =>
         coordPrev ? `${coordPrev};${profile.coordinates}` : (profile.coordinates ?? '')
       );
+      queueMicrotask(() => {
+        lastAddedReceiverRef.current = null;
+      });
       return [...prev, profile.walletAddress];
     });
   };
@@ -273,8 +304,21 @@ export default function ProductsPage() {
               image: imageUrl || '',
               standard: 'Traceability-v1',
               properties,
+              metadata: { name: nameEn, image: imageUrl || '', standard: 'Traceability-v1' },
+              receivers: receiverList.length ? receiverList : [account.stakeAddress],
             }
-          : { txHash, assetName, name: nameEn, image: imageUrl || '', minterProfileId: profileId };
+          : {
+              txHash,
+              assetName,
+              name: nameEn,
+              image: imageUrl || '',
+              minterProfileId: profileId,
+              policyId: data.policyId,
+              standard: 'Traceability-v1',
+              properties,
+              metadata: { name: nameEn, image: imageUrl || '', standard: 'Traceability-v1' },
+              receivers: receiverList.length ? receiverList : [account.stakeAddress],
+            };
         const confirmRes = await fetch(confirmUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { blockfrostProvider, blockfrostFetcher } from "@app/cardano/standalone";
 import { describe, test, expect, beforeEach, jest } from "@jest/globals";
-import { deserializeAddress, MeshWallet, resolvePaymentKeyHash, stringToHex } from "@meshsdk/core";
+import { deserializeAddress, MeshWallet, resolvePaymentKeyHash, stringToHex, cst } from "@meshsdk/core";
 import type { UTxO } from "@meshsdk/core";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -20,15 +20,19 @@ const LEAF_WORDS =
   process.env.LEAF?.trim()?.split(" ").filter(Boolean) ?? [];
 const hasAppWallet = APP_WORDS.length >= 15;
 const hasUserWallet = USER_WORDS.length >= 15;
-const hasEWallet = E_WORDS.length >= 15;
+const hasEWallet = E_WORDS.length >= 15; // ví E: set E_MNEMONIC (hoặc E_ADDRESS) nếu dùng 2-of-2
 const hasLeafWallet = LEAF_WORDS.length >= 15;
 
+// Địa chỉ ví E (bech32): set E_ADDRESS trong .env nếu chỉ có địa chỉ mà không có E_MNEMONIC
 const E_ADDRESS = process.env.E_ADDRESS?.trim() ?? "addr_test1qr9ql9xgnntlwrtqklw8uand62usxq6y4gknrta58m8r0dcswr2qa03gpcus5s630ncctdjfjg7x4f802zqfy0xd9mlqndztal";
 
+// Lock/Unlock NFT + ADA: dùng policyId từ Cip68Contract (cùng plutus với Traceability). Nếu set MULTISIG_NFT_POLICY_ID thì dùng giá trị đó. Nếu set MULTISIG_NFT_ASSET_NAME thì dùng đúng tên asset đã mint (vd: C2VN-xxx), không phải metadata.name "Cam sành XNK".
+// Unit NFT 222 = policyId + "000de140" + hex(assetName); cip68.contract dùng stringToHex(assetName) (UTF-8 → hex).
 const CIP68_LABEL_222 = "000de140";
 const MULTISIG_NFT_POLICY_ID = process.env.MULTISIG_NFT_POLICY_ID?.trim() ?? "df7339e888a9b8d33302f6eda9e4cfb02fb37057cee7b25a64fd6276";
-const MULTISIG_NFT_ASSET_NAME = process.env.MULTISIG_NFT_ASSET_NAME?.trim() ?? "chuoitim-mm1r8bem-ncmjs8";
+const MULTISIG_NFT_ASSET_NAME = process.env.MULTISIG_NFT_ASSET_NAME?.trim() ?? "chuoitim-mm73raz2-thzr3s";
 
+/** Nếu set MULTISIG_PLUTUS_PATH thì dùng plutus đó (Lock/Unlock phải cùng script). Có thể set MULTISIG_VALIDATOR_TITLE (vd multi_sig_wallet.multisig.spend). */
 function getMultisigContractOpts(): { plutus?: Plutus; validatorTitle?: string } {
   const path = process.env.MULTISIG_PLUTUS_PATH?.trim();
   if (!path) return {};
@@ -39,6 +43,7 @@ function getMultisigContractOpts(): { plutus?: Plutus; validatorTitle?: string }
   return { plutus, validatorTitle: title || (hasAlt ? "multi_sig_wallet.multisig.spend" : undefined) };
 }
 
+/** Unit NFT CIP68 (label 222): policyId + 000de140 + stringToHex(assetName). Khớp với cip68.contract.ts. */
 function nftUnitFromPolicyAndName(policyId: string, assetName: string): string {
   if (!policyId || !assetName) return "";
   const hexName =
@@ -48,6 +53,7 @@ function nftUnitFromPolicyAndName(policyId: string, assetName: string): string {
   return policyId + CIP68_LABEL_222 + hexName;
 }
 
+/** Tìm unit NFT 222 trong ví: ưu tiên unit từ MULTISIG_NFT_ASSET_NAME (nếu set), không thì lấy bất kỳ unit nào có prefix policyId + 000de140. */
 function findNft222UnitInUtxos(
   utxos: UTxO[],
   policyId: string,
@@ -73,6 +79,7 @@ function findNft222UnitInUtxos(
   return null;
 }
 
+/** Tìm UTxO tại script có chứa NFT 222. Nếu truyền nftUnit thì chỉ lấy UTxO chứa đúng unit đó; không thì lấy bất kỳ (prefix policyId + 000de140). */
 function findScriptUtxoWithNft222(
   scriptUtxos: UTxO[],
   policyId: string,
@@ -91,6 +98,7 @@ function findScriptUtxoWithNft222(
   );
 }
 
+/** Lấy pkE (hex) từ E_MNEMONIC hoặc E_ADDRESS. */
 async function getPkE(): Promise<string | null> {
   if (hasEWallet && E_WORDS.length >= 15) {
     const walletE = new MeshWallet({
@@ -106,6 +114,7 @@ async function getPkE(): Promise<string | null> {
   return null;
 }
 
+/** Lấy pkLeaf (hex) từ LEAF (mnemonic). */
 async function getPkLeaf(): Promise<string | null> {
   if (hasLeafWallet && LEAF_WORDS.length >= 15) {
     const walletLeaf = new MeshWallet({
@@ -120,6 +129,7 @@ async function getPkLeaf(): Promise<string | null> {
   return null;
 }
 
+/** Lấy pk minter thật từ datum Ref100 của NFT (sử dụng metadata._pk hoặc getPkHash). */
 async function getMinterPkFromRef100(policyId: string, assetName: string): Promise<string> {
   const refUnit = buildRef100Unit(policyId, assetName);
   const txList = await blockfrostFetcher.fetchAssetTransactions(refUnit);
@@ -199,13 +209,14 @@ describe("Multisig - Lock", function () {
         "addr_test1qqexzg0fv0g3hdrhgng620tx09s6rgr3m29njh6mwdc6csvga0grgdn397050dkwm6xkh5snhdeuw2xq30wydcv67vnszvde8g"
       ),
     ];
-    const threshold = ownersPkh.length;
+    const threshold = ownersPkh.length; // tất cả owner phải ký
 
     const assets = [
       { unit: "lovelace", quantity: "2000000" },
       { unit: nftUnit, quantity: "1" },
     ];
 
+    // Người nhận NFT: ví E mặc định (trong chuỗi traceability của Ref100).
     const recipientPkh = resolvePaymentKeyHash(E_ADDRESS);
 
     const unsignedLock = await contract.buildLockTx({
@@ -273,15 +284,18 @@ describe("Multisig - Unlock", function () {
     const datum = await contract.parseDatumFromUtxo(ourUtxo!);
     expect(datum.recipientPkh).toBeDefined();
 
+    // Xác định owners thực tế từ datum và khớp với các ví mà ta có (APP, E_MNEMONIC, LEAF).
     const ownersFromDatum = datum.ownersPkh;
     expect(ownersFromDatum.length).toBeGreaterThan(0);
 
     const signingOwnersPkh: string[] = [];
 
+    // USER (ví đang chạy test Unlock)
     if (ownersFromDatum.includes(pk)) {
       signingOwnersPkh.push(pk);
     }
 
+    // APP (minter Ref100 thực tế, từ APP_MNEMONIC)
     let walletApp: MeshWallet | null = null;
     let pkApp: string | null = null;
     if (hasAppWallet && APP_WORDS.length >= 15) {
@@ -298,6 +312,7 @@ describe("Multisig - Unlock", function () {
       }
     }
 
+    // Ví E từ E_MNEMONIC
     let walletE: MeshWallet | null = null;
     let pkE: string | null = null;
     if (hasEWallet && E_WORDS.length >= 15) {
@@ -314,6 +329,7 @@ describe("Multisig - Unlock", function () {
       }
     }
 
+    // Ví Leaf từ LEAF (mnemonic riêng)
     let walletLeaf: MeshWallet | null = null;
     let pkLeaf: string | null = null;
     if (hasLeafWallet && LEAF_WORDS.length >= 15) {
@@ -332,6 +348,7 @@ describe("Multisig - Unlock", function () {
 
     expect(signingOwnersPkh.length).toBeGreaterThanOrEqual(datum.threshold);
 
+    // Chọn outputAddress đúng theo recipient trong datum
     let outputAddress = changeAddress;
     if (datum.recipientPkh === pk) {
       outputAddress = changeAddress;
@@ -356,6 +373,10 @@ describe("Multisig - Unlock", function () {
       changeAddress,
       utxos,
     });
+    const txDecoded = cst.deserializeTx(unsignedUnlock);
+    const reqSigners = txDecoded.body().requiredSigners();
+    expect(reqSigners).toBeDefined();
+    expect(reqSigners!.size()).toBeGreaterThanOrEqual(datum.threshold);
     let signedUnlock = await wallet.signTx(unsignedUnlock, signingOwnersPkh.length > 1);
     if (walletApp && pkApp && signingOwnersPkh.includes(pkApp)) {
       signedUnlock = await walletApp.signTx(signedUnlock, true);

@@ -172,16 +172,6 @@ export class BlockfrostFetcher {
       }
       return allUtxos;
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 404) {
-        const baseUrl =
-          (this._axiosInstance.defaults.baseURL as string) || "";
-        console.error(
-          "[Blockfrost 404] GET /addresses/{address}/utxos — address:",
-          address.slice(0, 40) + "...",
-          "| baseURL:",
-          baseUrl
-        );
-      }
       throw this._parseHttpError(err);
     }
   }

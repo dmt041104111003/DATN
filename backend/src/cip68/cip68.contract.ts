@@ -66,7 +66,7 @@ export class Cip68Contract extends MeshAdapter {
           );
           if (existUtXOwithUnit?.output?.plutusData) {
             throw new Error(
-              `Asset name "${assetName}" already minted. Mỗi QR phải dùng asset name duy nhất (ví dụ thêm suffix: ${assetName}-001, ${assetName}-002).`
+              `Asset name "${assetName}" already minted. Each QR must use a unique asset name (e.g. add suffix: ${assetName}-001, ${assetName}-002).`
             );
           } else {
             const receiverKey = !isEmpty(receiver) ? receiver : walletAddress;
@@ -179,7 +179,7 @@ export class Cip68Contract extends MeshAdapter {
             receivers.some((r) => r.pubKeyHash === walletPk);
           if (!inChain) {
             throw new Error(
-              "Ví không trong chuỗi (địa chỉ không có trong metadata.receivers). Burn bị từ chối bởi validator."
+              "Wallet not in chain (address not in metadata.receivers). Burn rejected by validator."
             );
           }
         }

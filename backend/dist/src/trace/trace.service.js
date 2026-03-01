@@ -49,7 +49,7 @@ let TraceService = class TraceService {
         });
     }
     async mint(params) {
-        var _a, _b;
+        var _a, _b, _c;
         const contract = this.createContract(params.changeAddress, {
             walletUtxos: params.walletUtxos,
             utxoAddresses: params.utxoAddresses,
@@ -68,7 +68,7 @@ let TraceService = class TraceService {
                 !params.receiverCoordinates ||
                 !params.minterLocation ||
                 !params.minterCoordinates) {
-                throw new common_1.BadRequestException("Cần metadata hoặc đủ (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
+                throw new common_1.BadRequestException("Need metadata or all of (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
             }
             const addrObj = (0, core_1.deserializeAddress)(params.changeAddress);
             const receiversPk = params.receivers.map((addr) => (0, core_1.resolvePaymentKeyHash)(addr)).join(",");
@@ -89,7 +89,8 @@ let TraceService = class TraceService {
         const unsignedTx = await contract.mint([
             { assetName: params.assetName, metadata, quantity: "1", receiver },
         ]);
-        return { unsignedTx };
+        const policyId = (_c = contract.policyId) !== null && _c !== void 0 ? _c : undefined;
+        return { unsignedTx, policyId };
     }
     async update(params) {
         var _a;
@@ -109,7 +110,7 @@ let TraceService = class TraceService {
                 !params.receiverCoordinates ||
                 !params.minterLocation ||
                 !params.minterCoordinates) {
-                throw new common_1.BadRequestException("Cần metadata hoặc đủ (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
+                throw new common_1.BadRequestException("Need metadata or all of (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
             }
             const addrObj = (0, core_1.deserializeAddress)(params.changeAddress);
             const receiversPk = params.receivers.map((addr) => (0, core_1.resolvePaymentKeyHash)(addr)).join(",");
@@ -142,22 +143,27 @@ let TraceService = class TraceService {
         return { unsignedTx };
     }
     async recordTx(params) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         const { action, txHash, assetName, profileId } = params;
         const prisma = this.prisma;
         if (action === "MINT") {
             const name = (_a = params.name) !== null && _a !== void 0 ? _a : "";
             const image = (_b = params.image) !== null && _b !== void 0 ? _b : "";
+            const properties = params.properties != null ? params.properties : {};
+            const metadata = params.metadata != null && typeof params.metadata === "object"
+                ? params.metadata
+                : { name, image, standard: (_c = params.standard) !== null && _c !== void 0 ? _c : "Traceability-v1" };
             await prisma.productBatch.upsert({
                 where: { id: assetName },
                 create: {
                     id: assetName,
                     name,
                     image: image || null,
-                    standard: (_c = params.standard) !== null && _c !== void 0 ? _c : "Traceability-v1",
-                    properties: (_d = params.properties) !== null && _d !== void 0 ? _d : undefined,
-                    metadata: (_e = params.metadata) !== null && _e !== void 0 ? _e : undefined,
+                    standard: (_d = params.standard) !== null && _d !== void 0 ? _d : "Traceability-v1",
+                    properties,
+                    metadata,
                     mintTxHash: txHash,
+                    policyId: (_e = params.policyId) !== null && _e !== void 0 ? _e : undefined,
                     minterProfileId: profileId,
                 },
                 update: {
@@ -165,13 +171,26 @@ let TraceService = class TraceService {
                     name,
                     image: image || null,
                     standard: (_f = params.standard) !== null && _f !== void 0 ? _f : "Traceability-v1",
-                    properties: (_g = params.properties) !== null && _g !== void 0 ? _g : undefined,
-                    metadata: (_h = params.metadata) !== null && _h !== void 0 ? _h : undefined,
+                    properties,
+                    metadata,
+                    policyId: (_g = params.policyId) !== null && _g !== void 0 ? _g : undefined,
                 },
             });
             await prisma.movementLog.create({
                 data: { batchId: assetName, action: "MINT", roleAtHop: "minter", txHash, fromProfileId: profileId },
             });
+            const receivers = (_h = params.receivers) !== null && _h !== void 0 ? _h : [];
+            if (receivers.length > 0) {
+                await prisma.roadmap.createMany({
+                    data: receivers.map((receiverAddress, hopIndex) => ({
+                        batchId: assetName,
+                        receiverAddress,
+                        hopIndex,
+                        action: "MINT",
+                        txHash,
+                    })),
+                });
+            }
             return;
         }
         const batch = await prisma.productBatch.findUnique({ where: { id: assetName } });
@@ -185,19 +204,32 @@ let TraceService = class TraceService {
                     lastUpdateTxHash: txHash,
                     lastUpdateAt: new Date().toISOString(),
                 });
+            const nextProperties = params.properties != null ? params.properties : (_j = batch.properties) !== null && _j !== void 0 ? _j : {};
             await prisma.productBatch.update({
                 where: { id: assetName },
                 data: {
-                    name: (_j = params.name) !== null && _j !== void 0 ? _j : batch.name,
-                    image: (_k = params.image) !== null && _k !== void 0 ? _k : batch.image,
-                    standard: (_l = params.standard) !== null && _l !== void 0 ? _l : batch.standard,
-                    properties: (_m = params.properties) !== null && _m !== void 0 ? _m : batch.properties,
+                    name: (_k = params.name) !== null && _k !== void 0 ? _k : batch.name,
+                    image: (_l = params.image) !== null && _l !== void 0 ? _l : batch.image,
+                    standard: (_m = params.standard) !== null && _m !== void 0 ? _m : batch.standard,
+                    properties: nextProperties,
                     metadata: nextMetadata,
                 },
             });
             await prisma.movementLog.create({
                 data: { batchId: assetName, action: "UPDATE", roleAtHop: "updater", txHash, fromProfileId: profileId },
             });
+            const receivers = (_o = params.receivers) !== null && _o !== void 0 ? _o : [];
+            if (receivers.length > 0) {
+                await prisma.roadmap.createMany({
+                    data: receivers.map((receiverAddress, hopIndex) => ({
+                        batchId: assetName,
+                        receiverAddress,
+                        hopIndex,
+                        action: "UPDATE",
+                        txHash,
+                    })),
+                });
+            }
             return;
         }
         await prisma.productBatch.update({
@@ -213,6 +245,18 @@ let TraceService = class TraceService {
         await prisma.movementLog.create({
             data: { batchId: assetName, action: "REVOKE", roleAtHop: "revoker", txHash, fromProfileId: profileId },
         });
+        const receivers = (_p = params.receivers) !== null && _p !== void 0 ? _p : [];
+        if (receivers.length > 0) {
+            await prisma.roadmap.createMany({
+                data: receivers.map((receiverAddress, hopIndex) => ({
+                    batchId: assetName,
+                    receiverAddress,
+                    hopIndex,
+                    action: "REVOKE",
+                    txHash,
+                })),
+            });
+        }
     }
     async submitSignedTx(signedTxInput, fromBase64 = false) {
         var _a, _b, _c, _d, _e;
@@ -222,7 +266,7 @@ let TraceService = class TraceService {
                 cborBuffer = Buffer.from(signedTxInput, "base64");
             }
             catch (_f) {
-                throw new common_1.BadRequestException("signedTxBase64 không hợp lệ");
+                throw new common_1.BadRequestException("signedTxBase64 is invalid");
             }
         }
         else {
@@ -250,7 +294,7 @@ let TraceService = class TraceService {
                     signedTxHex = Buffer.from(bytes).toString("hex");
                 }
                 catch (_h) {
-                    throw new common_1.BadRequestException("signedTx phải là hex hoặc base64");
+                    throw new common_1.BadRequestException("signedTx must be hex or base64");
                 }
             }
             cborBuffer = Buffer.from(signedTxHex, "hex");
@@ -259,7 +303,7 @@ let TraceService = class TraceService {
         const isCborList = first >= 0x80 && first <= 0x9f;
         const isCborListLong = first === 0x98 && cborBuffer.length > 1;
         if (!isCborList && !isCborListLong) {
-            throw new common_1.BadRequestException(`signedTx không phải CBOR tx hợp lệ (byte đầu 0x${first.toString(16).padStart(2, "0")}, độ dài ${cborBuffer.length}). Ví có thể trả format khác.`);
+            throw new common_1.BadRequestException(`signedTx is not valid CBOR tx (first byte 0x${first.toString(16).padStart(2, "0")}, length ${cborBuffer.length}). Wallet may return a different format.`);
         }
         const txHash = await this.cardano.blockfrostFetcher.submitTx(cborBuffer);
         return { txHash };

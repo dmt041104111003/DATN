@@ -1,5 +1,15 @@
 import type { UTxO } from "@meshsdk/core";
-import type { MultisigContractOpts, MultisigDatum } from "./multisig.types";
+import type { Plutus } from "../types";
+export type MultisigDatum = {
+    ownersPkh: string[];
+    threshold: number;
+    recipientPkh: string;
+};
+export type MultisigContractOpts = {
+    plutus?: Plutus;
+    appNetwork?: "mainnet" | "preprod" | "preview";
+    validatorTitle?: string;
+};
 export declare class MultisigContract {
     private plutus;
     private appNetwork;
@@ -10,6 +20,7 @@ export declare class MultisigContract {
     private getValidator;
     getScriptCbor(): string;
     getScriptAddress(): string;
+    getAddressFromPkh(pkhHex: string): string;
     buildDatum(d: MultisigDatum): {
         alternative: number;
         fields: [string[], number, string];
@@ -36,4 +47,6 @@ export declare class MultisigContract {
         utxos: UTxO[];
     }): Promise<string>;
     parseDatumFromUtxo(utxo: UTxO): Promise<MultisigDatum>;
+    private getAllowedPkhsFromRef100ByNftUnit;
+    private assertRecipientAllowedByRef100;
 }

@@ -46,6 +46,8 @@ export declare class MintConfirmDto {
     standard?: string;
     properties?: object;
     metadata?: object;
+    policyId?: string;
+    receivers?: string[];
 }
 export declare class UpdateConfirmDto {
     txHash: string;
@@ -56,11 +58,13 @@ export declare class UpdateConfirmDto {
     standard?: string;
     properties?: object;
     metadata?: object;
+    receivers?: string[];
 }
 export declare class RevokeConfirmDto {
     txHash: string;
     assetName: string;
     profileId: number;
+    receivers?: string[];
 }
 export declare class SubmitTxDto {
     signedTx?: string;

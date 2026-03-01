@@ -22,7 +22,7 @@ class Cip68Contract extends mesh_adapter_1.MeshAdapter {
                 }
                 const existUtXOwithUnit = await this.getAddressUTXOAsset(this.storeAddress, this.policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(assetName)));
                 if ((_a = existUtXOwithUnit === null || existUtXOwithUnit === void 0 ? void 0 : existUtXOwithUnit.output) === null || _a === void 0 ? void 0 : _a.plutusData) {
-                    throw new Error(`Asset name "${assetName}" already minted. Mỗi QR phải dùng asset name duy nhất (ví dụ thêm suffix: ${assetName}-001, ${assetName}-002).`);
+                    throw new Error(`Asset name "${assetName}" already minted. Each QR must use a unique asset name (e.g. add suffix: ${assetName}-001, ${assetName}-002).`);
                 }
                 else {
                     const receiverKey = !(0, lodash_1.isEmpty)(receiver) ? receiver : walletAddress;
@@ -101,7 +101,7 @@ class Cip68Contract extends mesh_adapter_1.MeshAdapter {
                     const inChain = walletPk === minterPk ||
                         receivers.some((r) => r.pubKeyHash === walletPk);
                     if (!inChain) {
-                        throw new Error("Ví không trong chuỗi (địa chỉ không có trong metadata.receivers). Burn bị từ chối bởi validator.");
+                        throw new Error("Wallet not in chain (address not in metadata.receivers). Burn rejected by validator.");
                     }
                 }
                 const mintScriptCborToUse = policyIdToUse !== this.policyId && this.minterMintScriptCbor

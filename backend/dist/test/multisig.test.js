@@ -21,7 +21,7 @@ const hasLeafWallet = LEAF_WORDS.length >= 15;
 const E_ADDRESS = (_p = (_o = process.env.E_ADDRESS) === null || _o === void 0 ? void 0 : _o.trim()) !== null && _p !== void 0 ? _p : "addr_test1qr9ql9xgnntlwrtqklw8uand62usxq6y4gknrta58m8r0dcswr2qa03gpcus5s630ncctdjfjg7x4f802zqfy0xd9mlqndztal";
 const CIP68_LABEL_222 = "000de140";
 const MULTISIG_NFT_POLICY_ID = (_r = (_q = process.env.MULTISIG_NFT_POLICY_ID) === null || _q === void 0 ? void 0 : _q.trim()) !== null && _r !== void 0 ? _r : "df7339e888a9b8d33302f6eda9e4cfb02fb37057cee7b25a64fd6276";
-const MULTISIG_NFT_ASSET_NAME = (_t = (_s = process.env.MULTISIG_NFT_ASSET_NAME) === null || _s === void 0 ? void 0 : _s.trim()) !== null && _t !== void 0 ? _t : "chuoitim-mm1r8bem-ncmjs8";
+const MULTISIG_NFT_ASSET_NAME = (_t = (_s = process.env.MULTISIG_NFT_ASSET_NAME) === null || _s === void 0 ? void 0 : _s.trim()) !== null && _t !== void 0 ? _t : "chuoitim-mm73raz2-thzr3s";
 function getMultisigContractOpts() {
     var _a, _b, _c;
     const path = (_a = process.env.MULTISIG_PLUTUS_PATH) === null || _a === void 0 ? void 0 : _a.trim();
@@ -302,6 +302,10 @@ async function getMinterPkFromRef100(policyId, assetName) {
             changeAddress,
             utxos,
         });
+        const txDecoded = core_1.cst.deserializeTx(unsignedUnlock);
+        const reqSigners = txDecoded.body().requiredSigners();
+        (0, globals_1.expect)(reqSigners).toBeDefined();
+        (0, globals_1.expect)(reqSigners.size()).toBeGreaterThanOrEqual(datum.threshold);
         let signedUnlock = await wallet.signTx(unsignedUnlock, signingOwnersPkh.length > 1);
         if (walletApp && pkApp && signingOwnersPkh.includes(pkApp)) {
             signedUnlock = await walletApp.signTx(signedUnlock, true);

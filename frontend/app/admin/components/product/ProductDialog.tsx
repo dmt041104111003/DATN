@@ -174,7 +174,9 @@ export function ProductDialog(props: Props) {
                     if (p && p.coordinates) {
                       onAddReceiverFromProfile(p);
                     }
-                    e.target.value = '';
+                    requestAnimationFrame(() => {
+                      (e.target as HTMLSelectElement).value = '';
+                    });
                   }}
                 >
                   <option value="">Select profile to add as receiver</option>

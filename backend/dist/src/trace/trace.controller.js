@@ -33,7 +33,7 @@ let TraceController = class TraceController {
     async mint(body) {
         var _a;
         if (!body.changeAddress || !body.assetName) {
-            throw new common_1.BadRequestException("Thiếu changeAddress hoặc assetName");
+            throw new common_1.BadRequestException("Missing changeAddress or assetName");
         }
         if (!body.metadata && (!body.name ||
             !body.image ||
@@ -42,7 +42,7 @@ let TraceController = class TraceController {
             !body.receiverCoordinates ||
             !body.minterLocation ||
             !body.minterCoordinates)) {
-            throw new common_1.BadRequestException("Thiếu metadata hoặc (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
+            throw new common_1.BadRequestException("Missing metadata or (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
         }
         return this.trace.mint({
             changeAddress: body.changeAddress,
@@ -64,7 +64,7 @@ let TraceController = class TraceController {
     async update(body) {
         var _a;
         if (!body.changeAddress || !body.assetName) {
-            throw new common_1.BadRequestException("Thiếu changeAddress hoặc assetName");
+            throw new common_1.BadRequestException("Missing changeAddress or assetName");
         }
         if (!body.metadata && (!body.name ||
             !body.image ||
@@ -73,7 +73,7 @@ let TraceController = class TraceController {
             !body.receiverCoordinates ||
             !body.minterLocation ||
             !body.minterCoordinates)) {
-            throw new common_1.BadRequestException("Thiếu metadata hoặc (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
+            throw new common_1.BadRequestException("Missing metadata or (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)");
         }
         return this.trace.update({
             changeAddress: body.changeAddress,
@@ -94,7 +94,7 @@ let TraceController = class TraceController {
     }
     async revoke(body) {
         if (!body.changeAddress || !body.assetName) {
-            throw new common_1.BadRequestException("Thiếu changeAddress hoặc assetName");
+            throw new common_1.BadRequestException("Missing changeAddress or assetName");
         }
         return this.trace.revoke({
             changeAddress: body.changeAddress,
@@ -107,7 +107,7 @@ let TraceController = class TraceController {
     async mintConfirm(body) {
         var _a;
         if (!body.txHash || !body.assetName || !body.name || body.minterProfileId == null) {
-            throw new common_1.BadRequestException("Thiếu txHash, assetName, name hoặc minterProfileId");
+            throw new common_1.BadRequestException("Missing txHash, assetName, name or minterProfileId");
         }
         await this.trace.recordTx({
             action: "MINT",
@@ -119,12 +119,14 @@ let TraceController = class TraceController {
             standard: body.standard,
             properties: body.properties,
             metadata: body.metadata,
+            policyId: body.policyId,
+            receivers: body.receivers,
         });
         return { ok: true };
     }
     async updateConfirm(body) {
         if (!body.txHash || !body.assetName || body.profileId == null) {
-            throw new common_1.BadRequestException("Thiếu txHash, assetName hoặc profileId");
+            throw new common_1.BadRequestException("Missing txHash, assetName or profileId");
         }
         await this.trace.recordTx({
             action: "UPDATE",
@@ -136,18 +138,20 @@ let TraceController = class TraceController {
             standard: body.standard,
             properties: body.properties,
             metadata: body.metadata,
+            receivers: body.receivers,
         });
         return { ok: true };
     }
     async revokeConfirm(body) {
         if (!body.txHash || !body.assetName || body.profileId == null) {
-            throw new common_1.BadRequestException("Thiếu txHash, assetName hoặc profileId");
+            throw new common_1.BadRequestException("Missing txHash, assetName or profileId");
         }
         await this.trace.recordTx({
             action: "REVOKE",
             txHash: body.txHash,
             assetName: body.assetName,
             profileId: body.profileId,
+            receivers: body.receivers,
         });
         return { ok: true };
     }
@@ -155,7 +159,7 @@ let TraceController = class TraceController {
         var _a;
         const raw = (_a = body.signedTxBase64) !== null && _a !== void 0 ? _a : body.signedTx;
         if (!raw || typeof raw !== "string") {
-            throw new common_1.BadRequestException("Thiếu signedTx hoặc signedTxBase64");
+            throw new common_1.BadRequestException("Missing signedTx or signedTxBase64");
         }
         return this.trace.submitSignedTx(raw, !!body.signedTxBase64);
     }

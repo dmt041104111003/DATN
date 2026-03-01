@@ -41,3 +41,12 @@ export function readAccountFromToken(): Account | null {
     coordinates: typeof payload.coordinates === 'string' ? payload.coordinates : null,
   };
 }
+
+export function getAuthToken(): string | null {
+  if (typeof document === 'undefined') return null;
+  const cookie = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${AUTH_COOKIE}=`));
+  return cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : null;
+}

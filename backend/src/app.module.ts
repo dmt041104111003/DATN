@@ -7,6 +7,13 @@ import { AuthModule } from "./auth/auth.module";
 import { MultisigModule } from "./multisig/multisig.module";
 
 @Module({
-  imports: [ConfigModule, PrismaModule, CardanoModule, TraceModule, AuthModule, MultisigModule],
+  imports: [
+    ConfigModule,
+    PrismaModule,
+    CardanoModule,
+    TraceModule,
+    AuthModule,
+    MultisigModule,
+  ],
 })
 export class AppModule {}

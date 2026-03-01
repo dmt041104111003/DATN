@@ -8,11 +8,20 @@ export declare class AuthController {
         location: string | null;
         coordinates: string | null;
     }[]>;
-    createNonce(stakeAddress?: string): {
+    listProfilesByRole(role?: string, token?: string): Promise<{
+        id: number;
+        displayName: string;
+        walletAddress: string;
+    }[]>;
+    createNonce(stakeAddress?: string | {
+        address?: string;
+    }): {
         nonce: string;
     };
     verifySignature(body: {
-        stakeAddress?: string;
+        stakeAddress?: string | {
+            address?: string;
+        };
         nonce?: string;
         signature?: string;
         key?: string;
@@ -34,7 +43,9 @@ export declare class AuthController {
         }[];
     }>;
     createProfile(body: {
-        stakeAddress?: string;
+        stakeAddress?: string | {
+            address?: string;
+        };
         roleId?: number;
         displayName?: string;
         location?: string;

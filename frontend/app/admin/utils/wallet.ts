@@ -167,7 +167,7 @@ export async function getWalletChangeAddress(): Promise<string> {
 export async function signAndSubmitWithEternl(unsignedTx: string): Promise<string> {
   const wallet = await getMeshWallet();
   if (wallet && typeof wallet.signTx === 'function' && typeof wallet.submitTx === 'function') {
-    const signedTx = await wallet.signTx(unsignedTx);
+    const signedTx = await (wallet as any).signTx(unsignedTx, true);
     if (signedTx && typeof signedTx === 'string') {
       const txHash = await wallet.submitTx(signedTx);
       if (txHash && typeof txHash === 'string') return txHash;
@@ -179,7 +179,7 @@ export async function signAndSubmitWithEternl(unsignedTx: string): Promise<strin
     throw new Error('Wallet does not support signTx.');
   }
 
-  const rawSigned = await (api as any).signTx(unsignedTx, false);
+  const rawSigned = await (api as any).signTx(unsignedTx, true);
   if (!rawSigned) {
     throw new Error('Wallet failed to sign transaction.');
   }
@@ -229,6 +229,137 @@ export async function signAndSubmitWithEternl(unsignedTx: string): Promise<strin
   return data.txHash;
 }
 
+export async function signTxPartial(unsignedTx: string): Promise<string> {
+  const wallet = await getMeshWallet();
+  if (wallet && typeof (wallet as any).signTx === 'function') {
+    // Mesh adapter merge witness với tx → luôn trả về full tx (đúng cho cosign)
+    const rawSigned = await (wallet as any).signTx(unsignedTx, true);
+    if (rawSigned && typeof rawSigned === 'string') {
+      return rawSigned;
+    }
+  }
+
+  const api = await getEternlApi();
+  if (typeof (api as any).signTx !== 'function') {
+    throw new Error('Wallet does not support signTx.');
+  }
+
+  const rawSigned = await (api as any).signTx(unsignedTx, true);
+  if (!rawSigned) {
+    throw new Error('Wallet failed to sign transaction.');
+  }
+  let signedHex: string;
+  if (typeof rawSigned === 'string') {
+    signedHex = rawSigned;
+  } else if (Array.isArray(rawSigned)) {
+    let hex = '';
+    for (let i = 0; i < rawSigned.length; i++) {
+      const b = rawSigned[i] & 0xff;
+      hex += (b >>> 4).toString(16) + (b & 0x0f).toString(16);
+    }
+    signedHex = hex;
+  } else if (rawSigned && typeof rawSigned === 'object') {
+    const v =
+      (rawSigned as any).signedTransaction ??
+      (rawSigned as any).cborTx ??
+      (rawSigned as any).tx ??
+      (rawSigned as any).cbor;
+    if (typeof v !== 'string') {
+      throw new Error('Wallet returned unexpected sign format.');
+    }
+    signedHex = v;
+  } else {
+    throw new Error('Wallet returned unexpected sign format.');
+  }
+  // Eternl CIP-30 có thể trả về chỉ witness set; nếu ngắn hơn nhiều so với input thì merge với tx gốc
+  const inputLen = unsignedTx.trim().replace(/^0x/, '').length;
+  const outLen = signedHex.trim().replace(/^0x/, '').length;
+  if (outLen < inputLen * 0.6 && inputLen > 500) {
+    try {
+      const { BrowserWallet } = await import('@meshsdk/wallet');
+      const merged = (BrowserWallet as any).addBrowserWitnesses(unsignedTx, signedHex);
+      if (merged && typeof merged === 'string') return merged;
+    } catch {
+      // fallback: trả về như cũ
+    }
+  }
+  return signedHex;
+}
+
+/**
+ * Dùng khi bạn là người ký thứ 2: nhận partial signed tx (hex), ký rồi merge witness để không mất chữ ký 1.
+ * Một số ví (Eternl) khi signTx(partialTx, true) trả về full tx nhưng CHỈ có witness của mình → cần merge thủ công.
+ */
+export async function signTxPartialForCosign(partialTxHex: string): Promise<string> {
+  const cleanPartial = partialTxHex.trim().replace(/^0x/, '');
+  const partialLen = cleanPartial.length;
+  if (partialLen < 100) {
+    throw new Error('Partial tx hex quá ngắn.');
+  }
+
+  const result = await signTxPartial(partialTxHex);
+  const cleanResult = result.trim().replace(/^0x/, '');
+  const resultLen = cleanResult.length;
+
+  if (resultLen < partialLen * 0.7) {
+    return result;
+  }
+
+  try {
+    const cst = await import('@meshsdk/core-cst');
+    const { BrowserWallet } = await import('@meshsdk/wallet');
+    const tx = cst.deserializeTx(result);
+    const ws = tx.witnessSet();
+    const wsHex = ws.toCbor().toString();
+    if (!wsHex || wsHex.length < 10) return result;
+    const merged = (BrowserWallet as any).addBrowserWitnesses(partialTxHex, wsHex);
+    if (merged && typeof merged === 'string') return merged;
+  } catch (_e) {
+    // Nếu merge lỗi (ví đã merge đúng rồi) thì trả về result
+  }
+  return result;
+}
+
+export async function submitSignedTxHex(signedTxHex: string): Promise<string> {
+  const wallet = await getMeshWallet();
+  if (wallet && typeof (wallet as any).submitTx === 'function') {
+    const txHash = await (wallet as any).submitTx(signedTxHex);
+    if (txHash && typeof txHash === 'string') return txHash;
+  }
+
+  const api = await getEternlApi();
+  if (typeof (api as any).submitTx === 'function') {
+    const txHash = await (api as any).submitTx(signedTxHex);
+    if (txHash && typeof txHash === 'string') return txHash;
+  }
+
+  const hex = signedTxHex.trim().startsWith('0x')
+    ? signedTxHex.trim().slice(2)
+    : signedTxHex.trim();
+  const bin = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bin[i / 2] = parseInt(hex.slice(i, i + 2), 16) & 0xff;
+  }
+  let binary = '';
+  for (let i = 0; i < bin.length; i++) binary += String.fromCharCode(bin[i]);
+  const signedTxBase64 = btoa(binary);
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+  const res = await fetch(`${backendUrl}/trace/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ signedTxBase64 }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || 'Submit failed.');
+  }
+  if (!data?.txHash) {
+    throw new Error('No txHash from submit.');
+  }
+  return data.txHash;
+}
+
 export async function getWalletUtxoAddresses(): Promise<string[]> {
   const networkId = await getWalletNetworkId();
   const out = new Set<string>();
@@ -254,5 +385,33 @@ export async function getWalletUtxoAddresses(): Promise<string[]> {
   addAll(used);
   addAll(unused);
   return Array.from(out);
+}
+
+export async function getWalletUtxos(): Promise<unknown[]> {
+  const wallet = await getMeshWallet();
+  if (wallet && typeof (wallet as any).getUtxos === 'function') {
+    const utxos = await (wallet as any).getUtxos();
+    return Array.isArray(utxos) ? utxos : [];
+  }
+  const api = await getEternlApi();
+  if (typeof (api as any).getUtxos === 'function') {
+    const utxos = await (api as any).getUtxos();
+    return Array.isArray(utxos) ? utxos : [];
+  }
+  throw new Error('Wallet does not support getUtxos.');
+}
+
+export async function getWalletCollateral(): Promise<unknown[]> {
+  const wallet = await getMeshWallet();
+  if (wallet && typeof (wallet as any).getCollateral === 'function') {
+    const c = await (wallet as any).getCollateral();
+    return Array.isArray(c) ? c : [];
+  }
+  const api = await getEternlApi();
+  if (typeof (api as any).getCollateral === 'function') {
+    const c = await (api as any).getCollateral();
+    return Array.isArray(c) ? c : [];
+  }
+  throw new Error('Wallet does not support getCollateral.');
 }
 

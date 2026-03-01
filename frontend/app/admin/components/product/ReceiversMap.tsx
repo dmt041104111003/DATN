@@ -57,8 +57,9 @@ export function ReceiversMap({ coordinates, locations, receiverList = [], receiv
 
   const coordList = parseCoords(coordinates);
   const locList = parseLocations(locations);
-  const items = coordList.map((coord, i) => ({
-    coord,
+  const n = receiverList.length;
+  const items = Array.from({ length: n }, (_, i) => ({
+    coord: coordList[i] ?? [0, 0],
     label: locList[i] ?? `#${i + 1}`,
     displayName: receiverDisplayNames[i] ?? '',
     shortAddress: receiverList[i] ? shortenAddress(receiverList[i]) : '',
@@ -66,14 +67,11 @@ export function ReceiversMap({ coordinates, locations, receiverList = [], receiv
   }));
 
   const handleRemove = (index: number) => {
-    const newCoords = coordList.filter((_, i) => i !== index);
-    const newLocs = locList.filter((_, i) => i !== index);
-    const newAddresses = receiverList.length === coordList.length
-      ? receiverList.filter((_, i) => i !== index).join(';')
-      : undefined;
-    const newDisplayNames = receiverDisplayNames.length === coordList.length
-      ? receiverDisplayNames.filter((_, i) => i !== index).join('\u241F')
-      : undefined;
+    const len = receiverList.length;
+    const newCoords = coordList.slice(0, len).filter((_, i) => i !== index);
+    const newLocs = locList.slice(0, len).filter((_, i) => i !== index);
+    const newAddresses = receiverList.filter((_, i) => i !== index).join(';');
+    const newDisplayNames = receiverDisplayNames.slice(0, len).filter((_, i) => i !== index).join('\u241F');
     onChange(
       newCoords.map(([la, lo]) => `${la.toFixed(6)},${lo.toFixed(6)}`).join(';'),
       newLocs.join('; '),
@@ -84,14 +82,11 @@ export function ReceiversMap({ coordinates, locations, receiverList = [], receiv
 
   const handleMove = (fromIndex: number, toIndex: number) => {
     if (toIndex < 0 || toIndex >= items.length) return;
-    const newCoords = moveItem(coordList, fromIndex, toIndex);
-    const newLocs = moveItem(locList, fromIndex, toIndex);
-    const newAddresses = receiverList.length === coordList.length
-      ? moveItem([...receiverList], fromIndex, toIndex).join(';')
-      : undefined;
-    const newDisplayNames = receiverDisplayNames.length === coordList.length
-      ? moveItem([...receiverDisplayNames], fromIndex, toIndex).join('\u241F')
-      : undefined;
+    const len = receiverList.length;
+    const newCoords = moveItem(coordList.slice(0, len), fromIndex, toIndex);
+    const newLocs = moveItem(locList.slice(0, len), fromIndex, toIndex);
+    const newAddresses = moveItem([...receiverList], fromIndex, toIndex).join(';');
+    const newDisplayNames = moveItem([...receiverDisplayNames].slice(0, len), fromIndex, toIndex).join('\u241F');
     onChange(
       newCoords.map(([la, lo]) => `${la.toFixed(6)},${lo.toFixed(6)}`).join(';'),
       newLocs.join('; '),

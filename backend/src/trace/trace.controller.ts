@@ -36,9 +36,9 @@ export class TraceController {
   @Post("mint")
   async mint(
     @Body() body: MintTraceDto,
-  ): Promise<{ unsignedTx: string }> {
+  ): Promise<{ unsignedTx: string; policyId?: string }> {
     if (!body.changeAddress || !body.assetName) {
-      throw new BadRequestException("Thiếu changeAddress hoặc assetName");
+      throw new BadRequestException("Missing changeAddress or assetName");
     }
     if (!body.metadata && (
       !body.name ||
@@ -50,7 +50,7 @@ export class TraceController {
       !body.minterCoordinates
     )) {
       throw new BadRequestException(
-        "Thiếu metadata hoặc (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
+        "Missing metadata or (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
       );
     }
     return this.trace.mint({
@@ -76,7 +76,7 @@ export class TraceController {
     @Body() body: UpdateTraceDto,
   ): Promise<{ unsignedTx: string }> {
     if (!body.changeAddress || !body.assetName) {
-      throw new BadRequestException("Thiếu changeAddress hoặc assetName");
+      throw new BadRequestException("Missing changeAddress or assetName");
     }
     if (!body.metadata && (
       !body.name ||
@@ -88,7 +88,7 @@ export class TraceController {
       !body.minterCoordinates
     )) {
       throw new BadRequestException(
-        "Thiếu metadata hoặc (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
+        "Missing metadata or (name, image, receivers, receiverLocations, receiverCoordinates, minterLocation, minterCoordinates)",
       );
     }
     return this.trace.update({
@@ -114,7 +114,7 @@ export class TraceController {
     @Body() body: RevokeTraceDto,
   ): Promise<{ unsignedTx: string }> {
     if (!body.changeAddress || !body.assetName) {
-      throw new BadRequestException("Thiếu changeAddress hoặc assetName");
+      throw new BadRequestException("Missing changeAddress or assetName");
     }
     return this.trace.revoke({
       changeAddress: body.changeAddress,
@@ -130,7 +130,7 @@ export class TraceController {
     @Body() body: MintConfirmDto,
   ): Promise<{ ok: boolean }> {
     if (!body.txHash || !body.assetName || !body.name || body.minterProfileId == null) {
-      throw new BadRequestException("Thiếu txHash, assetName, name hoặc minterProfileId");
+      throw new BadRequestException("Missing txHash, assetName, name or minterProfileId");
     }
     await this.trace.recordTx({
       action: "MINT",
@@ -142,6 +142,8 @@ export class TraceController {
       standard: body.standard,
       properties: body.properties,
       metadata: body.metadata,
+      policyId: body.policyId,
+      receivers: body.receivers,
     });
     return { ok: true };
   }
@@ -151,7 +153,7 @@ export class TraceController {
     @Body() body: UpdateConfirmDto,
   ): Promise<{ ok: boolean }> {
     if (!body.txHash || !body.assetName || body.profileId == null) {
-      throw new BadRequestException("Thiếu txHash, assetName hoặc profileId");
+      throw new BadRequestException("Missing txHash, assetName or profileId");
     }
     await this.trace.recordTx({
       action: "UPDATE",
@@ -163,6 +165,7 @@ export class TraceController {
       standard: body.standard,
       properties: body.properties,
       metadata: body.metadata,
+      receivers: body.receivers,
     });
     return { ok: true };
   }
@@ -172,13 +175,14 @@ export class TraceController {
     @Body() body: RevokeConfirmDto,
   ): Promise<{ ok: boolean }> {
     if (!body.txHash || !body.assetName || body.profileId == null) {
-      throw new BadRequestException("Thiếu txHash, assetName hoặc profileId");
+      throw new BadRequestException("Missing txHash, assetName or profileId");
     }
     await this.trace.recordTx({
       action: "REVOKE",
       txHash: body.txHash,
       assetName: body.assetName,
       profileId: body.profileId,
+      receivers: body.receivers,
     });
     return { ok: true };
   }
@@ -189,7 +193,7 @@ export class TraceController {
   ): Promise<{ txHash: string }> {
     const raw = body.signedTxBase64 ?? body.signedTx;
     if (!raw || typeof raw !== "string") {
-      throw new BadRequestException("Thiếu signedTx hoặc signedTxBase64");
+      throw new BadRequestException("Missing signedTx or signedTxBase64");
     }
     return this.trace.submitSignedTx(raw, !!body.signedTxBase64);
   }
