@@ -1,0 +1,52 @@
+import type { UTxO } from "@meshsdk/core";
+import type { Plutus } from "../types";
+export type MultisigDatum = {
+    ownersPkh: string[];
+    threshold: number;
+    recipientPkh: string;
+};
+export type MultisigContractOpts = {
+    plutus?: Plutus;
+    appNetwork?: "mainnet" | "preprod" | "preview";
+    validatorTitle?: string;
+};
+export declare class MultisigContract {
+    private plutus;
+    private appNetwork;
+    private validatorTitle;
+    private _scriptCbor;
+    private _scriptAddress;
+    constructor(opts?: MultisigContractOpts);
+    private getValidator;
+    getScriptCbor(): string;
+    getScriptAddress(): string;
+    getAddressFromPkh(pkhHex: string): string;
+    buildDatum(d: MultisigDatum): {
+        alternative: number;
+        fields: [string[], number, string];
+    };
+    buildLockTx(params: {
+        scriptAddress: string;
+        ownersPkh: string[];
+        threshold: number;
+        recipientPkh: string;
+        assets: {
+            unit: string;
+            quantity: string;
+        }[];
+        changeAddress: string;
+        utxos: UTxO[];
+    }): Promise<string>;
+    buildUnlockTx(params: {
+        scriptUtxo: UTxO;
+        outputAddress: string;
+        signingOwnersPkh: string[];
+        threshold: number;
+        collateral: UTxO;
+        changeAddress: string;
+        utxos: UTxO[];
+    }): Promise<string>;
+    parseDatumFromUtxo(utxo: UTxO): Promise<MultisigDatum>;
+    private getAllowedPkhsFromRef100ByNftUnit;
+    private assertRecipientAllowedByRef100;
+}

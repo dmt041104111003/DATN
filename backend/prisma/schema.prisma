@@ -1,0 +1,115 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Wallet {
+  address   String   @id
+  nonce     String?  @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  lastLogin DateTime?
+
+  profiles Profile[]
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  code String @unique
+
+  profiles Profile[]
+}
+
+model Profile {
+  id            Int     @id @default(autoincrement())
+  walletAddress String  @unique
+  roleId        Int
+  displayName   String
+  avatarUrl     String?
+  location      String?
+  coordinates   String?
+
+  wallet Wallet @relation(fields: [walletAddress], references: [address])
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  mintedBatches       ProductBatch[]   @relation("ProfileBatches")
+  movementsFrom       MovementLog[]    @relation("MovementFromProfile")
+  movementsTo         MovementLog[]    @relation("MovementToProfile")
+  issuedCertificates  Certificate[]    @relation("CertificateIssuer")
+}
+
+model ProductBatch {
+  id              String   @id
+  name            String
+  image           String?
+  standard        String?
+  properties      Json?
+  metadata        Json?
+  mintTxHash      String?
+  policyId        String?
+  createdAt       DateTime @default(now())
+
+  minterProfileId Int
+  minterProfile   Profile  @relation("ProfileBatches", fields: [minterProfileId], references: [id])
+
+  movements       MovementLog[]
+  certificates    Certificate[]
+  roadmaps        Roadmap[]
+}
+
+enum MovementAction {
+  MINT
+  SHIP
+  RECEIVE
+  CONSUME
+  UPDATE
+  REVOKE
+}
+
+model MovementLog {
+  id             Int            @id @default(autoincrement())
+  batchId        String
+  action         MovementAction
+  roleAtHop      String
+  txHash         String
+  timestamp      DateTime       @default(now())
+  location       String?
+  coordinates    Json?
+
+  batch          ProductBatch   @relation(fields: [batchId], references: [id])
+
+  fromProfileId  Int?
+  fromProfile    Profile?       @relation("MovementFromProfile", fields: [fromProfileId], references: [id])
+
+  toProfileId    Int?
+  toProfile      Profile?       @relation("MovementToProfile", fields: [toProfileId], references: [id])
+}
+
+model Certificate {
+  id               Int       @id @default(autoincrement())
+  title            String
+  ipfsHash         String    @unique
+  issuedAt         DateTime  @default(now())
+  expiresAt        DateTime?
+  metadata         Json?
+
+  batchId          String
+  batch            ProductBatch @relation(fields: [batchId], references: [id])
+
+  issuerProfileId  Int
+  issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
+}
+
+model Roadmap {
+  id              Int      @id @default(autoincrement())
+  batchId         String
+  receiverAddress String
+  hopIndex        Int      @default(0)
+  action          MovementAction
+  txHash          String?
+  createdAt       DateTime @default(now())
+
+  batch           ProductBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+}
+
