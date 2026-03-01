@@ -48,6 +48,75 @@ let TraceService = class TraceService {
             });
         });
     }
+    async listMyWarehouseInventory(profileId) {
+        const prisma = this.prisma;
+        const rows = await prisma.nftInventory.findMany({
+            where: {
+                profileId,
+                OR: [
+                    { status: "IN_WAREHOUSE" },
+                    { status: null },
+                ],
+            },
+            include: { batch: { select: { id: true, name: true, image: true, policyId: true } } },
+            orderBy: { mintedAt: "desc" },
+        });
+        return (rows || []).map((inv) => {
+            var _a, _b, _c, _d, _e, _f, _g;
+            return ({
+                batchId: inv.batchId,
+                batchName: (_b = (_a = inv.batch) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : inv.batchId,
+                image: (_d = (_c = inv.batch) === null || _c === void 0 ? void 0 : _c.image) !== null && _d !== void 0 ? _d : null,
+                quantity: (_e = inv.quantity) !== null && _e !== void 0 ? _e : 1,
+                mintedAt: inv.mintedAt,
+                policyId: (_g = (_f = inv.batch) === null || _f === void 0 ? void 0 : _f.policyId) !== null && _g !== void 0 ? _g : null,
+            });
+        });
+    }
+    async getLockRecipientByRoadmap(profileId, batchId) {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
+        const prisma = this.prisma;
+        const bid = (batchId || "").trim();
+        if (!bid)
+            return { recipientAddress: null };
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { walletAddress: true },
+        });
+        if (!(profile === null || profile === void 0 ? void 0 : profile.walletAddress))
+            return { recipientAddress: null };
+        const senderWallet = profile.walletAddress.trim().toLowerCase();
+        const batch = await prisma.productBatch.findUnique({
+            where: { id: bid },
+            select: {
+                minterProfileId: true,
+                minterProfile: { select: { walletAddress: true } },
+            },
+        });
+        if (!batch)
+            return { recipientAddress: null };
+        const minterWallet = (_c = (_b = (_a = batch.minterProfile) === null || _a === void 0 ? void 0 : _a.walletAddress) === null || _b === void 0 ? void 0 : _b.trim().toLowerCase()) !== null && _c !== void 0 ? _c : "";
+        if (minterWallet && senderWallet === minterWallet) {
+            const firstHop = await prisma.roadmap.findFirst({
+                where: { batchId: bid },
+                orderBy: { hopIndex: "asc" },
+                select: { receiverAddress: true },
+            });
+            return {
+                recipientAddress: (_e = (_d = firstHop === null || firstHop === void 0 ? void 0 : firstHop.receiverAddress) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : null,
+            };
+        }
+        const myHop = await prisma.roadmap.findMany({
+            where: { batchId: bid },
+            orderBy: { hopIndex: "asc" },
+            select: { hopIndex: true, receiverAddress: true },
+        });
+        const idx = myHop.findIndex((r) => (r.receiverAddress || "").trim().toLowerCase() === senderWallet);
+        if (idx < 0 || idx >= myHop.length - 1)
+            return { recipientAddress: null };
+        const next = (_h = (_g = (_f = myHop[idx + 1]) === null || _f === void 0 ? void 0 : _f.receiverAddress) === null || _g === void 0 ? void 0 : _g.trim()) !== null && _h !== void 0 ? _h : null;
+        return { recipientAddress: next };
+    }
     async mint(params) {
         var _a, _b, _c;
         const contract = this.createContract(params.changeAddress, {
@@ -142,6 +211,24 @@ let TraceService = class TraceService {
         ]);
         return { unsignedTx };
     }
+    async burn(params) {
+        const contract = this.createContract(params.changeAddress, {
+            walletUtxos: params.walletUtxos,
+            utxoAddresses: params.utxoAddresses,
+        });
+        const balance = await contract.getRftBalanceAtAddress(params.changeAddress, params.assetName, params.policyId);
+        if (balance < 1) {
+            throw new common_1.BadRequestException("Wallet does not hold this NFT. Burn is only allowed if the wallet has the NFT.");
+        }
+        const unsignedTx = await contract.burn([
+            {
+                assetName: params.assetName,
+                quantity: "1",
+                txHash: params.txHash,
+            },
+        ]);
+        return { unsignedTx };
+    }
     async recordTx(params) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
         const { action, txHash, assetName, profileId } = params;
@@ -191,6 +278,17 @@ let TraceService = class TraceService {
                     })),
                 });
             }
+            await prisma.nftInventory.upsert({
+                where: {
+                    batchId_profileId: { batchId: assetName, profileId },
+                },
+                create: {
+                    batchId: assetName,
+                    profileId,
+                    quantity: 1,
+                },
+                update: { quantity: { increment: 1 } },
+            });
             return;
         }
         const batch = await prisma.productBatch.findUnique({ where: { id: assetName } });
@@ -232,31 +330,72 @@ let TraceService = class TraceService {
             }
             return;
         }
-        await prisma.productBatch.update({
-            where: { id: assetName },
-            data: {
-                metadata: (0, trace_helpers_1.mergeDbMeta)(batch.metadata, {
-                    revokeTxHash: txHash,
-                    revokedAt: new Date().toISOString(),
-                    revoked: true,
-                }),
-            },
-        });
-        await prisma.movementLog.create({
-            data: { batchId: assetName, action: "REVOKE", roleAtHop: "revoker", txHash, fromProfileId: profileId },
-        });
-        const receivers = (_p = params.receivers) !== null && _p !== void 0 ? _p : [];
-        if (receivers.length > 0) {
-            await prisma.roadmap.createMany({
-                data: receivers.map((receiverAddress, hopIndex) => ({
-                    batchId: assetName,
-                    receiverAddress,
-                    hopIndex,
-                    action: "REVOKE",
-                    txHash,
-                })),
+        if (action === "REVOKE") {
+            await prisma.productBatch.update({
+                where: { id: assetName },
+                data: {
+                    metadata: (0, trace_helpers_1.mergeDbMeta)(batch.metadata, {
+                        revokeTxHash: txHash,
+                        revokedAt: new Date().toISOString(),
+                        revoked: true,
+                    }),
+                },
             });
+            await prisma.movementLog.create({
+                data: { batchId: assetName, action: "REVOKE", roleAtHop: "revoker", txHash, fromProfileId: profileId },
+            });
+            const receivers = (_p = params.receivers) !== null && _p !== void 0 ? _p : [];
+            if (receivers.length > 0) {
+                await prisma.roadmap.createMany({
+                    data: receivers.map((receiverAddress, hopIndex) => ({
+                        batchId: assetName,
+                        receiverAddress,
+                        hopIndex,
+                        action: "REVOKE",
+                        txHash,
+                    })),
+                });
+            }
+            return;
         }
+        if (action === "BURN") {
+            await prisma.productBatch.update({
+                where: { id: assetName },
+                data: {
+                    metadata: (0, trace_helpers_1.mergeDbMeta)(batch.metadata, {
+                        burnTxHash: txHash,
+                        burnedAt: new Date().toISOString(),
+                        burned: true,
+                    }),
+                },
+            });
+            await prisma.movementLog.create({
+                data: { batchId: assetName, action: "BURN", roleAtHop: "burner", txHash, fromProfileId: profileId },
+            });
+            await this.removeOneFromWarehouse(profileId, assetName);
+            return;
+        }
+    }
+    async removeOneFromWarehouse(profileId, batchId) {
+        const prisma = this.prisma;
+        await prisma.nftInventory.deleteMany({
+            where: { batchId, profileId },
+        });
+    }
+    async markAsShipped(profileId, batchId) {
+        const prisma = this.prisma;
+        await prisma.nftInventory.updateMany({
+            where: { batchId, profileId },
+            data: { status: "SHIPPED" },
+        });
+    }
+    async addToWarehouse(profileId, batchId) {
+        const prisma = this.prisma;
+        await prisma.nftInventory.upsert({
+            where: { batchId_profileId: { batchId, profileId } },
+            create: { batchId, profileId, quantity: 1 },
+            update: { quantity: { increment: 1 } },
+        });
     }
     async submitSignedTx(signedTxInput, fromBase64 = false) {
         var _a, _b, _c, _d, _e;

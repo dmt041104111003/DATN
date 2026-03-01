@@ -110,6 +110,9 @@ class Cip68Contract extends mesh_adapter_1.MeshAdapter {
                 const burnQuantity = q > 0 ? -q : q;
                 const burnQuantityStr = String(burnQuantity);
                 const remainingAmount = amount + burnQuantity;
+                userUtxos.forEach((u) => {
+                    unsignedTx.txIn(u.input.txHash, u.input.outputIndex);
+                });
                 unsignedTx.readOnlyTxInReference(storeUtxo.input.txHash, storeUtxo.input.outputIndex);
                 unsignedTx
                     .mintPlutusScriptV3()

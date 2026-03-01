@@ -13,6 +13,17 @@ export declare class TraceService {
         image: string | null;
         createdAt: Date;
     }[]>;
+    listMyWarehouseInventory(profileId: number): Promise<{
+        batchId: string;
+        batchName: string;
+        image: string | null;
+        quantity: number;
+        mintedAt: Date;
+        policyId: string | null;
+    }[]>;
+    getLockRecipientByRoadmap(profileId: number, batchId: string): Promise<{
+        recipientAddress: string | null;
+    }>;
     mint(params: {
         changeAddress: string;
         assetName: string;
@@ -59,8 +70,18 @@ export declare class TraceService {
     }): Promise<{
         unsignedTx: string;
     }>;
+    burn(params: {
+        changeAddress: string;
+        assetName: string;
+        txHash?: string;
+        policyId?: string;
+        walletUtxos?: UTxO[];
+        utxoAddresses?: string[];
+    }): Promise<{
+        unsignedTx: string;
+    }>;
     recordTx(params: {
-        action: "MINT" | "UPDATE" | "REVOKE";
+        action: "MINT" | "UPDATE" | "REVOKE" | "BURN";
         txHash: string;
         assetName: string;
         profileId: number;
@@ -72,6 +93,9 @@ export declare class TraceService {
         policyId?: string;
         receivers?: string[];
     }): Promise<void>;
+    removeOneFromWarehouse(profileId: number, batchId: string): Promise<void>;
+    markAsShipped(profileId: number, batchId: string): Promise<void>;
+    addToWarehouse(profileId: number, batchId: string): Promise<void>;
     submitSignedTx(signedTxInput: string, fromBase64?: boolean): Promise<{
         txHash: string;
     }>;

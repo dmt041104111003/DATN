@@ -67,6 +67,15 @@
   padding: 1.5rem;
 }
 
+.dialogActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
 .imagePreview {
   max-width: 120px;
   max-height: 120px;

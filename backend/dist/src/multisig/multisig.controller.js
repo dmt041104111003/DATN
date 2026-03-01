@@ -15,13 +15,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MultisigController = void 0;
 const common_1 = require("@nestjs/common");
 const multisig_service_1 = require("./multisig.service");
+const auth_service_1 = require("../auth/auth.service");
 const multisig_dto_1 = require("./dto/multisig.dto");
 let MultisigController = class MultisigController {
-    constructor(multisig) {
+    constructor(multisig, auth) {
         this.multisig = multisig;
+        this.auth = auth;
     }
     getScriptAddress() {
         return { scriptAddress: this.multisig.getScriptAddress() };
+    }
+    async getLockDeliveries(token) {
+        if (!token || typeof token !== "string" || !token.trim()) {
+            throw new common_1.UnauthorizedException("Missing or invalid token.");
+        }
+        const profileId = await this.auth.getProfileIdFromToken(token.trim());
+        const deliveries = await this.multisig.listLockDeliveriesForProfile(profileId);
+        return { deliveries };
+    }
+    async savePartialTx(id, token, body) {
+        var _a;
+        if (!token || typeof token !== "string" || !token.trim()) {
+            throw new common_1.UnauthorizedException("Missing or invalid token.");
+        }
+        const deliveryId = Number(id);
+        if (!Number.isInteger(deliveryId) || deliveryId < 1) {
+            throw new common_1.BadRequestException("Invalid delivery id.");
+        }
+        if (!((_a = body.partialTxHex) === null || _a === void 0 ? void 0 : _a.trim())) {
+            throw new common_1.BadRequestException("Missing partialTxHex.");
+        }
+        const profileId = await this.auth.getProfileIdFromToken(token.trim());
+        return this.multisig.savePartialSignedTx(deliveryId, profileId, body.partialTxHex.trim());
     }
     async getScriptUtxos(scriptAddress) {
         const utxos = await this.multisig.getScriptUtxos(scriptAddress);
@@ -104,6 +129,42 @@ let MultisigController = class MultisigController {
         }
         return this.multisig.inspectTx(txHex);
     }
+    async lockConfirm(body) {
+        var _a, _b, _c, _d, _e;
+        if (!((_a = body.lockTxHash) === null || _a === void 0 ? void 0 : _a.trim()) || !((_b = body.batchId) === null || _b === void 0 ? void 0 : _b.trim()) || !((_c = body.recipientAddress) === null || _c === void 0 ? void 0 : _c.trim())) {
+            throw new common_1.BadRequestException("Missing lockTxHash, batchId or recipientAddress");
+        }
+        if (!((_d = body.senderAddress) === null || _d === void 0 ? void 0 : _d.trim())) {
+            throw new common_1.BadRequestException("Missing senderAddress (người gửi)");
+        }
+        if (!Array.isArray(body.ownerAddresses)) {
+            throw new common_1.BadRequestException("ownerAddresses must be an array (danh sách owner)");
+        }
+        return this.multisig.recordLockDelivery({
+            lockTxHash: body.lockTxHash,
+            scriptOutputIndex: (_e = body.scriptOutputIndex) !== null && _e !== void 0 ? _e : 0,
+            batchId: body.batchId,
+            policyId: body.policyId,
+            recipientAddress: body.recipientAddress,
+            senderAddress: body.senderAddress,
+            ownerAddresses: body.ownerAddresses,
+        });
+    }
+    async unlockConfirm(body) {
+        var _a, _b;
+        if (!((_a = body.unlockTxHash) === null || _a === void 0 ? void 0 : _a.trim())) {
+            throw new common_1.BadRequestException("Missing unlockTxHash");
+        }
+        if (typeof body.witnessCount !== "number" || body.witnessCount < 2) {
+            throw new common_1.BadRequestException("witnessCount is required and must be >= 2 (đủ 2 chữ ký)");
+        }
+        return this.multisig.confirmUnlockDelivery({
+            unlockTxHash: body.unlockTxHash,
+            witnessCount: body.witnessCount,
+            signedByAddress: ((_b = body.signedByAddress) === null || _b === void 0 ? void 0 : _b.trim()) || undefined,
+            deliveryId: body.deliveryId,
+        });
+    }
 };
 exports.MultisigController = MultisigController;
 __decorate([
@@ -112,6 +173,22 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Object)
 ], MultisigController.prototype, "getScriptAddress", null);
+__decorate([
+    (0, common_1.Get)("lock-deliveries"),
+    __param(0, (0, common_1.Query)("token")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], MultisigController.prototype, "getLockDeliveries", null);
+__decorate([
+    (0, common_1.Post)("lock-deliveries/:id/save-partial-tx"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Query)("token")),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, multisig_dto_1.SavePartialTxDto]),
+    __metadata("design:returntype", Promise)
+], MultisigController.prototype, "savePartialTx", null);
 __decorate([
     (0, common_1.Get)("script-utxos"),
     __param(0, (0, common_1.Query)("scriptAddress")),
@@ -163,8 +240,23 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Object)
 ], MultisigController.prototype, "inspectTx", null);
+__decorate([
+    (0, common_1.Post)("lock/confirm"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [multisig_dto_1.LockConfirmDto]),
+    __metadata("design:returntype", Promise)
+], MultisigController.prototype, "lockConfirm", null);
+__decorate([
+    (0, common_1.Post)("unlock/confirm"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [multisig_dto_1.UnlockConfirmDto]),
+    __metadata("design:returntype", Promise)
+], MultisigController.prototype, "unlockConfirm", null);
 exports.MultisigController = MultisigController = __decorate([
     (0, common_1.Controller)("multisig"),
-    __metadata("design:paramtypes", [multisig_service_1.MultisigService])
+    __metadata("design:paramtypes", [multisig_service_1.MultisigService,
+        auth_service_1.AuthService])
 ], MultisigController);
 //# sourceMappingURL=multisig.controller.js.map

@@ -37,6 +37,14 @@ export declare class RevokeTraceDto {
     walletUtxos?: unknown[];
     utxoAddresses?: string[];
 }
+export declare class BurnTraceDto {
+    changeAddress: string;
+    assetName: string;
+    txHash?: string;
+    policyId?: string;
+    walletUtxos?: unknown[];
+    utxoAddresses?: string[];
+}
 export declare class MintConfirmDto {
     txHash: string;
     assetName: string;
@@ -65,6 +73,14 @@ export declare class RevokeConfirmDto {
     assetName: string;
     profileId: number;
     receivers?: string[];
+}
+export declare class BurnConfirmDto {
+    txHash: string;
+    assetName: string;
+    profileId: number;
+}
+export declare class RemoveWarehouseItemDto {
+    batchId: string;
 }
 export declare class SubmitTxDto {
     signedTx?: string;

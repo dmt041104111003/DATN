@@ -1,7 +1,12 @@
 import type { UTxO } from "@meshsdk/core";
 import { MultisigContract } from "./multisig.contract";
+import { PrismaService } from "../prisma/prisma.service";
+import { TraceService } from "../trace/trace.service";
 export declare class MultisigService {
+    private readonly prisma;
+    private readonly trace;
     private _contract;
+    constructor(prisma: PrismaService, trace: TraceService);
     getContract(): MultisigContract;
     getScriptAddress(): string;
     getScriptCbor(): string;
@@ -44,4 +49,42 @@ export declare class MultisigService {
         requiredSigners: string[];
         witnessCount: number;
     };
+    listLockDeliveriesForProfile(profileId: number): Promise<{
+        id: number;
+        lockTxHash: string;
+        scriptOutputIndex: number;
+        batchId: string;
+        policyId: string | null;
+        recipientAddress: string;
+        senderAddress: string;
+        ownerAddresses: string[];
+        status: string;
+        partialSignedTxHex: string | null;
+        partialSignedByAddress: string | null;
+        secondSignedByAddress: string | null;
+        unlockTxHash: string | null;
+    }[]>;
+    savePartialSignedTx(deliveryId: number, profileId: number, partialTxHex: string): Promise<{
+        ok: boolean;
+    }>;
+    recordLockDelivery(params: {
+        lockTxHash: string;
+        scriptOutputIndex?: number;
+        batchId: string;
+        policyId?: string;
+        recipientAddress: string;
+        senderAddress: string;
+        ownerAddresses: string[];
+    }): Promise<{
+        id: number;
+    }>;
+    confirmUnlockDelivery(params: {
+        unlockTxHash: string;
+        witnessCount: number;
+        signedByAddress?: string;
+        deliveryId?: number;
+    }): Promise<{
+        ok: boolean;
+        recipientAddress?: string;
+    }>;
 }

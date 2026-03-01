@@ -40,6 +40,15 @@ export class RevokeTraceDto {
   utxoAddresses?: string[];
 }
 
+export class BurnTraceDto {
+  changeAddress!: string;
+  assetName!: string;
+  txHash?: string;
+  policyId?: string;
+  walletUtxos?: unknown[];
+  utxoAddresses?: string[];
+}
+
 export class MintConfirmDto {
   txHash!: string;
   assetName!: string;
@@ -70,6 +79,16 @@ export class RevokeConfirmDto {
   assetName!: string;
   profileId!: number;
   receivers?: string[];
+}
+
+export class BurnConfirmDto {
+  txHash!: string;
+  assetName!: string;
+  profileId!: number;
+}
+
+export class RemoveWarehouseItemDto {
+  batchId!: string;
 }
 
 export class SubmitTxDto {

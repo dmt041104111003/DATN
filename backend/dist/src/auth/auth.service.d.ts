@@ -77,6 +77,7 @@ export declare class AuthService {
         };
     }>;
     getProfileIdFromToken(token: string): Promise<number>;
+    getProfileRoleFromToken(token: string): Promise<string>;
     listProfilesFromToken(token: string): Promise<{
         walletAddress: string;
         displayName: string;

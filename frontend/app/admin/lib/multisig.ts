@@ -1,7 +1,61 @@
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
 
 import { stringToHex } from '../utils/encoding';
+
+const AUTH_COOKIE = 'auth_token';
+function getToken(): string {
+  const cookie = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${AUTH_COOKIE}=`));
+  return cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+}
+
+export type LockDeliveryItem = {
+  id: number;
+  lockTxHash: string;
+  scriptOutputIndex: number;
+  batchId: string;
+  policyId: string | null;
+  recipientAddress: string;
+  senderAddress: string;
+  ownerAddresses: string[];
+  status: string;
+  partialSignedTxHex?: string | null;
+  partialSignedByAddress?: string | null;
+  secondSignedByAddress?: string | null;
+  unlockTxHash?: string | null;
+};
+
+export async function getLockDeliveries(token: string): Promise<LockDeliveryItem[]> {
+  const res = await fetch(
+    `${BACKEND_URL}/multisig/lock-deliveries?token=${encodeURIComponent(token)}`,
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || 'Failed to load lock deliveries');
+  }
+  return Array.isArray(data?.deliveries) ? data.deliveries : [];
+}
+
+export async function savePartialTx(
+  deliveryId: number,
+  token: string,
+  partialTxHex: string,
+): Promise<void> {
+  const res = await fetch(
+    `${BACKEND_URL}/multisig/lock-deliveries/${deliveryId}/save-partial-tx?token=${encodeURIComponent(token)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partialTxHex: partialTxHex.trim().replace(/^0x/, '') }),
+    },
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || 'Failed to save partial tx');
+  }
+}
 
 const CIP68_LABEL_222 = '000de140';
 

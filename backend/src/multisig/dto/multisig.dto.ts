@@ -47,3 +47,24 @@ export class MergePartialTxDto {
   partialTxHex!: string;
   secondSignerResultHex!: string;
 }
+
+export class LockConfirmDto {
+  lockTxHash!: string;
+  scriptOutputIndex?: number;
+  batchId!: string;
+  policyId?: string;
+  recipientAddress!: string;
+  senderAddress!: string;
+  ownerAddresses!: string[];
+}
+
+export class UnlockConfirmDto {
+  unlockTxHash!: string;
+  witnessCount!: number;
+  signedByAddress?: string;
+  deliveryId?: number;
+}
+
+export class SavePartialTxDto {
+  partialTxHex!: string;
+}

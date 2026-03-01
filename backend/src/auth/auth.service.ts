@@ -456,6 +456,16 @@ export class AuthService {
     return (payload as any).profileId as number;
   }
 
+  async getProfileRoleFromToken(token: string): Promise<string> {
+    const profileId = await this.getProfileIdFromToken(token);
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { role: { select: { code: true } } },
+    });
+    if (!profile?.role?.code) throw new UnauthorizedException("Profile or role not found.");
+    return profile.role.code;
+  }
+
   async listProfilesFromToken(token: string): Promise<
     { walletAddress: string; displayName: string; location: string | null; coordinates: string | null }[]
   > {

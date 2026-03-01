@@ -1,11 +1,33 @@
 import { MultisigService } from "./multisig.service";
-import { BuildLockTxDto, BuildUnlockTxDto, ParseDatumDto, MergePartialTxDto } from "./dto/multisig.dto";
+import { AuthService } from "../auth/auth.service";
+import { BuildLockTxDto, BuildUnlockTxDto, ParseDatumDto, MergePartialTxDto, LockConfirmDto, UnlockConfirmDto, SavePartialTxDto } from "./dto/multisig.dto";
 export declare class MultisigController {
     private readonly multisig;
-    constructor(multisig: MultisigService);
+    private readonly auth;
+    constructor(multisig: MultisigService, auth: AuthService);
     getScriptAddress(): {
         scriptAddress: string;
     };
+    getLockDeliveries(token?: string): Promise<{
+        deliveries: {
+            id: number;
+            lockTxHash: string;
+            scriptOutputIndex: number;
+            batchId: string;
+            policyId: string | null;
+            recipientAddress: string;
+            senderAddress: string;
+            ownerAddresses: string[];
+            status: string;
+            partialSignedTxHex: string | null;
+            partialSignedByAddress: string | null;
+            secondSignedByAddress: string | null;
+            unlockTxHash: string | null;
+        }[];
+    }>;
+    savePartialTx(id: string, token: string | undefined, body: SavePartialTxDto): Promise<{
+        ok: boolean;
+    }>;
     getScriptUtxos(scriptAddress?: string): Promise<{
         utxos: unknown[];
     }>;
@@ -35,4 +57,11 @@ export declare class MultisigController {
         requiredSigners: string[];
         witnessCount: number;
     };
+    lockConfirm(body: LockConfirmDto): Promise<{
+        id: number;
+    }>;
+    unlockConfirm(body: UnlockConfirmDto): Promise<{
+        ok: boolean;
+        recipientAddress?: string;
+    }>;
 }

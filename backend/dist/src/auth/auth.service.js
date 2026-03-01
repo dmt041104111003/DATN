@@ -349,6 +349,17 @@ let AuthService = class AuthService {
         }
         return payload.profileId;
     }
+    async getProfileRoleFromToken(token) {
+        var _a;
+        const profileId = await this.getProfileIdFromToken(token);
+        const profile = await this.prisma.profile.findUnique({
+            where: { id: profileId },
+            select: { role: { select: { code: true } } },
+        });
+        if (!((_a = profile === null || profile === void 0 ? void 0 : profile.role) === null || _a === void 0 ? void 0 : _a.code))
+            throw new common_1.UnauthorizedException("Profile or role not found.");
+        return profile.role.code;
+    }
     async listProfilesFromToken(token) {
         const secret = this.config.jwtSecret;
         if (!secret)

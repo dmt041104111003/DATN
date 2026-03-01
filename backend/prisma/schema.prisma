@@ -36,7 +36,8 @@ model Profile {
   mintedBatches       ProductBatch[]   @relation("ProfileBatches")
   movementsFrom       MovementLog[]    @relation("MovementFromProfile")
   movementsTo         MovementLog[]    @relation("MovementToProfile")
-  issuedCertificates  Certificate[]    @relation("CertificateIssuer")
+  issuedCertificates  Certificate[]     @relation("CertificateIssuer")
+  warehouseInventory  NftInventory[]   @relation("WarehouseOwner")
 }
 
 model ProductBatch {
@@ -56,6 +57,21 @@ model ProductBatch {
   movements       MovementLog[]
   certificates    Certificate[]
   roadmaps        Roadmap[]
+  inventories     NftInventory[]
+}
+
+model NftInventory {
+  id          Int       @id @default(autoincrement())
+  batchId     String
+  profileId   Int
+  quantity    Int       @default(1)
+  status      String    @default("IN_WAREHOUSE") // IN_WAREHOUSE | SHIPPED
+  mintedAt    DateTime  @default(now())
+
+  batch   ProductBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  profile Profile      @relation("WarehouseOwner", fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, profileId])
 }
 
 enum MovementAction {
@@ -65,6 +81,7 @@ enum MovementAction {
   CONSUME
   UPDATE
   REVOKE
+  BURN
 }
 
 model MovementLog {
@@ -111,5 +128,30 @@ model Roadmap {
   createdAt       DateTime @default(now())
 
   batch           ProductBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+}
+
+enum LockDeliveryStatus {
+  IN_DELIVERY
+  DELIVERED
+}
+
+model MultisigLockDelivery {
+  id                     Int                @id @default(autoincrement())
+  lockTxHash             String
+  scriptOutputIndex      Int                @default(0)
+  batchId                String
+  policyId               String?
+  recipientAddress       String
+  senderAddress          String
+  ownerAddresses         Json
+  status                 LockDeliveryStatus @default(IN_DELIVERY)
+  partialSignedTxHex     String?            @db.Text
+  partialSignedByAddress String?
+  secondSignedByAddress  String?
+  unlockTxHash           String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@unique([lockTxHash, scriptOutputIndex])
 }
 

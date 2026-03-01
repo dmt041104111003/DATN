@@ -50,6 +50,86 @@ export class TraceService {
     }));
   }
 
+  async listMyWarehouseInventory(profileId: number): Promise<
+    { batchId: string; batchName: string; image: string | null; quantity: number; mintedAt: Date; policyId: string | null }[]
+  > {
+    const prisma = this.prisma as any;
+    const rows = await prisma.nftInventory.findMany({
+      where: {
+        profileId,
+        OR: [
+          { status: "IN_WAREHOUSE" },
+          { status: null },
+        ],
+      },
+      include: { batch: { select: { id: true, name: true, image: true, policyId: true } } },
+      orderBy: { mintedAt: "desc" },
+    });
+    return (rows || []).map((inv: any) => ({
+      batchId: inv.batchId,
+      batchName: inv.batch?.name ?? inv.batchId,
+      image: inv.batch?.image ?? null,
+      quantity: inv.quantity ?? 1,
+      mintedAt: inv.mintedAt,
+      policyId: inv.batch?.policyId ?? null,
+    }));
+  }
+
+  /**
+   * Lấy địa chỉ recipient (Owner 2) khi lock theo roadmap: nếu người gửi là minter thì lấy hopIndex 0,
+   * nếu người gửi nằm trong roadmap thì lấy hopIndex + 1.
+   */
+  async getLockRecipientByRoadmap(
+    profileId: number,
+    batchId: string,
+  ): Promise<{ recipientAddress: string | null }> {
+    const prisma = this.prisma as any;
+    const bid = (batchId || "").trim();
+    if (!bid) return { recipientAddress: null };
+    const profile = await prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { walletAddress: true },
+    });
+    if (!profile?.walletAddress) return { recipientAddress: null };
+    const senderWallet = profile.walletAddress.trim().toLowerCase();
+
+    const batch = await prisma.productBatch.findUnique({
+      where: { id: bid },
+      select: {
+        minterProfileId: true,
+        minterProfile: { select: { walletAddress: true } },
+      },
+    });
+    if (!batch) return { recipientAddress: null };
+
+    const minterWallet =
+      batch.minterProfile?.walletAddress?.trim().toLowerCase() ?? "";
+
+    if (minterWallet && senderWallet === minterWallet) {
+      const firstHop = await prisma.roadmap.findFirst({
+        where: { batchId: bid },
+        orderBy: { hopIndex: "asc" },
+        select: { receiverAddress: true },
+      });
+      return {
+        recipientAddress: firstHop?.receiverAddress?.trim() ?? null,
+      };
+    }
+
+    const myHop = await prisma.roadmap.findMany({
+      where: { batchId: bid },
+      orderBy: { hopIndex: "asc" },
+      select: { hopIndex: true, receiverAddress: true },
+    });
+    const idx = myHop.findIndex(
+      (r: { hopIndex: number; receiverAddress: string | null }) =>
+        (r.receiverAddress || "").trim().toLowerCase() === senderWallet,
+    );
+    if (idx < 0 || idx >= myHop.length - 1) return { recipientAddress: null };
+    const next = myHop[idx + 1]?.receiverAddress?.trim() ?? null;
+    return { recipientAddress: next };
+  }
+
   async mint(params: {
     changeAddress: string;
     assetName: string;
@@ -187,8 +267,40 @@ export class TraceService {
     return { unsignedTx };
   }
 
+  async burn(params: {
+    changeAddress: string;
+    assetName: string;
+    txHash?: string;
+    policyId?: string;
+    walletUtxos?: UTxO[];
+    utxoAddresses?: string[];
+  }): Promise<{ unsignedTx: string }> {
+    const contract = this.createContract(params.changeAddress, {
+      walletUtxos: params.walletUtxos,
+      utxoAddresses: params.utxoAddresses,
+    });
+    const balance = await contract.getRftBalanceAtAddress(
+      params.changeAddress,
+      params.assetName,
+      params.policyId,
+    );
+    if (balance < 1) {
+      throw new BadRequestException(
+        "Wallet does not hold this NFT. Burn is only allowed if the wallet has the NFT.",
+      );
+    }
+    const unsignedTx = await contract.burn([
+      {
+        assetName: params.assetName,
+        quantity: "1",
+        txHash: params.txHash,
+      },
+    ]);
+    return { unsignedTx };
+  }
+
   async recordTx(params: {
-    action: "MINT" | "UPDATE" | "REVOKE";
+    action: "MINT" | "UPDATE" | "REVOKE" | "BURN";
     txHash: string;
     assetName: string;
     profileId: number;
@@ -249,6 +361,18 @@ export class TraceService {
           })),
         });
       }
+      // Kho của tài khoản = profile. Khi ENTERPRISE mint xong thì cập nhật kho (minter) có NFT 222 vừa sản xuất.
+      await prisma.nftInventory.upsert({
+        where: {
+          batchId_profileId: { batchId: assetName, profileId },
+        },
+        create: {
+          batchId: assetName,
+          profileId,
+          quantity: 1,
+        },
+        update: { quantity: { increment: 1 } },
+      });
       return;
     }
 
@@ -295,31 +419,76 @@ export class TraceService {
       return;
     }
 
-    await prisma.productBatch.update({
-      where: { id: assetName },
-      data: {
-        metadata: mergeDbMeta(batch.metadata, {
-          revokeTxHash: txHash,
-          revokedAt: new Date().toISOString(),
-          revoked: true,
-        }),
-      },
-    });
-    await prisma.movementLog.create({
-      data: { batchId: assetName, action: "REVOKE", roleAtHop: "revoker", txHash, fromProfileId: profileId },
-    });
-    const receivers = params.receivers ?? [];
-    if (receivers.length > 0) {
-      await prisma.roadmap.createMany({
-        data: receivers.map((receiverAddress, hopIndex) => ({
-          batchId: assetName,
-          receiverAddress,
-          hopIndex,
-          action: "REVOKE" as const,
-          txHash,
-        })),
+    if (action === "REVOKE") {
+      await prisma.productBatch.update({
+        where: { id: assetName },
+        data: {
+          metadata: mergeDbMeta(batch.metadata, {
+            revokeTxHash: txHash,
+            revokedAt: new Date().toISOString(),
+            revoked: true,
+          }),
+        },
       });
+      await prisma.movementLog.create({
+        data: { batchId: assetName, action: "REVOKE", roleAtHop: "revoker", txHash, fromProfileId: profileId },
+      });
+      const receivers = params.receivers ?? [];
+      if (receivers.length > 0) {
+        await prisma.roadmap.createMany({
+          data: receivers.map((receiverAddress, hopIndex) => ({
+            batchId: assetName,
+            receiverAddress,
+            hopIndex,
+            action: "REVOKE" as const,
+            txHash,
+          })),
+        });
+      }
+      return;
     }
+
+    if (action === "BURN") {
+      await prisma.productBatch.update({
+        where: { id: assetName },
+        data: {
+          metadata: mergeDbMeta(batch.metadata, {
+            burnTxHash: txHash,
+            burnedAt: new Date().toISOString(),
+            burned: true,
+          }),
+        },
+      });
+      await prisma.movementLog.create({
+        data: { batchId: assetName, action: "BURN", roleAtHop: "burner", txHash, fromProfileId: profileId },
+      });
+      await this.removeOneFromWarehouse(profileId, assetName);
+      return;
+    }
+  }
+
+  async removeOneFromWarehouse(profileId: number, batchId: string): Promise<void> {
+    const prisma = this.prisma as any;
+    await prisma.nftInventory.deleteMany({
+      where: { batchId, profileId },
+    });
+  }
+
+  async markAsShipped(profileId: number, batchId: string): Promise<void> {
+    const prisma = this.prisma as any;
+    await prisma.nftInventory.updateMany({
+      where: { batchId, profileId },
+      data: { status: "SHIPPED" },
+    });
+  }
+
+  async addToWarehouse(profileId: number, batchId: string): Promise<void> {
+    const prisma = this.prisma as any;
+    await prisma.nftInventory.upsert({
+      where: { batchId_profileId: { batchId, profileId } },
+      create: { batchId, profileId, quantity: 1 },
+      update: { quantity: { increment: 1 } },
+    });
   }
 
   async submitSignedTx(signedTxInput: string, fromBase64 = false): Promise<{ txHash: string }> {

@@ -262,9 +262,14 @@ export default function ProductsPage() {
     try {
       const changeAddress = await getWalletChangeAddress();
       const utxoAddresses = await getWalletUtxoAddresses();
+      const cookie = typeof document !== 'undefined'
+        ? document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${AUTH_COOKIE}=`))
+        : null;
+      const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+      if (!token) throw new Error('Session expired. Please log in again.');
 
       const isEdit = editingId !== null;
-      const url = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}`;
+      const url = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}?token=${encodeURIComponent(token)}`;
       const body: any = {
         changeAddress,
         utxoAddresses,
@@ -294,7 +299,7 @@ export default function ProductsPage() {
       if (data?.unsignedTx) {
         const txHash = await signAndSubmitWithEternl(data.unsignedTx);
         const profileId = account.id;
-        const confirmUrl = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}/confirm`;
+        const confirmUrl = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}/confirm?token=${encodeURIComponent(token)}`;
         const confirmBody = isEdit
           ? {
               txHash,
@@ -359,7 +364,14 @@ export default function ProductsPage() {
     setError('');
     try {
       const changeAddress = await getWalletChangeAddress();
-      const res = await fetch(`${BACKEND_URL}/trace/revoke`, {
+      const utxoAddresses = await getWalletUtxoAddresses();
+      const cookie = typeof document !== 'undefined'
+        ? document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${AUTH_COOKIE}=`))
+        : null;
+      const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+      if (!token) throw new Error('Session expired. Please log in again.');
+
+      const res = await fetch(`${BACKEND_URL}/trace/revoke?token=${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -377,7 +389,7 @@ export default function ProductsPage() {
 
       if (data?.unsignedTx) {
         const txHash = await signAndSubmitWithEternl(data.unsignedTx);
-        const confirmRes = await fetch(`${BACKEND_URL}/trace/revoke/confirm`, {
+        const confirmRes = await fetch(`${BACKEND_URL}/trace/revoke/confirm?token=${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ txHash, assetName: target.slug, profileId: account.id }),

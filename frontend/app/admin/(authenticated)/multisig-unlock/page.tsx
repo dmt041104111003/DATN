@@ -10,6 +10,9 @@ import {
   buildUnlockTx,
   mergePartialTx,
   pkhMatch,
+  getLockDeliveries,
+  savePartialTx,
+  type LockDeliveryItem,
 } from '../../lib/multisig';
 import {
   getWalletChangeAddress,
@@ -22,14 +25,21 @@ import {
 import { resolvePaymentKeyHash } from '@meshsdk/core';
 
 const styles = { ...formStyles, ...buttonStyles };
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
+const AUTH_COOKIE = 'auth_token';
+function getToken(): string {
+  const cookie = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${AUTH_COOKIE}=`));
+  return cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+}
 
 export default function UnlockPage() {
   const [scriptAddress, setScriptAddress] = useState('');
-  const [unlockPolicyId, setUnlockPolicyId] = useState(
-    'df7339e888a9b8d33302f6eda9e4cfb02fb37057cee7b25a64fd6276'
-  );
-  const [unlockAssetName, setUnlockAssetName] = useState('chuoitim-mm73raz2-thzr3s');
-  const [findByAssetLoading, setFindByAssetLoading] = useState(false);
+  const [deliveries, setDeliveries] = useState<LockDeliveryItem[]>([]);
+  const [deliveriesLoading, setDeliveriesLoading] = useState(false);
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<number | ''>('');
   const [scriptUtxos, setScriptUtxos] = useState<unknown[]>([]);
   const [selectedUtxoIndex, setSelectedUtxoIndex] = useState<number>(-1);
   const [datumInfo, setDatumInfo] = useState<{
@@ -44,7 +54,6 @@ export default function UnlockPage() {
   const [unlockLoading, setUnlockLoading] = useState(false);
   const [unlockTxHash, setUnlockTxHash] = useState('');
   const [partialSignedTxHex, setPartialSignedTxHex] = useState('');
-  const [partialTxFromOther, setPartialTxFromOther] = useState('');
   const [cosignLoading, setCosignLoading] = useState(false);
   const [cosignError, setCosignError] = useState('');
   const [currentWalletAddress, setCurrentWalletAddress] = useState<string>('');
@@ -61,56 +70,45 @@ export default function UnlockPage() {
       .catch(() => setCurrentWalletAddress(''));
   }, []);
 
-  const loadScriptUtxoByAsset = async () => {
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    setDeliveriesLoading(true);
+    getLockDeliveries(token)
+      .then(setDeliveries)
+      .catch(() => setDeliveries([]))
+      .finally(() => setDeliveriesLoading(false));
+  }, []);
+
+  const loadScriptUtxoForDelivery = (delivery: LockDeliveryItem) => {
     setUnlockError('');
-    setDatumInfo(null);
-    setOutputAddress('');
     setPartialSignedTxHex('');
-    setPartialTxFromOther('');
-    if (!unlockPolicyId.trim() || !unlockAssetName.trim()) {
-      setUnlockError('Enter Policy ID and Asset name.');
-      return;
-    }
-    setFindByAssetLoading(true);
-    try {
-      const utxo = await getScriptUtxoByAsset(unlockPolicyId, unlockAssetName, scriptAddress || undefined);
-      if (!utxo) {
-        setUnlockError('No UTxO at script containing this asset. Check policyId + assetName or lock may not exist yet.');
-        setScriptUtxos([]);
-        setSelectedUtxoIndex(-1);
-        return;
-      }
-      setScriptUtxos([utxo]);
-      setSelectedUtxoIndex(0);
-      const info = await parseMultisigDatum({ scriptUtxo: utxo });
-      setDatumInfo(info);
-      if (info.recipientAddress) setOutputAddress(info.recipientAddress);
-    } catch (err: unknown) {
-      setUnlockError(err instanceof Error ? err.message : 'Find UTxO by asset failed.');
-      setScriptUtxos([]);
-      setSelectedUtxoIndex(-1);
-    } finally {
-      setFindByAssetLoading(false);
-    }
+    const owners = Array.isArray(delivery.ownerAddresses) ? delivery.ownerAddresses : [];
+    setDatumInfo({
+      ownersPkh: [],
+      threshold: 2,
+      recipientPkh: '',
+      recipientAddress: delivery.recipientAddress?.trim() || '',
+      ownerAddresses: owners,
+    });
+    setOutputAddress(delivery.recipientAddress?.trim() || '');
+    setScriptUtxos([]);
+    setSelectedUtxoIndex(-1);
   };
 
-  const selectUtxoAndParseDatum = async (index: number) => {
-    setSelectedUtxoIndex(index);
-    setUnlockError('');
+  const handleDeliverySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value === '' ? '' : Number(e.target.value);
+    setSelectedDeliveryId(id);
+    setScriptUtxos([]);
+    setSelectedUtxoIndex(-1);
     setDatumInfo(null);
     setOutputAddress('');
     setPartialSignedTxHex('');
-    const utxo = scriptUtxos[index];
-    if (!utxo || typeof utxo !== 'object') return;
-    try {
-      const info = await parseMultisigDatum({ scriptUtxo: utxo });
-      setDatumInfo(info);
-      if (info.recipientAddress) {
-        setOutputAddress(info.recipientAddress);
-      }
-    } catch (err: unknown) {
-      setUnlockError(err instanceof Error ? err.message : 'Failed to parse datum.');
-    }
+    setUnlockTxHash('');
+    setUnlockError('');
+    if (id === '') return;
+    const d = deliveries.find((x) => x.id === id);
+    if (d) loadScriptUtxoForDelivery(d);
   };
 
   const handleUnlock = async (e: React.FormEvent) => {
@@ -118,27 +116,48 @@ export default function UnlockPage() {
     setUnlockError('');
     setUnlockTxHash('');
     setPartialSignedTxHex('');
-    if (selectedUtxoIndex < 0 || !datumInfo || !outputAddress.trim()) {
-      setUnlockError('Select UTxO, parse datum and enter output address.');
+    const delivery = selectedDeliveryId === '' ? null : deliveries.find((d) => d.id === selectedDeliveryId);
+    if (!delivery || !datumInfo || !outputAddress.trim()) {
+      setUnlockError('Chọn giao dịch và kiểm tra output address.');
       return;
     }
     setUnlockLoading(true);
     try {
+      let scriptUtxo = scriptUtxos[0];
+      let currentDatumInfo = datumInfo;
+      if (!scriptUtxo && delivery.policyId?.trim() && delivery.batchId?.trim()) {
+        const utxo = await getScriptUtxoByAsset(
+          delivery.policyId.trim(),
+          delivery.batchId.trim(),
+          scriptAddress || undefined
+        );
+        if (!utxo) {
+          setUnlockError('Không tìm thấy UTxO trên chain cho giao dịch này. Có thể lock chưa được confirm.');
+          return;
+        }
+        scriptUtxo = utxo;
+        setScriptUtxos([utxo]);
+        const info = await parseMultisigDatum({ scriptUtxo: utxo });
+        currentDatumInfo = { ...datumInfo, ownersPkh: info.ownersPkh, recipientPkh: info.recipientPkh };
+        setDatumInfo(currentDatumInfo);
+      } else if (!scriptUtxo) {
+        setUnlockError('Thiếu thông tin UTxO. Delivery cần policyId và batchId.');
+        return;
+      }
       const changeAddress = await getWalletChangeAddress();
       const utxos = await getWalletUtxos();
       const collaterals = await getWalletCollateral();
-      const scriptUtxo = scriptUtxos[selectedUtxoIndex];
       const collateral = Array.isArray(collaterals) && collaterals.length > 0 ? collaterals[0] : null;
       if (!collateral) {
         throw new Error('Wallet has no collateral. Set up collateral in wallet.');
       }
       const pk = resolvePaymentKeyHash(changeAddress);
       const pkStr = typeof pk === 'string' ? pk : String(pk);
-      const isOwnerByPkh = datumInfo.ownersPkh.length > 0 && datumInfo.ownersPkh.some((p) => pkhMatch(p, pkStr));
+      const isOwnerByPkh = currentDatumInfo.ownersPkh.length > 0 && currentDatumInfo.ownersPkh.some((p) => pkhMatch(p, pkStr));
       const isOwnerByAddress =
         !isOwnerByPkh &&
-        datumInfo.ownerAddresses?.length > 0 &&
-        datumInfo.ownerAddresses.some((addr) => {
+        currentDatumInfo.ownerAddresses?.length > 0 &&
+        currentDatumInfo.ownerAddresses.some((addr) => {
           try {
             return pkhMatch(resolvePaymentKeyHash(addr), pkStr);
           } catch {
@@ -147,11 +166,10 @@ export default function UnlockPage() {
         });
       const isOwner = isOwnerByPkh || !!isOwnerByAddress;
       if (!isOwner) {
-        const hint =
-          datumInfo.ownersPkh.length === 0
-            ? ' Datum has no owners (parse error?). Try reloading UTxO or restart backend.'
-            : ' Ensure you use the correct Owner 1 or Owner 2 wallet (same payment key as address at lock).';
-        throw new Error('Current wallet address is not in the owner list of this UTxO.' + hint);
+        const hint = currentDatumInfo.ownersPkh.length === 0
+          ? ' Dùng đúng ví Owner 1 hoặc Owner 2.'
+          : ' Dùng đúng ví Owner 1 hoặc Owner 2 (cùng địa chỉ lúc lock).';
+        throw new Error('Ví hiện tại không nằm trong danh sách owner.' + hint);
       }
       const scriptInput = (scriptUtxo as { input?: { txHash?: string; outputIndex?: number } })?.input;
       const filteredUtxos = (utxos as { input?: { txHash?: string; outputIndex?: number } }[]).filter(
@@ -161,22 +179,35 @@ export default function UnlockPage() {
             u?.input?.outputIndex === scriptInput?.outputIndex
           )
       );
-      const signingOwnersPkh = datumInfo.ownersPkh;
       const { unsignedTx } = await buildUnlockTx({
         scriptUtxo,
         outputAddress: outputAddress.trim(),
-        signingOwnersPkh,
-        threshold: datumInfo.threshold,
+        signingOwnersPkh: currentDatumInfo.ownersPkh,
+        threshold: currentDatumInfo.threshold,
         collateral,
         changeAddress,
         utxos: filteredUtxos,
       });
       const signedTx = await signTxPartial(unsignedTx);
-      if (datumInfo.threshold === 1) {
+      if (currentDatumInfo.threshold === 1) {
         const txHash = await submitSignedTxHex(signedTx);
         setUnlockTxHash(txHash);
       } else {
         setPartialSignedTxHex(signedTx);
+        const token = getToken();
+        if (token && selectedDeliveryId !== '') {
+          try {
+            await savePartialTx(Number(selectedDeliveryId), token, signedTx);
+            const list = await getLockDeliveries(token);
+            setDeliveries(list);
+          } catch (saveErr) {
+            const msg = saveErr instanceof Error ? saveErr.message : 'Không lưu được partial tx vào server.';
+            setUnlockError(msg + ' (Bên kia vẫn có thể paste hex để ký lượt 2.)');
+          }
+        } else {
+          if (!token) setUnlockError('Chưa đăng nhập — không lưu được partial tx. Bên kia cần paste hex thủ công.');
+          if (selectedDeliveryId === '') setUnlockError('Chọn giao dịch ở dropdown phía trên trước khi ký để lưu partial tx.');
+        }
       }
     } catch (err: unknown) {
       setUnlockError(err instanceof Error ? err.message : 'Unlock failed.');
@@ -185,14 +216,28 @@ export default function UnlockPage() {
     }
   };
 
-  const handleCosignAndSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const selectedDelivery = selectedDeliveryId === '' ? null : deliveries.find((d) => d.id === selectedDeliveryId);
+  const hasPartialFromDb = !!(selectedDelivery?.partialSignedTxHex?.trim());
+  const currentWalletNorm = (currentWalletAddress || '').trim().toLowerCase();
+  const isFirstSigner = !!(
+    currentWalletNorm &&
+    selectedDelivery?.partialSignedByAddress &&
+    selectedDelivery.partialSignedByAddress.trim().toLowerCase() === currentWalletNorm
+  );
+  const isSecondSigner = !!(
+    currentWalletNorm &&
+    selectedDelivery?.secondSignedByAddress &&
+    selectedDelivery.secondSignedByAddress.trim().toLowerCase() === currentWalletNorm
+  );
+  const showRound2Button =
+    hasPartialFromDb &&
+    !isFirstSigner &&
+    !isSecondSigner &&
+    datumInfo &&
+    datumInfo.threshold > 1;
+
+  const doCosignAndSubmit = async (hex: string) => {
     setCosignError('');
-    const hex = partialTxFromOther.trim().replace(/^0x/, '');
-    if (!hex || hex.length < 100) {
-      setCosignError('Paste partial signed tx (hex) from the owner who signed first.');
-      return;
-    }
     setCosignLoading(true);
     try {
       const signedTx = await signTxPartialForCosign(hex);
@@ -211,7 +256,26 @@ export default function UnlockPage() {
       }
       const txHash = await submitSignedTxHex(mergedTxHex);
       setUnlockTxHash(txHash);
-      setPartialTxFromOther('');
+      const changeAddress = await getWalletChangeAddress();
+      try {
+        await fetch(`${BACKEND_URL}/multisig/unlock/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            unlockTxHash: txHash,
+            witnessCount,
+            signedByAddress: changeAddress || undefined,
+            deliveryId: selectedDeliveryId !== '' ? Number(selectedDeliveryId) : undefined,
+          }),
+        });
+        const token = getToken();
+        if (token) {
+          const list = await getLockDeliveries(token);
+          setDeliveries(list);
+        }
+      } catch {
+        // optional
+      }
     } catch (err: unknown) {
       setCosignError(err instanceof Error ? err.message : 'Cosign or submit failed.');
     } finally {
@@ -219,79 +283,64 @@ export default function UnlockPage() {
     }
   };
 
+  const handleSignRound2 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDelivery?.partialSignedTxHex?.trim()) return;
+    const hex = selectedDelivery.partialSignedTxHex.trim().replace(/^0x/, '');
+    await doCosignAndSubmit(hex);
+  };
+
   return (
     <div style={{ padding: 24 }}>
       <h1 className={styles.pageTitle}>Unlock</h1>
 
       <div className={styles.formGroup}>
-        <label className={styles.label}>Find UTxO by Policy + Asset (NFT 222)</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
-          <input
-            className={styles.input}
-            placeholder="Policy ID (56 hex)"
-            value={unlockPolicyId}
-            onChange={(e) => setUnlockPolicyId(e.target.value)}
-            style={{ minWidth: 200 }}
-          />
-          <input
-            className={styles.input}
-            placeholder="Asset name (UTF-8 or hex:...)"
-            value={unlockAssetName}
-            onChange={(e) => setUnlockAssetName(e.target.value)}
-            style={{ minWidth: 180 }}
-          />
-          <button
-            type="button"
-            className={styles.btnPrimary}
-            onClick={loadScriptUtxoByAsset}
-            disabled={findByAssetLoading}
-          >
-            {findByAssetLoading ? 'Searching...' : 'Find UTxO by asset'}
-          </button>
-        </div>
+        <label className={styles.label}>Giao dịch đang giao (chỉ hiển thị cho owner, không hiển thị cho người gửi)</label>
+        <select
+          className={styles.input}
+          value={selectedDeliveryId}
+          onChange={handleDeliverySelect}
+          disabled={deliveriesLoading}
+          style={{ minWidth: 320 }}
+        >
+          <option value="">
+            {deliveriesLoading ? 'Đang tải...' : deliveries.length === 0 ? 'Không có giao dịch nào' : '-- Chọn giao dịch --'}
+          </option>
+          {deliveries.map((d) => (
+            <option key={d.id} value={d.id}>
+              batch {d.batchId} · lock {d.lockTxHash.slice(0, 12)}…#{d.scriptOutputIndex} → {d.recipientAddress.slice(0, 16)}…
+            </option>
+          ))}
+        </select>
       </div>
-      {scriptUtxos.length > 0 && (
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Select UTxO to unlock (newest first)</label>
-          <select
-            className={styles.input}
-            value={selectedUtxoIndex}
-            onChange={(e) => selectUtxoAndParseDatum(Number(e.target.value))}
-          >
-            <option value={-1}>-- Select --</option>
-            {scriptUtxos.map((u: unknown, i: number) => {
-              const o = u as { input?: { txHash?: string; outputIndex?: number } };
-              const label = `${o?.input?.txHash?.slice(0, 16)}...#${o?.input?.outputIndex ?? i}`;
-              const suffix = i === 0 ? ' — Newest' : '';
-              return (
-                <option key={i} value={i}>
-                  {label}{suffix}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      )}
       {datumInfo && (
         <div style={{ marginBottom: 16, padding: 12, background: '#f9fafb', borderRadius: 8 }}>
           <div className={styles.label}>
-            Datum: threshold = {datumInfo.threshold}, owners = {datumInfo.ownersPkh.length}
+            Datum: threshold = {datumInfo.threshold}, owners = {datumInfo.ownerAddresses.length || datumInfo.ownersPkh.length}
           </div>
           <div className={styles.label}>
-            Recipient address (from lock): {datumInfo.recipientAddress || '(hex: ' + datumInfo.recipientPkh.slice(0, 24) + '...)'}
+            Recipient address (from lock): {datumInfo.recipientAddress || '(hex: ' + (datumInfo.recipientPkh || '').slice(0, 24) + '...)'}
           </div>
           {datumInfo.ownerAddresses.length > 0 && datumInfo.threshold > 1 && (
             <div className={styles.label} style={{ marginTop: 8 }}>
-              Owners to sign (matching wallets): {datumInfo.ownerAddresses.map((a, i) => (
-                <span key={i} style={{ display: 'block', fontSize: '0.8rem', marginTop: 4 }}>
-                  Owner {i + 1}: <code style={{ wordBreak: 'break-all' }}>{a}</code>
-                </span>
-              ))}
+              Owners to sign (matching wallets): {datumInfo.ownerAddresses.map((a, i) => {
+                const addrNorm = (a || '').trim().toLowerCase();
+                const signed = !!(
+                  (selectedDelivery?.partialSignedByAddress && selectedDelivery.partialSignedByAddress.trim().toLowerCase() === addrNorm) ||
+                  (selectedDelivery?.secondSignedByAddress && selectedDelivery.secondSignedByAddress.trim().toLowerCase() === addrNorm)
+                );
+                return (
+                  <span key={i} style={{ display: 'block', fontSize: '0.8rem', marginTop: 4 }}>
+                    Owner {i + 1}: <code style={{ wordBreak: 'break-all' }}>{a}</code>
+                    {signed && <strong style={{ color: '#16a34a', marginLeft: 6 }}>— Đã ký</strong>}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
       )}
-      {selectedUtxoIndex >= 0 && (
+      {datumInfo && (
         <form onSubmit={handleUnlock}>
           <div className={styles.formGroup}>
             <label className={styles.label}>Output address (lovelace + assets) — pre-filled from datum, editable</label>
@@ -302,37 +351,34 @@ export default function UnlockPage() {
               placeholder="addr_test1..."
             />
           </div>
-          {datumInfo && datumInfo.threshold > 1 && (
-            <p style={{ marginBottom: 12, color: '#6b7280', fontSize: '0.875rem' }}>
-              This unlock requires {datumInfo.threshold} signature(s). You sign first, copy the partial tx below and send it to the other owner so they open this page → paste in &quot;I am the second signer&quot; → Sign &amp; Submit.
+          {showRound2Button && !unlockTxHash && (
+            <p style={{ marginBottom: 12, color: '#16a34a', fontSize: '0.875rem' }}>
+              Bên kia đã ký. Bấm &quot;Ký lượt 2 &amp; Submit&quot; để ký và gửi giao dịch.
             </p>
           )}
           {unlockError && <p className={styles.error}>{unlockError}</p>}
-          {unlockTxHash && (
-            <p style={{ color: 'green', marginBottom: 8 }}>
-              Tx submitted: <code style={{ fontSize: '0.8rem' }}>{unlockTxHash}</code>
-            </p>
-          )}
-          {partialSignedTxHex && (
-            <div className={styles.formGroup} style={{ marginTop: 16 }}>
-              <label className={styles.label}>Partial signed tx — send to other owner (hex)</label>
-              <textarea
-                className={styles.textarea}
-                rows={4}
-                readOnly
-                value={partialSignedTxHex}
-                style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-              />
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                style={{ marginTop: 8 }}
-                onClick={() => navigator.clipboard.writeText(partialSignedTxHex)}
-              >
-                Copy
-              </button>
+          {cosignError && <p className={styles.error}>{cosignError}</p>}
+          {unlockTxHash ? (
+            <div style={{ padding: 16, background: '#ecfdf5', borderRadius: 8, marginBottom: 12 }}>
+              <p style={{ color: '#059669', fontWeight: 600, marginBottom: 8 }}>Hoàn thành — Đã unlock thành công</p>
+              <p style={{ color: '#047857', fontSize: '0.875rem' }}>
+                Tx: <code style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{unlockTxHash}</code>
+              </p>
             </div>
-          )}
+          ) : (
+          <>
+          {showRound2Button ? (
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              disabled={cosignLoading}
+              onClick={handleSignRound2}
+            >
+              {cosignLoading ? 'Đang ký & gửi...' : 'Ký lượt 2 & Submit'}
+            </button>
+          ) : isFirstSigner && hasPartialFromDb ? (
+            <span style={{ color: '#6b7280' }}>Đã ký lượt 1 — không cần thao tác thêm.</span>
+          ) : (
           <button type="submit" className={styles.btnPrimary} disabled={unlockLoading}>
             {unlockLoading
               ? 'Building & signing...'
@@ -340,25 +386,12 @@ export default function UnlockPage() {
                 ? 'Build & sign (step 1/2)'
                 : 'Unlock (build → sign → submit)'}
           </button>
+          )}
+          </>
+          )}
         </form>
       )}
 
-      <div style={{ marginTop: 32, padding: 16, border: '1px solid #e5e7eb', borderRadius: 8 }}>
-        <form onSubmit={handleCosignAndSubmit}>
-          <textarea
-            className={styles.textarea}
-            rows={3}
-            value={partialTxFromOther}
-            onChange={(e) => setPartialTxFromOther(e.target.value)}
-            placeholder="Paste hex partial signed tx here..."
-            style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-          />
-          {cosignError && <p className={styles.error}>{cosignError}</p>}
-          <button type="submit" className={styles.btnPrimary} disabled={cosignLoading} style={{ marginTop: 8 }}>
-            {cosignLoading ? 'Signing & submitting...' : 'Sign & Submit'}
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

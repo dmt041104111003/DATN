@@ -1,11 +1,15 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import type { UTxO } from "@meshsdk/core";
 import { EmbeddedWallet, cst } from "@meshsdk/core";
+import { Prisma } from "@prisma/client";
 import { blockfrostProvider, blockfrostFetcher } from "../cardano/standalone";
 import { CIP68_PREFIX } from "../config/config.service";
 import { MultisigContract } from "./multisig.contract";
+import { PrismaService } from "../prisma/prisma.service";
+import { TraceService } from "../trace/trace.service";
 
 const LABEL_222 = CIP68_PREFIX.USER_222;
+const LOCK_DELIVERY_STATUS = { IN_DELIVERY: "IN_DELIVERY", DELIVERED: "DELIVERED" } as const;
 
 function assetNameToHex(assetName: string): string {
   if (!assetName?.trim()) return "";
@@ -17,6 +21,11 @@ function assetNameToHex(assetName: string): string {
 @Injectable()
 export class MultisigService {
   private _contract: MultisigContract | null = null;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly trace: TraceService,
+  ) {}
 
   getContract(): MultisigContract {
     if (!this._contract) this._contract = new MultisigContract();
@@ -231,5 +240,191 @@ export class MultisigService {
     const vkeys = tx.witnessSet().vkeys();
     const witnessCount = vkeys ? vkeys.size() : 0;
     return { requiredSigners, witnessCount };
+  }
+
+  async listLockDeliveriesForProfile(profileId: number): Promise<{
+    id: number;
+    lockTxHash: string;
+    scriptOutputIndex: number;
+    batchId: string;
+    policyId: string | null;
+    recipientAddress: string;
+    senderAddress: string;
+    ownerAddresses: string[];
+    status: string;
+    partialSignedTxHex: string | null;
+    partialSignedByAddress: string | null;
+    secondSignedByAddress: string | null;
+    unlockTxHash: string | null;
+  }[]> {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { walletAddress: true },
+    });
+    if (!profile?.walletAddress?.trim()) {
+      return [];
+    }
+    const wallet = profile.walletAddress.trim().toLowerCase();
+    const rows = await this.prisma.multisigLockDelivery.findMany({
+      where: {
+        status: LOCK_DELIVERY_STATUS.IN_DELIVERY,
+        NOT: { senderAddress: profile.walletAddress.trim() },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return rows
+      .filter((row: { ownerAddresses: unknown }) => {
+        const owners = Array.isArray(row.ownerAddresses) ? (row.ownerAddresses as string[]) : [];
+        return owners.some((addr: string) => (addr || "").trim().toLowerCase() === wallet);
+      })
+      .map((row: Record<string, unknown>) => {
+        const r = row as { id: number; lockTxHash: string; scriptOutputIndex: number; batchId: string; policyId: string | null; recipientAddress: string; senderAddress: string; ownerAddresses: unknown; status: string; partialSignedTxHex?: string | null; partialSignedByAddress?: string | null; secondSignedByAddress?: string | null; unlockTxHash?: string | null };
+        return {
+          id: r.id,
+          lockTxHash: r.lockTxHash,
+          scriptOutputIndex: r.scriptOutputIndex,
+          batchId: r.batchId,
+          policyId: r.policyId,
+          recipientAddress: r.recipientAddress,
+          senderAddress: r.senderAddress,
+          ownerAddresses: Array.isArray(r.ownerAddresses) ? (r.ownerAddresses as string[]) : [],
+          status: r.status,
+          partialSignedTxHex: r.partialSignedTxHex ?? null,
+          partialSignedByAddress: r.partialSignedByAddress ?? null,
+          secondSignedByAddress: r.secondSignedByAddress ?? null,
+          unlockTxHash: r.unlockTxHash ?? null,
+        };
+      });
+  }
+
+  async savePartialSignedTx(
+    deliveryId: number,
+    profileId: number,
+    partialTxHex: string,
+  ): Promise<{ ok: boolean }> {
+    const hex = (partialTxHex || "").trim().replace(/^0x/, "");
+    if (hex.length < 100) {
+      throw new BadRequestException("partialTxHex is too short.");
+    }
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { walletAddress: true },
+    });
+    if (!profile?.walletAddress?.trim()) {
+      throw new BadRequestException("Profile or wallet not found.");
+    }
+    const wallet = profile.walletAddress.trim().toLowerCase();
+    const delivery = await this.prisma.multisigLockDelivery.findUnique({
+      where: { id: deliveryId },
+    });
+    if (!delivery || delivery.status !== LOCK_DELIVERY_STATUS.IN_DELIVERY) {
+      throw new BadRequestException("Delivery not found or not IN_DELIVERY.");
+    }
+    const owners = Array.isArray(delivery.ownerAddresses) ? (delivery.ownerAddresses as string[]) : [];
+    const isOwner = owners.some((addr: string) => (addr || "").trim().toLowerCase() === wallet);
+    if (!isOwner) {
+      throw new BadRequestException("You are not an owner of this delivery.");
+    }
+    await this.prisma.$executeRaw(
+      Prisma.sql`UPDATE "MultisigLockDelivery" SET "partialSignedTxHex" = ${hex}, "partialSignedByAddress" = ${profile.walletAddress.trim()} WHERE id = ${deliveryId}`,
+    );
+    return { ok: true };
+  }
+
+  async recordLockDelivery(params: {
+    lockTxHash: string;
+    scriptOutputIndex?: number;
+    batchId: string;
+    policyId?: string;
+    recipientAddress: string;
+    senderAddress: string;
+    ownerAddresses: string[];
+  }): Promise<{ id: number }> {
+    const scriptOutputIndex = params.scriptOutputIndex ?? 0;
+    const ownerAddresses = Array.isArray(params.ownerAddresses) ? params.ownerAddresses : [];
+    const delivery = await this.prisma.multisigLockDelivery.upsert({
+      where: {
+        lockTxHash_scriptOutputIndex: {
+          lockTxHash: params.lockTxHash.trim(),
+          scriptOutputIndex,
+        },
+      },
+      create: {
+        lockTxHash: params.lockTxHash.trim(),
+        scriptOutputIndex,
+        batchId: params.batchId.trim(),
+        policyId: params.policyId?.trim() ?? null,
+        recipientAddress: params.recipientAddress.trim(),
+        senderAddress: params.senderAddress.trim(),
+        ownerAddresses,
+        status: LOCK_DELIVERY_STATUS.IN_DELIVERY,
+      },
+      update: {},
+    });
+    return { id: delivery.id };
+  }
+
+  async confirmUnlockDelivery(params: {
+    unlockTxHash: string;
+    witnessCount: number;
+    signedByAddress?: string;
+    deliveryId?: number;
+  }): Promise<{ ok: boolean; recipientAddress?: string }> {
+    const { unlockTxHash, witnessCount, signedByAddress, deliveryId } = params;
+    if (witnessCount < 2) {
+      throw new BadRequestException(
+        "Unlock requires at least 2 signatures (witnessCount >= 2).",
+      );
+    }
+    let delivery: { id: number; batchId: string; recipientAddress: string; status: string } | null = null;
+
+    if (deliveryId != null && Number.isInteger(deliveryId) && deliveryId > 0) {
+      const found = await this.prisma.multisigLockDelivery.findUnique({
+        where: { id: deliveryId },
+      });
+      if (found && found.status === LOCK_DELIVERY_STATUS.IN_DELIVERY) {
+        delivery = { id: found.id, batchId: found.batchId, recipientAddress: found.recipientAddress, status: found.status };
+      }
+    }
+
+    if (!delivery) {
+      const tx = await blockfrostFetcher.fetchTransactionsUTxO(unlockTxHash.trim());
+      const inputs = tx?.inputs ?? [];
+      for (const inp of inputs) {
+        const lockTxHash = inp.tx_hash;
+        const scriptOutputIndex = inp.output_index ?? 0;
+        const found = await this.prisma.multisigLockDelivery.findUnique({
+          where: {
+            lockTxHash_scriptOutputIndex: { lockTxHash, scriptOutputIndex },
+          },
+        });
+        if (found && found.status === LOCK_DELIVERY_STATUS.IN_DELIVERY) {
+          delivery = { id: found.id, batchId: found.batchId, recipientAddress: found.recipientAddress, status: found.status };
+          break;
+        }
+      }
+    }
+
+    if (!delivery) {
+      throw new BadRequestException(
+        "No matching lock delivery (IN_DELIVERY) found for this unlock tx. Ensure lock was confirmed first, or pass deliveryId.",
+      );
+    }
+    const secondAddr = (signedByAddress || "").trim() || null;
+    await this.prisma.$executeRaw(
+      Prisma.sql`UPDATE "MultisigLockDelivery" SET status = 'DELIVERED', "unlockTxHash" = ${unlockTxHash.trim()}, "secondSignedByAddress" = ${secondAddr} WHERE id = ${delivery.id}`,
+    );
+    const recipientAddress = delivery.recipientAddress.trim().toLowerCase();
+    const profile = await this.prisma.profile.findFirst({
+      where: {
+        walletAddress: delivery.recipientAddress.trim(),
+        role: { code: { in: ["TRANSIT", "AGENT"] } },
+      },
+      select: { id: true },
+    });
+    if (profile) {
+      await this.trace.addToWarehouse(profile.id, delivery.batchId);
+    }
+    return { ok: true, recipientAddress: delivery.recipientAddress };
   }
 }
