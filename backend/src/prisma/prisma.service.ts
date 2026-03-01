@@ -1,36 +1,14 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-function createPgPool(): Pool {
+function createAdapter() {
   const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error("Missing DATABASE_URL for Prisma/Postgres connection");
+  if (!url?.trim()) {
+    throw new Error("Missing DATABASE_URL for Prisma/PostgreSQL connection");
   }
-
-  let ssl: false | { rejectUnauthorized: boolean } | undefined = undefined;
-  try {
-    const parsed = new URL(url);
-    const sslmode = (parsed.searchParams.get("sslmode") ?? "").toLowerCase();
-    if (sslmode && sslmode !== "disable") {
-      ssl = {
-        rejectUnauthorized: sslmode === "verify-full",
-      };
-    }
-  } catch {
-  }
-
-  return new Pool({
-    connectionString: url,
-    ssl,
-    max: 10,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
-  });
+  return new PrismaPg({ connectionString: url.trim() });
 }
-
-const pool = createPgPool();
 
 @Injectable()
 export class PrismaService
@@ -38,17 +16,24 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const adapter = new PrismaPg(pool);
-    super({ adapter });
+    super({ adapter: createAdapter() });
   }
 
   async onModuleInit(): Promise<void> {
-    await this.$connect();
+    const maxAttempts = 5;
+    const delayMs = 2000;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await this.$connect();
+        return;
+      } catch (err) {
+        if (attempt === maxAttempts) throw err;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
-    await pool.end();
   }
 }
-

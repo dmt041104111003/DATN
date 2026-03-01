@@ -34,14 +34,13 @@ model Profile {
   role   Role   @relation(fields: [roleId], references: [id])
 
   mintedBatches       ProductBatch[]   @relation("ProfileBatches")
-  movementsFrom       MovementLog[]    @relation("MovementFromProfile")
-  movementsTo         MovementLog[]    @relation("MovementToProfile")
   issuedCertificates  Certificate[]     @relation("CertificateIssuer")
-  warehouseInventory  NftInventory[]   @relation("WarehouseOwner")
+  warehouseInventory  WarehouseInventory[]   @relation("WarehouseOwner")
 }
 
 model ProductBatch {
-  id              String   @id
+  id              Int      @id @default(autoincrement())
+  code            String   @unique 
   name            String
   image           String?
   standard        String?
@@ -54,65 +53,33 @@ model ProductBatch {
   minterProfileId Int
   minterProfile   Profile  @relation("ProfileBatches", fields: [minterProfileId], references: [id])
 
-  movements       MovementLog[]
   certificates    Certificate[]
   roadmaps        Roadmap[]
-  inventories     NftInventory[]
+  inventories     WarehouseInventory[]
 }
 
-model NftInventory {
+model WarehouseInventory {
   id          Int       @id @default(autoincrement())
   batchId     String
   profileId   Int
   quantity    Int       @default(1)
-  status      String    @default("IN_WAREHOUSE") // IN_WAREHOUSE | SHIPPED
+  status      String    @default("IN_WAREHOUSE")
   mintedAt    DateTime  @default(now())
 
-  batch   ProductBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch   ProductBatch @relation(fields: [batchId], references: [code], onDelete: Cascade)
   profile Profile      @relation("WarehouseOwner", fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([batchId, profileId])
 }
 
-enum MovementAction {
-  MINT
-  SHIP
-  RECEIVE
-  CONSUME
-  UPDATE
-  REVOKE
-  BURN
-}
-
-model MovementLog {
-  id             Int            @id @default(autoincrement())
-  batchId        String
-  action         MovementAction
-  roleAtHop      String
-  txHash         String
-  timestamp      DateTime       @default(now())
-  location       String?
-  coordinates    Json?
-
-  batch          ProductBatch   @relation(fields: [batchId], references: [id])
-
-  fromProfileId  Int?
-  fromProfile    Profile?       @relation("MovementFromProfile", fields: [fromProfileId], references: [id])
-
-  toProfileId    Int?
-  toProfile      Profile?       @relation("MovementToProfile", fields: [toProfileId], references: [id])
-}
-
 model Certificate {
   id               Int       @id @default(autoincrement())
   title            String
-  ipfsHash         String    @unique
+  imageUrl         String?
   issuedAt         DateTime  @default(now())
-  expiresAt        DateTime?
-  metadata         Json?
 
   batchId          String
-  batch            ProductBatch @relation(fields: [batchId], references: [id])
+  batch            ProductBatch @relation(fields: [batchId], references: [code])
 
   issuerProfileId  Int
   issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
@@ -123,19 +90,19 @@ model Roadmap {
   batchId         String
   receiverAddress String
   hopIndex        Int      @default(0)
-  action          MovementAction
+  action          String
   txHash          String?
   createdAt       DateTime @default(now())
 
-  batch           ProductBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch           ProductBatch @relation(fields: [batchId], references: [code], onDelete: Cascade)
 }
 
-enum LockDeliveryStatus {
-  IN_DELIVERY
+enum DeliveryStatus {
+  IN_TRANSIT
   DELIVERED
 }
 
-model MultisigLockDelivery {
+model DeliveryOrder {
   id                     Int                @id @default(autoincrement())
   lockTxHash             String
   scriptOutputIndex      Int                @default(0)
@@ -144,7 +111,7 @@ model MultisigLockDelivery {
   recipientAddress       String
   senderAddress          String
   ownerAddresses         Json
-  status                 LockDeliveryStatus @default(IN_DELIVERY)
+  status                 DeliveryStatus    @default(IN_TRANSIT)
   partialSignedTxHex     String?            @db.Text
   partialSignedByAddress String?
   secondSignedByAddress  String?

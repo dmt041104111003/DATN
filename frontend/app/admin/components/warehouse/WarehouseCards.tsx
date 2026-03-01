@@ -5,10 +5,11 @@ type Props = {
   styles: Record<string, string>;
   items: WarehouseItem[];
   onBurn: (item: WarehouseItem) => void;
+  onLock: (item: WarehouseItem) => void;
   burningBatchId: string | null;
 };
 
-export function WarehouseCards({ styles, items, onBurn, burningBatchId }: Props) {
+export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }: Props) {
   return (
     <div className={styles.tableCards}>
       {items.map((item) => (
@@ -31,13 +32,26 @@ export function WarehouseCards({ styles, items, onBurn, burningBatchId }: Props)
             <span className={styles.tableCardLabel}>Received</span>
             <span className={styles.tableCardValue}>{formatDate(item.mintedAt)}</span>
           </div>
+          <div className={styles.tableCardRow}>
+            <span className={styles.tableCardLabel}>Shipped</span>
+            <span className={styles.tableCardValue}>{item.status === 'SHIPPED' ? 'Yes' : '—'}</span>
+          </div>
           <div className={styles.tableCardActions}>
             <div className={styles.actions}>
               <button
                 type="button"
+                className={styles.btnSecondary}
+                onClick={() => onLock(item)}
+                disabled={item.status === 'SHIPPED' || !item.policyId}
+                title="Stock out"
+                >
+                  Stock out
+                </button>
+              <button
+                type="button"
                 className={styles.btnDanger}
                 onClick={() => onBurn(item)}
-                disabled={burningBatchId === item.batchId}
+                disabled={burningBatchId === item.batchId || item.status === 'SHIPPED'}
                 title="Burn"
               >
                 {burningBatchId === item.batchId ? 'Burning...' : 'Burn'}

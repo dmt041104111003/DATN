@@ -37,6 +37,22 @@ export class ConfigService {
     return this.appNetwork === "mainnet" ? 1 : 0;
   }
 
+  get pinataApiKey(): string {
+    return process.env.PINATA_API_KEY ?? "";
+  }
+
+  get pinataSecretKey(): string {
+    return process.env.PINATA_SECRET_KEY ?? "";
+  }
+
+  get pinataJwt(): string {
+    return process.env.PINATA_JWT ?? "";
+  }
+
+  get pinataGateway(): string {
+    return process.env.PINATA_GATEWAY ?? "gateway.pinata.cloud";
+  }
+
   get ipfsEndpoint(): string {
     return process.env.IPFS_ENDPOINT ?? "";
   }

@@ -46,48 +46,7 @@ export declare class AuthService {
             coordinates: string | null;
         };
     }>;
-    updateProfileFromToken(params: {
-        token: string;
-        displayName: string;
-        location?: string;
-        coordinates?: string;
-    }): Promise<{
-        token: string;
-        profile: {
-            id: number;
-            role: string;
-            displayName: string;
-            avatarUrl: string | null;
-            location: string | null;
-            coordinates: string | null;
-        };
-    }>;
-    uploadProfileAvatarFromToken(params: {
-        token: string;
-        imageDataUrl: string;
-    }): Promise<{
-        token: string;
-        profile: {
-            id: number;
-            role: string;
-            displayName: string;
-            avatarUrl: string | null;
-            location: string | null;
-            coordinates: string | null;
-        };
-    }>;
     getProfileIdFromToken(token: string): Promise<number>;
     getProfileRoleFromToken(token: string): Promise<string>;
-    listProfilesFromToken(token: string): Promise<{
-        walletAddress: string;
-        displayName: string;
-        location: string | null;
-        coordinates: string | null;
-    }[]>;
-    listProfilesByRoleCode(roleCode: string): Promise<{
-        id: number;
-        displayName: string;
-        walletAddress: string;
-    }[]>;
 }
 export {};

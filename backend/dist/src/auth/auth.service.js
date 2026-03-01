@@ -16,7 +16,6 @@ const jwt = require("jsonwebtoken");
 const bech32_1 = require("bech32");
 const config_service_1 = require("../config/config.service");
 const prisma_service_1 = require("../prisma/prisma.service");
-const cloudinary_1 = require("cloudinary");
 function isPaymentAddress(addr) {
     const s = (addr || "").trim();
     return s.startsWith("addr_test1") || s.startsWith("addr1");
@@ -52,16 +51,6 @@ let AuthService = class AuthService {
         this.config = config;
         this.prisma = prisma;
         this.nonceStore = new Map();
-        const cloudName = this.config.cloudinaryCloudName;
-        const apiKey = this.config.cloudinaryApiKey;
-        const apiSecret = this.config.cloudinaryApiSecret;
-        if (cloudName && apiKey && apiSecret) {
-            cloudinary_1.v2.config({
-                cloud_name: cloudName,
-                api_key: apiKey,
-                api_secret: apiSecret,
-            });
-        }
     }
     generateNonce(stakeAddress) {
         let addr = (stakeAddress || "").trim();
@@ -227,112 +216,6 @@ let AuthService = class AuthService {
             },
         };
     }
-    async updateProfileFromToken(params) {
-        var _a, _b;
-        const { token, displayName, location, coordinates } = params;
-        const secret = this.config.jwtSecret;
-        if (!secret) {
-            throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
-        }
-        let payload;
-        try {
-            payload = jwt.verify(token, secret);
-        }
-        catch (_c) {
-            throw new common_1.UnauthorizedException("Invalid token.");
-        }
-        if (!payload ||
-            typeof payload !== "object" ||
-            typeof payload.profileId !== "number") {
-            throw new common_1.UnauthorizedException("Invalid token payload.");
-        }
-        const profileId = payload.profileId;
-        const profile = await this.prisma.profile.update({
-            where: { id: profileId },
-            data: Object.assign(Object.assign({ displayName }, (location !== undefined && { location: location || null })), (coordinates !== undefined && { coordinates: coordinates || null })),
-            include: { role: true, wallet: true },
-        });
-        const nextPayload = {
-            sub: profile.walletAddress,
-            stakeAddress: profile.walletAddress,
-            profileId: profile.id,
-            role: profile.role.code,
-            displayName: profile.displayName,
-            avatarUrl: profile.avatarUrl,
-            location: profile.location,
-            coordinates: profile.coordinates,
-        };
-        const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
-        return {
-            token: nextToken,
-            profile: {
-                id: profile.id,
-                role: profile.role.code,
-                displayName: profile.displayName,
-                avatarUrl: profile.avatarUrl,
-                location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
-                coordinates: (_b = profile.coordinates) !== null && _b !== void 0 ? _b : null,
-            },
-        };
-    }
-    async uploadProfileAvatarFromToken(params) {
-        var _a, _b;
-        const { token, imageDataUrl } = params;
-        const secret = this.config.jwtSecret;
-        if (!secret) {
-            throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
-        }
-        let payload;
-        try {
-            payload = jwt.verify(token, secret);
-        }
-        catch (_c) {
-            throw new common_1.UnauthorizedException("Invalid token.");
-        }
-        if (!payload ||
-            typeof payload !== "object" ||
-            typeof payload.profileId !== "number") {
-            throw new common_1.UnauthorizedException("Invalid token payload.");
-        }
-        const profileId = payload.profileId;
-        if (!this.config.cloudinaryCloudName) {
-            throw new common_1.UnauthorizedException("Cloudinary is not configured.");
-        }
-        const uploadResult = await cloudinary_1.v2.uploader.upload(imageDataUrl, {
-            folder: "profiles",
-            overwrite: true,
-            invalidate: true,
-        });
-        const profile = await this.prisma.profile.update({
-            where: { id: profileId },
-            data: {
-                avatarUrl: uploadResult.secure_url,
-            },
-            include: { role: true, wallet: true },
-        });
-        const nextPayload = {
-            sub: profile.walletAddress,
-            stakeAddress: profile.walletAddress,
-            profileId: profile.id,
-            role: profile.role.code,
-            displayName: profile.displayName,
-            avatarUrl: profile.avatarUrl,
-            location: profile.location,
-            coordinates: profile.coordinates,
-        };
-        const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
-        return {
-            token: nextToken,
-            profile: {
-                id: profile.id,
-                role: profile.role.code,
-                displayName: profile.displayName,
-                avatarUrl: profile.avatarUrl,
-                location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
-                coordinates: (_b = profile.coordinates) !== null && _b !== void 0 ? _b : null,
-            },
-        };
-    }
     async getProfileIdFromToken(token) {
         const secret = this.config.jwtSecret;
         if (!secret)
@@ -359,62 +242,6 @@ let AuthService = class AuthService {
         if (!((_a = profile === null || profile === void 0 ? void 0 : profile.role) === null || _a === void 0 ? void 0 : _a.code))
             throw new common_1.UnauthorizedException("Profile or role not found.");
         return profile.role.code;
-    }
-    async listProfilesFromToken(token) {
-        const secret = this.config.jwtSecret;
-        if (!secret)
-            throw new common_1.UnauthorizedException("JWT_SECRET is not configured.");
-        let payload;
-        try {
-            payload = jwt.verify(token, secret);
-        }
-        catch (_a) {
-            throw new common_1.UnauthorizedException("Invalid token.");
-        }
-        if (!payload || typeof payload !== "object" || typeof payload.profileId !== "number") {
-            throw new common_1.UnauthorizedException("Invalid token payload.");
-        }
-        const profiles = await this.prisma.profile.findMany({
-            select: {
-                walletAddress: true,
-                displayName: true,
-                location: true,
-                coordinates: true,
-                role: { select: { code: true } },
-            },
-            orderBy: { displayName: "asc" },
-        });
-        return profiles.map((p) => {
-            var _a, _b, _c, _d;
-            return ({
-                walletAddress: p.walletAddress,
-                displayName: p.displayName,
-                location: (_a = p.location) !== null && _a !== void 0 ? _a : null,
-                coordinates: (_b = p.coordinates) !== null && _b !== void 0 ? _b : null,
-                role: (_d = (_c = p.role) === null || _c === void 0 ? void 0 : _c.code) !== null && _d !== void 0 ? _d : null,
-            });
-        });
-    }
-    async listProfilesByRoleCode(roleCode) {
-        const code = (roleCode || "").trim().toUpperCase();
-        if (!code)
-            return [];
-        const role = await this.prisma.role.findUnique({ where: { code } });
-        if (!role)
-            return [];
-        const profiles = await this.prisma.profile.findMany({
-            where: { roleId: role.id },
-            select: { id: true, displayName: true, walletAddress: true },
-            orderBy: { displayName: "asc" },
-        });
-        return profiles.map((p) => {
-            var _a;
-            return ({
-                id: p.id,
-                displayName: (_a = p.displayName) !== null && _a !== void 0 ? _a : "",
-                walletAddress: p.walletAddress,
-            });
-        });
     }
 };
 exports.AuthService = AuthService;

@@ -18,6 +18,7 @@ import { WarehouseHeader } from '../../components/warehouse/WarehouseHeader';
 import { WarehouseSearch } from '../../components/warehouse/WarehouseSearch';
 import { WarehouseTable } from '../../components/warehouse/WarehouseTable';
 import { WarehouseCards } from '../../components/warehouse/WarehouseCards';
+import { WarehouseLockDialog } from '../../components/warehouse/WarehouseLockDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles };
 const PAGE_SIZE = 10;
@@ -32,6 +33,8 @@ export default function WarehousePage() {
   const [burningBatchId, setBurningBatchId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const [lockDialogItem, setLockDialogItem] = useState<WarehouseItem | null>(null);
 
   useEffect(() => {
     const account = readAccountFromToken();
@@ -126,6 +129,12 @@ export default function WarehousePage() {
     }
   };
 
+  const handleLock = (item: WarehouseItem) => {
+    if (item.status === 'SHIPPED') return;
+    setLockDialogItem(item);
+    setLockDialogOpen(true);
+  };
+
   return (
     <>
       <WarehouseHeader styles={styles} />
@@ -158,12 +167,14 @@ export default function WarehousePage() {
             styles={styles}
             items={paginatedList}
             onBurn={handleBurn}
+            onLock={handleLock}
             burningBatchId={burningBatchId}
           />
           <WarehouseCards
             styles={styles}
             items={paginatedList}
             onBurn={handleBurn}
+            onLock={handleLock}
             burningBatchId={burningBatchId}
           />
 
@@ -176,6 +187,13 @@ export default function WarehousePage() {
           />
         </>
       )}
+
+      <WarehouseLockDialog
+        open={lockDialogOpen}
+        item={lockDialogItem}
+        onClose={() => { setLockDialogOpen(false); setLockDialogItem(null); }}
+        onSuccess={loadMyWarehouse}
+      />
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../styles/ProfileSetup.module.css';
 import { RoleSelect } from '../components/RoleSelect';
-import { ProfileForm } from '../components/ProfileForm';
+import { ProfileForm } from '../components/account/ProfileForm';
 import type { Role, ProfileSetupState } from '../types/index';
 
 const BACKEND_URL =
@@ -23,7 +23,6 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [location, setLocation] = useState('');
   const [coordinates, setCoordinates] = useState('');
-  const [glnCodeRoot, setGlnCodeRoot] = useState('');
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {

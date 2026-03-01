@@ -12,46 +12,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrismaService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
-const pg_1 = require("pg");
 const adapter_pg_1 = require("@prisma/adapter-pg");
-function createPgPool() {
-    var _a;
+function createAdapter() {
     const url = process.env.DATABASE_URL;
-    if (!url) {
-        throw new Error("Missing DATABASE_URL for Prisma/Postgres connection");
+    if (!(url === null || url === void 0 ? void 0 : url.trim())) {
+        throw new Error("Missing DATABASE_URL for Prisma/PostgreSQL connection");
     }
-    let ssl = undefined;
-    try {
-        const parsed = new URL(url);
-        const sslmode = ((_a = parsed.searchParams.get("sslmode")) !== null && _a !== void 0 ? _a : "").toLowerCase();
-        if (sslmode && sslmode !== "disable") {
-            ssl = {
-                rejectUnauthorized: sslmode === "verify-full",
-            };
-        }
-    }
-    catch (_b) {
-    }
-    return new pg_1.Pool({
-        connectionString: url,
-        ssl,
-        max: 10,
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 10000,
-    });
+    return new adapter_pg_1.PrismaPg({ connectionString: url.trim() });
 }
-const pool = createPgPool();
 let PrismaService = class PrismaService extends client_1.PrismaClient {
     constructor() {
-        const adapter = new adapter_pg_1.PrismaPg(pool);
-        super({ adapter });
+        super({ adapter: createAdapter() });
     }
     async onModuleInit() {
-        await this.$connect();
+        const maxAttempts = 5;
+        const delayMs = 2000;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                await this.$connect();
+                return;
+            }
+            catch (err) {
+                if (attempt === maxAttempts)
+                    throw err;
+                await new Promise((r) => setTimeout(r, delayMs));
+            }
+        }
     }
     async onModuleDestroy() {
         await this.$disconnect();
-        await pool.end();
     }
 };
 exports.PrismaService = PrismaService;

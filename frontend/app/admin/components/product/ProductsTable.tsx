@@ -14,7 +14,7 @@ export function ProductsTable({ styles, items, onEdit, onRevoke }: Props) {
         <thead>
           <tr>
             <th>ID</th>
-            <th>Slug</th>
+            <th>Code</th>
             <th>Name</th>
             <th>Image</th>
             <th>Actions</th>
@@ -24,7 +24,7 @@ export function ProductsTable({ styles, items, onEdit, onRevoke }: Props) {
           {items.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
-              <td>{p.slug}</td>
+              <td>{p.code}</td>
               <td>{p.nameEn}</td>
               <td>{p.imageUrl ? 'Yes' : '—'}</td>
               <td>

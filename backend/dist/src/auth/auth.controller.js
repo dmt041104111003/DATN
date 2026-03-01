@@ -27,22 +27,6 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async listProfiles(token) {
-        if (!token) {
-            throw new common_1.HttpException({ error: "Missing token" }, common_1.HttpStatus.BAD_REQUEST);
-        }
-        return this.authService.listProfilesFromToken(token);
-    }
-    async listProfilesByRole(role, token) {
-        if (!(role === null || role === void 0 ? void 0 : role.trim())) {
-            throw new common_1.HttpException({ error: "Missing role" }, common_1.HttpStatus.BAD_REQUEST);
-        }
-        if (!(token === null || token === void 0 ? void 0 : token.trim())) {
-            throw new common_1.HttpException({ error: "Missing token" }, common_1.HttpStatus.UNAUTHORIZED);
-        }
-        await this.authService.getProfileIdFromToken(token.trim());
-        return this.authService.listProfilesByRoleCode(role.trim());
-    }
     createNonce(stakeAddress) {
         const addr = normalizeAddress(stakeAddress);
         if (!addr) {
@@ -78,45 +62,8 @@ let AuthController = class AuthController {
             coordinates: coordinates !== null && coordinates !== void 0 ? coordinates : undefined,
         });
     }
-    async updateProfile(body) {
-        const { token, displayName, location, coordinates } = body;
-        if (!token || !displayName) {
-            throw new common_1.HttpException({ error: "Missing profile update information" }, common_1.HttpStatus.BAD_REQUEST);
-        }
-        return this.authService.updateProfileFromToken({
-            token,
-            displayName,
-            location,
-            coordinates,
-        });
-    }
-    async uploadAvatar(body) {
-        const { token, imageDataUrl } = body;
-        if (!token || !imageDataUrl) {
-            throw new common_1.HttpException({ error: "Missing avatar upload information" }, common_1.HttpStatus.BAD_REQUEST);
-        }
-        return this.authService.uploadProfileAvatarFromToken({
-            token,
-            imageDataUrl,
-        });
-    }
 };
 exports.AuthController = AuthController;
-__decorate([
-    (0, common_1.Get)("profiles"),
-    __param(0, (0, common_1.Query)("token")),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "listProfiles", null);
-__decorate([
-    (0, common_1.Get)("profiles/by-role"),
-    __param(0, (0, common_1.Query)("role")),
-    __param(1, (0, common_1.Query)("token")),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "listProfilesByRole", null);
 __decorate([
     (0, common_1.Post)("nonce"),
     __param(0, (0, common_1.Body)("stakeAddress")),
@@ -138,20 +85,6 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "createProfile", null);
-__decorate([
-    (0, common_1.Patch)("profile"),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "updateProfile", null);
-__decorate([
-    (0, common_1.Post)("profile/avatar"),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "uploadAvatar", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)("auth"),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

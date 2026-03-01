@@ -1,6 +1,6 @@
 export type Product = {
   id: number;
-  slug: string;
+  code: string;
   nameEn: string;
   descriptionEn: string | null;
   imageUrl: string | null;
@@ -18,13 +18,21 @@ export type Account = {
 
 export type ProductListItem = {
   id: number;
-  slug: string;
+  code: string;
   nameEn: string;
 };
 
 export type Role = {
   id: number;
   code: string;
+};
+
+export type ProfileOption = {
+  walletAddress: string;
+  displayName: string;
+  location: string | null;
+  coordinates: string | null;
+  role?: string | null;
 };
 
 export type ProfileFormProps = {
@@ -47,6 +55,14 @@ export type RoleSelectProps = {
 export type ProfileSetupState = {
   stakeAddress: string;
   roles: Role[];
+};
+
+export type PaginationProps = {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems?: number;
+  pageSize?: number;
 };
 
 export type AccountProfileProps = {

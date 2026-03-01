@@ -11,9 +11,14 @@ const common_1 = require("@nestjs/common");
 const config_module_1 = require("./config/config.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const cardano_module_1 = require("./cardano/cardano.module");
-const trace_module_1 = require("./trace/trace.module");
+const product_module_1 = require("./product/product.module");
 const auth_module_1 = require("./auth/auth.module");
-const multisig_module_1 = require("./multisig/multisig.module");
+const profile_module_1 = require("./profile/profile.module");
+const order_module_1 = require("./order/order.module");
+const warehouse_module_1 = require("./warehouse/warehouse.module");
+const certificate_module_1 = require("./certificate/certificate.module");
+const ipfs_module_1 = require("./ipfs/ipfs.module");
+const upload_module_1 = require("./upload/upload.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -23,9 +28,14 @@ exports.AppModule = AppModule = __decorate([
             config_module_1.ConfigModule,
             prisma_module_1.PrismaModule,
             cardano_module_1.CardanoModule,
-            trace_module_1.TraceModule,
+            product_module_1.ProductModule,
             auth_module_1.AuthModule,
-            multisig_module_1.MultisigModule,
+            profile_module_1.ProfileModule,
+            order_module_1.OrderModule,
+            warehouse_module_1.WarehouseModule,
+            certificate_module_1.CertificateModule,
+            ipfs_module_1.IpfsModule,
+            upload_module_1.UploadModule,
         ],
     })
 ], AppModule);

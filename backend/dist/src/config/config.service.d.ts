@@ -14,6 +14,10 @@ export declare class ConfigService {
     get koiosToken(): string;
     get appNetwork(): Network;
     get appNetworkId(): number;
+    get pinataApiKey(): string;
+    get pinataSecretKey(): string;
+    get pinataJwt(): string;
+    get pinataGateway(): string;
     get ipfsEndpoint(): string;
     get ipfsGateway(): string;
     get mintReferenceScriptHash(): string;

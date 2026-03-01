@@ -1,37 +1,8 @@
 'use client';
 
 import styles from '../styles/Pagination.module.css';
-
-export type PaginationProps = {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  totalItems?: number;
-  pageSize?: number;
-};
-
-function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  const pages: (number | 'ellipsis')[] = [];
-  if (current <= 4) {
-    for (let i = 1; i <= 5; i++) pages.push(i);
-    pages.push('ellipsis');
-    pages.push(total);
-  } else if (current >= total - 3) {
-    pages.push(1);
-    pages.push('ellipsis');
-    for (let i = total - 4; i <= total; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    pages.push('ellipsis');
-    for (let i = current - 1; i <= current + 1; i++) pages.push(i);
-    pages.push('ellipsis');
-    pages.push(total);
-  }
-  return pages;
-}
+import type { PaginationProps } from '../types';
+import { getPageNumbers } from '../utils/pagination';
 
 export default function Pagination(props: PaginationProps) {
   const {

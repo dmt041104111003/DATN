@@ -55,7 +55,7 @@ export default function AdminLayoutClient({
     const current = ADMIN_NAV_ITEMS.find((item) => item.href === pathname);
     const pageName = current?.label ?? 'Admin';
     const rolePart = role ?? 'Admin';
-    document.title = `trace.lab3 - ${rolePart} - ${pageName}`;
+    document.title = `product.lab3 - ${rolePart} - ${pageName}`;
   }, [role, pathname]);
 
   useEffect(() => {

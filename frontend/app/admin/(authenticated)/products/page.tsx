@@ -17,10 +17,14 @@ import { ProductsHeader } from '../../components/product/ProductsHeader';
 import { ProductsSearch } from '../../components/product/ProductsSearch';
 import { ProductsTable } from '../../components/product/ProductsTable';
 import { ProductsCards } from '../../components/product/ProductsCards';
-import { ProductDialog, type ProfileOption } from '../../components/product/ProductDialog';
+import type { ProfileOption } from '../../types';
+import { uploadFileToIpfs } from '../../lib/ipfs';
+import { getAuthToken } from '../../lib/account';
+import { ProductDialog } from '../../components/product/ProductDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
 const PAGE_SIZE = 10;
+const DEFAULT_IMAGE_IPFS = 'ipfs://bafkreiak6rnkvx24nks3yadlg6x6emr6jtfbflufke5dzxi2sr66usyyne';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
 const AUTH_COOKIE = 'auth_token';
@@ -31,14 +35,11 @@ export default function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const [slug, setSlug] = useState('');
+  const [code, setCode] = useState('');
   const [nameEn, setNameEn] = useState('Cam sành XNK 1.5kg');
   const [descriptionEn, setDescriptionEn] = useState('Sample traceability product');
-  const [imageUrl, setImageUrl] = useState('ipfs://<hash_anh_dai_dien>');
+  const [imageUrl, setImageUrl] = useState('');
   const [expiryDate, setExpiryDate] = useState(nowForDateTimeLocal);
-  const [certificateHash, setCertificateHash] = useState(
-    'ipfs://<hash_ket_qua_kiem_nghiem>',
-  );
   const [receiverList, setReceiverList] = useState<string[]>([]);
   const [receiverDisplayNames, setReceiverDisplayNames] = useState<string[]>([]);
   const [receiverLocations, setReceiverLocations] = useState('');
@@ -73,7 +74,7 @@ export default function ProductsPage() {
       setProducts([]);
       return;
     }
-    const res = await fetch(`${BACKEND_URL}/trace/batches?token=${encodeURIComponent(token)}`, {
+    const res = await fetch(`${BACKEND_URL}/product/batches?token=${encodeURIComponent(token)}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -84,14 +85,14 @@ export default function ProductsPage() {
     }
     const items: any[] = Array.isArray(data?.items) ? data.items : [];
     const mapped: Product[] = items
-      .map((b, i) => ({
-        id: i + 1,
-        slug: String(b?.id ?? ''),
+      .map((b: { id?: number; code?: string; name?: string; image?: string | null }) => ({
+        id: Number(b?.id ?? 0),
+        code: String(b?.code ?? ''),
         nameEn: String(b?.name ?? ''),
         descriptionEn: null,
         imageUrl: b?.image ? String(b.image) : null,
       }))
-      .filter((p) => !!p.slug);
+      .filter((p) => !!p.code);
     setProducts(mapped);
   };
 
@@ -127,7 +128,7 @@ export default function ProductsPage() {
     return (
       !query ||
       p.id === Number(query) ||
-      p.slug.toLowerCase().includes(query) ||
+      p.code.toLowerCase().includes(query) ||
       p.nameEn.toLowerCase().includes(query)
     );
   });
@@ -168,12 +169,11 @@ export default function ProductsPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setSlug('');
+    setCode('');
     setNameEn('Cam sành XNK 1.5kg');
     setDescriptionEn('Sample traceability product');
-    setImageUrl('ipfs://<hash_anh_dai_dien>');
+    setImageUrl('');
     setExpiryDate(nowForDateTimeLocal());
-    setCertificateHash('ipfs://<hash_ket_qua_kiem_nghiem>');
     setReceiverList([]);
     setReceiverDisplayNames([]);
     setReceiverLocations('');
@@ -190,7 +190,7 @@ export default function ProductsPage() {
       : null;
     const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
     if (!token) return;
-    const res = await fetch(`${BACKEND_URL}/auth/profiles?token=${encodeURIComponent(token)}`);
+    const res = await fetch(`${BACKEND_URL}/profile/profiles?token=${encodeURIComponent(token)}`);
     if (!res.ok) return;
     const data = await res.json();
     setProfiles(Array.isArray(data) ? data : []);
@@ -198,7 +198,7 @@ export default function ProductsPage() {
 
   const openAdd = () => {
     resetForm();
-    setSlug(randomAssetName());
+    setCode(randomAssetName());
     const account = readAccountFromToken();
     setMinterLocation(account?.location ?? '');
     setMinterCoordinates(account?.coordinates ?? '');
@@ -208,7 +208,7 @@ export default function ProductsPage() {
 
   const openEdit = (p: Product) => {
     setEditingId(p.id);
-    setSlug(p.slug);
+    setCode(p.code);
     setNameEn(p.nameEn);
     setDescriptionEn(p.descriptionEn ?? '');
     setImageUrl(p.imageUrl ?? '');
@@ -229,10 +229,12 @@ export default function ProductsPage() {
       return;
     }
 
-    let assetName = slug.trim();
+    const effectiveImage = imageUrl.trim() || DEFAULT_IMAGE_IPFS;
+
+    let assetName = code.trim();
     if (!assetName) {
       assetName = randomAssetName();
-      setSlug(assetName);
+      setCode(assetName);
     }
 
     const account = readAccountFromToken();
@@ -250,12 +252,9 @@ export default function ProductsPage() {
         effectiveExpiry = parsed.toISOString();
       }
     }
-    const effectiveCertificateHash =
-      certificateHash.trim() || 'ipfs://<hash_ket_qua_kiem_nghiem>';
     const properties: Record<string, unknown> = {
       ngayHetHan: effectiveExpiry,
       current_holder_id: account.stakeAddress,
-      certificate_hash: effectiveCertificateHash,
     };
 
     setLoading(true);
@@ -269,13 +268,13 @@ export default function ProductsPage() {
       if (!token) throw new Error('Session expired. Please log in again.');
 
       const isEdit = editingId !== null;
-      const url = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}?token=${encodeURIComponent(token)}`;
+      const url = `${BACKEND_URL}/product/${isEdit ? 'update' : 'mint'}?token=${encodeURIComponent(token)}`;
       const body: any = {
         changeAddress,
         utxoAddresses,
         assetName,
         name: nameEn,
-        image: imageUrl || '',
+        image: effectiveImage,
         receivers: receiverList.length ? receiverList : [account.stakeAddress],
         receiverLocations,
         receiverCoordinates,
@@ -299,29 +298,29 @@ export default function ProductsPage() {
       if (data?.unsignedTx) {
         const txHash = await signAndSubmitWithEternl(data.unsignedTx);
         const profileId = account.id;
-        const confirmUrl = `${BACKEND_URL}/trace/${isEdit ? 'update' : 'mint'}/confirm?token=${encodeURIComponent(token)}`;
+        const confirmUrl = `${BACKEND_URL}/product/${isEdit ? 'update' : 'mint'}/confirm?token=${encodeURIComponent(token)}`;
         const confirmBody = isEdit
           ? {
               txHash,
               assetName,
               profileId,
               name: nameEn,
-              image: imageUrl || '',
+              image: effectiveImage,
               standard: 'Traceability-v1',
               properties,
-              metadata: { name: nameEn, image: imageUrl || '', standard: 'Traceability-v1' },
+              metadata: { name: nameEn, image: effectiveImage, standard: 'Traceability-v1' },
               receivers: receiverList.length ? receiverList : [account.stakeAddress],
             }
           : {
               txHash,
               assetName,
               name: nameEn,
-              image: imageUrl || '',
+              image: effectiveImage,
               minterProfileId: profileId,
               policyId: data.policyId,
               standard: 'Traceability-v1',
               properties,
-              metadata: { name: nameEn, image: imageUrl || '', standard: 'Traceability-v1' },
+              metadata: { name: nameEn, image: effectiveImage, standard: 'Traceability-v1' },
               receivers: receiverList.length ? receiverList : [account.stakeAddress],
             };
         const confirmRes = await fetch(confirmUrl, {
@@ -371,13 +370,13 @@ export default function ProductsPage() {
       const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
       if (!token) throw new Error('Session expired. Please log in again.');
 
-      const res = await fetch(`${BACKEND_URL}/trace/revoke?token=${encodeURIComponent(token)}`, {
+      const res = await fetch(`${BACKEND_URL}/product/revoke?token=${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           changeAddress,
           utxoAddresses: await getWalletUtxoAddresses(),
-          assetName: target.slug,
+          assetName: target.code,
         }),
       });
       const data = await res.json();
@@ -389,10 +388,10 @@ export default function ProductsPage() {
 
       if (data?.unsignedTx) {
         const txHash = await signAndSubmitWithEternl(data.unsignedTx);
-        const confirmRes = await fetch(`${BACKEND_URL}/trace/revoke/confirm?token=${encodeURIComponent(token)}`, {
+        const confirmRes = await fetch(`${BACKEND_URL}/product/revoke/confirm?token=${encodeURIComponent(token)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ txHash, assetName: target.slug, profileId: account.id }),
+          body: JSON.stringify({ txHash, assetName: target.code, profileId: account.id }),
         });
         if (!confirmRes.ok) {
           const confirmData = await confirmRes.json();
@@ -412,24 +411,28 @@ export default function ProductsPage() {
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file || !file.type.startsWith('image/')) {
-      if (file) alert('Please choose an image file (jpg, png, webp...)');
+      if (file) setError('Please choose an image file (jpg, png, webp...)');
+      return;
+    }
+    const token = getAuthToken();
+    if (!token) {
+      setError('Session expired. Please log in again.');
       return;
     }
     setUploading(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageUrl(typeof reader.result === 'string' ? reader.result : '');
+    setError('');
+    try {
+      const { ipfsHash } = await uploadFileToIpfs(token, file);
+      setImageUrl(ipfsHash ? `ipfs://${ipfsHash.replace(/^ipfs:\/\//, '')}` : '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image to IPFS.');
+    } finally {
       setUploading(false);
-      e.target.value = '';
-    };
-    reader.onerror = () => {
-      alert('Failed to read image file');
-      setUploading(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -471,11 +474,10 @@ export default function ProductsPage() {
         error={error}
         loading={loading}
         uploading={uploading}
-        slug={slug}
+        code={code}
         nameEn={nameEn}
         descriptionEn={descriptionEn}
         expiryDate={expiryDate}
-        certificateHash={certificateHash}
         receiverList={receiverList}
         receiverDisplayNames={receiverDisplayNames}
         receiverLocations={receiverLocations}
@@ -490,7 +492,6 @@ export default function ProductsPage() {
         onNameChange={setNameEn}
         onDescriptionChange={setDescriptionEn}
         onExpiryChange={setExpiryDate}
-        onCertificateHashChange={setCertificateHash}
         onAddReceiverFromProfile={addReceiverFromProfile}
         onReceiverLocationsChange={setReceiverLocations}
         onReceiverCoordinatesChange={setReceiverCoordinates}

@@ -5,10 +5,11 @@ type Props = {
   styles: Record<string, string>;
   items: WarehouseItem[];
   onBurn: (item: WarehouseItem) => void;
+  onLock: (item: WarehouseItem) => void;
   burningBatchId: string | null;
 };
 
-export function WarehouseTable({ styles, items, onBurn, burningBatchId }: Props) {
+export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }: Props) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -17,6 +18,7 @@ export function WarehouseTable({ styles, items, onBurn, burningBatchId }: Props)
             <th>Name</th>
             <th>Qty</th>
             <th>Received</th>
+            <th>Shipped</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -32,16 +34,28 @@ export function WarehouseTable({ styles, items, onBurn, burningBatchId }: Props)
               </td>
               <td>{item.quantity}</td>
               <td>{formatDate(item.mintedAt)}</td>
+              <td>{item.status === 'SHIPPED' ? 'Yes' : '—'}</td>
               <td>
-                <button
-                  type="button"
-                  className={styles.btnDanger}
-                  onClick={() => onBurn(item)}
-                  disabled={burningBatchId === item.batchId}
-                  title="Burn (wallet must hold this NFT)"
-                >
-                  {burningBatchId === item.batchId ? 'Burning...' : 'Burn'}
-                </button>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={() => onLock(item)}
+                    disabled={item.status === 'SHIPPED' || !item.policyId}
+                    title="Stock out"
+                  >
+                    Stock out
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btnDanger}
+                    onClick={() => onBurn(item)}
+                    disabled={burningBatchId === item.batchId || item.status === 'SHIPPED'}
+                    title="Burn (wallet must hold this NFT)"
+                    >
+                    {burningBatchId === item.batchId ? 'Burning...' : 'Burn'}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

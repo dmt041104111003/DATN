@@ -8,6 +8,7 @@ export type WarehouseItem = {
   quantity: number;
   mintedAt: string;
   policyId?: string | null;
+  status?: string;
 };
 
 function mapItem(i: Record<string, unknown>): WarehouseItem {
@@ -18,12 +19,13 @@ function mapItem(i: Record<string, unknown>): WarehouseItem {
     quantity: Number(i?.quantity) ?? 1,
     mintedAt: String(i?.mintedAt ?? ''),
     policyId: i?.policyId != null ? String(i.policyId) : null,
+    status: i?.status != null ? String(i.status) : 'IN_WAREHOUSE',
   };
 }
 
 export async function getWarehouseItems(token: string): Promise<WarehouseItem[]> {
   const res = await fetch(
-    `${BACKEND_URL}/trace/warehouses?token=${encodeURIComponent(token)}`,
+    `${BACKEND_URL}/warehouse?token=${encodeURIComponent(token)}`,
     { method: 'GET', headers: { 'Content-Type': 'application/json' } },
   );
   const data = await res.json();
@@ -36,6 +38,23 @@ export async function getWarehouseItems(token: string): Promise<WarehouseItem[]>
   return raw.map((i: Record<string, unknown>) => mapItem(i));
 }
 
+export async function getLockRecipientByRoadmap(
+  token: string,
+  batchId: string,
+): Promise<{ recipientAddress: string | null }> {
+  const res = await fetch(
+    `${BACKEND_URL}/warehouse/recipient-by-roadmap?batchId=${encodeURIComponent(batchId.trim())}&token=${encodeURIComponent(token)}`,
+    { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message ?? data?.error ?? 'Failed to get recipient.');
+  }
+  return {
+    recipientAddress: data?.recipientAddress != null ? String(data.recipientAddress) : null,
+  };
+}
+
 export async function requestBurnNft(
   token: string,
   params: {
@@ -46,7 +65,7 @@ export async function requestBurnNft(
   },
 ): Promise<{ unsignedTx: string }> {
   const res = await fetch(
-    `${BACKEND_URL}/trace/burn?token=${encodeURIComponent(token)}`,
+    `${BACKEND_URL}/product/burn?token=${encodeURIComponent(token)}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -74,7 +93,7 @@ export async function confirmBurnNft(
   token: string,
   params: { txHash: string; assetName: string; profileId: number },
 ): Promise<void> {
-  const res = await fetch(`${BACKEND_URL}/trace/burn/confirm`, {
+  const res = await fetch(`${BACKEND_URL}/product/burn/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -38,6 +38,22 @@ let ConfigService = class ConfigService {
     get appNetworkId() {
         return this.appNetwork === "mainnet" ? 1 : 0;
     }
+    get pinataApiKey() {
+        var _a;
+        return (_a = process.env.PINATA_API_KEY) !== null && _a !== void 0 ? _a : "";
+    }
+    get pinataSecretKey() {
+        var _a;
+        return (_a = process.env.PINATA_SECRET_KEY) !== null && _a !== void 0 ? _a : "";
+    }
+    get pinataJwt() {
+        var _a;
+        return (_a = process.env.PINATA_JWT) !== null && _a !== void 0 ? _a : "";
+    }
+    get pinataGateway() {
+        var _a;
+        return (_a = process.env.PINATA_GATEWAY) !== null && _a !== void 0 ? _a : "gateway.pinata.cloud";
+    }
     get ipfsEndpoint() {
         var _a;
         return (_a = process.env.IPFS_ENDPOINT) !== null && _a !== void 0 ? _a : "";

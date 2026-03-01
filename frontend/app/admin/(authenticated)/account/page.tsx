@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Account } from '../../types/index';
 import { readAccountFromToken } from '../../lib/account';
-import { AccountProfile } from '../../components/AccountProfile';
+import { AccountProfile } from '../../components/account/AccountProfile';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000';
 const AUTH_COOKIE = 'auth_token';
@@ -66,7 +66,7 @@ export default function AdminAccountPage() {
           throw new Error('Failed to read image file.');
         }
 
-        const res = await fetch(`${BACKEND_URL}/auth/profile/avatar`, {
+        const res = await fetch(`${BACKEND_URL}/profile/avatar`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, imageDataUrl }),
@@ -137,7 +137,7 @@ export default function AdminAccountPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/profile`, {
+      const res = await fetch(`${BACKEND_URL}/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

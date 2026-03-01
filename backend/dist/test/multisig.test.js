@@ -7,7 +7,7 @@ const globals_1 = require("@jest/globals");
 const core_1 = require("@meshsdk/core");
 const fs_1 = require("fs");
 const path_1 = require("path");
-const multisig_contract_1 = require("../src/multisig/multisig.contract");
+const order_contract_1 = require("../src/order/order.contract");
 const cip68_contract_1 = require("../src/cip68/cip68.contract");
 const utils_1 = require("../src/cip68/utils");
 const APP_WORDS = (_c = (_b = (_a = process.env.APP_MNEMONIC) === null || _a === void 0 ? void 0 : _a.trim()) === null || _b === void 0 ? void 0 : _b.split(" ").filter(Boolean)) !== null && _c !== void 0 ? _c : [];
@@ -118,7 +118,7 @@ async function getMinterPkFromRef100(policyId, assetName) {
     }
     return minterPk;
 }
-(0, globals_1.describe)("Multisig - Lock", function () {
+(0, globals_1.describe)("Order - Lock", function () {
     let wallet;
     let contract;
     (0, globals_1.beforeEach)(async function () {
@@ -128,7 +128,7 @@ async function getMinterPkFromRef100(policyId, assetName) {
             submitter: standalone_1.blockfrostProvider,
             key: { type: "mnemonic", words: USER_WORDS },
         });
-        contract = new multisig_contract_1.MultisigContract();
+        contract = new order_contract_1.OrderContract();
     });
     globals_1.jest.setTimeout(60000);
     (0, globals_1.test)("Lock", async function () {
@@ -179,7 +179,7 @@ async function getMinterPkFromRef100(policyId, assetName) {
         console.log("Lock tx:", lockTxHash);
     });
 });
-(0, globals_1.describe)("Multisig - Unlock", function () {
+(0, globals_1.describe)("Order - Unlock", function () {
     let wallet;
     let contract;
     (0, globals_1.beforeEach)(async function () {
@@ -190,7 +190,7 @@ async function getMinterPkFromRef100(policyId, assetName) {
             key: { type: "mnemonic", words: USER_WORDS },
         });
         const opts = getMultisigContractOpts();
-        contract = new multisig_contract_1.MultisigContract(opts);
+        contract = new order_contract_1.OrderContract(opts);
     });
     globals_1.jest.setTimeout(60000);
     (0, globals_1.test)("Unlock", async function () {
