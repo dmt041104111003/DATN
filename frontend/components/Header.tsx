@@ -18,6 +18,7 @@ export function Header() {
 
   const getActiveMenuItem = () => {
     if (pathname === '/') return 'home';
+    if (pathname === '/trace') return 'trace';
     if (pathname === '/admin/login') return 'register';
     return null;
   };
@@ -45,6 +46,12 @@ export function Header() {
     }
     if (itemId === 'register') {
       window.location.href = '/admin/login';
+      setOpenDropdown(null);
+      closeDrawer();
+      return;
+    }
+    if (itemId === 'trace') {
+      window.location.href = '/trace';
       setOpenDropdown(null);
       closeDrawer();
       return;
@@ -134,7 +141,7 @@ export function Header() {
                     onClick={() => {
                       if (item.hasDropdown) {
                         setOpenDropdown(openDropdown === item.id ? null : item.id);
-                      } else if (item.id === 'home' || item.id === 'register') {
+                      } else if (item.id === 'home' || item.id === 'register' || item.id === 'trace') {
                         handleNavClick(item.id);
                       }
                     }}
@@ -185,7 +192,7 @@ export function Header() {
                       onClick={() => {
                         if (item.hasDropdown) {
                           setMobileExpandedDropdown(mobileExpandedDropdown === item.id ? null : item.id);
-                        } else if (item.id === 'home' || item.id === 'register') {
+                        } else if (item.id === 'home' || item.id === 'register' || item.id === 'trace') {
                           handleNavClick(item.id);
                         } else {
                           closeDrawer();

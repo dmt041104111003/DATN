@@ -13,6 +13,12 @@ export const MENU_ITEMS: MenuItem[] = [
     },
   },
   {
+    id: 'trace',
+    label: {
+      en: 'Trace',
+    },
+  },
+  {
     id: 'register',
     label: {
       en: 'Register',

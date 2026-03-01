@@ -1,8 +1,8 @@
 "use strict";
 
-$(function () {
-  var globes = document.querySelectorAll(".service .globe");
-  if (!globes.length || !window.globePuffAnimation || !window.worldMapData) return;
+function initGlobes() {
+  var globes = document.querySelectorAll(".service .globe:not([data-globe-inited])");
+  if (!globes.length || !window.globePuffAnimation || !window.worldMapData) return false;
 
   var width = 400;
   var height = 400;
@@ -17,6 +17,8 @@ $(function () {
     var puffEl = globeEl.querySelector(".puff");
     var worldmapEl = globeEl.querySelector(".worldmap");
     if (!puffEl || !worldmapEl) return;
+
+    globeEl.setAttribute("data-globe-inited", "1");
 
     if (typeof bodymovin !== "undefined") {
       bodymovin.loadAnimation({
@@ -39,15 +41,26 @@ $(function () {
     instances.push({ projection: projection, path: path, svg: svg });
   });
 
-  function bgscroll() {
-    current += 0.5;
-    instances.forEach(function (inst) {
-      inst.projection.rotate([λ(current), 0]);
-      inst.svg.selectAll("path").attr("d", inst.path);
-    });
-  }
-
   if (instances.length) {
+    function bgscroll() {
+      current += 0.5;
+      instances.forEach(function (inst) {
+        inst.projection.rotate([λ(current), 0]);
+        inst.svg.selectAll("path").attr("d", inst.path);
+      });
+    }
     setInterval(bgscroll, scrollSpeed);
   }
+  return instances.length > 0;
+}
+
+$(function () {
+  var attempts = 0;
+  var maxAttempts = 30;
+  function tryInit() {
+    if (initGlobes()) return;
+    attempts += 1;
+    if (attempts < maxAttempts) setTimeout(tryInit, 200);
+  }
+  tryInit();
 });
