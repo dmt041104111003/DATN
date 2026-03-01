@@ -2,6 +2,27 @@
   left: 5% !important;
   top: -5% !important;
   transform: translate(0, 0) !important;
+  z-index: 0 !important; /* dưới text */
+}
+
+/* TRACEABILITY NETWORK: globe bên phải */
+.network-section .globe {
+  left: auto !important;
+  right: 5% !important;
+  top: 50% !important;
+  transform: translate(0, -50%) !important;
+  display: block !important; /* override globe.min: ẩn khi max-width 1024px */
+  z-index: 0 !important;
+}
+
+/* Hero: globe bên phải ngoài cùng */
+.hero-section .globe {
+  left: auto !important;
+  right: 5% !important;
+  top: 50% !important;
+  transform: translate(0, -50%) !important;
+  display: block !important; /* override globe.min ẩn khi max-width 1024px */
+  z-index: 0 !important;
 }
 
 .service {
@@ -29,4 +50,3 @@
     transform-origin: center;
   }
 }
-

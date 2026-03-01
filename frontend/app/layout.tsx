@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import Script from "next/script";
 import "./globals.css";
+import "../styles/landing.css";
 import "../styles/globe.min.151d0a8243e1.css";
 import "../styles/globe.override.css";
 
 export const metadata = {
-  title: "Trace.Lab3 - Login",
-  description: "Trace.Lab3 - Cardano wallet login",
+  title: "Trace.Lab3 - Origin Traceability",
+  description: "Trace.Lab3 - Origin Traceability",
   icons: {
     icon: "/logo.svg",
   },
@@ -15,6 +16,12 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         {children}
         <Script

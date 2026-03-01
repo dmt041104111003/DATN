@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../styles/Login.module.css';
-import { AdminHeader } from './Header';
+import Hero from '@/app/admin/components/Hero';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 
 const AUTH_COOKIE = 'auth_token';
@@ -40,15 +40,21 @@ export default function AdminLoginForm() {
 
   return (
     <div className={`${styles.loginOverlay} service`}>
+      <a
+        href="/"
+        onClick={(e) => {
+          e.preventDefault();
+          window.location.href = '/';
+        }}
+        className={styles.loginBackHome}
+      >
+        Back to home
+      </a>
       <div className={styles.loginLeft}>
-        <div className="globe">
-          <div className="worldmap" />
-          <div className="puff" />
-        </div>
+        <Hero />
       </div>
 
       <div className={styles.loginRight}>
-        <AdminHeader />
         <div className={styles.loginBox}>
           <button
             type="button"

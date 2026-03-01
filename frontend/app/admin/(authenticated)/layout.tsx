@@ -10,7 +10,7 @@ export default async function AuthenticatedAdminLayout({
   const ok = await verifyAdmin();
 
   if (!ok) {
-    redirect('/');
+    redirect('/admin/login');
   }
 
   return <AdminLayoutClient>{children}</AdminLayoutClient>;

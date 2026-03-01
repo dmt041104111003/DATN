@@ -1,11 +1,28 @@
-import { redirect } from 'next/navigation';
-import { verifyAdmin } from './admin/lib/auth';
-import AdminLoginForm from './admin/components/AdminLoginForm';
+'use client';
 
-export default async function HomePage() {
-  const ok = await verifyAdmin();
-  if (ok) {
-    redirect('/admin');
-  }
-  return <AdminLoginForm />;
+import { LanguageProvider } from '@/context/LanguageProvider';
+import { Hero } from '@/components/Hero';
+import { About } from '@/components/About';
+import { CoreValues } from '@/components/CoreValues';
+import { History } from '@/components/History';
+import { Network } from '@/components/Network';
+import { Contact } from '@/components/Contact';
+import { FAQ } from '@/components/FAQ';
+import { Footer } from '@/components/Footer';
+
+export default function HomePage() {
+  return (
+    <LanguageProvider>
+      <main>
+        <Hero />
+        <About />
+        <CoreValues />
+        <History />
+        <Network />
+        <Contact />
+        <FAQ />
+        <Footer />
+      </main>
+    </LanguageProvider>
+  );
 }
