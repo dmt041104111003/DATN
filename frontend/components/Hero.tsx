@@ -4,19 +4,12 @@ import { useLanguage } from '@/context/LanguageProvider';
 import { HERO_CONTENT } from '@/constants/hero';
 import Link from 'next/link';
 import { Header } from './Header';
-
-function Globe() {
-  return (
-    <div className="globe" style={{ zIndex: 0 }}>
-      <div className="worldmap" />
-      <div className="puff" />
-    </div>
-  );
-}
+import { getHeroContent } from '@/utils/hero';
+import { Globe } from '@/components/globe';
 
 export function Hero() {
   const { language } = useLanguage();
-  const content = HERO_CONTENT[language];
+  const content = getHeroContent(HERO_CONTENT, language);
 
   return (
     <section id="hero" className="relative w-full h-screen flex flex-col overflow-hidden bg-[#f6f6f6] dark:bg-gray-900 service hero-section">

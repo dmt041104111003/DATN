@@ -1,5 +1,5 @@
 import type { UTxO } from "@meshsdk/core";
-import type { Plutus } from "../types";
+import type { Plutus } from "../shared/types";
 export type OrderDatum = {
     ownersPkh: string[];
     threshold: number;

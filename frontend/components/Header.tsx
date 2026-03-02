@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageProvider';
 import { MENU_ITEMS } from '@/constants/menu';
 import Image from 'next/image';
+import { useWalletAuth } from '@/app/admin/hooks/useWalletAuth';
 
 export function Header() {
   const { language } = useLanguage();
@@ -15,11 +16,18 @@ export function Header() {
   const [mobileExpandedDropdown, setMobileExpandedDropdown] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
+  const { error, loading, setError, loginWithEternl } = useWalletAuth();
+  const [hasAuth, setHasAuth] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    setHasAuth(document.cookie.includes('auth_token='));
+  }, []);
 
   const getActiveMenuItem = () => {
     if (pathname === '/') return 'home';
     if (pathname === '/trace') return 'trace';
-    if (pathname === '/admin/login') return 'register';
+    if (pathname?.startsWith('/admin')) return 'admin';
     return null;
   };
 
@@ -30,8 +38,6 @@ export function Header() {
     setMobileMenuOpen(false);
     setMobileExpandedDropdown(null);
   };
-
-
 
   const handleNavClick = (itemId: string) => {
     if (itemId === 'home') {
@@ -44,8 +50,12 @@ export function Header() {
       closeDrawer();
       return;
     }
-    if (itemId === 'register') {
-      window.location.href = '/admin/login';
+    if (itemId === 'admin') {
+      if (typeof document !== 'undefined' && document.cookie.includes('auth_token=')) {
+        window.location.href = '/admin';
+      } else {
+        loginWithEternl();
+      }
       setOpenDropdown(null);
       closeDrawer();
       return;
@@ -92,7 +102,16 @@ export function Header() {
   }, []);
 
   return (
-    <div ref={headerRef} className={`fixed top-0 left-0 right-0 z-50 m-0 p-0 transition-colors duration-300 ${openDropdown || isScrolled ? 'bg-white dark:bg-gray-900' : ''}`} style={{ top: 0, marginTop: 0, paddingTop: 0, position: 'fixed' }}>
+    <>
+    {error && (
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-4 py-2 flex items-center justify-between gap-4">
+        <span>{error}</span>
+        <button onClick={() => setError('')} className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" aria-label="Dismiss">
+          <span className="material-icons text-lg">close</span>
+        </button>
+      </div>
+    )}
+    <div ref={headerRef} className={`fixed top-0 left-0 right-0 z-50 m-0 p-0 transition-colors duration-300 ${openDropdown || isScrolled ? 'bg-white dark:bg-gray-900' : ''}`} style={{ top: error ? 40 : 0, marginTop: 0, paddingTop: 0, position: 'fixed' }}>
       <div className="max-w-[1920px] mx-auto flex items-center justify-between px-4 md:px-36 md:px-40 lg:px-44 xl:px-48 py-4 md:py-5 lg:py-6">
         <div className="flex md:hidden items-center justify-between w-full gap-3">
           <button 
@@ -141,13 +160,26 @@ export function Header() {
                     onClick={() => {
                       if (item.hasDropdown) {
                         setOpenDropdown(openDropdown === item.id ? null : item.id);
-                      } else if (item.id === 'home' || item.id === 'register' || item.id === 'trace') {
+                      } else if (item.id === 'home' || item.id === 'admin' || item.id === 'trace') {
                         handleNavClick(item.id);
                       }
                     }}
-                    className={`header-nav-item flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-sm md:text-base font-medium transition-all ${openDropdown === item.id ? 'header-nav-item-active' : ''} ${isActive ? 'header-nav-item-active' : ''}`}
+                    disabled={item.id === 'admin' && loading}
+                    className={`header-nav-item group flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 text-sm md:text-base font-medium transition-all ${openDropdown === item.id ? 'header-nav-item-active' : ''}`}
                   >
-                    <span>{item.label[language]}</span>
+                    <span
+                      className={`${
+                        isActive ? 'text-[#c41e3a] underline underline-offset-4' : ''
+                      } group-hover:underline group-hover:underline-offset-4`}
+                    >
+                      {item.id === 'admin'
+                        ? loading
+                          ? 'Connecting...'
+                          : hasAuth
+                          ? item.label[language]
+                          : (item.labelGuest ?? item.label)[language]
+                        : item.label[language]}
+                    </span>
                     {item.hasDropdown && (
                       <span className="material-icons text-base md:text-lg">
                         {openDropdown === item.id ? 'expand_less' : 'expand_more'}
@@ -189,17 +221,30 @@ export function Header() {
                   <div key={item.id}>
                     <button
                       className={`flex items-center justify-between w-full px-4 py-3 text-left text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors ${isActive ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
+                      disabled={item.id === 'admin' && loading}
                       onClick={() => {
                         if (item.hasDropdown) {
                           setMobileExpandedDropdown(mobileExpandedDropdown === item.id ? null : item.id);
-                        } else if (item.id === 'home' || item.id === 'register' || item.id === 'trace') {
+                        } else if (item.id === 'home' || item.id === 'admin' || item.id === 'trace') {
                           handleNavClick(item.id);
                         } else {
                           closeDrawer();
                         }
                       }}
                     >
-                      <span className={`font-medium ${isActive ? 'text-red-600 dark:text-red-400' : ''}`}>{item.label[language]}</span>
+                      <span
+                        className={`font-medium ${
+                          isActive ? 'text-[#c41e3a] underline underline-offset-4' : ''
+                        }`}
+                      >
+                        {item.id === 'admin'
+                          ? loading
+                            ? 'Connecting...'
+                            : hasAuth
+                            ? item.label[language]
+                            : (item.labelGuest ?? item.label)[language]
+                          : item.label[language]}
+                      </span>
                       {item.hasDropdown && (
                         <span className="material-icons text-lg text-gray-500">
                           {mobileExpandedDropdown === item.id ? 'expand_less' : 'expand_more'}
@@ -275,7 +320,7 @@ export function Header() {
                           setOpenDropdown(null);
                         }
                       }}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg flex items-center gap-3 text-gray-700 dark:text-gray-200 ${isActiveType ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium' : ''}`}
+                      className={`w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg flex items-center gap-3 text-gray-700 dark:text-gray-200 ${isActiveType ? 'bg-red-50 text-[#c41e3a] font-medium' : ''}`}
                     >
                       <span className="text-sm font-medium">{rightItem.label[language]}</span>
                     </button>
@@ -287,5 +332,6 @@ export function Header() {
         </div>
       )}
     </div>
+    </>
   );
 }

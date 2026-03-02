@@ -8,9 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
-const config_module_1 = require("./config/config.module");
+const config_module_1 = require("./core/config/config.module");
 const prisma_module_1 = require("./prisma/prisma.module");
-const cardano_module_1 = require("./cardano/cardano.module");
+const cardano_module_1 = require("./core/cardano/cardano.module");
 const product_module_1 = require("./product/product.module");
 const auth_module_1 = require("./auth/auth.module");
 const profile_module_1 = require("./profile/profile.module");
@@ -19,6 +19,7 @@ const warehouse_module_1 = require("./warehouse/warehouse.module");
 const certificate_module_1 = require("./certificate/certificate.module");
 const ipfs_module_1 = require("./ipfs/ipfs.module");
 const upload_module_1 = require("./upload/upload.module");
+const trace_module_1 = require("./trace/trace.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             certificate_module_1.CertificateModule,
             ipfs_module_1.IpfsModule,
             upload_module_1.UploadModule,
+            trace_module_1.TraceModule,
         ],
     })
 ], AppModule);

@@ -92,7 +92,7 @@ export function History() {
                       }}
                       className={`w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors ${
                         selectedYear === item.year
-                          ? 'bg-red-50 text-red-600 font-medium'
+                          ? 'bg-red-50 text-[#c41e3a] font-medium'
                           : 'text-gray-800'
                       }`}
                     >
@@ -126,8 +126,8 @@ export function History() {
                     onClick={() => setSelectedYear(item.year)}
                     className={`flex-1 min-w-0 px-2 md:px-3 py-1.5 md:py-2 rounded-full font-medium text-xs md:text-sm transition-all whitespace-nowrap ${
                       selectedYear === item.year
-                        ? 'bg-white text-gray-800 border-2 border-red-400'
-                        : 'bg-transparent text-white border-2 border-red-400 hover:bg-red-500/10'
+                        ? 'bg-white text-gray-800 border-2 border-[#c41e3a]'
+                        : 'bg-transparent text-white border-2 border-white/60 hover:bg-white/10'
                     }`}
                   >
                     {item.year}
@@ -160,8 +160,8 @@ export function History() {
                   <ul className="space-y-2 md:space-y-3">
                     {selectedItem.milestones[language].map((milestone, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <span className="text-gray-800 dark:text-gray-200 mt-1">-</span>
-                        <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 leading-relaxed flex-1">
+                        <span className="text-[#c41e3a] mt-1">•</span>
+                        <p className="text-xs md:text-sm text-gray-600 leading-relaxed flex-1">
                           {milestone}
                         </p>
                       </li>

@@ -34,7 +34,7 @@ export function Contact() {
   };
 
   return (
-    <section id="contact" className="relative w-full min-h-screen flex flex-col bg-white dark:bg-gray-900 overflow-x-hidden">
+    <section id="contact" className="relative w-full min-h-screen flex flex-col bg-[#f2f2f2] overflow-x-hidden">
       <Header />
       
       <div className="relative z-10 flex-1 flex flex-col pt-14 md:pt-20 pb-6 md:pb-12">
@@ -61,7 +61,7 @@ export function Contact() {
                 </div>
                 <div>
                   <span className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300">{CONTACT_INFO_LABELS[language].phone}: </span>
-                  <a href={`tel:${content.info.phone[language].replace(/\s/g, '')}`} className="text-sm sm:text-base font-semibold text-red-600 dark:text-red-400 hover:underline">
+                  <a href={`tel:${content.info.phone[language].replace(/\s/g, '')}`} className="text-sm sm:text-base font-semibold text-[#c41e3a] hover:underline">
                     {content.info.phone[language]}
                   </a>
                 </div>
@@ -73,14 +73,14 @@ export function Contact() {
                 )}
                 <div>
                   <span className="text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300">{CONTACT_INFO_LABELS[language].hotline}: </span>
-                  <a href={`tel:${content.info.hotline?.[language]?.replace(/\s/g, '') || content.info.phone[language].replace(/\s/g, '')}`} className="text-sm sm:text-base font-semibold text-red-600 dark:text-red-400 hover:underline">
+                  <a href={`tel:${content.info.hotline?.[language]?.replace(/\s/g, '') || content.info.phone[language].replace(/\s/g, '')}`} className="text-sm sm:text-base font-semibold text-[#c41e3a] hover:underline">
                     {content.info.hotline?.[language] || content.info.phone[language]}
                   </a>
                 </div>
               </div>
             </div>
             
-            <div className="border-t border-gray-300 dark:border-gray-600"></div>
+            <div className="border-t border-gray-300"></div>
           </div>
         </div>
 
@@ -90,7 +90,7 @@ export function Contact() {
               <div className="space-y-4 sm:space-y-5 md:space-y-6">
                 <div>
                   <label htmlFor="topic" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    {content.form.topic?.[language] || content.form.subject[language]} <span className="text-red-600 dark:text-red-400">*</span>
+                    {content.form.topic?.[language] || content.form.subject[language]} <span className="text-[#c41e3a]">*</span>
                   </label>
                   <select
                     id="topic"
@@ -98,7 +98,7 @@ export function Contact() {
                     value={formData.topic}
                     onChange={handleChange}
                     required
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 appearance-none cursor-pointer"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded bg-white text-gray-800 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#c41e3a] focus:border-[#c41e3a] appearance-none cursor-pointer"
                   >
                     <option value="">{content.form.topicPlaceholder?.[language] || content.form.subjectPlaceholder[language]}</option>
                     <option value="general">{content.form.topics?.general?.[language] || 'General Inquiry'}</option>
@@ -109,7 +109,7 @@ export function Contact() {
 
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    {content.form.name[language]} <span className="text-red-600 dark:text-red-400">*</span>
+                    {content.form.name[language]} <span className="text-[#c41e3a]">*</span>
                   </label>
                   <input
                     type="text"
@@ -119,13 +119,13 @@ export function Contact() {
                     onChange={handleChange}
                     placeholder={content.form.namePlaceholder[language]}
                     required
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded bg-white text-gray-800 placeholder-gray-400 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#c41e3a] focus:border-[#c41e3a]"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    {content.form.email[language]} <span className="text-red-600 dark:text-red-400">*</span>
+                    {content.form.email[language]} <span className="text-[#c41e3a]">*</span>
                   </label>
                   <input
                     type="email"
@@ -135,7 +135,7 @@ export function Contact() {
                     onChange={handleChange}
                     placeholder={content.form.emailPlaceholder[language]}
                     required
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded bg-white text-gray-800 placeholder-gray-400 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#c41e3a] focus:border-[#c41e3a]"
                   />
                 </div>
               </div>
@@ -143,7 +143,7 @@ export function Contact() {
               <div className="space-y-4 sm:space-y-5 md:space-y-6">
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    {content.form.messageLabel?.[language] || content.form.message[language]} <span className="text-red-600 dark:text-red-400">*</span>
+                    {content.form.messageLabel?.[language] || content.form.message[language]} <span className="text-[#c41e3a]">*</span>
                   </label>
                   <textarea
                     id="message"
@@ -153,14 +153,14 @@ export function Contact() {
                     placeholder={content.form.messagePlaceholder[language]}
                     required
                     rows={8}
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 resize-none"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded bg-white text-gray-800 placeholder-gray-400 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#c41e3a] focus:border-[#c41e3a] resize-none"
                   />
                 </div>
 
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white font-semibold uppercase text-sm sm:text-base rounded border border-red-500 dark:border-red-600 transition-colors duration-200 min-h-[44px]"
+                    className="px-6 sm:px-8 md:px-10 py-2.5 sm:py-3 bg-[#c41e3a] hover:bg-[#a81930] text-white font-semibold uppercase text-sm sm:text-base rounded border border-[#c41e3a] transition-colors duration-200 min-h-[44px]"
                   >
                     {content.form.submit[language]}
                   </button>

@@ -8,49 +8,39 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductService = void 0;
 const core_1 = require("@meshsdk/core");
 const common_1 = require("@nestjs/common");
-const cardano_service_1 = require("../cardano/cardano.service");
-const prisma_service_1 = require("../prisma/prisma.service");
+const cardano_service_1 = require("../core/cardano/cardano.service");
 const warehouse_service_1 = require("../warehouse/warehouse.service");
-const cip68_contract_1 = require("../cip68/cip68.contract");
+const cip68_contract_1 = require("../core/cardano/cip68/cip68.contract");
 const product_helpers_1 = require("./product.helpers");
+const product_repository_1 = require("./domain/product.repository");
+const list_batches_use_case_1 = require("./application/use-cases/list-batches.use-case");
+const record_product_tx_use_case_1 = require("./application/use-cases/record-product-tx.use-case");
+const list_roadmap_use_case_1 = require("./application/use-cases/list-roadmap.use-case");
 let ProductService = class ProductService {
-    constructor(cardano, prisma, warehouse) {
+    constructor(cardano, warehouse, productRepository, listBatchesUseCase, recordProductTxUseCase, listRoadmapUseCase) {
         this.cardano = cardano;
-        this.prisma = prisma;
         this.warehouse = warehouse;
+        this.productRepository = productRepository;
+        this.listBatchesUseCase = listBatchesUseCase;
+        this.recordProductTxUseCase = recordProductTxUseCase;
+        this.listRoadmapUseCase = listRoadmapUseCase;
     }
     createContract(changeAddress, opts) {
         const wallet = (0, product_helpers_1.createReadOnlyWallet)(changeAddress, this.cardano.blockfrostProvider, opts === null || opts === void 0 ? void 0 : opts.walletUtxos, opts === null || opts === void 0 ? void 0 : opts.utxoAddresses);
         return new cip68_contract_1.Cip68Contract({ wallet: wallet });
     }
     async listBatches(profileId) {
-        const items = await this.prisma.productBatch.findMany({
-            where: { minterProfileId: profileId },
-            select: { id: true, code: true, name: true, image: true, createdAt: true, metadata: true, policyId: true },
-            orderBy: [{ createdAt: "asc" }, { code: "asc" }],
-        });
-        if (!Array.isArray(items))
-            return [];
-        const visible = items.filter((b) => {
-            const meta = b.metadata;
-            const db = meta === null || meta === void 0 ? void 0 : meta._db;
-            return !db || db.revoked !== true;
-        });
-        return visible.map((b) => {
-            var _a, _b;
-            return ({
-                id: b.id,
-                code: b.code,
-                name: b.name,
-                image: (_a = b.image) !== null && _a !== void 0 ? _a : null,
-                createdAt: b.createdAt,
-                policyId: (_b = b.policyId) !== null && _b !== void 0 ? _b : null,
-            });
-        });
+        return this.listBatchesUseCase.execute(profileId);
+    }
+    async listRoadmap(batchCode) {
+        return this.listRoadmapUseCase.execute(batchCode);
     }
     async mint(params) {
         var _a, _b, _c;
@@ -168,140 +158,7 @@ let ProductService = class ProductService {
         return { unsignedTx };
     }
     async recordTx(params) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-        const { action, txHash, assetName, profileId } = params;
-        const prisma = this.prisma;
-        if (action === "MINT") {
-            const name = (_a = params.name) !== null && _a !== void 0 ? _a : "";
-            const image = (_b = params.image) !== null && _b !== void 0 ? _b : "";
-            const properties = params.properties != null ? params.properties : {};
-            const metadata = params.metadata != null && typeof params.metadata === "object"
-                ? params.metadata
-                : { name, image, standard: (_c = params.standard) !== null && _c !== void 0 ? _c : "Traceability-v1" };
-            await prisma.productBatch.upsert({
-                where: { code: assetName },
-                create: {
-                    code: assetName,
-                    name,
-                    image: image || null,
-                    standard: (_d = params.standard) !== null && _d !== void 0 ? _d : "Traceability-v1",
-                    properties,
-                    metadata,
-                    mintTxHash: txHash,
-                    policyId: (_e = params.policyId) !== null && _e !== void 0 ? _e : undefined,
-                    minterProfileId: profileId,
-                },
-                update: {
-                    mintTxHash: txHash,
-                    name,
-                    image: image || null,
-                    standard: (_f = params.standard) !== null && _f !== void 0 ? _f : "Traceability-v1",
-                    properties,
-                    metadata,
-                    policyId: (_g = params.policyId) !== null && _g !== void 0 ? _g : undefined,
-                },
-            });
-            const receivers = (_h = params.receivers) !== null && _h !== void 0 ? _h : [];
-            if (receivers.length > 0) {
-                await prisma.roadmap.createMany({
-                    data: receivers.map((receiverAddress, hopIndex) => ({
-                        batchId: assetName,
-                        receiverAddress,
-                        hopIndex,
-                        action: "MINT",
-                        txHash,
-                    })),
-                });
-            }
-            await prisma.warehouseInventory.upsert({
-                where: {
-                    batchId_profileId: { batchId: assetName, profileId },
-                },
-                create: {
-                    batchId: assetName,
-                    profileId,
-                    quantity: 1,
-                },
-                update: { quantity: { increment: 1 } },
-            });
-            return;
-        }
-        const batch = await prisma.productBatch.findUnique({ where: { code: assetName } });
-        if (!batch) {
-            throw new common_1.BadRequestException(`Batch not found: ${assetName}`);
-        }
-        if (action === "UPDATE") {
-            const updatePatch = {
-                lastUpdateTxHash: txHash,
-                lastUpdateAt: new Date().toISOString(),
-            };
-            const nextMetadata = params.metadata && typeof params.metadata === "object"
-                ? (0, product_helpers_1.mergeDbMeta)(batch.metadata, Object.assign(Object.assign({}, params.metadata), updatePatch))
-                : (0, product_helpers_1.mergeDbMeta)(batch.metadata, updatePatch);
-            const nextProperties = params.properties != null ? params.properties : (_j = batch.properties) !== null && _j !== void 0 ? _j : {};
-            await prisma.productBatch.update({
-                where: { code: assetName },
-                data: {
-                    name: (_k = params.name) !== null && _k !== void 0 ? _k : batch.name,
-                    image: (_l = params.image) !== null && _l !== void 0 ? _l : batch.image,
-                    standard: (_m = params.standard) !== null && _m !== void 0 ? _m : batch.standard,
-                    properties: nextProperties,
-                    metadata: nextMetadata,
-                },
-            });
-            const receivers = (_o = params.receivers) !== null && _o !== void 0 ? _o : [];
-            if (receivers.length > 0) {
-                await prisma.roadmap.createMany({
-                    data: receivers.map((receiverAddress, hopIndex) => ({
-                        batchId: assetName,
-                        receiverAddress,
-                        hopIndex,
-                        action: "UPDATE",
-                        txHash,
-                    })),
-                });
-            }
-            return;
-        }
-        if (action === "REVOKE") {
-            await prisma.productBatch.update({
-                where: { code: assetName },
-                data: {
-                    metadata: (0, product_helpers_1.mergeDbMeta)(batch.metadata, {
-                        revokeTxHash: txHash,
-                        revokedAt: new Date().toISOString(),
-                        revoked: true,
-                    }),
-                },
-            });
-            const receivers = (_p = params.receivers) !== null && _p !== void 0 ? _p : [];
-            if (receivers.length > 0) {
-                await prisma.roadmap.createMany({
-                    data: receivers.map((receiverAddress, hopIndex) => ({
-                        batchId: assetName,
-                        receiverAddress,
-                        hopIndex,
-                        action: "REVOKE",
-                        txHash,
-                    })),
-                });
-            }
-            return;
-        }
-        if (action === "BURN") {
-            await prisma.productBatch.update({
-                where: { code: assetName },
-                data: {
-                    metadata: (0, product_helpers_1.mergeDbMeta)(batch.metadata, {
-                        burnTxHash: txHash,
-                        burnedAt: new Date().toISOString(),
-                        burned: true,
-                    }),
-                },
-            });
-            await this.warehouse.removeOneFromWarehouse(profileId, assetName);
-            return;
-        }
+        return this.recordProductTxUseCase.execute(params);
     }
     async removeOneFromWarehouse(profileId, batchId) {
         return this.warehouse.removeOneFromWarehouse(profileId, batchId);
@@ -363,8 +220,10 @@ let ProductService = class ProductService {
 exports.ProductService = ProductService;
 exports.ProductService = ProductService = __decorate([
     (0, common_1.Injectable)(),
+    __param(2, (0, common_1.Inject)(product_repository_1.PRODUCT_REPOSITORY)),
     __metadata("design:paramtypes", [cardano_service_1.CardanoService,
-        prisma_service_1.PrismaService,
-        warehouse_service_1.WarehouseService])
+        warehouse_service_1.WarehouseService, Object, list_batches_use_case_1.ListBatchesUseCase,
+        record_product_tx_use_case_1.RecordProductTxUseCase,
+        list_roadmap_use_case_1.ListRoadmapUseCase])
 ], ProductService);
 //# sourceMappingURL=product.service.js.map

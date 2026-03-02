@@ -19,24 +19,24 @@
   font-feature-settings: 'liga';
 }
 
-/* Header nav (desktop pill) */
+/* Header nav (desktop pill) – nền hòa với trang */
 .header-nav-container {
-  background: linear-gradient(90deg, #e0e9f6 0%, #d4e4f5 50%, #e0e9f6 100%);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 9999px;
   backdrop-filter: blur(8px);
 }
 
 .dark .header-nav-container {
-  background: rgba(31, 41, 55, 0.9);
+  background: rgba(17, 24, 39, 0.85);
   backdrop-filter: blur(8px);
 }
 
 .header-nav-container.header-nav-open {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .dark .header-nav-container.header-nav-open {
-  background: rgb(31, 41, 55);
+  background: rgba(31, 41, 55, 0.95);
 }
 
 .header-nav-item {
@@ -46,28 +46,26 @@
   background: transparent;
 }
 
-.header-nav-item:hover,
 .header-nav-item.header-nav-item-active {
-  color: #2e3a59;
-  background: #f0f4f8;
+  color: #c41e3a;
+  background: rgba(196, 30, 58, 0.08);
 }
 
 .header-nav-item .material-icons {
-  color: #2e3a59;
+  color: inherit;
 }
 
 .dark .header-nav-item {
   color: #cbd5e1;
 }
 
-.dark .header-nav-item:hover,
 .dark .header-nav-item.header-nav-item-active {
-  color: #2e3a59;
-  background: #f0f4f8;
+  color: #c41e3a;
+  background: rgba(196, 30, 58, 0.12);
 }
 
 .dark .header-nav-item .material-icons {
-  color: #2e3a59;
+  color: inherit;
 }
 
 /* Hero ripple animation */

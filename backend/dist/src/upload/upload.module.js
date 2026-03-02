@@ -8,17 +8,27 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadModule = void 0;
 const common_1 = require("@nestjs/common");
-const config_module_1 = require("../config/config.module");
+const config_module_1 = require("../core/config/config.module");
 const auth_module_1 = require("../auth/auth.module");
 const upload_controller_1 = require("./upload.controller");
 const upload_service_1 = require("./upload.service");
+const image_storage_port_1 = require("./domain/image-storage.port");
+const cloudinary_image_storage_1 = require("./infra/cloudinary-image.storage");
+const upload_image_use_case_1 = require("./application/use-cases/upload-image.use-case");
 let UploadModule = class UploadModule {
 };
 exports.UploadModule = UploadModule;
 exports.UploadModule = UploadModule = __decorate([
     (0, common_1.Module)({
         imports: [config_module_1.ConfigModule, auth_module_1.AuthModule],
-        providers: [upload_service_1.UploadService],
+        providers: [
+            upload_service_1.UploadService,
+            {
+                provide: image_storage_port_1.IMAGE_STORAGE,
+                useClass: cloudinary_image_storage_1.CloudinaryImageStorage,
+            },
+            upload_image_use_case_1.UploadImageUseCase,
+        ],
         controllers: [upload_controller_1.UploadController],
         exports: [upload_service_1.UploadService],
     })

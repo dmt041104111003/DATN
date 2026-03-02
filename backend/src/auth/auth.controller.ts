@@ -1,25 +1,17 @@
 import { Body, Controller, HttpException, HttpStatus, Post } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-
-function normalizeAddress(
-  raw: string | { address?: string } | undefined
-): string | undefined {
-  if (typeof raw === "string") return raw;
-  if (raw && typeof (raw as { address?: string }).address === "string") {
-    return (raw as { address: string }).address;
-  }
-  return undefined;
-}
+import { normalizeAddress, StakeAddressInput } from "./utils";
+import { NonceRequestDto } from "./dto/nonce.dto";
+import { VerifySignatureDto } from "./dto/verify-signature.dto";
+import { CreateProfileDto } from "./dto/create-profile.dto";
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("nonce")
-  createNonce(
-    @Body("stakeAddress") stakeAddress?: string | { address?: string }
-  ): { nonce: string } {
-    const addr = normalizeAddress(stakeAddress);
+  createNonce(@Body() body: NonceRequestDto): { nonce: string } {
+    const addr = normalizeAddress(body.stakeAddress as StakeAddressInput);
     if (!addr) {
       throw new HttpException(
         { error: "Missing stakeAddress" },
@@ -32,16 +24,10 @@ export class AuthController {
 
   @Post("verify")
   verifySignature(
-    @Body()
-    body: {
-      stakeAddress?: string | { address?: string };
-      nonce?: string;
-      signature?: string;
-      key?: string;
-    }
+    @Body() body: VerifySignatureDto
   ) {
     const { stakeAddress, nonce, signature, key } = body;
-    const addr = normalizeAddress(stakeAddress);
+    const addr = normalizeAddress(stakeAddress as StakeAddressInput);
 
     if (!addr || !nonce || !signature || !key) {
       throw new HttpException(
@@ -60,14 +46,7 @@ export class AuthController {
 
   @Post("profile")
   async createProfile(
-    @Body()
-    body: {
-      stakeAddress?: string | { address?: string };
-      roleId?: number;
-      displayName?: string;
-      location?: string;
-      coordinates?: string;
-    }
+    @Body() body: CreateProfileDto
   ) {
     const { stakeAddress, roleId, displayName, location, coordinates } = body;
     const addr = normalizeAddress(stakeAddress);

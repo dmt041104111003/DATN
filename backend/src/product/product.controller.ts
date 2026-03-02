@@ -27,7 +27,7 @@ export class ProductController {
     @Query("token") token?: string,
   ): Promise<{
     total: number;
-    items: { id: number; code: string; name: string; image: string | null; createdAt: Date; policyId: string | null }[];
+    items: { id: number; code: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[];
   }> {
     if (!token || typeof token !== "string" || !token.trim()) {
       throw new UnauthorizedException("Missing or invalid token.");
@@ -196,6 +196,7 @@ export class ProductController {
       assetName: body.assetName,
       profileId: body.minterProfileId,
       name: body.name,
+      description: body.description,
       image: body.image ?? "",
       standard: body.standard,
       properties: body.properties,
@@ -227,6 +228,7 @@ export class ProductController {
       assetName: body.assetName,
       profileId: body.profileId,
       name: body.name,
+      description: body.description,
       image: body.image,
       standard: body.standard,
       properties: body.properties,
@@ -286,5 +288,24 @@ export class ProductController {
       throw new BadRequestException("Missing signedTx or signedTxBase64");
     }
     return this.product.submitSignedTx(raw, !!body.signedTxBase64);
+  }
+
+  @Get("roadmap")
+  async getRoadmap(
+    @Query("code") code: string | undefined,
+    @Query("token") token?: string,
+  ): Promise<{ items: { hopIndex: number; receiverAddress: string | null }[] }> {
+    if (!token || typeof token !== "string" || !token.trim()) {
+      throw new UnauthorizedException("Missing or invalid token.");
+    }
+    const role = await this.auth.getProfileRoleFromToken(token.trim());
+    if ((role ?? "").toUpperCase() !== ENTERPRISE_ROLE) {
+      throw new ForbiddenException("Only ENTERPRISE can read product roadmap.");
+    }
+    if (!code || typeof code !== "string" || !code.trim()) {
+      return { items: [] };
+    }
+    const items = await this.product.listRoadmap(code.trim());
+    return { items };
   }
 }

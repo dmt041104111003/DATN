@@ -8,63 +8,33 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IpfsService = void 0;
 const common_1 = require("@nestjs/common");
-const config_service_1 = require("../config/config.service");
-const pinata_1 = require("pinata");
+const ipfs_client_port_1 = require("./domain/ipfs-client.port");
+const upload_file_use_case_1 = require("./application/use-cases/upload-file.use-case");
+const get_gateway_url_use_case_1 = require("./application/use-cases/get-gateway-url.use-case");
 let IpfsService = class IpfsService {
-    constructor(config) {
-        this.config = config;
-        this.pinata = null;
-        const jwt = this.config.pinataJwt;
-        if (jwt) {
-            this.pinata = new pinata_1.PinataSDK({
-                pinataJwt: jwt,
-                pinataGateway: this.config.pinataGateway,
-            });
-        }
+    constructor(ipfsClient, uploadFileUseCase, getGatewayUrlUseCase) {
+        this.ipfsClient = ipfsClient;
+        this.uploadFileUseCase = uploadFileUseCase;
+        this.getGatewayUrlUseCase = getGatewayUrlUseCase;
     }
     getGatewayUrl(hash) {
-        const clean = (hash || "").trim().replace(/^ipfs:\/\//, "");
-        if (!clean)
-            return "";
-        if (clean.startsWith("http://") || clean.startsWith("https://")) {
-            return clean;
-        }
-        const base = (this.config.pinataGateway
-            ? `https://${this.config.pinataGateway.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
-            : this.config.ipfsGateway.replace(/\/$/, ""));
-        return `${base}/ipfs/${clean}`;
+        return this.getGatewayUrlUseCase.execute(hash);
     }
     async uploadFile(file) {
-        var _a, _b, _c, _d;
-        if (!this.pinata) {
-            throw new common_1.BadRequestException("IPFS (Pinata) chưa cấu hình. Thêm PINATA_JWT vào .env (tạo tại pinata.cloud → API Keys).");
-        }
-        const buffer = file.buffer;
-        const filename = (_a = file.originalname) !== null && _a !== void 0 ? _a : "file";
-        const mimetype = (_b = file.mimetype) !== null && _b !== void 0 ? _b : "application/octet-stream";
-        if (!buffer || buffer.length === 0) {
-            throw new common_1.BadRequestException("No file content provided.");
-        }
-        try {
-            const fileObj = new File([buffer], filename, { type: mimetype });
-            const upload = await this.pinata.upload.public.file(fileObj);
-            return {
-                ipfsHash: (_c = upload.cid) !== null && _c !== void 0 ? _c : "",
-                pinSize: (_d = upload.size) !== null && _d !== void 0 ? _d : 0,
-            };
-        }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            throw new common_1.BadRequestException(`IPFS upload failed: ${msg}`);
-        }
+        return this.uploadFileUseCase.execute(file);
     }
 };
 exports.IpfsService = IpfsService;
 exports.IpfsService = IpfsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_service_1.ConfigService])
+    __param(0, (0, common_1.Inject)(ipfs_client_port_1.IPFS_CLIENT)),
+    __metadata("design:paramtypes", [Object, upload_file_use_case_1.UploadFileUseCase,
+        get_gateway_url_use_case_1.GetGatewayUrlUseCase])
 ], IpfsService);
 //# sourceMappingURL=ipfs.service.js.map

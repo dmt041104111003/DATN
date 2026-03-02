@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { describe, test, expect } from "@jest/globals";
-import { getBlockfrostFetcher } from "@app/cardano/standalone";
-import { CIP68_PREFIX } from "@app/config/config.service";
+import { getBlockfrostFetcher } from "@app/core/cardano/standalone";
+import { CIP68_PREFIX } from "@app/core/config/config.service";
 
 // --- Sửa policyId tại đây (56 ký tự hex) ---
 const POLICY_ID = "df7339e888a9b8d33302f6eda9e4cfb02fb37057cee7b25a64fd6276";

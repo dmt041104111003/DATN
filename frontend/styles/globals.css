@@ -213,28 +213,26 @@ body {
   background: transparent;
 }
 
-.header-nav-item:hover,
 .header-nav-item.header-nav-item-active {
-  color: #2e3a59;
-  background: #f0f4f8;
+  color: #c41e3a;
+  background: rgba(196, 30, 58, 0.08);
 }
 
 .header-nav-item .material-icons {
-  color: #2e3a59;
+  color: inherit;
 }
 
 .dark .header-nav-item {
   color: #cbd5e1;
 }
 
-.dark .header-nav-item:hover,
 .dark .header-nav-item.header-nav-item-active {
-  color: #2e3a59;
-  background: #f0f4f8;
+  color: #c41e3a;
+  background: rgba(196, 30, 58, 0.12);
 }
 
 .dark .header-nav-item .material-icons {
-  color: #2e3a59;
+  color: inherit;
 }
 
 /* Hero red ripple - từ từ, đậm */

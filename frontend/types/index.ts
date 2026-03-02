@@ -22,6 +22,7 @@ export interface Category {
 export interface MenuItem {
   id: string;
   label: Record<Language, string>;
+  labelGuest?: Record<Language, string>;
   hasDropdown?: boolean;
   dropdownContent?: DropdownContent;
 }

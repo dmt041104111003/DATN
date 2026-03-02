@@ -19,9 +19,12 @@ export const MENU_ITEMS: MenuItem[] = [
     },
   },
   {
-    id: 'register',
+    id: 'admin',
     label: {
-      en: 'Register',
+      en: 'Admin',
+    },
+    labelGuest: {
+      en: 'Connect wallet',
     },
   },
 ];

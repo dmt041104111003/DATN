@@ -1,21 +1,32 @@
 import type { UTxO } from "@meshsdk/core";
-import { CardanoService } from "../cardano/cardano.service";
-import { PrismaService } from "../prisma/prisma.service";
+import { CardanoService } from "../core/cardano/cardano.service";
 import { WarehouseService } from "../warehouse/warehouse.service";
+import { ProductRepositoryPort } from "./domain/product.repository";
+import { ListBatchesUseCase } from "./application/use-cases/list-batches.use-case";
+import { RecordProductTxUseCase } from "./application/use-cases/record-product-tx.use-case";
+import { ListRoadmapUseCase } from "./application/use-cases/list-roadmap.use-case";
 export type { BuildMetadataInput } from "./product.helpers";
 export declare class ProductService {
     private readonly cardano;
-    private readonly prisma;
     private readonly warehouse;
-    constructor(cardano: CardanoService, prisma: PrismaService, warehouse: WarehouseService);
+    private readonly productRepository;
+    private readonly listBatchesUseCase;
+    private readonly recordProductTxUseCase;
+    private readonly listRoadmapUseCase;
+    constructor(cardano: CardanoService, warehouse: WarehouseService, productRepository: ProductRepositoryPort, listBatchesUseCase: ListBatchesUseCase, recordProductTxUseCase: RecordProductTxUseCase, listRoadmapUseCase: ListRoadmapUseCase);
     private createContract;
     listBatches(profileId: number): Promise<{
         id: number;
         code: string;
         name: string;
+        description: string | null;
         image: string | null;
         createdAt: Date;
         policyId: string | null;
+    }[]>;
+    listRoadmap(batchCode: string): Promise<{
+        hopIndex: number;
+        receiverAddress: string | null;
     }[]>;
     mint(params: {
         changeAddress: string;
@@ -80,6 +91,7 @@ export declare class ProductService {
         assetName: string;
         profileId: number;
         name?: string;
+        description?: string;
         image?: string;
         standard?: string;
         properties?: object;

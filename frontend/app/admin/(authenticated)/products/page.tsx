@@ -20,6 +20,7 @@ import { ProductsCards } from '../../components/product/ProductsCards';
 import type { ProfileOption } from '../../types';
 import { uploadFileToIpfs } from '../../lib/ipfs';
 import { getAuthToken } from '../../lib/account';
+import { getProductRoadmap } from '../../lib/product';
 import { ProductDialog } from '../../components/product/ProductDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
@@ -85,11 +86,11 @@ export default function ProductsPage() {
     }
     const items: any[] = Array.isArray(data?.items) ? data.items : [];
     const mapped: Product[] = items
-      .map((b: { id?: number; code?: string; name?: string; image?: string | null }) => ({
+      .map((b: { id?: number; code?: string; name?: string; description?: string | null; image?: string | null }) => ({
         id: Number(b?.id ?? 0),
         code: String(b?.code ?? ''),
         nameEn: String(b?.name ?? ''),
-        descriptionEn: null,
+        descriptionEn: b?.description != null ? String(b.description) : null,
         imageUrl: b?.image ? String(b.image) : null,
       }))
       .filter((p) => !!p.code);
@@ -184,16 +185,18 @@ export default function ProductsPage() {
     setOpen(false);
   };
 
-  const loadProfiles = async () => {
+  const loadProfiles = async (): Promise<ProfileOption[]> => {
     const cookie = typeof document !== 'undefined'
       ? document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${AUTH_COOKIE}=`))
       : null;
     const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
-    if (!token) return;
+    if (!token) return [];
     const res = await fetch(`${BACKEND_URL}/profile/profiles?token=${encodeURIComponent(token)}`);
-    if (!res.ok) return;
+    if (!res.ok) return [];
     const data = await res.json();
-    setProfiles(Array.isArray(data) ? data : []);
+    const list = Array.isArray(data) ? (data as ProfileOption[]) : [];
+    setProfiles(list);
+    return list;
   };
 
   const openAdd = () => {
@@ -206,7 +209,7 @@ export default function ProductsPage() {
     setOpen(true);
   };
 
-  const openEdit = (p: Product) => {
+  const openEdit = async (p: Product) => {
     setEditingId(p.id);
     setCode(p.code);
     setNameEn(p.nameEn);
@@ -216,7 +219,41 @@ export default function ProductsPage() {
     const account = readAccountFromToken();
     setMinterLocation(account?.location ?? '');
     setMinterCoordinates(account?.coordinates ?? '');
-    void loadProfiles();
+
+    const existingProfiles = profiles.length ? profiles : await loadProfiles();
+
+    const token = getAuthToken();
+    if (token) {
+      try {
+        const roadmap = await getProductRoadmap(token, p.code);
+        const list: string[] = [];
+        const names: string[] = [];
+        const locs: string[] = [];
+        const coords: string[] = [];
+
+        roadmap.forEach((hop) => {
+          const addr = hop.receiverAddress?.trim();
+          if (!addr) return;
+          const prof = existingProfiles.find(
+            (x) => x.walletAddress.trim().toLowerCase() === addr.toLowerCase(),
+          );
+          if (!prof || !prof.coordinates) return;
+          list.push(prof.walletAddress);
+          names.push(prof.displayName);
+          locs.push(prof.location ?? '');
+          coords.push(prof.coordinates ?? '');
+        });
+
+        if (list.length) {
+          setReceiverList(list);
+          setReceiverDisplayNames(names);
+          setReceiverLocations(locs.join('; '));
+          setReceiverCoordinates(coords.join(';'));
+        }
+      } catch {
+      }
+    }
+
     setOpen(true);
   };
 
@@ -501,6 +538,7 @@ export default function ProductsPage() {
         onUploadClick={() => imageInputRef.current?.click()}
         onImageUpload={handleImageUpload}
       />
+
     </>
   );
 }

@@ -1,20 +1,14 @@
 import { AuthService } from "./auth.service";
+import { NonceRequestDto } from "./dto/nonce.dto";
+import { VerifySignatureDto } from "./dto/verify-signature.dto";
+import { CreateProfileDto } from "./dto/create-profile.dto";
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    createNonce(stakeAddress?: string | {
-        address?: string;
-    }): {
+    createNonce(body: NonceRequestDto): {
         nonce: string;
     };
-    verifySignature(body: {
-        stakeAddress?: string | {
-            address?: string;
-        };
-        nonce?: string;
-        signature?: string;
-        key?: string;
-    }): Promise<{
+    verifySignature(body: VerifySignatureDto): Promise<{
         token: string;
         profile: {
             id: number;
@@ -31,15 +25,7 @@ export declare class AuthController {
             code: string;
         }[];
     }>;
-    createProfile(body: {
-        stakeAddress?: string | {
-            address?: string;
-        };
-        roleId?: number;
-        displayName?: string;
-        location?: string;
-        coordinates?: string;
-    }): Promise<{
+    createProfile(body: CreateProfileDto): Promise<{
         token: string;
         profile: {
             id: number;

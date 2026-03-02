@@ -1,18 +1,17 @@
-import { ConfigService } from "../config/config.service";
-import { PrismaService } from "../prisma/prisma.service";
-type StakeAddress = string;
+import { ConfigService } from "../core/config/config.service";
+import { AuthRepositoryPort } from "./domain/auth.repository";
+import { GenerateNonceUseCase } from "./application/use-cases/generate-nonce.use-case";
+import { CreateProfileAndIssueTokenParams, CreateProfileAndIssueTokenUseCase } from "./application/use-cases/create-profile-and-issue-token.use-case";
+import { VerifyAndIssueTokenParams, VerifyAndIssueTokenUseCase } from "./application/use-cases/verify-and-issue-token.use-case";
 export declare class AuthService {
     private readonly config;
-    private readonly prisma;
-    private nonceStore;
-    constructor(config: ConfigService, prisma: PrismaService);
-    generateNonce(stakeAddress: StakeAddress): string;
-    verifyAndIssueToken(params: {
-        stakeAddress: StakeAddress;
-        nonce: string;
-        signature: string;
-        key: string;
-    }): Promise<{
+    private readonly authRepository;
+    private readonly generateNonceUseCase;
+    private readonly verifyAndIssueTokenUseCase;
+    private readonly createProfileAndIssueTokenUseCase;
+    constructor(config: ConfigService, authRepository: AuthRepositoryPort, generateNonceUseCase: GenerateNonceUseCase, verifyAndIssueTokenUseCase: VerifyAndIssueTokenUseCase, createProfileAndIssueTokenUseCase: CreateProfileAndIssueTokenUseCase);
+    generateNonce(stakeAddress: string): string;
+    verifyAndIssueToken(params: VerifyAndIssueTokenParams): Promise<{
         token: string;
         profile: {
             id: number;
@@ -29,13 +28,7 @@ export declare class AuthService {
             code: string;
         }[];
     }>;
-    createProfileAndIssueToken(params: {
-        stakeAddress: StakeAddress;
-        roleId: number;
-        displayName: string;
-        location?: string;
-        coordinates?: string;
-    }): Promise<{
+    createProfileAndIssueToken(params: CreateProfileAndIssueTokenParams): Promise<{
         token: string;
         profile: {
             id: number;
@@ -49,4 +42,3 @@ export declare class AuthService {
     getProfileIdFromToken(token: string): Promise<number>;
     getProfileRoleFromToken(token: string): Promise<string>;
 }
-export {};

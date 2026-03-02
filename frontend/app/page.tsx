@@ -18,9 +18,9 @@ export default function HomePage() {
         <About />
         <CoreValues />
         <History />
-        <Network />
+        <Network /> <FAQ />
         <Contact />
-        <FAQ />
+       
         <Footer />
       </main>
     </LanguageProvider>

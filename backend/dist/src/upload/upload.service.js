@@ -8,44 +8,28 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadService = void 0;
 const common_1 = require("@nestjs/common");
-const cloudinary_1 = require("cloudinary");
-const config_service_1 = require("../config/config.service");
+const image_storage_port_1 = require("./domain/image-storage.port");
+const upload_image_use_case_1 = require("./application/use-cases/upload-image.use-case");
 let UploadService = class UploadService {
-    constructor(config) {
-        this.config = config;
-        const cloudName = this.config.cloudinaryCloudName;
-        const apiKey = this.config.cloudinaryApiKey;
-        const apiSecret = this.config.cloudinaryApiSecret;
-        if (cloudName && apiKey && apiSecret) {
-            cloudinary_1.v2.config({
-                cloud_name: cloudName,
-                api_key: apiKey,
-                api_secret: apiSecret,
-            });
-        }
+    constructor(imageStorage, uploadImageUseCase) {
+        this.imageStorage = imageStorage;
+        this.uploadImageUseCase = uploadImageUseCase;
     }
     async uploadImage(imageDataUrl, folder) {
-        const trimmed = (imageDataUrl || "").trim();
-        if (!trimmed) {
-            throw new common_1.BadRequestException("imageDataUrl is required.");
-        }
-        if (!this.config.cloudinaryCloudName) {
-            throw new common_1.BadRequestException("Cloudinary is not configured.");
-        }
-        const uploadResult = await cloudinary_1.v2.uploader.upload(trimmed, {
-            folder: folder || "uploads",
-            overwrite: true,
-            invalidate: true,
-        });
-        return uploadResult.secure_url;
+        const result = await this.uploadImageUseCase.execute(imageDataUrl, folder || "uploads");
+        return result.url;
     }
 };
 exports.UploadService = UploadService;
 exports.UploadService = UploadService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_service_1.ConfigService])
+    __param(0, (0, common_1.Inject)(image_storage_port_1.IMAGE_STORAGE)),
+    __metadata("design:paramtypes", [Object, upload_image_use_case_1.UploadImageUseCase])
 ], UploadService);
 //# sourceMappingURL=upload.service.js.map

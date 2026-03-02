@@ -1,7 +1,13 @@
-import { PrismaService } from "../prisma/prisma.service";
+import { CertificateRepositoryPort } from "./domain/certificate.repository";
+import { ListCertificatesUseCase } from "./application/use-cases/list-certificates.use-case";
+import { GetCertificateByIdUseCase } from "./application/use-cases/get-certificate-by-id.use-case";
+import { CreateCertificateUseCase } from "./application/use-cases/create-certificate.use-case";
 export declare class CertificateService {
-    private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly repository;
+    private readonly listCertificatesUseCase;
+    private readonly getCertificateByIdUseCase;
+    private readonly createCertificateUseCase;
+    constructor(repository: CertificateRepositoryPort, listCertificatesUseCase: ListCertificatesUseCase, getCertificateByIdUseCase: GetCertificateByIdUseCase, createCertificateUseCase: CreateCertificateUseCase);
     list(issuerProfileId: number, options?: {
         batchId?: string;
         search?: string;

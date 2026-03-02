@@ -8,6 +8,22 @@ type Props = {
   onChange: (coords: string, label: string) => void;
 };
 
+function parseCoordinateList(input: string): [number, number][] {
+  const result: [number, number][] = [];
+  if (!input) return result;
+  const segments = input.split(';').map((s) => s.trim()).filter(Boolean);
+  for (const seg of segments) {
+    const parts = seg.split(',');
+    if (parts.length !== 2) continue;
+    const lat = Number(parts[0]);
+    const lng = Number(parts[1]);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      result.push([lat, lng]);
+    }
+  }
+  return result;
+}
+
 export function LocationMap({ coordinates, tooltipText, onChange }: Props) {
   const mapRef = useRef<any | null>(null);
   const markerRef = useRef<any | null>(null);
@@ -35,17 +51,10 @@ export function LocationMap({ coordinates, tooltipText, onChange }: Props) {
       const defaultLat = 21.0285;
       const defaultLng = 105.8542;
 
-      const initialCenter = (() => {
-        const parts = coordinates.split(',');
-        if (parts.length === 2) {
-          const lat = Number(parts[0]);
-          const lng = Number(parts[1]);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            return [lat, lng] as [number, number];
-          }
-        }
-        return [defaultLat, defaultLng] as [number, number];
-      })();
+      const parsedForCenter = parseCoordinateList(coordinates);
+      const firstCoord = parsedForCenter[0];
+
+      const initialCenter = firstCoord ?? ([defaultLat, defaultLng] as [number, number]);
 
       const map = L.map(containerRef.current).setView(initialCenter, 5);
       mapRef.current = map;
@@ -65,17 +74,47 @@ export function LocationMap({ coordinates, tooltipText, onChange }: Props) {
       iconAnchor: [12, 32],
     });
 
-    if (coordinates) {
-      const parts = coordinates.split(',');
-      if (parts.length === 2) {
-        const lat = Number(parts[0]);
-        const lng = Number(parts[1]);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) {
-          const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
-          markerRef.current = marker;
-          const coordStr = `${lat.toFixed(6)},${lng.toFixed(6)}`;
-          marker.bindTooltip(tooltipText || coordStr, { direction: 'top' });
+    const parsedList = parseCoordinateList(coordinates);
+    if (parsedList.length > 0) {
+      const coordStrings = parsedList.map(
+        ([lat, lng]) => `${lat.toFixed(6)},${lng.toFixed(6)}`,
+      );
+      const tooltipBase =
+        tooltipText ||
+        (coordStrings.length === 1
+          ? coordStrings[0]
+          : coordStrings.join(' → '));
+
+      // Draw markers and a polyline for the path
+      const latlngs: [number, number][] = [];
+      parsedList.forEach(([lat, lng], index) => {
+        latlngs.push([lat, lng]);
+        const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
+        if (index === 0) {
+          marker.bindTooltip(`Start: ${coordStrings[index]}`, {
+            direction: 'top',
+          });
+        } else if (index === parsedList.length - 1) {
+          marker.bindTooltip(`End: ${coordStrings[index]}`, {
+            direction: 'top',
+          });
+        } else {
+          marker.bindTooltip(`Hop ${index}: ${coordStrings[index]}`, {
+            direction: 'top',
+          });
         }
+        markerRef.current = marker;
+      });
+      if (latlngs.length > 1) {
+        const poly = L.polyline(latlngs, {
+          color: '#6366f1',
+          weight: 3,
+          opacity: 0.8,
+        });
+        poly.addTo(map);
+        map.fitBounds(poly.getBounds(), { padding: [16, 16] });
+      } else {
+        map.setView(latlngs[0], 10);
       }
     }
 

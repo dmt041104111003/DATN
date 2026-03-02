@@ -2,10 +2,10 @@
 var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
-const standalone_1 = require("../src/cardano/standalone");
+const standalone_1 = require("../src/core/cardano/standalone");
 const globals_1 = require("@jest/globals");
 const core_1 = require("@meshsdk/core");
-const cip68_contract_1 = require("../src/cip68/cip68.contract");
+const cip68_contract_1 = require("../src/core/cardano/cip68/cip68.contract");
 const APP_WORDS = (_c = (_b = (_a = process.env.APP_MNEMONIC) === null || _a === void 0 ? void 0 : _a.trim()) === null || _b === void 0 ? void 0 : _b.split(" ").filter(Boolean)) !== null && _c !== void 0 ? _c : [];
 const hasAppWallet = APP_WORDS.length >= 15;
 const ASSET_NAME_BASE = process.env.TRACE_ASSET_NAME || "C2VN";

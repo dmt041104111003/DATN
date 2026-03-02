@@ -8,7 +8,7 @@ export function CoreValues() {
   const { language } = useLanguage();
 
   return (
-    <section id="core-values" className="relative w-full h-screen flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+    <section id="core-values" className="relative w-full h-screen flex flex-col bg-[#f2f2f2] overflow-hidden">
       <Header />
       
       <div className="relative z-10 flex-1 flex flex-col pt-16 md:pt-20 pb-4 md:pb-6">
@@ -26,17 +26,17 @@ export function CoreValues() {
                   key={value.id}
                   className="flex flex-col text-left space-y-2"
                 >
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-light text-gray-300 dark:text-gray-400 leading-none">
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-light text-[#c41e3a]/30 leading-none">
                     {String(index + 1).padStart(2, '0')}
                   </div>
                   
-                  <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-1">
+                  <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mt-1">
                     {value.title[language]}
                   </h3>
                   
-                  <div className="w-full h-px bg-gray-800 dark:bg-gray-200 my-2"></div>
+                  <div className="w-full h-0.5 bg-[#c41e3a]/40 my-2"></div>
                   
-                  <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 leading-relaxed text-justify">
+                  <p className="text-sm md:text-base text-gray-600 leading-relaxed text-justify">
                     {value.description[language]}
                   </p>
                 </div>
@@ -50,17 +50,17 @@ export function CoreValues() {
                     key={value.id}
                     className="flex flex-col text-left space-y-2"
                   >
-                    <div className="text-5xl md:text-6xl lg:text-7xl font-light text-gray-300 dark:text-gray-400 leading-none">
+                    <div className="text-5xl md:text-6xl lg:text-7xl font-light text-[#c41e3a]/30 leading-none">
                       {String(index + 4).padStart(2, '0')}
                     </div>
                     
-                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-200 mt-1">
+                    <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mt-1">
                       {value.title[language]}
                     </h3>
                     
-                    <div className="w-full h-px bg-gray-800 dark:bg-gray-200 my-2"></div>
+                    <div className="w-full h-0.5 bg-[#c41e3a]/40 my-2"></div>
                     
-                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 leading-relaxed text-justify">
+                    <p className="text-sm md:text-base text-gray-600 leading-relaxed text-justify">
                       {value.description[language]}
                     </p>
                   </div>

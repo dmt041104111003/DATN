@@ -12,13 +12,27 @@ const auth_module_1 = require("../auth/auth.module");
 const prisma_module_1 = require("../prisma/prisma.module");
 const certificate_controller_1 = require("./certificate.controller");
 const certificate_service_1 = require("./certificate.service");
+const certificate_repository_1 = require("./domain/certificate.repository");
+const prisma_certificate_repository_1 = require("./infra/prisma-certificate.repository");
+const list_certificates_use_case_1 = require("./application/use-cases/list-certificates.use-case");
+const get_certificate_by_id_use_case_1 = require("./application/use-cases/get-certificate-by-id.use-case");
+const create_certificate_use_case_1 = require("./application/use-cases/create-certificate.use-case");
 let CertificateModule = class CertificateModule {
 };
 exports.CertificateModule = CertificateModule;
 exports.CertificateModule = CertificateModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule, auth_module_1.AuthModule],
-        providers: [certificate_service_1.CertificateService],
+        providers: [
+            certificate_service_1.CertificateService,
+            {
+                provide: certificate_repository_1.CERTIFICATE_REPOSITORY,
+                useClass: prisma_certificate_repository_1.PrismaCertificateRepository,
+            },
+            list_certificates_use_case_1.ListCertificatesUseCase,
+            get_certificate_by_id_use_case_1.GetCertificateByIdUseCase,
+            create_certificate_use_case_1.CreateCertificateUseCase,
+        ],
         controllers: [certificate_controller_1.CertificateController],
     })
 ], CertificateModule);

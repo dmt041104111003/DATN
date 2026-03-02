@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "./config/config.module";
+import { ConfigModule } from "./core/config/config.module";
 import { PrismaModule } from "./prisma/prisma.module";
-import { CardanoModule } from "./cardano/cardano.module";
+import { CardanoModule } from "./core/cardano/cardano.module";
 import { ProductModule } from "./product/product.module";
 import { AuthModule } from "./auth/auth.module";
 import { ProfileModule } from "./profile/profile.module";
@@ -10,6 +10,8 @@ import { WarehouseModule } from "./warehouse/warehouse.module";
 import { CertificateModule } from "./certificate/certificate.module";
 import { IpfsModule } from "./ipfs/ipfs.module";
 import { UploadModule } from "./upload/upload.module";
+
+import { TraceModule } from "./trace/trace.module";
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { UploadModule } from "./upload/upload.module";
     CertificateModule,
     IpfsModule,
     UploadModule,
+    TraceModule,
   ],
 })
 export class AppModule {}

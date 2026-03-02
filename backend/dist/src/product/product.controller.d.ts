@@ -11,6 +11,7 @@ export declare class ProductController {
             id: number;
             code: string;
             name: string;
+            description: string | null;
             image: string | null;
             createdAt: Date;
             policyId: string | null;
@@ -43,5 +44,11 @@ export declare class ProductController {
     }>;
     submit(body: SubmitTxDto): Promise<{
         txHash: string;
+    }>;
+    getRoadmap(code: string | undefined, token?: string): Promise<{
+        items: {
+            hopIndex: number;
+            receiverAddress: string | null;
+        }[];
     }>;
 }

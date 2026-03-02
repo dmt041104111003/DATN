@@ -1,13 +1,19 @@
-import { ConfigService } from "../config/config.service";
-import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService } from "../core/config/config.service";
 import { AuthService } from "../auth/auth.service";
-import { UploadService } from "../upload/upload.service";
+import { ProfileRepositoryPort } from "./domain/profile.repository";
+import { ListProfilesUseCase } from "./application/use-cases/list-profiles.use-case";
+import { ListProfilesByRoleUseCase } from "./application/use-cases/list-profiles-by-role.use-case";
+import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case";
+import { UploadProfileAvatarUseCase } from "./application/use-cases/upload-profile-avatar.use-case";
 export declare class ProfileService {
     private readonly config;
-    private readonly prisma;
     private readonly auth;
-    private readonly upload;
-    constructor(config: ConfigService, prisma: PrismaService, auth: AuthService, upload: UploadService);
+    private readonly profileRepository;
+    private readonly listProfilesUseCase;
+    private readonly listProfilesByRoleUseCase;
+    private readonly updateProfileUseCase;
+    private readonly uploadProfileAvatarUseCase;
+    constructor(config: ConfigService, auth: AuthService, profileRepository: ProfileRepositoryPort, listProfilesUseCase: ListProfilesUseCase, listProfilesByRoleUseCase: ListProfilesByRoleUseCase, updateProfileUseCase: UpdateProfileUseCase, uploadProfileAvatarUseCase: UploadProfileAvatarUseCase);
     listProfilesFromToken(token: string): Promise<{
         walletAddress: string;
         displayName: string;

@@ -11,6 +11,7 @@ import {
   getWarehouseItems,
   requestBurnNft,
   confirmBurnNft,
+  getLockRecipientByRoadmap,
   type WarehouseItem,
 } from '../../lib/warehouse';
 import { getWalletChangeAddress, getWalletUtxos, signAndSubmitWithEternl } from '../../utils/wallet';
@@ -135,6 +136,27 @@ export default function WarehousePage() {
     setLockDialogOpen(true);
   };
 
+  const handleRoadmap = async (item: WarehouseItem) => {
+    const token = getAuthToken();
+    if (!token) {
+      setError('Session expired. Please log in again.');
+      return;
+    }
+    try {
+      const data = await getLockRecipientByRoadmap(token, item.batchId);
+      const addr = data?.recipientAddress ?? null;
+      if (addr) {
+        alert(`Next roadmap recipient: ${addr}`);
+      } else {
+        alert('No recipient from roadmap for this batch.');
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : 'Failed to load roadmap recipient.',
+      );
+    }
+  };
+
   return (
     <>
       <WarehouseHeader styles={styles} />
@@ -168,6 +190,7 @@ export default function WarehousePage() {
             items={paginatedList}
             onBurn={handleBurn}
             onLock={handleLock}
+            onRoadmap={handleRoadmap}
             burningBatchId={burningBatchId}
           />
           <WarehouseCards

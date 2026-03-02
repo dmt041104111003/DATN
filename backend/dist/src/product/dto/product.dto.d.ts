@@ -52,6 +52,7 @@ export declare class MintConfirmDto {
     assetName: string;
     name: string;
     image: string;
+    description?: string;
     minterProfileId: number;
     standard?: string;
     properties?: object;
@@ -64,6 +65,7 @@ export declare class UpdateConfirmDto {
     assetName: string;
     profileId: number;
     name?: string;
+    description?: string;
     image?: string;
     standard?: string;
     properties?: object;

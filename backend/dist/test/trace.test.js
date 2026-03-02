@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const globals_1 = require("@jest/globals");
-const standalone_1 = require("../src/cardano/standalone");
-const config_service_1 = require("../src/config/config.service");
+const standalone_1 = require("../src/core/cardano/standalone");
+const config_service_1 = require("../src/core/config/config.service");
 const POLICY_ID = "df7339e888a9b8d33302f6eda9e4cfb02fb37057cee7b25a64fd6276";
 const PREFIX_REF100 = config_service_1.CIP68_PREFIX.REFERENCE_100;
 const PREFIX_222 = config_service_1.CIP68_PREFIX.USER_222;

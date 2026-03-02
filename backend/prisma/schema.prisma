@@ -42,6 +42,7 @@ model ProductBatch {
   id              Int      @id @default(autoincrement())
   code            String   @unique 
   name            String
+  description     String?
   image           String?
   standard        String?
   properties      Json?

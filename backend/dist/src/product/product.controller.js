@@ -162,6 +162,7 @@ let ProductController = class ProductController {
             assetName: body.assetName,
             profileId: body.minterProfileId,
             name: body.name,
+            description: body.description,
             image: (_a = body.image) !== null && _a !== void 0 ? _a : "",
             standard: body.standard,
             properties: body.properties,
@@ -188,6 +189,7 @@ let ProductController = class ProductController {
             assetName: body.assetName,
             profileId: body.profileId,
             name: body.name,
+            description: body.description,
             image: body.image,
             standard: body.standard,
             properties: body.properties,
@@ -235,6 +237,20 @@ let ProductController = class ProductController {
             throw new common_1.BadRequestException("Missing signedTx or signedTxBase64");
         }
         return this.product.submitSignedTx(raw, !!body.signedTxBase64);
+    }
+    async getRoadmap(code, token) {
+        if (!token || typeof token !== "string" || !token.trim()) {
+            throw new common_1.UnauthorizedException("Missing or invalid token.");
+        }
+        const role = await this.auth.getProfileRoleFromToken(token.trim());
+        if ((role !== null && role !== void 0 ? role : "").toUpperCase() !== ENTERPRISE_ROLE) {
+            throw new common_1.ForbiddenException("Only ENTERPRISE can read product roadmap.");
+        }
+        if (!code || typeof code !== "string" || !code.trim()) {
+            return { items: [] };
+        }
+        const items = await this.product.listRoadmap(code.trim());
+        return { items };
     }
 };
 exports.ProductController = ProductController;
@@ -314,6 +330,14 @@ __decorate([
     __metadata("design:paramtypes", [product_dto_1.SubmitTxDto]),
     __metadata("design:returntype", Promise)
 ], ProductController.prototype, "submit", null);
+__decorate([
+    (0, common_1.Get)("roadmap"),
+    __param(0, (0, common_1.Query)("code")),
+    __param(1, (0, common_1.Query)("token")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], ProductController.prototype, "getRoadmap", null);
 exports.ProductController = ProductController = __decorate([
     (0, common_1.Controller)("product"),
     __metadata("design:paramtypes", [product_service_1.ProductService,

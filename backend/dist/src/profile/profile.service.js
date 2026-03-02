@@ -8,64 +8,36 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProfileService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt = require("jsonwebtoken");
-const config_service_1 = require("../config/config.service");
-const prisma_service_1 = require("../prisma/prisma.service");
+const config_service_1 = require("../core/config/config.service");
 const auth_service_1 = require("../auth/auth.service");
-const upload_service_1 = require("../upload/upload.service");
+const profile_repository_1 = require("./domain/profile.repository");
+const list_profiles_use_case_1 = require("./application/use-cases/list-profiles.use-case");
+const list_profiles_by_role_use_case_1 = require("./application/use-cases/list-profiles-by-role.use-case");
+const update_profile_use_case_1 = require("./application/use-cases/update-profile.use-case");
+const upload_profile_avatar_use_case_1 = require("./application/use-cases/upload-profile-avatar.use-case");
 let ProfileService = class ProfileService {
-    constructor(config, prisma, auth, upload) {
+    constructor(config, auth, profileRepository, listProfilesUseCase, listProfilesByRoleUseCase, updateProfileUseCase, uploadProfileAvatarUseCase) {
         this.config = config;
-        this.prisma = prisma;
         this.auth = auth;
-        this.upload = upload;
+        this.profileRepository = profileRepository;
+        this.listProfilesUseCase = listProfilesUseCase;
+        this.listProfilesByRoleUseCase = listProfilesByRoleUseCase;
+        this.updateProfileUseCase = updateProfileUseCase;
+        this.uploadProfileAvatarUseCase = uploadProfileAvatarUseCase;
     }
     async listProfilesFromToken(token) {
         await this.auth.getProfileIdFromToken(token);
-        const profiles = await this.prisma.profile.findMany({
-            select: {
-                walletAddress: true,
-                displayName: true,
-                location: true,
-                coordinates: true,
-                role: { select: { code: true } },
-            },
-            orderBy: { displayName: "asc" },
-        });
-        return profiles.map((p) => {
-            var _a, _b, _c, _d;
-            return ({
-                walletAddress: p.walletAddress,
-                displayName: p.displayName,
-                location: (_a = p.location) !== null && _a !== void 0 ? _a : null,
-                coordinates: (_b = p.coordinates) !== null && _b !== void 0 ? _b : null,
-                role: (_d = (_c = p.role) === null || _c === void 0 ? void 0 : _c.code) !== null && _d !== void 0 ? _d : null,
-            });
-        });
+        return this.listProfilesUseCase.execute();
     }
     async listProfilesByRoleCode(roleCode) {
-        const code = (roleCode || "").trim().toUpperCase();
-        if (!code)
-            return [];
-        const role = await this.prisma.role.findUnique({ where: { code } });
-        if (!role)
-            return [];
-        const profiles = await this.prisma.profile.findMany({
-            where: { roleId: role.id },
-            select: { id: true, displayName: true, walletAddress: true },
-            orderBy: { displayName: "asc" },
-        });
-        return profiles.map((p) => {
-            var _a;
-            return ({
-                id: p.id,
-                displayName: (_a = p.displayName) !== null && _a !== void 0 ? _a : "",
-                walletAddress: p.walletAddress,
-            });
-        });
+        return this.listProfilesByRoleUseCase.execute(roleCode);
     }
     async updateProfileFromToken(params) {
         var _a, _b;
@@ -87,16 +59,16 @@ let ProfileService = class ProfileService {
             throw new common_1.UnauthorizedException("Invalid token payload.");
         }
         const profileId = payload.profileId;
-        const profile = await this.prisma.profile.update({
-            where: { id: profileId },
-            data: Object.assign(Object.assign({ displayName }, (location !== undefined && { location: location || null })), (coordinates !== undefined && { coordinates: coordinates || null })),
-            include: { role: true, wallet: true },
+        const profile = await this.updateProfileUseCase.execute(profileId, {
+            displayName,
+            location,
+            coordinates,
         });
         const nextPayload = {
             sub: profile.walletAddress,
             stakeAddress: profile.walletAddress,
             profileId: profile.id,
-            role: profile.role.code,
+            role: profile.roleCode,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
             location: profile.location,
@@ -107,7 +79,7 @@ let ProfileService = class ProfileService {
             token: nextToken,
             profile: {
                 id: profile.id,
-                role: profile.role.code,
+                role: profile.roleCode,
                 displayName: profile.displayName,
                 avatarUrl: profile.avatarUrl,
                 location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
@@ -135,19 +107,12 @@ let ProfileService = class ProfileService {
             throw new common_1.UnauthorizedException("Invalid token payload.");
         }
         const profileId = payload.profileId;
-        const avatarUrl = await this.upload.uploadImage(imageDataUrl, "profiles");
-        const profile = await this.prisma.profile.update({
-            where: { id: profileId },
-            data: {
-                avatarUrl,
-            },
-            include: { role: true, wallet: true },
-        });
+        const profile = await this.uploadProfileAvatarUseCase.execute(profileId, imageDataUrl);
         const nextPayload = {
             sub: profile.walletAddress,
             stakeAddress: profile.walletAddress,
             profileId: profile.id,
-            role: profile.role.code,
+            role: profile.roleCode,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
             location: profile.location,
@@ -158,7 +123,7 @@ let ProfileService = class ProfileService {
             token: nextToken,
             profile: {
                 id: profile.id,
-                role: profile.role.code,
+                role: profile.roleCode,
                 displayName: profile.displayName,
                 avatarUrl: profile.avatarUrl,
                 location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,
@@ -170,9 +135,11 @@ let ProfileService = class ProfileService {
 exports.ProfileService = ProfileService;
 exports.ProfileService = ProfileService = __decorate([
     (0, common_1.Injectable)(),
+    __param(2, (0, common_1.Inject)(profile_repository_1.PROFILE_REPOSITORY)),
     __metadata("design:paramtypes", [config_service_1.ConfigService,
-        prisma_service_1.PrismaService,
-        auth_service_1.AuthService,
-        upload_service_1.UploadService])
+        auth_service_1.AuthService, Object, list_profiles_use_case_1.ListProfilesUseCase,
+        list_profiles_by_role_use_case_1.ListProfilesByRoleUseCase,
+        update_profile_use_case_1.UpdateProfileUseCase,
+        upload_profile_avatar_use_case_1.UploadProfileAvatarUseCase])
 ], ProfileService);
 //# sourceMappingURL=profile.service.js.map

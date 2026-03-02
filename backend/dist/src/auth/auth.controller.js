@@ -15,20 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
-function normalizeAddress(raw) {
-    if (typeof raw === "string")
-        return raw;
-    if (raw && typeof raw.address === "string") {
-        return raw.address;
-    }
-    return undefined;
-}
+const utils_1 = require("./utils");
+const nonce_dto_1 = require("./dto/nonce.dto");
+const verify_signature_dto_1 = require("./dto/verify-signature.dto");
+const create_profile_dto_1 = require("./dto/create-profile.dto");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    createNonce(stakeAddress) {
-        const addr = normalizeAddress(stakeAddress);
+    createNonce(body) {
+        const addr = (0, utils_1.normalizeAddress)(body.stakeAddress);
         if (!addr) {
             throw new common_1.HttpException({ error: "Missing stakeAddress" }, common_1.HttpStatus.BAD_REQUEST);
         }
@@ -37,7 +33,7 @@ let AuthController = class AuthController {
     }
     verifySignature(body) {
         const { stakeAddress, nonce, signature, key } = body;
-        const addr = normalizeAddress(stakeAddress);
+        const addr = (0, utils_1.normalizeAddress)(stakeAddress);
         if (!addr || !nonce || !signature || !key) {
             throw new common_1.HttpException({ error: "Missing authentication parameters" }, common_1.HttpStatus.BAD_REQUEST);
         }
@@ -50,7 +46,7 @@ let AuthController = class AuthController {
     }
     async createProfile(body) {
         const { stakeAddress, roleId, displayName, location, coordinates } = body;
-        const addr = normalizeAddress(stakeAddress);
+        const addr = (0, utils_1.normalizeAddress)(stakeAddress);
         if (!addr || !roleId || !displayName) {
             throw new common_1.HttpException({ error: "Missing profile information" }, common_1.HttpStatus.BAD_REQUEST);
         }
@@ -66,23 +62,23 @@ let AuthController = class AuthController {
 exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)("nonce"),
-    __param(0, (0, common_1.Body)("stakeAddress")),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [nonce_dto_1.NonceRequestDto]),
     __metadata("design:returntype", Object)
 ], AuthController.prototype, "createNonce", null);
 __decorate([
     (0, common_1.Post)("verify"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [verify_signature_dto_1.VerifySignatureDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "verifySignature", null);
 __decorate([
     (0, common_1.Post)("profile"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [create_profile_dto_1.CreateProfileDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "createProfile", null);
 exports.AuthController = AuthController = __decorate([

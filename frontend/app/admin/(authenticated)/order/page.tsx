@@ -91,11 +91,6 @@ export default function OrderPage() {
   return (
     <>
       <OrderHeader styles={styles} />
-
-      <p className={styles.formHint} style={{ marginBottom: 12 }}>
-        Orders in delivery (visible to owners only). Complete the order to release assets to the recipient.
-      </p>
-
       <OrderSearch styles={styles} query={searchQuery} onChange={setSearchQuery} />
 
       {loading ? (

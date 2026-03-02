@@ -1,12 +1,20 @@
 import type { UTxO } from "@meshsdk/core";
 import { OrderContract } from "./order.contract";
-import { PrismaService } from "../prisma/prisma.service";
 import { ProductService } from "../product/product.service";
+import { OrderRepositoryPort } from "./domain/order.repository";
+import { ListOrdersForProfileUseCase } from "./application/use-cases/list-orders-for-profile.use-case";
+import { SavePartialSignedTxUseCase } from "./application/use-cases/save-partial-signed-tx.use-case";
+import { RecordOrderUseCase } from "./application/use-cases/record-order.use-case";
+import { ConfirmOrderCompleteUseCase } from "./application/use-cases/confirm-order-complete.use-case";
 export declare class OrderService {
-    private readonly prisma;
+    private readonly orderRepository;
     private readonly product;
+    private readonly listOrdersForProfileUseCase;
+    private readonly savePartialSignedTxUseCase;
+    private readonly recordOrderUseCase;
+    private readonly confirmOrderCompleteUseCase;
     private _contract;
-    constructor(prisma: PrismaService, product: ProductService);
+    constructor(orderRepository: OrderRepositoryPort, product: ProductService, listOrdersForProfileUseCase: ListOrdersForProfileUseCase, savePartialSignedTxUseCase: SavePartialSignedTxUseCase, recordOrderUseCase: RecordOrderUseCase, confirmOrderCompleteUseCase: ConfirmOrderCompleteUseCase);
     getContract(): OrderContract;
     getScriptAddress(): string;
     getScriptCbor(): string;

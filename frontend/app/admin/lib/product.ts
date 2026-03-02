@@ -10,6 +10,11 @@ export type BatchListItem = {
   policyId: string | null;
 };
 
+export type ProductRoadmapHop = {
+  hopIndex: number;
+  receiverAddress: string | null;
+};
+
 export async function getBatchesList(token: string): Promise<BatchListItem[]> {
   const res = await fetch(
     `${BACKEND_URL}/product/batches?token=${encodeURIComponent(token)}`,
@@ -63,4 +68,27 @@ export async function getBatchByAssetName(assetName: string): Promise<{
     assetName: data.assetName ?? assetName,
     nftUnit: data.nftUnit ?? null,
   };
+}
+
+export async function getProductRoadmap(
+  token: string,
+  code: string,
+): Promise<ProductRoadmapHop[]> {
+  const res = await fetch(
+    `${BACKEND_URL}/product/roadmap?code=${encodeURIComponent(
+      code.trim(),
+    )}&token=${encodeURIComponent(token)}`,
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || 'Failed to load roadmap');
+  }
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map(
+    (r: any): ProductRoadmapHop => ({
+      hopIndex: Number(r?.hopIndex ?? 0),
+      receiverAddress:
+        r?.receiverAddress != null ? String(r.receiverAddress) : null,
+    }),
+  );
 }
