@@ -36,7 +36,7 @@ class LoggingExceptionFilter implements ExceptionFilter {
 }
 
 async function bootstrap() {
-  const port = process.env.PORT ?? 3000;
+  const port = Number(process.env.PORT ?? 3000);
   console.log("[main] Bootstrap: creating Express and Nest app...");
   const server = express();
   server.use(express.json({ limit: "10mb" }));
@@ -48,8 +48,8 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN ?? true,
     credentials: true,
   });
-  await app.listen(port);
-  console.log(`[main] Server listening on http://localhost:${port}`);
+  await app.listen(port, "0.0.0.0");
+  console.log(`[main] Server listening on port ${port}`);
 }
 
 bootstrap().catch((e) => {
