@@ -5,9 +5,10 @@ type Props = {
   items: Product[];
   onEdit: (p: Product) => void;
   onRevoke: (id: number) => void;
+  onDownloadQr: (p: Product) => void;
 };
 
-export function ProductsTable({ styles, items, onEdit, onRevoke }: Props) {
+export function ProductsTable({ styles, items, onEdit, onRevoke, onDownloadQr }: Props) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -17,6 +18,7 @@ export function ProductsTable({ styles, items, onEdit, onRevoke }: Props) {
             <th>Code</th>
             <th>Name</th>
             <th>Image</th>
+            <th>Download</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -27,6 +29,16 @@ export function ProductsTable({ styles, items, onEdit, onRevoke }: Props) {
               <td>{p.code}</td>
               <td>{p.nameEn}</td>
               <td>{p.imageUrl ? 'Yes' : '—'}</td>
+              <td>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => onDownloadQr(p)}
+                  title="Download trace QR PDF"
+                >
+                  Download
+                </button>
+              </td>
               <td>
                 <div className={styles.actions}>
                   <button

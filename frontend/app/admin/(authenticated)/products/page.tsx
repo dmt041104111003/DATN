@@ -20,7 +20,8 @@ import { ProductsCards } from '../../components/product/ProductsCards';
 import type { ProfileOption } from '../../types';
 import { uploadFileToIpfs } from '../../lib/ipfs';
 import { getAuthToken } from '../../lib/account';
-import { getProductRoadmap } from '../../lib/product';
+import { getBatchByAssetName, getProductRoadmap } from '../../lib/product';
+import { encodeTraceId } from '@/utils/utils';
 import { ProductDialog } from '../../components/product/ProductDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
@@ -448,6 +449,54 @@ export default function ProductsPage() {
     }
   };
 
+  const handleDownloadQr = async (p: Product) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const info = await getBatchByAssetName(p.code);
+      if (!info || !info.policyId) {
+        alert('Policy ID not found for this batch.');
+        return;
+      }
+      const traceId = encodeTraceId(info.policyId, info.assetName);
+      const origin =
+        typeof window !== 'undefined'
+          ? window.location.origin.replace(/\/+$/, '')
+          : '';
+      const traceUrl = `${origin}/trace/${traceId}`;
+
+      const [jsPdfModule, qrModule] = await Promise.all([
+        import('jspdf'),
+        import('qrcode'),
+      ]);
+      const JsPdfCtor: any =
+        (jsPdfModule as any).jsPDF ||
+        (jsPdfModule as any).default ||
+        jsPdfModule;
+      const QRCode = (qrModule as any).default || qrModule;
+
+      const qrDataUrl: string = await QRCode.toDataURL(traceUrl, {
+        margin: 1,
+        width: 256,
+      });
+
+      const doc = new JsPdfCtor();
+      const qrSize = 120;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const x = (pageWidth - qrSize) / 2;
+      const y = (pageHeight - qrSize) / 2;
+      doc.addImage(qrDataUrl, 'PNG', x, y, qrSize, qrSize);
+
+      doc.save(`trace-${info.assetName}.pdf`);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate QR PDF for this batch.',
+      );
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -487,6 +536,7 @@ export default function ProductsPage() {
         items={paginatedList}
         onEdit={openEdit}
         onRevoke={handleRevoke}
+        onDownloadQr={handleDownloadQr}
       />
 
       <ProductsCards
@@ -494,6 +544,7 @@ export default function ProductsPage() {
         items={paginatedList}
         onEdit={openEdit}
         onRevoke={handleRevoke}
+        onDownloadQr={handleDownloadQr}
       />
 
       <Pagination

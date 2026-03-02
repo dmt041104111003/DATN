@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parseCoords, parseLocations } from '../../utils/coordinates';
 import { moveItem } from '../../utils/array';
@@ -66,89 +65,99 @@ export function ReceiversMap({ coordinates, locations, receiverList = [], receiv
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const coordList = parseCoords(coordinates);
-    const locList = parseLocations(locations);
+    let mounted = true;
 
-    const minterCoord = (() => {
-      if (!minterCoordinates?.trim()) return null;
-      const parts = minterCoordinates.trim().split(',');
-      if (parts.length !== 2) return null;
-      const lat = Number(parts[0].trim());
-      const lng = Number(parts[1].trim());
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-      return [lat, lng] as [number, number];
-    })();
+    void import('leaflet').then((mod) => {
+      const L = mod.default;
+      if (!mounted || !containerRef.current || mapRef.current) return;
 
-    const defaultLat = 21.0285;
-    const defaultLng = 105.8542;
-    const initialCenter =
-      coordList.length > 0
-        ? coordList[0]
-        : minterCoord ?? ([defaultLat, defaultLng] as [number, number]);
+      const coordListLocal = parseCoords(coordinates);
+      const locListLocal = parseLocations(locations);
 
-    const map = L.map(containerRef.current).setView(initialCenter, 5);
-    mapRef.current = map;
+      const minterCoord = (() => {
+        if (!minterCoordinates?.trim()) return null;
+        const parts = minterCoordinates.trim().split(',');
+        if (parts.length !== 2) return null;
+        const lat = Number(parts[0].trim());
+        const lng = Number(parts[1].trim());
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return [lat, lng] as [number, number];
+      })();
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
+      const defaultLat = 21.0285;
+      const defaultLng = 105.8542;
+      const initialCenter =
+        coordListLocal.length > 0
+          ? coordListLocal[0]
+          : minterCoord ?? ([defaultLat, defaultLng] as [number, number]);
 
-    const minterIcon = L.divIcon({
-      className: '',
-      html:
-        '<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">' +
-        '<path d="M12 1C7.5 1 4 4.6 4 9.1C4 15.1 10.7 25.8 11.5 27.1C11.7 27.4 11.8 27.5 12 27.5C12.2 27.5 12.3 27.4 12.5 27.1C13.3 25.8 20 15.1 20 9.1C20 4.6 16.5 1 12 1Z" fill="#0f766e" stroke="#ffffff" stroke-width="2"/>' +
-        '<circle cx="12" cy="10.5" r="3" fill="#ffffff"/>' +
-        '</svg>',
-      iconSize: [24, 32],
-      iconAnchor: [12, 32],
-    });
+      const map = L.map(containerRef.current).setView(initialCenter, 5);
+      mapRef.current = map;
 
-    if (minterCoord) {
-      const minterMarker = L.marker(minterCoord, { icon: minterIcon }).addTo(map);
-      minterMarker.bindTooltip(minterLocation?.trim() || 'Minter (origin)', { direction: 'top' });
-      markersRef.current.push(minterMarker);
-    }
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(map);
 
-    const createMarkerIcon = (index: number) =>
-      L.divIcon({
+      const minterIcon = L.divIcon({
         className: '',
         html:
-          '<div style="position:relative; width:24px; height:32px; display:flex; align-items:flex-end; justify-content:center;">' +
           '<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">' +
-          '<path d="M12 1C7.5 1 4 4.6 4 9.1C4 15.1 10.7 25.8 11.5 27.1C11.7 27.4 11.8 27.5 12 27.5C12.2 27.5 12.3 27.4 12.5 27.1C13.3 25.8 20 15.1 20 9.1C20 4.6 16.5 1 12 1Z" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>' +
+          '<path d="M12 1C7.5 1 4 4.6 4 9.1C4 15.1 10.7 25.8 11.5 27.1C11.7 27.4 11.8 27.5 12 27.5C12.2 27.5 12.3 27.4 12.5 27.1C13.3 25.8 20 15.1 20 9.1C20 4.6 16.5 1 12 1Z" fill="#0f766e" stroke="#ffffff" stroke-width="2"/>' +
           '<circle cx="12" cy="10.5" r="3" fill="#ffffff"/>' +
-          '</svg>' +
-          `<div style="position:absolute; top:6px; left:0; right:0; text-align:center; font-size:10px; font-weight:600; color:#0f172a;">${index}</div>` +
-          '</div>',
+          '</svg>',
         iconSize: [24, 32],
         iconAnchor: [12, 32],
       });
 
-    coordList.forEach(([lat, lng], idx) => {
-      const marker = L.marker([lat, lng], {
-        icon: createMarkerIcon(idx + 1),
-      }).addTo(map);
-      const baseLabel = locList[idx];
-      const tooltipLabel = baseLabel ? `${idx + 1}. ${baseLabel}` : `#${idx + 1}`;
-      marker.bindTooltip(tooltipLabel, { direction: 'top' });
-      markersRef.current.push(marker);
+      if (minterCoord) {
+        const minterMarker = L.marker(minterCoord, { icon: minterIcon }).addTo(map);
+        minterMarker.bindTooltip(minterLocation?.trim() || 'Minter (origin)', { direction: 'top' });
+        markersRef.current.push(minterMarker);
+      }
+
+      const createMarkerIcon = (index: number) =>
+        L.divIcon({
+          className: '',
+          html:
+            '<div style="position:relative; width:24px; height:32px; display:flex; align-items:flex-end; justify-content:center;">' +
+            '<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">' +
+            '<path d="M12 1C7.5 1 4 4.6 4 9.1C4 15.1 10.7 25.8 11.5 27.1C11.7 27.4 11.8 27.5 12 27.5C12.2 27.5 12.3 27.4 12.5 27.1C13.3 25.8 20 15.1 20 9.1C20 4.6 16.5 1 12 1Z" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>' +
+            '<circle cx="12" cy="10.5" r="3" fill="#ffffff"/>' +
+            '</svg>' +
+            `<div style="position:absolute; top:6px; left:0; right:0; text-align:center; font-size:10px; font-weight:600; color:#0f172a;">${index}</div>` +
+            '</div>',
+          iconSize: [24, 32],
+          iconAnchor: [12, 32],
+        });
+
+      coordListLocal.forEach(([lat, lng], idx) => {
+        const marker = L.marker([lat, lng], {
+          icon: createMarkerIcon(idx + 1),
+        }).addTo(map);
+        const baseLabel = locListLocal[idx];
+        const tooltipLabel = baseLabel ? `${idx + 1}. ${baseLabel}` : `#${idx + 1}`;
+        marker.bindTooltip(tooltipLabel, { direction: 'top' });
+        markersRef.current.push(marker);
+      });
+
+      const polylineLatLngs = minterCoord
+        ? [minterCoord, ...coordListLocal]
+        : coordListLocal;
+      if (polylineLatLngs.length > 1) {
+        polylineRef.current = L.polyline(polylineLatLngs, {
+          color: '#2563eb',
+          weight: 3,
+          opacity: 0.7,
+        }).addTo(map);
+      }
     });
 
-    const polylineLatLngs = minterCoord
-      ? [minterCoord, ...coordList]
-      : coordList;
-    if (polylineLatLngs.length > 1) {
-      polylineRef.current = L.polyline(polylineLatLngs, {
-        color: '#2563eb',
-        weight: 3,
-        opacity: 0.7,
-      }).addTo(map);
-    }
-
     return () => {
-      map.remove();
-      mapRef.current = null;
+      mounted = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
       markersRef.current = [];
       polylineRef.current = null;
     };

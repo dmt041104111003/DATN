@@ -16,6 +16,7 @@ export interface ProductBatchSnapshot {
   standard: string | null;
   properties: unknown;
   metadata: unknown;
+  policyId: string | null;
 }
 
 export interface ProductRoadmapHop {

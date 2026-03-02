@@ -223,6 +223,18 @@ export class ProductService {
     return { unsignedTx };
   }
 
+  async getBatchSummaryByCode(code: string): Promise<{ policyId: string | null; assetName: string; nftUnit: string | null }> {
+    const batch = await this.productRepository.findBatchByCode(code);
+    if (!batch) {
+      throw new BadRequestException(`Batch not found: ${code}`);
+    }
+    return {
+      policyId: batch.policyId,
+      assetName: batch.code,
+      nftUnit: null,
+    };
+  }
+
   async recordTx(params: {
     action: "MINT" | "UPDATE" | "REVOKE" | "BURN";
     txHash: string;

@@ -5,9 +5,10 @@ type Props = {
   items: Product[];
   onEdit: (p: Product) => void;
   onRevoke: (id: number) => void;
+  onDownloadQr: (p: Product) => void;
 };
 
-export function ProductsCards({ styles, items, onEdit, onRevoke }: Props) {
+export function ProductsCards({ styles, items, onEdit, onRevoke, onDownloadQr }: Props) {
   return (
     <div className={styles.tableCards}>
       {items.map((p) => (
@@ -45,6 +46,13 @@ export function ProductsCards({ styles, items, onEdit, onRevoke }: Props) {
                 onClick={() => onRevoke(p.id)}
               >
                 Revoke
+              </button>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => onDownloadQr(p)}
+              >
+                Download
               </button>
             </div>
           </div>

@@ -102,6 +102,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       standard: batch.standard ?? null,
       properties: batch.properties,
       metadata: batch.metadata,
+      policyId: batch.policyId ?? null,
     };
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, Param, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { ProductService } from "./product.service";
 import { AuthService } from "../auth/auth.service";
 import {
@@ -307,5 +307,15 @@ export class ProductController {
     }
     const items = await this.product.listRoadmap(code.trim());
     return { items };
+  }
+
+  @Get("batch/:code")
+  async getBatchByCode(
+    @Param("code") code: string,
+  ): Promise<{ policyId: string | null; assetName: string; nftUnit: string | null }> {
+    if (!code || typeof code !== "string" || !code.trim()) {
+      throw new BadRequestException("code is required");
+    }
+    return this.product.getBatchSummaryByCode(code.trim());
   }
 }
