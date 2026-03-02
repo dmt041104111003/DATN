@@ -13,7 +13,7 @@ import {
   confirmBurnNft,
   type WarehouseItem,
 } from '../../lib/warehouse';
-import { getWalletChangeAddress, getWalletUtxos, signAndSubmitWithEternl } from '../../utils/wallet';
+import { getWalletChangeAddress, getWalletUtxos, getWalletUtxoAddresses, signAndSubmitWithEternl } from '../../utils/wallet';
 import { WarehouseHeader } from '../../components/warehouse/WarehouseHeader';
 import { WarehouseSearch } from '../../components/warehouse/WarehouseSearch';
 import { WarehouseTable } from '../../components/warehouse/WarehouseTable';
@@ -109,10 +109,12 @@ export default function WarehousePage() {
     try {
       const changeAddress = await getWalletChangeAddress();
       const utxos = await getWalletUtxos();
+      const utxoAddresses = await getWalletUtxoAddresses();
       const { unsignedTx } = await requestBurnNft(token, {
         changeAddress,
         assetName: item.batchId,
         walletUtxos: utxos,
+        utxoAddresses,
         policyId: item.policyId,
       });
       const txHash = await signAndSubmitWithEternl(unsignedTx);

@@ -46,6 +46,7 @@ export interface ProductRepositoryPort {
     listBatchesByMinter(profileId: number): Promise<ProductBatchListItem[]>;
     upsertBatchOnMint(params: MintBatchParams): Promise<void>;
     findBatchByCode(code: string): Promise<ProductBatchSnapshot | null>;
+    getMinterWalletAddressByBatchCode(code: string): Promise<string | null>;
     updateBatch(params: UpdateBatchParams): Promise<void>;
     markBatchRevoked(code: string, nextMetadata: object): Promise<void>;
     markBatchBurned(code: string, nextMetadata: object): Promise<void>;

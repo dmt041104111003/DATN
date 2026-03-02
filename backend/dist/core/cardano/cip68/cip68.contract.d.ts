@@ -17,6 +17,7 @@ export declare class Cip68Contract extends MeshAdapter {
         assetName: string;
         quantity: string;
         txHash?: string;
+        policyId?: string;
     }[]) => Promise<string>;
     update: (params: {
         assetName: string;

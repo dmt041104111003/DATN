@@ -51,7 +51,7 @@ export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }
                 type="button"
                 className={styles.btnDanger}
                 onClick={() => onBurn(item)}
-                disabled={burningBatchId === item.batchId || item.status === 'SHIPPED'}
+                disabled={burningBatchId === item.batchId || item.status === 'SHIPPED' || item.status === 'BURNED'}
                 title="Burn"
               >
                 {burningBatchId === item.batchId ? 'Burning...' : 'Burn'}

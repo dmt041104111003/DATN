@@ -61,6 +61,7 @@ export async function requestBurnNft(
     changeAddress: string;
     assetName: string;
     walletUtxos: unknown[];
+    utxoAddresses?: string[];
     policyId?: string | null;
   },
 ): Promise<{ unsignedTx: string }> {
@@ -73,6 +74,7 @@ export async function requestBurnNft(
         changeAddress: params.changeAddress,
         assetName: params.assetName,
         walletUtxos: params.walletUtxos,
+        ...(params.utxoAddresses?.length ? { utxoAddresses: params.utxoAddresses } : {}),
         ...(params.policyId ? { policyId: params.policyId } : {}),
       }),
     },

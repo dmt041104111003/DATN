@@ -6,6 +6,25 @@ exports.buildMetadata = buildMetadata;
 const common_1 = require("@nestjs/common");
 const MIN_COLLATERAL_LOVELACE = 5000000;
 function createReadOnlyWallet(changeAddress, fetcher, walletUtxos, utxoAddresses) {
+    const isUtxoLike = (u) => {
+        if (!u || typeof u !== "object")
+            return false;
+        const input = u.input;
+        const output = u.output;
+        if (!input || typeof input !== "object")
+            return false;
+        if (!output || typeof output !== "object")
+            return false;
+        if (typeof input.txHash !== "string")
+            return false;
+        if (typeof input.outputIndex !== "number")
+            return false;
+        if (!Array.isArray(output.amount))
+            return false;
+        if (typeof output.address !== "string")
+            return false;
+        return true;
+    };
     const dedupe = (items) => {
         var _a, _b, _c, _d;
         const seen = new Set();
@@ -20,12 +39,12 @@ function createReadOnlyWallet(changeAddress, fetcher, walletUtxos, utxoAddresses
         return out;
     };
     const getAllUtxos = async () => {
-        if (walletUtxos === null || walletUtxos === void 0 ? void 0 : walletUtxos.length)
-            return walletUtxos;
         if (utxoAddresses === null || utxoAddresses === void 0 ? void 0 : utxoAddresses.length) {
             const lists = await Promise.all(utxoAddresses.map((a) => fetcher.fetchAddressUTxOs(a)));
             return dedupe(lists.flat());
         }
+        if ((walletUtxos === null || walletUtxos === void 0 ? void 0 : walletUtxos.length) && walletUtxos.every(isUtxoLike))
+            return dedupe(walletUtxos);
         return fetcher.fetchAddressUTxOs(changeAddress);
     };
     return {

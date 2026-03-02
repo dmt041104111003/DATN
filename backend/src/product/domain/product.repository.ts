@@ -56,6 +56,8 @@ export interface ProductRepositoryPort {
 
   findBatchByCode(code: string): Promise<ProductBatchSnapshot | null>;
 
+  getMinterWalletAddressByBatchCode(code: string): Promise<string | null>;
+
   updateBatch(params: UpdateBatchParams): Promise<void>;
 
   markBatchRevoked(

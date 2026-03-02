@@ -126,38 +126,70 @@ export class Cip68Contract extends MeshAdapter {
     return await unsignedTx.complete();
   };
 
-  burn = async (params: {
-    assetName: string;
-    quantity: string;
-    txHash?: string;
-  }[]) => {
+  burn = async (
+    params: {
+      assetName: string;
+      quantity: string;
+      txHash?: string;
+      policyId?: string;
+    }[]
+  ) => {
     const { utxos, walletAddress, collateral } = await this.getWalletForTx();
     const unsignedTx = this.meshTxBuilder;
     await Promise.all(
-      params.map(async ({ assetName, quantity, txHash }) => {
+      params.map(async ({ assetName, quantity, txHash, policyId }) => {
         const q = Number(quantity);
         if (!Number.isFinite(q) || Math.abs(q) !== 1) {
           throw new Error("CIP-68 label 222 burn requires quantity = -1");
         }
         const rftSuffix = CIP68_222(stringToHex(assetName));
+        const policyFromKnownUtxos =
+          (utxos ?? [])
+            .flatMap((u) => (u as any)?.output?.amount ?? [])
+            .map((a: { unit?: string }) => (typeof a?.unit === "string" ? a.unit : ""))
+            .find((unit: string) => unit.endsWith(rftSuffix) && unit.length >= 56 + rftSuffix.length)
+            ?.slice(0, 56) ?? undefined;
         const policyIdToUse =
+          policyId ??
+          policyFromKnownUtxos ??
           (await this.getPolicyIdFromWalletRft(walletAddress, rftSuffix)) ??
           this.policyId!;
+        if (
+          policyIdToUse !== this.policyId &&
+          !this.minterMintScriptCbor
+        ) {
+          throw new Error(
+            [
+              `This NFT was minted under policy ${policyIdToUse}, but your connected wallet corresponds to policy ${this.policyId}.`,
+              `Only the issuer (minting) wallet can build a burn transaction for this policy in the current on-chain script.`,
+            ].join(" ")
+          );
+        }
         const rftUnit = policyIdToUse + rftSuffix;
-        const userUtxos = await this.getAddressUTXOAssets(
-          walletAddress,
-          rftUnit
+        const userUtxos = (utxos || []).filter((u) =>
+          u?.output?.amount?.some((a: { unit: string }) => a.unit === rftUnit)
         );
-        const amount = userUtxos.reduce(
-          (sum, u) =>
-            sum +
-            u.output.amount.reduce(
-              (amt, a) =>
-                a.unit === rftUnit ? amt + Number(a.quantity) : amt,
-              0
-            ),
-          0
-        );
+        const safeQty = (qv: unknown): number => {
+          if (typeof qv === "number") return Number.isFinite(qv) ? qv : 0;
+          if (typeof qv === "string") {
+            const n = Number(qv);
+            return Number.isFinite(n) ? n : 0;
+          }
+          return 0;
+        };
+        const amount = userUtxos.reduce((sum: number, u) => {
+          const inUtxo = (u.output?.amount ?? []).reduce(
+            (amt: number, a: { unit: string; quantity: string }) =>
+              a.unit === rftUnit ? amt + safeQty(a.quantity) : amt,
+            0
+          );
+          return sum + inUtxo;
+        }, 0);
+        if (!(amount >= 1)) {
+          throw new Error(
+            `Wallet does not hold CIP-68 label 222 token for "${assetName}" (unit ${rftUnit}).`
+          );
+        }
         const ref100Unit =
           policyIdToUse + CIP68_100(stringToHex(assetName));
         const storeUtxo = !isNil(txHash)
@@ -191,11 +223,7 @@ export class Cip68Contract extends MeshAdapter {
 
         const burnQuantity = q > 0 ? -q : q;
         const burnQuantityStr = String(burnQuantity);
-        const remainingAmount = amount + burnQuantity;
 
-        userUtxos.forEach((u) => {
-          unsignedTx.txIn(u.input.txHash, u.input.outputIndex);
-        });
         unsignedTx.readOnlyTxInReference(
           storeUtxo.input.txHash,
           storeUtxo.input.outputIndex
@@ -209,15 +237,6 @@ export class Cip68Contract extends MeshAdapter {
           )
           .mintRedeemerValue(mConStr1([]))
           .mintingScript(mintScriptCborToUse);
-
-        if (remainingAmount > 0) {
-          unsignedTx.txOut(walletAddress, [
-            {
-              unit: rftUnit,
-              quantity: String(remainingAmount),
-            },
-          ]);
-        }
       })
     );
     unsignedTx

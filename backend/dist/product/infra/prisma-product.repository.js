@@ -97,6 +97,21 @@ let PrismaProductRepository = class PrismaProductRepository {
             policyId: (_d = batch.policyId) !== null && _d !== void 0 ? _d : null,
         };
     }
+    async getMinterWalletAddressByBatchCode(code) {
+        var _a;
+        const row = await this.prisma.productBatch.findUnique({
+            where: { code },
+            select: {
+                minterProfile: {
+                    select: {
+                        walletAddress: true,
+                    },
+                },
+            },
+        });
+        const addr = (_a = row === null || row === void 0 ? void 0 : row.minterProfile) === null || _a === void 0 ? void 0 : _a.walletAddress;
+        return typeof addr === "string" && addr.trim() ? addr.trim() : null;
+    }
     async updateBatch(params) {
         const { code, name, description, image, standard, properties, metadata } = params;
         await this.prisma.productBatch.update({

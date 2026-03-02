@@ -106,6 +106,21 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     };
   }
 
+  async getMinterWalletAddressByBatchCode(code: string): Promise<string | null> {
+    const row = await (this.prisma as any).productBatch.findUnique({
+      where: { code },
+      select: {
+        minterProfile: {
+          select: {
+            walletAddress: true,
+          },
+        },
+      },
+    });
+    const addr = row?.minterProfile?.walletAddress;
+    return typeof addr === "string" && addr.trim() ? addr.trim() : null;
+  }
+
   async updateBatch(params: UpdateBatchParams): Promise<void> {
     const { code, name, description, image, standard, properties, metadata } = params;
     await (this.prisma as any).productBatch.update({

@@ -22,7 +22,11 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
       },
       orderBy: { mintedAt: "desc" },
     });
-    return (rows || []).map(
+    const visible = (rows || []).filter(
+      (inv: any) =>
+        (inv?.quantity ?? 1) > 0 && String(inv?.status ?? "IN_WAREHOUSE") !== "BURNED"
+    );
+    return visible.map(
       (inv: any): WarehouseInventoryItem => ({
         batchId: inv.batchId,
         batchName: inv.batch?.name ?? inv.batchId,
@@ -58,10 +62,8 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
     profileId: number,
     batchId: string
   ): Promise<void> {
-    await (this.prisma as any).warehouseInventory.upsert({
-      where: { batchId_profileId: { batchId, profileId } },
-      create: { batchId, profileId, quantity: 0, status: "BURNED" },
-      update: { status: "BURNED" },
+    await (this.prisma as any).warehouseInventory.deleteMany({
+      where: { batchId, profileId },
     });
   }
 

@@ -4,6 +4,7 @@ import { Inject, Injectable, BadRequestException } from "@nestjs/common";
 import { CardanoService } from "../core/cardano/cardano.service";
 import { WarehouseService } from "../warehouse/warehouse.service";
 import { Cip68Contract } from "../core/cardano/cip68/cip68.contract";
+import { computeMintScriptCborForMinterAddress } from "../core/cardano/cip68/mint-script";
 import { createReadOnlyWallet, buildMetadata } from "./product.helpers";
 import {
   PRODUCT_REPOSITORY,
@@ -29,7 +30,7 @@ export class ProductService {
 
   private createContract(
     changeAddress: string,
-    opts?: { walletUtxos?: UTxO[]; utxoAddresses?: string[] },
+    opts?: { walletUtxos?: UTxO[]; utxoAddresses?: string[]; minterMintScriptCbor?: string },
   ): Cip68Contract {
     const wallet = createReadOnlyWallet(
       changeAddress,
@@ -37,7 +38,10 @@ export class ProductService {
       opts?.walletUtxos,
       opts?.utxoAddresses,
     );
-    return new Cip68Contract({ wallet: wallet as unknown as import("@meshsdk/core").MeshWallet });
+    return new Cip68Contract({
+      wallet: wallet as unknown as import("@meshsdk/core").MeshWallet,
+      ...(opts?.minterMintScriptCbor ? { minterMintScriptCbor: opts.minterMintScriptCbor } : {}),
+    });
   }
 
   async listBatches(profileId: number): Promise<
@@ -199,25 +203,52 @@ export class ProductService {
     walletUtxos?: UTxO[];
     utxoAddresses?: string[];
   }): Promise<{ unsignedTx: string }> {
+    let minterMintScriptCbor: string | undefined;
+    if (params.policyId) {
+      const minterAddr = await this.productRepository.getMinterWalletAddressByBatchCode(params.assetName);
+      if (minterAddr) {
+        try {
+          minterMintScriptCbor = computeMintScriptCborForMinterAddress(minterAddr).mintScriptCbor;
+        } catch {
+          minterMintScriptCbor = undefined;
+        }
+      }
+    }
     const contract = this.createContract(params.changeAddress, {
       walletUtxos: params.walletUtxos,
       utxoAddresses: params.utxoAddresses,
+      minterMintScriptCbor,
     });
-    const balance = await contract.getRftBalanceAtAddress(
-      params.changeAddress,
-      params.assetName,
-      params.policyId,
-    );
-    if (balance < 1) {
-      throw new BadRequestException(
-        "Wallet does not hold this NFT. Burn is only allowed if the wallet has the NFT.",
-      );
+    if (params.walletUtxos?.length) {
+      const policyIdToUse =
+        params.policyId ?? (contract as unknown as { policyId?: string }).policyId;
+      if (policyIdToUse) {
+        const nameHex = Buffer.from(params.assetName, "utf8").toString("hex");
+        const unit = `${policyIdToUse}000de140${nameHex}`;
+        const bal = params.walletUtxos.reduce((sum, u) => {
+          const amt = (u as any)?.output?.amount ?? [];
+          const inUtxo = Array.isArray(amt)
+            ? amt.reduce(
+                (s: number, a: { unit: string; quantity: string }) =>
+                  a?.unit === unit ? s + Number(a.quantity ?? 0) : s,
+                0
+              )
+            : 0;
+          return sum + inUtxo;
+        }, 0);
+        if (bal < 1) {
+          throw new BadRequestException(
+            `Wallet does not hold CIP-68 label 222 token for "${params.assetName}" (unit ${unit}).`,
+          );
+        }
+      }
     }
     const unsignedTx = await contract.burn([
       {
         assetName: params.assetName,
         quantity: "1",
         txHash: params.txHash,
+        policyId: params.policyId,
       },
     ]);
     return { unsignedTx };

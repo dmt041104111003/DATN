@@ -26,7 +26,8 @@ let PrismaWarehouseRepository = class PrismaWarehouseRepository {
             },
             orderBy: { mintedAt: "desc" },
         });
-        return (rows || []).map((inv) => {
+        const visible = (rows || []).filter((inv) => { var _a, _b; return ((_a = inv === null || inv === void 0 ? void 0 : inv.quantity) !== null && _a !== void 0 ? _a : 1) > 0 && String((_b = inv === null || inv === void 0 ? void 0 : inv.status) !== null && _b !== void 0 ? _b : "IN_WAREHOUSE") !== "BURNED"; });
+        return visible.map((inv) => {
             var _a, _b, _c, _d, _e, _f, _g, _h;
             return ({
                 batchId: inv.batchId,
@@ -51,10 +52,8 @@ let PrismaWarehouseRepository = class PrismaWarehouseRepository {
         });
     }
     async markAsBurnedForProfile(profileId, batchId) {
-        await this.prisma.warehouseInventory.upsert({
-            where: { batchId_profileId: { batchId, profileId } },
-            create: { batchId, profileId, quantity: 0, status: "BURNED" },
-            update: { status: "BURNED" },
+        await this.prisma.warehouseInventory.deleteMany({
+            where: { batchId, profileId },
         });
     }
     async addToWarehouseForProfile(profileId, batchId) {

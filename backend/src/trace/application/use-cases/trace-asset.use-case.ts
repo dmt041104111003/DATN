@@ -4,6 +4,7 @@ import { ConfigService } from "../../../core/config/config.service";
 import { CardanoService } from "../../../core/cardano/cardano.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { OrderService } from "../../../order/order.service";
+import { buildRef100Unit } from "../../../shared/common/utils";
 import {
   buildDisplay,
   buildNft222Unit,
@@ -26,31 +27,45 @@ export class TraceAssetUseCase {
     const policyIdTrimmed = policyId.trim();
     const assetNameTrimmed = assetName.trim();
 
-    const prefix222 = this.config.cip68Prefix.USER_222;
-    const nft222Unit = buildNft222Unit(
+    const ref100Unit = buildRef100Unit(
       policyIdTrimmed,
       assetNameTrimmed,
-      prefix222
+      this.config.cip68Prefix,
     );
-
-    let nft222Quantity = "1";
+    let ref100Quantity = "0";
     try {
-      const nftAsset = (await this.cardano.blockfrostFetcher.fetchSpecificAsset(
-        nft222Unit
+      const ref100Asset = (await this.cardano.blockfrostFetcher.fetchSpecificAsset(
+        ref100Unit
       )) as {
         quantity?: string;
       };
-      nft222Quantity = nftAsset?.quantity ?? "0";
+      ref100Quantity = ref100Asset?.quantity ?? "0";
     } catch {
       throw new NotFoundException(
         "Asset not found on chain for this policyId and assetName.",
       );
     }
 
-    if (nft222Quantity === "0") {
+    if (ref100Quantity === "0") {
       throw new NotFoundException(
-        "Asset has been revoked (burned) on chain.",
+        "Asset has been revoked (Ref100 burned) on chain.",
       );
+    }
+
+    const prefix222 = this.config.cip68Prefix.USER_222;
+    const nft222Unit = buildNft222Unit(
+      policyIdTrimmed,
+      assetNameTrimmed,
+      prefix222
+    );
+    let nft222Quantity = "0";
+    try {
+      const nft222Asset = (await this.cardano.blockfrostFetcher.fetchSpecificAsset(
+        nft222Unit
+      )) as { quantity?: string };
+      nft222Quantity = nft222Asset?.quantity ?? "0";
+    } catch {
+      nft222Quantity = "0";
     }
 
     const batch = await this.prisma.productBatch.findFirst({

@@ -13,6 +13,19 @@ export function createReadOnlyWallet(
   getUtxos: () => Promise<UTxO[]>;
   getCollateral: () => Promise<UTxO[]>;
 } {
+  const isUtxoLike = (u: unknown): u is UTxO => {
+    if (!u || typeof u !== "object") return false;
+    const input = (u as any).input;
+    const output = (u as any).output;
+    if (!input || typeof input !== "object") return false;
+    if (!output || typeof output !== "object") return false;
+    if (typeof input.txHash !== "string") return false;
+    if (typeof input.outputIndex !== "number") return false;
+    if (!Array.isArray(output.amount)) return false;
+    if (typeof output.address !== "string") return false;
+    return true;
+  };
+
   const dedupe = (items: UTxO[]): UTxO[] => {
     const seen = new Set<string>();
     const out: UTxO[] = [];
@@ -26,11 +39,11 @@ export function createReadOnlyWallet(
   };
 
   const getAllUtxos = async (): Promise<UTxO[]> => {
-    if (walletUtxos?.length) return walletUtxos;
     if (utxoAddresses?.length) {
       const lists = await Promise.all(utxoAddresses.map((a) => fetcher.fetchAddressUTxOs(a)));
       return dedupe(lists.flat());
     }
+    if (walletUtxos?.length && walletUtxos.every(isUtxoLike)) return dedupe(walletUtxos);
     return fetcher.fetchAddressUTxOs(changeAddress);
   };
 

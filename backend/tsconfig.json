@@ -16,6 +16,7 @@
       "@app/*": ["src/*"]
     },
     "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "strict": true,
     "skipLibCheck": true
   },
