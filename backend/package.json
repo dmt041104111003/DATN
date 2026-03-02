@@ -4,13 +4,17 @@
   "description": "Aiken CIP68 contracts + NestJS backend & tests",
   "type": "commonjs",
   "scripts": {
-    "build": "aiken build",
+    "build:contracts": "aiken build",
     "check": "aiken check",
     "docs": "aiken docs",
+    "build": "nest build",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "start": "nest start",
-    "start:dev": "nest start --watch"
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main",
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
