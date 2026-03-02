@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { blockfrostProvider } from "@app/cardano/standalone";
+import { blockfrostProvider } from "@app/core/cardano/standalone";
 import { describe, test, expect, beforeEach, jest } from "@jest/globals";
 import { deserializeAddress, MeshWallet, resolvePaymentKeyHash } from "@meshsdk/core";
-import { Cip68Contract } from "@app/cip68/cip68.contract";
+import { Cip68Contract } from "@app/core/cardano/cip68/cip68.contract";
 
 const APP_WORDS = process.env.APP_MNEMONIC?.trim()?.split(" ").filter(Boolean) ?? [];
 const hasAppWallet = APP_WORDS.length >= 15;

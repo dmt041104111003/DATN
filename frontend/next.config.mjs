@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   turbopack: {},
+  images: {
+    qualities: [75, 90],
+  },
   webpack: (config, { isServer }) => {
     config.experiments = {
       ...config.experiments,

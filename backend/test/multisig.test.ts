@@ -1,14 +1,14 @@
 import "dotenv/config";
-import { blockfrostProvider, blockfrostFetcher } from "@app/cardano/standalone";
+import { blockfrostProvider, blockfrostFetcher } from "@app/core/cardano/standalone";
 import { describe, test, expect, beforeEach, jest } from "@jest/globals";
 import { deserializeAddress, MeshWallet, resolvePaymentKeyHash, stringToHex, cst } from "@meshsdk/core";
 import type { UTxO } from "@meshsdk/core";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { OrderContract } from "@app/order/order.contract";
-import { Cip68Contract } from "@app/cip68/cip68.contract";
-import type { Plutus } from "@app/types";
-import { buildRef100Unit, datumToJson, getPkHash } from "@app/cip68/utils";
+import { Cip68Contract } from "@app/core/cardano/cip68/cip68.contract";
+import type { Plutus } from "@app/shared/types";
+import { buildRef100Unit, datumToJson, getPkHash } from "@app/core/cardano/cip68/utils";
 
 const APP_WORDS =
   process.env.APP_MNEMONIC?.trim()?.split(" ").filter(Boolean) ?? [];

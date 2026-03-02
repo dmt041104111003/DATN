@@ -1,12 +1,19 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Inject, Injectable, BadRequestException } from "@nestjs/common";
 import type { UTxO } from "@meshsdk/core";
 import { EmbeddedWallet, cst } from "@meshsdk/core";
-import { Prisma, DeliveryStatus } from "@prisma/client";
-import { blockfrostProvider, blockfrostFetcher } from "../cardano/standalone";
-import { CIP68_PREFIX } from "../config/config.service";
+import { blockfrostProvider, blockfrostFetcher } from "../core/cardano/standalone";
+import { CIP68_PREFIX } from "../core/config/config.service";
 import { OrderContract } from "./order.contract";
-import { PrismaService } from "../prisma/prisma.service";
 import { ProductService } from "../product/product.service";
+import {
+  ORDER_REPOSITORY,
+  OrderRecordParams,
+  OrderRepositoryPort,
+} from "./domain/order.repository";
+import { ListOrdersForProfileUseCase } from "./application/use-cases/list-orders-for-profile.use-case";
+import { SavePartialSignedTxUseCase } from "./application/use-cases/save-partial-signed-tx.use-case";
+import { RecordOrderUseCase } from "./application/use-cases/record-order.use-case";
+import { ConfirmOrderCompleteUseCase } from "./application/use-cases/confirm-order-complete.use-case";
 
 const LABEL_222 = CIP68_PREFIX.USER_222;
 
@@ -22,8 +29,13 @@ export class OrderService {
   private _contract: OrderContract | null = null;
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(ORDER_REPOSITORY)
+    private readonly orderRepository: OrderRepositoryPort,
     private readonly product: ProductService,
+    private readonly listOrdersForProfileUseCase: ListOrdersForProfileUseCase,
+    private readonly savePartialSignedTxUseCase: SavePartialSignedTxUseCase,
+    private readonly recordOrderUseCase: RecordOrderUseCase,
+    private readonly confirmOrderCompleteUseCase: ConfirmOrderCompleteUseCase
   ) {}
 
   getContract(): OrderContract {
@@ -256,44 +268,7 @@ export class OrderService {
     secondSignedByAddress: string | null;
     unlockTxHash: string | null;
   }[]> {
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-      select: { walletAddress: true },
-    });
-    if (!profile?.walletAddress?.trim()) {
-      return [];
-    }
-    const wallet = profile.walletAddress.trim().toLowerCase();
-    const rows = await this.prisma.deliveryOrder.findMany({
-      where: {
-        status: { in: [DeliveryStatus.IN_TRANSIT, DeliveryStatus.DELIVERED] },
-        NOT: { senderAddress: profile.walletAddress.trim() },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    return rows
-      .filter((row: { ownerAddresses: unknown }) => {
-        const owners = Array.isArray(row.ownerAddresses) ? (row.ownerAddresses as string[]) : [];
-        return owners.some((addr: string) => (addr || "").trim().toLowerCase() === wallet);
-      })
-      .map((row: Record<string, unknown>) => {
-        const r = row as { id: number; lockTxHash: string; scriptOutputIndex: number; batchId: string; policyId: string | null; recipientAddress: string; senderAddress: string; ownerAddresses: unknown; status: string; partialSignedTxHex?: string | null; partialSignedByAddress?: string | null; secondSignedByAddress?: string | null; unlockTxHash?: string | null };
-        return {
-          id: r.id,
-          lockTxHash: r.lockTxHash,
-          scriptOutputIndex: r.scriptOutputIndex,
-          batchId: r.batchId,
-          policyId: r.policyId,
-          recipientAddress: r.recipientAddress,
-          senderAddress: r.senderAddress,
-          ownerAddresses: Array.isArray(r.ownerAddresses) ? (r.ownerAddresses as string[]) : [],
-          status: r.status,
-          partialSignedTxHex: r.partialSignedTxHex ?? null,
-          partialSignedByAddress: r.partialSignedByAddress ?? null,
-          secondSignedByAddress: r.secondSignedByAddress ?? null,
-          unlockTxHash: r.unlockTxHash ?? null,
-        };
-      });
+    return this.listOrdersForProfileUseCase.execute(profileId);
   }
 
   async savePartialSignedTx(
@@ -301,33 +276,11 @@ export class OrderService {
     profileId: number,
     partialTxHex: string,
   ): Promise<{ ok: boolean }> {
-    const hex = (partialTxHex || "").trim().replace(/^0x/, "");
-    if (hex.length < 100) {
-      throw new BadRequestException("partialTxHex is too short.");
-    }
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-      select: { walletAddress: true },
-    });
-    if (!profile?.walletAddress?.trim()) {
-      throw new BadRequestException("Profile or wallet not found.");
-    }
-    const wallet = profile.walletAddress.trim().toLowerCase();
-    const delivery = await this.prisma.deliveryOrder.findUnique({
-      where: { id: deliveryId },
-    });
-    if (!delivery || delivery.status !== DeliveryStatus.IN_TRANSIT) {
-      throw new BadRequestException("Order not found or not in delivery.");
-    }
-    const owners = Array.isArray(delivery.ownerAddresses) ? (delivery.ownerAddresses as string[]) : [];
-    const isOwner = owners.some((addr: string) => (addr || "").trim().toLowerCase() === wallet);
-    if (!isOwner) {
-      throw new BadRequestException("You are not an owner of this order.");
-    }
-    await this.prisma.$executeRaw(
-      Prisma.sql`UPDATE "DeliveryOrder" SET "partialSignedTxHex" = ${hex}, "partialSignedByAddress" = ${profile.walletAddress.trim()} WHERE id = ${deliveryId}`,
+    return this.savePartialSignedTxUseCase.execute(
+      deliveryId,
+      profileId,
+      partialTxHex
     );
-    return { ok: true };
   }
 
   async recordOrder(params: {
@@ -339,28 +292,16 @@ export class OrderService {
     senderAddress: string;
     ownerAddresses: string[];
   }): Promise<{ id: number }> {
-    const scriptOutputIndex = params.scriptOutputIndex ?? 0;
-    const ownerAddresses = Array.isArray(params.ownerAddresses) ? params.ownerAddresses : [];
-    const delivery = await this.prisma.deliveryOrder.upsert({
-      where: {
-        lockTxHash_scriptOutputIndex: {
-          lockTxHash: params.lockTxHash.trim(),
-          scriptOutputIndex,
-        },
-      },
-      create: {
-        lockTxHash: params.lockTxHash.trim(),
-        scriptOutputIndex,
-        batchId: params.batchId.trim(),
-        policyId: params.policyId?.trim() ?? null,
-        recipientAddress: params.recipientAddress.trim(),
-        senderAddress: params.senderAddress.trim(),
-        ownerAddresses,
-        status: DeliveryStatus.IN_TRANSIT,
-      },
-      update: {},
-    });
-    return { id: delivery.id };
+    const recordParams: OrderRecordParams = {
+      lockTxHash: params.lockTxHash,
+      scriptOutputIndex: params.scriptOutputIndex,
+      batchId: params.batchId,
+      policyId: params.policyId,
+      recipientAddress: params.recipientAddress,
+      senderAddress: params.senderAddress,
+      ownerAddresses: params.ownerAddresses,
+    };
+    return this.recordOrderUseCase.execute(recordParams);
   }
 
   async confirmOrderComplete(params: {
@@ -369,60 +310,6 @@ export class OrderService {
     signedByAddress?: string;
     deliveryId?: number;
   }): Promise<{ ok: boolean; recipientAddress?: string }> {
-    const { unlockTxHash, witnessCount, signedByAddress, deliveryId } = params;
-    if (witnessCount < 2) {
-      throw new BadRequestException(
-        "Order completion requires at least 2 signatures (witnessCount >= 2).",
-      );
-    }
-    let delivery: { id: number; batchId: string; recipientAddress: string; status: string } | null = null;
-
-    if (deliveryId != null && Number.isInteger(deliveryId) && deliveryId > 0) {
-      const found = await this.prisma.deliveryOrder.findUnique({
-        where: { id: deliveryId },
-      });
-      if (found && found.status === DeliveryStatus.IN_TRANSIT) {
-        delivery = { id: found.id, batchId: found.batchId, recipientAddress: found.recipientAddress, status: found.status };
-      }
-    }
-
-    if (!delivery) {
-      const tx = await blockfrostFetcher.fetchTransactionsUTxO(unlockTxHash.trim());
-      const inputs = tx?.inputs ?? [];
-      for (const inp of inputs) {
-        const lockTxHash = inp.tx_hash;
-        const scriptOutputIndex = inp.output_index ?? 0;
-        const found = await this.prisma.deliveryOrder.findUnique({
-          where: {
-            lockTxHash_scriptOutputIndex: { lockTxHash, scriptOutputIndex },
-          },
-        });
-        if (found && found.status === DeliveryStatus.IN_TRANSIT) {
-          delivery = { id: found.id, batchId: found.batchId, recipientAddress: found.recipientAddress, status: found.status };
-          break;
-        }
-      }
-    }
-
-    if (!delivery) {
-      throw new BadRequestException(
-        "No matching order (IN_TRANSIT) found for this completion tx. Ensure order was confirmed first, or pass deliveryId.",
-      );
-    }
-    const secondAddr = (signedByAddress || "").trim() || null;
-    await this.prisma.$executeRaw(
-      Prisma.sql`UPDATE "DeliveryOrder" SET status = 'DELIVERED', "unlockTxHash" = ${unlockTxHash.trim()}, "secondSignedByAddress" = ${secondAddr} WHERE id = ${delivery.id}`,
-    );
-    const profile = await this.prisma.profile.findFirst({
-      where: {
-        walletAddress: delivery.recipientAddress.trim(),
-        role: { code: { in: ["TRANSIT", "AGENT"] } },
-      },
-      select: { id: true },
-    });
-    if (profile) {
-      await this.product.addToWarehouse(profile.id, delivery.batchId);
-    }
-    return { ok: true, recipientAddress: delivery.recipientAddress };
+    return this.confirmOrderCompleteUseCase.execute(params);
   }
 }

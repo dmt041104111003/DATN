@@ -1,59 +1,22 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
-import { ConfigService } from "../config/config.service";
-import { PinataSDK } from "pinata";
+import { Inject, Injectable } from "@nestjs/common";
+import { IPFS_CLIENT, IpfsClientPort, IpfsFileUpload } from "./domain/ipfs-client.port";
+import { UploadFileUseCase } from "./application/use-cases/upload-file.use-case";
+import { GetGatewayUrlUseCase } from "./application/use-cases/get-gateway-url.use-case";
 
 @Injectable()
 export class IpfsService {
-  private readonly pinata: PinataSDK | null = null;
-
-  constructor(private readonly config: ConfigService) {
-    const jwt = this.config.pinataJwt;
-    if (jwt) {
-      this.pinata = new PinataSDK({
-        pinataJwt: jwt,
-        pinataGateway: this.config.pinataGateway,
-      });
-    }
-  }
+  constructor(
+    @Inject(IPFS_CLIENT)
+    private readonly ipfsClient: IpfsClientPort,
+    private readonly uploadFileUseCase: UploadFileUseCase,
+    private readonly getGatewayUrlUseCase: GetGatewayUrlUseCase
+  ) {}
 
   getGatewayUrl(hash: string): string {
-    const clean = (hash || "").trim().replace(/^ipfs:\/\//, "");
-    if (!clean) return "";
-    if (clean.startsWith("http://") || clean.startsWith("https://")) {
-      return clean;
-    }
-    const base = (this.config.pinataGateway
-      ? `https://${this.config.pinataGateway.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
-      : this.config.ipfsGateway.replace(/\/$/, "")
-    );
-    return `${base}/ipfs/${clean}`;
+    return this.getGatewayUrlUseCase.execute(hash);
   }
 
-  async uploadFile(file: { buffer: Buffer; originalname?: string; mimetype?: string }): Promise<{ ipfsHash: string; pinSize: number }> {
-    if (!this.pinata) {
-      throw new BadRequestException(
-        "IPFS (Pinata) chưa cấu hình. Thêm PINATA_JWT vào .env (tạo tại pinata.cloud → API Keys).",
-      );
-    }
-
-    const buffer = file.buffer;
-    const filename = file.originalname ?? "file";
-    const mimetype = file.mimetype ?? "application/octet-stream";
-    if (!buffer || buffer.length === 0) {
-      throw new BadRequestException("No file content provided.");
-    }
-
-    try {
-      const fileObj = new File([buffer], filename, { type: mimetype });
-      const upload = await this.pinata.upload.public.file(fileObj);
-
-      return {
-        ipfsHash: upload.cid ?? "",
-        pinSize: upload.size ?? 0,
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      throw new BadRequestException(`IPFS upload failed: ${msg}`);
-    }
+  async uploadFile(file: IpfsFileUpload): Promise<{ ipfsHash: string; pinSize: number }> {
+    return this.uploadFileUseCase.execute(file);
   }
 }

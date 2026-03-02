@@ -1,11 +1,16 @@
 import type { UTxO } from "@meshsdk/core";
 import { deserializeAddress, resolvePaymentKeyHash } from "@meshsdk/core";
-import { Injectable, BadRequestException } from "@nestjs/common";
-import { CardanoService } from "../cardano/cardano.service";
-import { PrismaService } from "../prisma/prisma.service";
+import { Inject, Injectable, BadRequestException } from "@nestjs/common";
+import { CardanoService } from "../core/cardano/cardano.service";
 import { WarehouseService } from "../warehouse/warehouse.service";
-import { Cip68Contract } from "../cip68/cip68.contract";
-import { createReadOnlyWallet, mergeDbMeta, buildMetadata } from "./product.helpers";
+import { Cip68Contract } from "../core/cardano/cip68/cip68.contract";
+import { createReadOnlyWallet, buildMetadata } from "./product.helpers";
+import {
+  PRODUCT_REPOSITORY,
+  ProductRepositoryPort,
+} from "./domain/product.repository";
+import { ListBatchesUseCase } from "./application/use-cases/list-batches.use-case";
+import { RecordProductTxUseCase } from "./application/use-cases/record-product-tx.use-case";
 
 export type { BuildMetadataInput } from "./product.helpers";
 
@@ -13,8 +18,11 @@ export type { BuildMetadataInput } from "./product.helpers";
 export class ProductService {
   constructor(
     private readonly cardano: CardanoService,
-    private readonly prisma: PrismaService,
     private readonly warehouse: WarehouseService,
+    @Inject(PRODUCT_REPOSITORY)
+    private readonly productRepository: ProductRepositoryPort,
+    private readonly listBatchesUseCase: ListBatchesUseCase,
+    private readonly recordProductTxUseCase: RecordProductTxUseCase
   ) {}
 
   private createContract(
@@ -33,25 +41,7 @@ export class ProductService {
   async listBatches(profileId: number): Promise<
     { id: number; code: string; name: string; image: string | null; createdAt: Date; policyId: string | null }[]
   > {
-    const items = await (this.prisma as any).productBatch.findMany({
-      where: { minterProfileId: profileId },
-      select: { id: true, code: true, name: true, image: true, createdAt: true, metadata: true, policyId: true },
-      orderBy: [{ createdAt: "asc" }, { code: "asc" }],
-    });
-    if (!Array.isArray(items)) return [];
-    const visible = items.filter((b) => {
-      const meta = b.metadata as Record<string, unknown> | null;
-      const db = meta?._db as Record<string, unknown> | undefined;
-      return !db || db.revoked !== true;
-    });
-    return visible.map((b) => ({
-      id: b.id,
-      code: b.code,
-      name: b.name,
-      image: b.image ?? null,
-      createdAt: b.createdAt,
-      policyId: b.policyId ?? null,
-    }));
+    return this.listBatchesUseCase.execute(profileId);
   }
 
   async mint(params: {
@@ -240,147 +230,7 @@ export class ProductService {
     policyId?: string;
     receivers?: string[];
   }): Promise<void> {
-    const { action, txHash, assetName, profileId } = params;
-    const prisma = this.prisma as any;
-
-    if (action === "MINT") {
-      const name = params.name ?? "";
-      const image = params.image ?? "";
-      const properties = params.properties != null ? params.properties : {};
-      const metadata =
-        params.metadata != null && typeof params.metadata === "object"
-          ? params.metadata
-          : { name, image, standard: params.standard ?? "Traceability-v1" };
-      await prisma.productBatch.upsert({
-        where: { code: assetName },
-        create: {
-          code: assetName,
-          name,
-          image: image || null,
-          standard: params.standard ?? "Traceability-v1",
-          properties,
-          metadata,
-          mintTxHash: txHash,
-          policyId: params.policyId ?? undefined,
-          minterProfileId: profileId,
-        },
-        update: {
-          mintTxHash: txHash,
-          name,
-          image: image || null,
-          standard: params.standard ?? "Traceability-v1",
-          properties,
-          metadata,
-          policyId: params.policyId ?? undefined,
-        },
-      });
-      const receivers = params.receivers ?? [];
-      if (receivers.length > 0) {
-        await prisma.roadmap.createMany({
-          data: receivers.map((receiverAddress, hopIndex) => ({
-            batchId: assetName,
-            receiverAddress,
-            hopIndex,
-            action: "MINT" as const,
-            txHash,
-          })),
-        });
-      }
-      await prisma.warehouseInventory.upsert({
-        where: {
-          batchId_profileId: { batchId: assetName, profileId },
-        },
-        create: {
-          batchId: assetName,
-          profileId,
-          quantity: 1,
-        },
-        update: { quantity: { increment: 1 } },
-      });
-      return;
-    }
-
-    const batch = await prisma.productBatch.findUnique({ where: { code: assetName } });
-    if (!batch) {
-      throw new BadRequestException(`Batch not found: ${assetName}`);
-    }
-
-    if (action === "UPDATE") {
-      const updatePatch = {
-        lastUpdateTxHash: txHash,
-        lastUpdateAt: new Date().toISOString(),
-      };
-      const nextMetadata =
-        params.metadata && typeof params.metadata === "object"
-          ? mergeDbMeta(batch.metadata, { ...params.metadata, ...updatePatch })
-          : mergeDbMeta(batch.metadata, updatePatch);
-      const nextProperties =
-        params.properties != null ? params.properties : (batch.properties as object) ?? {};
-      await prisma.productBatch.update({
-        where: { code: assetName },
-        data: {
-          name: params.name ?? batch.name,
-          image: params.image ?? batch.image,
-          standard: params.standard ?? batch.standard,
-          properties: nextProperties,
-          metadata: nextMetadata,
-        },
-      });
-      const receivers = params.receivers ?? [];
-      if (receivers.length > 0) {
-        await prisma.roadmap.createMany({
-          data: receivers.map((receiverAddress, hopIndex) => ({
-            batchId: assetName,
-            receiverAddress,
-            hopIndex,
-            action: "UPDATE" as const,
-            txHash,
-          })),
-        });
-      }
-      return;
-    }
-
-    if (action === "REVOKE") {
-      await prisma.productBatch.update({
-        where: { code: assetName },
-        data: {
-          metadata: mergeDbMeta(batch.metadata, {
-            revokeTxHash: txHash,
-            revokedAt: new Date().toISOString(),
-            revoked: true,
-          }),
-        },
-      });
-      const receivers = params.receivers ?? [];
-      if (receivers.length > 0) {
-        await prisma.roadmap.createMany({
-          data: receivers.map((receiverAddress, hopIndex) => ({
-            batchId: assetName,
-            receiverAddress,
-            hopIndex,
-            action: "REVOKE" as const,
-            txHash,
-          })),
-        });
-      }
-      return;
-    }
-
-    if (action === "BURN") {
-      await prisma.productBatch.update({
-        where: { code: assetName },
-        data: {
-          metadata: mergeDbMeta(batch.metadata, {
-            burnTxHash: txHash,
-            burnedAt: new Date().toISOString(),
-            burned: true,
-          }),
-        },
-      });
-      await this.warehouse.removeOneFromWarehouse(profileId, assetName);
-      return;
-    }
+    return this.recordProductTxUseCase.execute(params);
   }
 
   async removeOneFromWarehouse(profileId: number, batchId: string): Promise<void> {

@@ -2,10 +2,10 @@ import type { UTxO } from "@meshsdk/core";
 import { MeshTxBuilder, resolvePaymentKeyHash, cst } from "@meshsdk/core";
 import { decodeFirst } from "cbor";
 import { bech32 } from "bech32";
-import type { Plutus } from "../types";
-import { CIP68_PREFIX, ConfigService } from "../config/config.service";
-import { blockfrostFetcher, blockfrostProvider } from "../cardano/standalone";
-import { datumToJson, decodeReceivers, getPkHash } from "../cip68/utils";
+import type { Plutus } from "../shared/types";
+import { CIP68_PREFIX, ConfigService } from "../core/config/config.service";
+import { blockfrostFetcher, blockfrostProvider } from "../core/cardano/standalone";
+import { datumToJson, decodeReceivers, getPkHash } from "../core/cardano/cip68/utils";
 
 const SCRIPT_VALIDATOR_TITLE = "multisig.multisig.spend";
 const SCRIPT_VALIDATOR_TITLE_ALT = "multi_sig_wallet.multisig.spend";
