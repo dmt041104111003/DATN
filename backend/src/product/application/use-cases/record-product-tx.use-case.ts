@@ -21,7 +21,10 @@ export class RecordProductTxUseCase {
     assetName: string;
     profileId: number;
     name?: string;
+<<<<<<< HEAD
     description?: string;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
     image?: string;
     standard?: string;
     properties?: object;
@@ -33,7 +36,10 @@ export class RecordProductTxUseCase {
 
     if (action === "MINT") {
       const name = params.name ?? "";
+<<<<<<< HEAD
       const description = params.description ?? "";
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
       const image = params.image ?? "";
       const properties = params.properties != null ? params.properties : {};
       const metadata =
@@ -41,7 +47,10 @@ export class RecordProductTxUseCase {
           ? params.metadata
           : {
               name,
+<<<<<<< HEAD
               description,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
               image,
               standard: params.standard ?? "Traceability-v1",
             };
@@ -49,7 +58,10 @@ export class RecordProductTxUseCase {
       const mintParams: MintBatchParams = {
         code: assetName,
         name,
+<<<<<<< HEAD
         description: description || null,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         image: image || null,
         standard: params.standard ?? "Traceability-v1",
         properties,
@@ -96,15 +108,21 @@ export class RecordProductTxUseCase {
         params.properties != null
           ? params.properties
           : ((batch.properties as object) ?? {});
+<<<<<<< HEAD
       const nextDescription =
         params.description !== undefined
           ? params.description
           : (batch.description as string | null);
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 
       await this.repository.updateBatch({
         code: assetName,
         name: params.name ?? batch.name,
+<<<<<<< HEAD
         description: nextDescription,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         image: params.image ?? batch.image,
         standard: params.standard ?? batch.standard,
         properties: nextProperties,

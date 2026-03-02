@@ -27,7 +27,11 @@ export class ProductController {
     @Query("token") token?: string,
   ): Promise<{
     total: number;
+<<<<<<< HEAD
     items: { id: number; code: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[];
+=======
+    items: { id: number; code: string; name: string; image: string | null; createdAt: Date; policyId: string | null }[];
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   }> {
     if (!token || typeof token !== "string" || !token.trim()) {
       throw new UnauthorizedException("Missing or invalid token.");
@@ -196,7 +200,10 @@ export class ProductController {
       assetName: body.assetName,
       profileId: body.minterProfileId,
       name: body.name,
+<<<<<<< HEAD
       description: body.description,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
       image: body.image ?? "",
       standard: body.standard,
       properties: body.properties,
@@ -228,7 +235,10 @@ export class ProductController {
       assetName: body.assetName,
       profileId: body.profileId,
       name: body.name,
+<<<<<<< HEAD
       description: body.description,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
       image: body.image,
       standard: body.standard,
       properties: body.properties,
@@ -289,6 +299,7 @@ export class ProductController {
     }
     return this.product.submitSignedTx(raw, !!body.signedTxBase64);
   }
+<<<<<<< HEAD
 
   @Get("roadmap")
   async getRoadmap(
@@ -308,4 +319,6 @@ export class ProductController {
     const items = await this.product.listRoadmap(code.trim());
     return { items };
   }
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 }

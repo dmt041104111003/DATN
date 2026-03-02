@@ -56,7 +56,10 @@ export class MintConfirmDto {
   assetName!: string;
   name!: string;
   image!: string;
+<<<<<<< HEAD
   description?: string;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   minterProfileId!: number;
   standard?: string;
   properties?: object;
@@ -70,7 +73,10 @@ export class UpdateConfirmDto {
   assetName!: string;
   profileId!: number;
   name?: string;
+<<<<<<< HEAD
   description?: string;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   image?: string;
   standard?: string;
   properties?: object;

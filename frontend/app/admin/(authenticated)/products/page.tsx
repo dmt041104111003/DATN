@@ -20,7 +20,10 @@ import { ProductsCards } from '../../components/product/ProductsCards';
 import type { ProfileOption } from '../../types';
 import { uploadFileToIpfs } from '../../lib/ipfs';
 import { getAuthToken } from '../../lib/account';
+<<<<<<< HEAD
 import { getProductRoadmap } from '../../lib/product';
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 import { ProductDialog } from '../../components/product/ProductDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
@@ -86,7 +89,11 @@ export default function ProductsPage() {
     }
     const items: any[] = Array.isArray(data?.items) ? data.items : [];
     const mapped: Product[] = items
+<<<<<<< HEAD
       .map((b: { id?: number; code?: string; name?: string; description?: string | null; image?: string | null }) => ({
+=======
+      .map((b: { id?: number; code?: string; name?: string; image?: string | null }) => ({
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         id: Number(b?.id ?? 0),
         code: String(b?.code ?? ''),
         nameEn: String(b?.name ?? ''),
@@ -190,9 +197,15 @@ export default function ProductsPage() {
       ? document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(`${AUTH_COOKIE}=`))
       : null;
     const token = cookie ? decodeURIComponent(cookie.split('=')[1] ?? '') : '';
+<<<<<<< HEAD
     if (!token) return [];
     const res = await fetch(`${BACKEND_URL}/profile/profiles?token=${encodeURIComponent(token)}`);
     if (!res.ok) return [];
+=======
+    if (!token) return;
+    const res = await fetch(`${BACKEND_URL}/profile/profiles?token=${encodeURIComponent(token)}`);
+    if (!res.ok) return;
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
     const data = await res.json();
     const list = Array.isArray(data) ? (data as ProfileOption[]) : [];
     setProfiles(list);

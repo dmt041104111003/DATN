@@ -2,7 +2,10 @@ export interface ProductBatchListItem {
   id: number;
   code: string;
   name: string;
+<<<<<<< HEAD
   description: string | null;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   image: string | null;
   createdAt: Date;
   policyId: string | null;
@@ -11,13 +14,17 @@ export interface ProductBatchListItem {
 export interface ProductBatchSnapshot {
   code: string;
   name: string;
+<<<<<<< HEAD
   description: string | null;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   image: string | null;
   standard: string | null;
   properties: unknown;
   metadata: unknown;
 }
 
+<<<<<<< HEAD
 export interface ProductRoadmapHop {
   hopIndex: number;
   receiverAddress: string | null;
@@ -27,6 +34,11 @@ export interface MintBatchParams {
   code: string;
   name: string;
   description: string | null;
+=======
+export interface MintBatchParams {
+  code: string;
+  name: string;
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   image: string | null;
   standard: string;
   properties: object;
@@ -39,7 +51,10 @@ export interface MintBatchParams {
 export interface UpdateBatchParams {
   code: string;
   name?: string;
+<<<<<<< HEAD
   description?: string | null;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   image?: string | null;
   standard?: string | null;
   properties: object;
@@ -73,10 +88,13 @@ export interface ProductRepositoryPort {
     receivers: string[],
     txHash: string
   ): Promise<void>;
+<<<<<<< HEAD
 
   listRoadmap(
     batchId: string
   ): Promise<ProductRoadmapHop[]>;
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 }
 
 export const PRODUCT_REPOSITORY = "PRODUCT_REPOSITORY";

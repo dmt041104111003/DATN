@@ -6,7 +6,10 @@ import {
   ProductBatchSnapshot,
   ProductRepositoryPort,
   UpdateBatchParams,
+<<<<<<< HEAD
   ProductRoadmapHop,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 } from "../domain/product.repository";
 
 @Injectable()
@@ -22,7 +25,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         id: true,
         code: true,
         name: true,
+<<<<<<< HEAD
         description: true,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         image: true,
         createdAt: true,
         metadata: true,
@@ -41,7 +47,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         id: b.id,
         code: b.code,
         name: b.name,
+<<<<<<< HEAD
         description: b.description ?? null,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         image: b.image ?? null,
         createdAt: b.createdAt,
         policyId: b.policyId ?? null,
@@ -53,7 +62,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     const {
       code,
       name,
+<<<<<<< HEAD
       description,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
       image,
       standard,
       properties,
@@ -67,7 +79,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       create: {
         code,
         name,
+<<<<<<< HEAD
         description,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         image,
         standard,
         properties,
@@ -79,7 +94,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       update: {
         mintTxHash,
         name,
+<<<<<<< HEAD
         description,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         image,
         standard,
         properties,
@@ -97,7 +115,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return {
       code: batch.code,
       name: batch.name,
+<<<<<<< HEAD
       description: batch.description ?? null,
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
       image: batch.image ?? null,
       standard: batch.standard ?? null,
       properties: batch.properties,
@@ -106,12 +127,19 @@ export class PrismaProductRepository implements ProductRepositoryPort {
   }
 
   async updateBatch(params: UpdateBatchParams): Promise<void> {
+<<<<<<< HEAD
     const { code, name, description, image, standard, properties, metadata } = params;
+=======
+    const { code, name, image, standard, properties, metadata } = params;
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
     await (this.prisma as any).productBatch.update({
       where: { code },
       data: {
         ...(name !== undefined && { name }),
+<<<<<<< HEAD
         ...(description !== undefined && { description }),
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
         ...(image !== undefined && { image }),
         ...(standard !== undefined && { standard }),
         properties,
@@ -155,6 +183,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       })),
     });
   }
+<<<<<<< HEAD
 
   async listRoadmap(batchId: string): Promise<ProductRoadmapHop[]> {
     const prisma = this.prisma as any;
@@ -173,5 +202,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       })
     );
   }
+=======
+>>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 }
 
