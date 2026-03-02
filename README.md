@@ -1,8 +1,5 @@
 ## Trace.Lab3 – On-chain Product Traceability
 
-> Chọn ngôn ngữ bằng cách bấm vào từng khối bên dưới.  
-> Select language by clicking each section below.
-
 <details open>
 <summary><strong>English</strong></summary>
 

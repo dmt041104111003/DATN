@@ -10,8 +10,8 @@ import { WarehouseModule } from "./warehouse/warehouse.module";
 import { CertificateModule } from "./certificate/certificate.module";
 import { IpfsModule } from "./ipfs/ipfs.module";
 import { UploadModule } from "./upload/upload.module";
-
 import { TraceModule } from "./trace/trace.module";
+import { HealthModule } from "./health/health.module";
 
 @Module({
   imports: [
@@ -27,6 +27,7 @@ import { TraceModule } from "./trace/trace.module";
     IpfsModule,
     UploadModule,
     TraceModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
