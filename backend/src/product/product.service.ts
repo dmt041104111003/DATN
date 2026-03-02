@@ -11,10 +11,7 @@ import {
 } from "./domain/product.repository";
 import { ListBatchesUseCase } from "./application/use-cases/list-batches.use-case";
 import { RecordProductTxUseCase } from "./application/use-cases/record-product-tx.use-case";
-<<<<<<< HEAD
 import { ListRoadmapUseCase } from "./application/use-cases/list-roadmap.use-case";
-=======
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 
 export type { BuildMetadataInput } from "./product.helpers";
 
@@ -26,12 +23,8 @@ export class ProductService {
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepositoryPort,
     private readonly listBatchesUseCase: ListBatchesUseCase,
-<<<<<<< HEAD
     private readonly recordProductTxUseCase: RecordProductTxUseCase,
     private readonly listRoadmapUseCase: ListRoadmapUseCase
-=======
-    private readonly recordProductTxUseCase: RecordProductTxUseCase
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   ) {}
 
   private createContract(
@@ -48,22 +41,15 @@ export class ProductService {
   }
 
   async listBatches(profileId: number): Promise<
-<<<<<<< HEAD
     { id: number; code: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[]
-=======
-    { id: number; code: string; name: string; image: string | null; createdAt: Date; policyId: string | null }[]
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   > {
     return this.listBatchesUseCase.execute(profileId);
   }
 
-<<<<<<< HEAD
   async listRoadmap(batchCode: string): Promise<{ hopIndex: number; receiverAddress: string | null }[]> {
     return this.listRoadmapUseCase.execute(batchCode);
   }
 
-=======
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   async mint(params: {
     changeAddress: string;
     assetName: string;
@@ -243,10 +229,7 @@ export class ProductService {
     assetName: string;
     profileId: number;
     name?: string;
-<<<<<<< HEAD
     description?: string;
-=======
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
     image?: string;
     standard?: string;
     properties?: object;

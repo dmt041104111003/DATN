@@ -8,10 +8,7 @@ import { PRODUCT_REPOSITORY } from "./domain/product.repository";
 import { PrismaProductRepository } from "./infra/prisma-product.repository";
 import { ListBatchesUseCase } from "./application/use-cases/list-batches.use-case";
 import { RecordProductTxUseCase } from "./application/use-cases/record-product-tx.use-case";
-<<<<<<< HEAD
 import { ListRoadmapUseCase } from "./application/use-cases/list-roadmap.use-case";
-=======
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
 
 @Module({
   imports: [CardanoModule, AuthModule, WarehouseModule],
@@ -24,10 +21,7 @@ import { ListRoadmapUseCase } from "./application/use-cases/list-roadmap.use-cas
     },
     ListBatchesUseCase,
     RecordProductTxUseCase,
-<<<<<<< HEAD
     ListRoadmapUseCase,
-=======
->>>>>>> 69ccb5ee5f7e43f7dd7814ed74c72c1ef60b05c8
   ],
   exports: [ProductService],
 })
