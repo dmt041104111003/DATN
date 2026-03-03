@@ -16,7 +16,14 @@ export class WarehouseController {
   async getMyWarehouse(
     @Query("token") token?: string,
   ): Promise<{
-    items: { batchId: string; batchName: string; image: string | null; quantity: number; mintedAt: Date; policyId: string | null; status: string }[];
+    items: {
+      batchId: string;
+      batchName: string;
+      image: string | null;
+      mintedAt: Date;
+      policyId: string | null;
+      status: string;
+    }[];
   }> {
     if (!token || typeof token !== "string" || !token.trim()) {
       throw new UnauthorizedException("Missing or invalid token.");
