@@ -27,6 +27,7 @@ export function Header() {
   const getActiveMenuItem = () => {
     if (pathname === '/') return 'home';
     if (pathname === '/trace') return 'trace';
+    if (pathname === '/how-to-use') return 'how-to-use';
     if (pathname?.startsWith('/admin')) return 'admin';
     return null;
   };
@@ -62,6 +63,12 @@ export function Header() {
     }
     if (itemId === 'trace') {
       window.location.href = '/trace';
+      setOpenDropdown(null);
+      closeDrawer();
+      return;
+    }
+    if (itemId === 'how-to-use') {
+      window.location.href = '/how-to-use';
       setOpenDropdown(null);
       closeDrawer();
       return;
@@ -160,7 +167,12 @@ export function Header() {
                     onClick={() => {
                       if (item.hasDropdown) {
                         setOpenDropdown(openDropdown === item.id ? null : item.id);
-                      } else if (item.id === 'home' || item.id === 'admin' || item.id === 'trace') {
+                      } else if (
+                        item.id === 'home' ||
+                        item.id === 'admin' ||
+                        item.id === 'trace' ||
+                        item.id === 'how-to-use'
+                      ) {
                         handleNavClick(item.id);
                       }
                     }}
@@ -224,8 +236,15 @@ export function Header() {
                       disabled={item.id === 'admin' && loading}
                       onClick={() => {
                         if (item.hasDropdown) {
-                          setMobileExpandedDropdown(mobileExpandedDropdown === item.id ? null : item.id);
-                        } else if (item.id === 'home' || item.id === 'admin' || item.id === 'trace') {
+                          setMobileExpandedDropdown(
+                            mobileExpandedDropdown === item.id ? null : item.id,
+                          );
+                        } else if (
+                          item.id === 'home' ||
+                          item.id === 'admin' ||
+                          item.id === 'trace' ||
+                          item.id === 'how-to-use'
+                        ) {
                           handleNavClick(item.id);
                         } else {
                           closeDrawer();

@@ -6,8 +6,6 @@ import { About } from '@/components/About';
 import { CoreValues } from '@/components/CoreValues';
 import { History } from '@/components/History';
 import { Network } from '@/components/Network';
-import { Contact } from '@/components/Contact';
-import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 
 export default function HomePage() {
@@ -18,8 +16,8 @@ export default function HomePage() {
         <About />
         <CoreValues />
         <History />
-        <Network /> <FAQ />
-        <Contact />
+        <Network /> 
+
        
         <Footer />
       </main>

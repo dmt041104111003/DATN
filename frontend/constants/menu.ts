@@ -12,10 +12,17 @@ export const MENU_ITEMS: MenuItem[] = [
       en: 'Home',
     },
   },
+
   {
     id: 'trace',
     label: {
       en: 'Trace',
+    },
+  },
+    {
+    id: 'how-to-use',
+    label: {
+      en: 'How to Use',
     },
   },
   {
