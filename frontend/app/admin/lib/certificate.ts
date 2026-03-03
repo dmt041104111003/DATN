@@ -6,6 +6,9 @@ export type Certificate = {
   title: string;
   imageUrl: string | null;
   issuedAt: string;
+  number: string | null;
+  authority: string | null;
+  expiryDate: string | null;
   batchId: string;
   batchName: string;
   productBatchCode: string;
@@ -53,7 +56,15 @@ export async function getCertificateById(
 
 export async function createCertificate(
   token: string,
-  body: { title: string; batchId: string; imageUrl: string; metadata?: Record<string, unknown> },
+  body: {
+    title: string;
+    batchId: string;
+    imageUrl: string;
+    number: string;
+    authority: string;
+    expiryDate?: string;
+    metadata?: Record<string, unknown>;
+  },
 ): Promise<{ id: number; title: string; imageUrl: string | null }> {
   const res = await fetch(`${BACKEND_URL}/certificate?token=${encodeURIComponent(token)}`, {
     method: 'POST',

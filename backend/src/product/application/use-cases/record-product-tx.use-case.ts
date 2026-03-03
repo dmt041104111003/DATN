@@ -6,13 +6,15 @@ import {
 } from "../../domain/product.repository";
 import { mergeDbMeta } from "../../product.helpers";
 import { WarehouseService } from "../../../warehouse/warehouse.service";
+import { PrismaService } from "../../../prisma/prisma.service";
 
 @Injectable()
 export class RecordProductTxUseCase {
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly repository: ProductRepositoryPort,
-    private readonly warehouse: WarehouseService
+    private readonly warehouse: WarehouseService,
+    private readonly prisma: PrismaService
   ) {}
 
   async execute(params: {
@@ -63,9 +65,18 @@ export class RecordProductTxUseCase {
 
       const receivers = params.receivers ?? [];
       if (receivers.length > 0) {
+        const profile = await (this.prisma as any).profile.findUnique({
+          where: { id: profileId },
+          select: { walletAddress: true },
+        });
+        const senderAddress =
+          profile?.walletAddress && typeof profile.walletAddress === "string"
+            ? profile.walletAddress.trim()
+            : "";
         await this.repository.createRoadmaps(
           assetName,
           "MINT",
+          senderAddress,
           receivers,
           txHash
         );
@@ -113,9 +124,18 @@ export class RecordProductTxUseCase {
 
       const receivers = params.receivers ?? [];
       if (receivers.length > 0) {
+        const profile = await (this.prisma as any).profile.findUnique({
+          where: { id: profileId },
+          select: { walletAddress: true },
+        });
+        const senderAddress =
+          profile?.walletAddress && typeof profile.walletAddress === "string"
+            ? profile.walletAddress.trim()
+            : "";
         await this.repository.createRoadmaps(
           assetName,
           "UPDATE",
+          senderAddress,
           receivers,
           txHash
         );
@@ -133,9 +153,18 @@ export class RecordProductTxUseCase {
 
       const receivers = params.receivers ?? [];
       if (receivers.length > 0) {
+        const profile = await (this.prisma as any).profile.findUnique({
+          where: { id: profileId },
+          select: { walletAddress: true },
+        });
+        const senderAddress =
+          profile?.walletAddress && typeof profile.walletAddress === "string"
+            ? profile.walletAddress.trim()
+            : "";
         await this.repository.createRoadmaps(
           assetName,
           "REVOKE",
+          senderAddress,
           receivers,
           txHash
         );

@@ -12,6 +12,7 @@ export type BatchListItem = {
 
 export type ProductRoadmapHop = {
   hopIndex: number;
+  senderAddress: string | null;
   receiverAddress: string | null;
 };
 
@@ -87,6 +88,8 @@ export async function getProductRoadmap(
   return items.map(
     (r: any): ProductRoadmapHop => ({
       hopIndex: Number(r?.hopIndex ?? 0),
+      senderAddress:
+        r?.senderAddress != null ? String(r.senderAddress) : null,
       receiverAddress:
         r?.receiverAddress != null ? String(r.receiverAddress) : null,
     }),

@@ -16,7 +16,6 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
         <thead>
           <tr>
             <th>Name</th>
-            <th>Qty</th>
             <th>Received</th>
             <th>Shipped</th>
             <th>Actions</th>
@@ -32,7 +31,6 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
                   {item.batchId}
                 </small>
               </td>
-              <td>{item.quantity}</td>
               <td>{formatDate(item.mintedAt)}</td>
               <td>{item.status === 'SHIPPED' ? 'Yes' : '—'}</td>
               <td>

@@ -63,7 +63,6 @@ model WarehouseInventory {
   id          Int       @id @default(autoincrement())
   batchId     String
   profileId   Int
-  quantity    Int       @default(1)
   status      String    @default("IN_WAREHOUSE")
   mintedAt    DateTime  @default(now())
 
@@ -78,6 +77,9 @@ model Certificate {
   title            String
   imageUrl         String?
   issuedAt         DateTime  @default(now())
+  number           String?
+  authority        String?
+  expiryDate       DateTime?
 
   batchId          String
   batch            ProductBatch @relation(fields: [batchId], references: [code])
@@ -89,6 +91,7 @@ model Certificate {
 model Roadmap {
   id              Int      @id @default(autoincrement())
   batchId         String
+  senderAddress   String   @default("")
   receiverAddress String
   hopIndex        Int      @default(0)
   action          String

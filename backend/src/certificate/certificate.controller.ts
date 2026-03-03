@@ -79,10 +79,19 @@ export class CertificateController {
     if (!body.imageUrl?.trim()) {
       throw new BadRequestException("imageUrl is required (upload image via POST /upload/image first).");
     }
+    if (!body.number?.trim()) {
+      throw new BadRequestException("Certificate number (No.) is required.");
+    }
+    if (!body.authority?.trim()) {
+      throw new BadRequestException("Certificate authority is required.");
+    }
     return this.certificate.create(profileId, {
       title: body.title,
       batchId: body.batchId,
       imageUrl: body.imageUrl,
+      number: body.number,
+      authority: body.authority,
+      expiryDate: body.expiryDate,
       metadata: body.metadata,
     });
   }

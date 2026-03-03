@@ -14,6 +14,9 @@ export function CertTable({ styles, items }: Props) {
           <tr>
             <th>ID</th>
             <th>Title</th>
+            <th>No.</th>
+            <th>Authority</th>
+            <th>Expiry</th>
             <th>Product batch</th>
             <th>Image</th>
             <th>Issued</th>
@@ -24,6 +27,11 @@ export function CertTable({ styles, items }: Props) {
             <tr key={cert.id}>
               <td>{cert.id}</td>
               <td>{cert.title}</td>
+              <td>{cert.number || '—'}</td>
+              <td>{cert.authority || '—'}</td>
+              <td>
+                {cert.expiryDate ? formatDate(cert.expiryDate) : '—'}
+              </td>
               <td>
                 <span title={cert.productBatchCode}>
                   {cert.productBatchName ?? cert.productBatchCode}

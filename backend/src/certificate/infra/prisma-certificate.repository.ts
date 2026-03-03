@@ -62,6 +62,9 @@ export class PrismaCertificateRepository implements CertificateRepositoryPort {
           title: c.title,
           imageUrl: c.imageUrl ?? null,
           issuedAt: c.issuedAt,
+          number: c.number ?? null,
+          authority: c.authority ?? null,
+          expiryDate: c.expiryDate ?? null,
           batchId: c.batchId,
           batchName: c.batch?.name ?? c.batchId,
           productBatchCode: c.batchId,
@@ -87,6 +90,9 @@ export class PrismaCertificateRepository implements CertificateRepositoryPort {
       title: cert.title,
       imageUrl: cert.imageUrl ?? null,
       issuedAt: cert.issuedAt,
+      number: cert.number ?? null,
+      authority: cert.authority ?? null,
+      expiryDate: cert.expiryDate ?? null,
       metadata: cert.metadata ?? null,
       batchId: cert.batchId,
       batchName: cert.batch?.name ?? cert.batchId,
@@ -115,6 +121,12 @@ export class PrismaCertificateRepository implements CertificateRepositoryPort {
         imageUrl: data.imageUrl,
         batchId: data.batchId,
         issuerProfileId,
+        number: data.number != null && data.number.trim ? data.number.trim() : data.number,
+        authority:
+          data.authority != null && data.authority.trim
+            ? data.authority.trim()
+            : data.authority,
+        expiryDate: data.expiryDate ?? null,
         metadata: data.metadata != null ? data.metadata : undefined,
       },
     });

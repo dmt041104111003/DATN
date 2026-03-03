@@ -157,6 +157,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
   async createRoadmaps(
     batchId: string,
     action: "MINT" | "UPDATE" | "REVOKE",
+    senderAddress: string,
     receivers: string[],
     txHash: string
   ): Promise<void> {
@@ -164,6 +165,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     await (this.prisma as any).roadmap.createMany({
       data: receivers.map((receiverAddress, hopIndex) => ({
         batchId,
+        senderAddress,
         receiverAddress,
         hopIndex,
         action,
@@ -179,12 +181,13 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     const rows = await prisma.roadmap.findMany({
       where: { batchId: bid },
       orderBy: { hopIndex: "asc" },
-      select: { hopIndex: true, receiverAddress: true },
+      select: { hopIndex: true, senderAddress: true, receiverAddress: true },
     });
     if (!Array.isArray(rows)) return [];
     return rows.map(
-      (r: { hopIndex: number; receiverAddress: string | null }): ProductRoadmapHop => ({
+      (r: { hopIndex: number; senderAddress: string | null; receiverAddress: string | null }): ProductRoadmapHop => ({
         hopIndex: r.hopIndex,
+        senderAddress: r.senderAddress,
         receiverAddress: r.receiverAddress,
       })
     );

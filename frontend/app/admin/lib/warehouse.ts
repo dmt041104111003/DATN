@@ -5,7 +5,6 @@ export type WarehouseItem = {
   batchId: string;
   batchName: string;
   image: string | null;
-  quantity: number;
   mintedAt: string;
   policyId?: string | null;
   status?: string;
@@ -16,7 +15,6 @@ function mapItem(i: Record<string, unknown>): WarehouseItem {
     batchId: String(i?.batchId ?? ''),
     batchName: String(i?.batchName ?? ''),
     image: i?.image != null ? String(i.image) : null,
-    quantity: Number(i?.quantity) ?? 1,
     mintedAt: String(i?.mintedAt ?? ''),
     policyId: i?.policyId != null ? String(i.policyId) : null,
     status: i?.status != null ? String(i.status) : 'IN_WAREHOUSE',

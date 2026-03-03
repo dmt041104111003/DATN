@@ -26,6 +26,9 @@ export function CertCreateDialog({
   const [title, setTitle] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState('');
   const [batchId, setBatchId] = useState('');
+  const [number, setNumber] = useState('');
+  const [authority, setAuthority] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +38,9 @@ export function CertCreateDialog({
       setTitle('');
       setImageDataUrl('');
       setBatchId(batchOptions[0]?.id ?? '');
+      setNumber('');
+      setAuthority('');
+      setExpiryDate('');
       setError('');
     }
   }, [open, batchOptions]);
@@ -62,6 +68,14 @@ export function CertCreateDialog({
       setError('Title and batch are required.');
       return;
     }
+    if (!number.trim()) {
+      setError('Certificate number (No.) is required.');
+      return;
+    }
+    if (!authority.trim()) {
+      setError('Certificate authority is required.');
+      return;
+    }
     if (!imageDataUrl) {
       setError('Please upload a certificate image.');
       return;
@@ -81,6 +95,9 @@ export function CertCreateDialog({
         title: title.trim(),
         batchId: batchId.trim(),
         imageUrl: url,
+        number: number.trim(),
+        authority: authority.trim(),
+        expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined,
       });
       onSuccess();
       onClose();
@@ -123,6 +140,49 @@ export function CertCreateDialog({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Quality inspection certificate"
               required
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-number" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Certificate No.
+            </label>
+            <input
+              id="cert-number"
+              type="text"
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              placeholder="e.g. 1234/QĐ-NBC"
+              required
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-authority" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Authority
+            </label>
+            <input
+              id="cert-authority"
+              type="text"
+              value={authority}
+              onChange={(e) => setAuthority(e.target.value)}
+              placeholder="e.g. NBC, Bộ NN&PTNT..."
+              required
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-expiry" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Expiry date (optional)
+            </label>
+            <input
+              id="cert-expiry"
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
               className={styles.input}
               style={{ width: '100%' }}
             />

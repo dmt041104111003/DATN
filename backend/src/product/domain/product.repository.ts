@@ -21,6 +21,7 @@ export interface ProductBatchSnapshot {
 
 export interface ProductRoadmapHop {
   hopIndex: number;
+  senderAddress: string | null;
   receiverAddress: string | null;
 }
 
@@ -73,6 +74,7 @@ export interface ProductRepositoryPort {
   createRoadmaps(
     batchId: string,
     action: "MINT" | "UPDATE" | "REVOKE",
+    senderAddress: string,
     receivers: string[],
     txHash: string
   ): Promise<void>;
