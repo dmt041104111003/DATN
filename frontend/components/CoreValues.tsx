@@ -13,7 +13,7 @@ export function CoreValues() {
       
       <div className="relative z-10 flex-1 flex flex-col pt-16 md:pt-20 pb-4 md:pb-6">
         <div className="text-center px-4 md:px-8 mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-gray-200">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 dark:text-gray-200">
             {CORE_VALUES_TITLE[language]}
           </h1>
         </div>

@@ -8,12 +8,10 @@ import { Header } from './Header';
 export function FAQ() {
   const { language } = useLanguage();
   const content = FAQ_CONTENT[language];
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const [openItem, setOpenItem] = useState<string | null>(null);
 
   const toggleItem = (id: string) => {
-    setOpenItems((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setOpenItem((prev) => (prev === id ? null : id));
   };
 
   return (
@@ -31,32 +29,32 @@ export function FAQ() {
         </div>
 
         <div className="flex-1 px-4 md:px-8 lg:px-16">
-          <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
-            {content.items.map((item) => (
-              <div
-                key={item.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
-              >
-                <button
-                  onClick={() => toggleItem(item.id)}
-                  className="w-full px-6 md:px-8 py-4 md:py-5 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 pr-4">
-                    {item.question[language]}
-                  </h3>
-                  <span className="material-icons text-gray-500 dark:text-gray-400 flex-shrink-0">
-                    {openItems.includes(item.id) ? 'expand_less' : 'expand_more'}
-                  </span>
-                </button>
-                {openItems.includes(item.id) && (
-                  <div className="px-6 md:px-8 pb-4 md:pb-5">
-                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-                      {item.answer[language]}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="max-w-4xl mx-auto space-y-3 md:space-y-4">
+            {content.items.map((item) => {
+              const isOpen = openItem === item.id;
+              return (
+                <div key={item.id} className="transition-colors">
+                  <button
+                    onClick={() => toggleItem(item.id)}
+                    className="w-full py-3 md:py-3.5 flex items-start justify-between text-left"
+                  >
+                    <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 pr-4">
+                      {item.question[language]}
+                    </h3>
+                    <span className="material-icons text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5">
+                      {isOpen ? 'expand_less' : 'expand_more'}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-1 md:mt-1.5 pl-0 md:pl-0">
+                      <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {item.answer[language]}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

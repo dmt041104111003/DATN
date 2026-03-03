@@ -34,10 +34,10 @@ export function About() {
 
       <div className="relative z-10 flex-1 flex flex-col pt-16 md:pt-20 overflow-hidden">
         <div className="text-center px-4 md:px-8 mb-4 md:mb-6 flex-shrink-0">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-2 md:mb-3">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 dark:text-gray-200 mb-2 md:mb-3">
             {content.title[language]}
           </h1>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             {content.subtitle[language]}
           </p>
         </div>

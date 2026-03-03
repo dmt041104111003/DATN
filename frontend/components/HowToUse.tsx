@@ -22,13 +22,13 @@ export function HowToUse() {
       </div>
 
       <div className="order-2 w-full max-w-md space-y-6 lg:order-1">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-400">
+        <p className="text-base md:text-lg font-semibold uppercase tracking-[0.2em] text-gray-400">
           Identity verification
         </p>
-        <h1 className="text-3xl font-bold leading-snug text-gray-900 md:text-4xl">
-          4 steps – easy
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-snug text-gray-900">
+          4 STEPS – EASY
           <br />
-          <span className="text-[#c41e3a]">and fast</span>
+          <span className="text-[#c41e3a]">AND FAST</span>
         </h1>
 
         {/* Mobile step indicator */}

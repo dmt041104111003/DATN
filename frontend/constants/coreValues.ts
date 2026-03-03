@@ -44,5 +44,5 @@ export const CORE_VALUES: CoreValue[] = [
 ];
 
 export const CORE_VALUES_TITLE: Record<Language, string> = {
-  en: 'Core Values',
+  en: 'CORE VALUES',
 };

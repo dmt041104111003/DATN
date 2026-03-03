@@ -39,6 +39,15 @@ export function Trace() {
 
       <div className="relative z-10 flex-1 flex items-center justify-center md:justify-center md:pl-[50%] px-4 py-20 md:py-24 min-h-0">
         <form onSubmit={handleSubmit} className="w-full max-w-md flex flex-col gap-4">
+          <div className="text-center px-2 md:px-4 mb-2 md:mb-4">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mb-2 md:mb-3">
+              TRACE ORIGIN
+            </h1>
+            <p className="text-sm md:text-base text-gray-600">
+              Enter the Policy ID and Asset name to look up detailed traceability information.
+            </p>
+          </div>
+
           <input
             type="text"
             placeholder="Policy ID"

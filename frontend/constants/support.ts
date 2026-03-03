@@ -6,7 +6,7 @@ export const CONTACT_INFO_LABELS: Record<Language, { address: string; phone: str
 
 export const CONTACT_CONTENT: Record<Language, ContactContent> = {
   en: {
-    title: { en: 'Contact Us' },
+    title: { en: 'CONTACT US' },
     subtitle: { en: 'ORIGIN TRACEABILITY — GET IN TOUCH' },
     form: {
       topic: { en: 'Topic' },
@@ -43,7 +43,7 @@ export const CONTACT_CONTENT: Record<Language, ContactContent> = {
 
 export const FAQ_CONTENT: Record<Language, FAQContent> = {
   en: {
-    title: { en: 'Frequently Asked Questions' },
+    title: { en: 'FREQUENTLY ASKED QUESTIONS' },
     subtitle: {
       en: 'Find answers to common questions about origin traceability and our services.',
     },
