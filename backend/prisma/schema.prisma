@@ -101,15 +101,17 @@ model Certificate {
   number           String?
   authority        String?
   expiryDate       DateTime?
-
-  batchId          String
-  batch            ProductBatch @relation(fields: [batchId], references: [batchId])
+  documentType     String?
+  standardReference String?
+  scope            String?
+  documentUrl      String?
 
   issuerProfileId  Int
   issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
-
   subjectProfileId Int?
   subjectProfile   Profile?     @relation("CertificateSubject", fields: [subjectProfileId], references: [id])
+
+  productBatches   ProductBatch[]
 }
 
 model Roadmap {

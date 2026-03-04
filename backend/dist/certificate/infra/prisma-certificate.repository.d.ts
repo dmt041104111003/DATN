@@ -8,10 +8,11 @@ export declare class PrismaCertificateRepository implements CertificateRepositor
         items: CertificateListItem[];
     }>;
     getCertificateById(id: number, issuerProfileId: number): Promise<CertificateDetail | null>;
-    batchExistsForIssuer(batchCode: string, issuerProfileId: number): Promise<boolean>;
     createCertificate(issuerProfileId: number, data: CreateCertificateData): Promise<{
         id: number;
         title: string;
         imageUrl: string | null;
     }>;
+    setCertificatesForBatch(batchId: string, issuerProfileId: number, certificateIds: number[]): Promise<void>;
+    getCertificateIdsByBatchId(batchId: string, issuerProfileId: number): Promise<number[]>;
 }

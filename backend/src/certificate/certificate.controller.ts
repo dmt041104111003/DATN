@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
+import { Controller, Get, Post, Put, Body, Param, Query, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { AuthService } from "../auth/auth.service";
 import { CertificateService } from "./certificate.service";
 import { CreateCertificateDto } from "./dto/certificate.dto";
@@ -15,8 +15,8 @@ export class CertificateController {
   @Get()
   async list(
     @Query("token") token?: string,
-    @Query("batchId") batchId?: string,
     @Query("search") search?: string,
+    @Query("attachedToBatchId") attachedToBatchId?: string,
     @Query("page") pageStr?: string,
     @Query("pageSize") pageSizeStr?: string,
   ) {
@@ -33,11 +33,56 @@ export class CertificateController {
     const pageSize = pageSizeStr ? parseInt(pageSizeStr, 10) : 20;
 
     return this.certificate.list(profileId, {
-      batchId: batchId?.trim() || undefined,
       search: search?.trim() || undefined,
+      attachedToBatchId: attachedToBatchId?.trim() || undefined,
       page: Number.isFinite(page) ? page : 1,
       pageSize: Number.isFinite(pageSize) ? pageSize : 20,
     });
+  }
+
+  @Get("batch/:batchId/ids")
+  async getCertificateIdsByBatch(
+    @Param("batchId") batchId: string,
+    @Query("token") token?: string,
+  ) {
+    if (!token || typeof token !== "string" || !token.trim()) {
+      throw new UnauthorizedException("Missing or invalid token.");
+    }
+    const profileId = await this.auth.getProfileIdFromToken(token.trim());
+    const role = await this.auth.getProfileRoleFromToken(token.trim());
+    if ((role ?? "").toUpperCase() !== ENTERPRISE_ROLE) {
+      throw new ForbiddenException("Only ENTERPRISE can manage certificates.");
+    }
+    const ids = await this.certificate.getCertificateIdsByBatchId(
+      batchId.trim(),
+      profileId
+    );
+    return { certificateIds: ids };
+  }
+
+  @Put("batch/:batchId")
+  async setCertificatesForBatch(
+    @Param("batchId") batchId: string,
+    @Body() body: { certificateIds?: number[] },
+    @Query("token") token?: string,
+  ) {
+    if (!token || typeof token !== "string" || !token.trim()) {
+      throw new UnauthorizedException("Missing or invalid token.");
+    }
+    const profileId = await this.auth.getProfileIdFromToken(token.trim());
+    const role = await this.auth.getProfileRoleFromToken(token.trim());
+    if ((role ?? "").toUpperCase() !== ENTERPRISE_ROLE) {
+      throw new ForbiddenException("Only ENTERPRISE can manage certificates.");
+    }
+    const certificateIds = Array.isArray(body?.certificateIds)
+      ? body.certificateIds.filter((n) => Number.isFinite(n))
+      : [];
+    await this.certificate.setCertificatesForBatch(
+      batchId.trim(),
+      profileId,
+      certificateIds
+    );
+    return { ok: true };
   }
 
   @Get(":id")
@@ -73,8 +118,8 @@ export class CertificateController {
     if ((role ?? "").toUpperCase() !== ENTERPRISE_ROLE) {
       throw new ForbiddenException("Only ENTERPRISE can create certificates.");
     }
-    if (!body.title?.trim() || !body.batchId?.trim()) {
-      throw new BadRequestException("title and batchId are required.");
+    if (!body.title?.trim()) {
+      throw new BadRequestException("title is required.");
     }
     if (!body.imageUrl?.trim()) {
       throw new BadRequestException("imageUrl is required (upload image via POST /upload/image first).");
@@ -87,12 +132,14 @@ export class CertificateController {
     }
     return this.certificate.create(profileId, {
       title: body.title,
-      batchId: body.batchId,
       imageUrl: body.imageUrl,
       number: body.number,
       authority: body.authority,
       expiryDate: body.expiryDate,
-      metadata: body.metadata,
+      documentType: body.documentType,
+      standardReference: body.standardReference,
+      scope: body.scope,
+      documentUrl: body.documentUrl,
     });
   }
 }

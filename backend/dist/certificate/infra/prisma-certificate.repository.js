@@ -22,23 +22,23 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
         const pageSize = Math.min(100, Math.max(1, (_b = options === null || options === void 0 ? void 0 : options.pageSize) !== null && _b !== void 0 ? _b : 20));
         const skip = (page - 1) * pageSize;
         const where = { issuerProfileId };
-        if ((_c = options === null || options === void 0 ? void 0 : options.batchId) === null || _c === void 0 ? void 0 : _c.trim()) {
-            where.batchId = options.batchId.trim();
+        if ((_c = options === null || options === void 0 ? void 0 : options.attachedToBatchId) === null || _c === void 0 ? void 0 : _c.trim()) {
+            where.productBatches = {
+                some: { batchId: options.attachedToBatchId.trim() },
+            };
         }
-        else if ((_d = options === null || options === void 0 ? void 0 : options.search) === null || _d === void 0 ? void 0 : _d.trim()) {
+        if ((_d = options === null || options === void 0 ? void 0 : options.search) === null || _d === void 0 ? void 0 : _d.trim()) {
             const q = options.search.trim();
             where.OR = [
                 { title: { contains: q, mode: "insensitive" } },
                 { imageUrl: { contains: q, mode: "insensitive" } },
-                { batchId: { contains: q, mode: "insensitive" } },
+                { number: { contains: q, mode: "insensitive" } },
+                { authority: { contains: q, mode: "insensitive" } },
             ];
         }
         const [items, total] = await Promise.all([
             this.prisma.certificate.findMany({
                 where,
-                include: {
-                    batch: { select: { code: true, name: true } },
-                },
                 orderBy: { issuedAt: "desc" },
                 skip,
                 take: pageSize,
@@ -48,7 +48,7 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
         return {
             total,
             items: items.map((c) => {
-                var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                var _a, _b, _c, _d, _e, _f, _g, _h;
                 return ({
                     id: c.id,
                     title: c.title,
@@ -57,20 +57,18 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
                     number: (_b = c.number) !== null && _b !== void 0 ? _b : null,
                     authority: (_c = c.authority) !== null && _c !== void 0 ? _c : null,
                     expiryDate: (_d = c.expiryDate) !== null && _d !== void 0 ? _d : null,
-                    batchId: c.batchId,
-                    batchName: (_f = (_e = c.batch) === null || _e === void 0 ? void 0 : _e.name) !== null && _f !== void 0 ? _f : c.batchId,
-                    productBatchCode: c.batchId,
-                    productBatchName: (_h = (_g = c.batch) === null || _g === void 0 ? void 0 : _g.name) !== null && _h !== void 0 ? _h : null,
-                    metadata: (_j = c.metadata) !== null && _j !== void 0 ? _j : null,
+                    documentType: (_e = c.documentType) !== null && _e !== void 0 ? _e : null,
+                    standardReference: (_f = c.standardReference) !== null && _f !== void 0 ? _f : null,
+                    scope: (_g = c.scope) !== null && _g !== void 0 ? _g : null,
+                    documentUrl: (_h = c.documentUrl) !== null && _h !== void 0 ? _h : null,
                 });
             }),
         };
     }
     async getCertificateById(id, issuerProfileId) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const cert = await this.prisma.certificate.findFirst({
             where: { id, issuerProfileId },
-            include: { batch: { select: { code: true, name: true } } },
         });
         if (!cert)
             return null;
@@ -82,41 +80,79 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
             number: (_b = cert.number) !== null && _b !== void 0 ? _b : null,
             authority: (_c = cert.authority) !== null && _c !== void 0 ? _c : null,
             expiryDate: (_d = cert.expiryDate) !== null && _d !== void 0 ? _d : null,
-            metadata: (_e = cert.metadata) !== null && _e !== void 0 ? _e : null,
-            batchId: cert.batchId,
-            batchName: (_g = (_f = cert.batch) === null || _f === void 0 ? void 0 : _f.name) !== null && _g !== void 0 ? _g : cert.batchId,
-            productBatchCode: cert.batchId,
-            productBatchName: (_j = (_h = cert.batch) === null || _h === void 0 ? void 0 : _h.name) !== null && _j !== void 0 ? _j : null,
+            documentType: (_e = cert.documentType) !== null && _e !== void 0 ? _e : null,
+            standardReference: (_f = cert.standardReference) !== null && _f !== void 0 ? _f : null,
+            scope: (_g = cert.scope) !== null && _g !== void 0 ? _g : null,
+            documentUrl: (_h = cert.documentUrl) !== null && _h !== void 0 ? _h : null,
         };
     }
-    async batchExistsForIssuer(batchCode, issuerProfileId) {
-        const batch = await this.prisma.productBatch.findFirst({
-            where: { code: batchCode, minterProfileId: issuerProfileId },
-        });
-        return !!batch;
-    }
     async createCertificate(issuerProfileId, data) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f, _g;
         const cert = await this.prisma.certificate.create({
             data: {
                 title: data.title,
                 imageUrl: data.imageUrl,
-                batchId: data.batchId,
                 issuerProfileId,
                 subjectProfileId: issuerProfileId,
-                number: data.number != null && data.number.trim ? data.number.trim() : data.number,
-                authority: data.authority != null && data.authority.trim
+                number: data.number != null && typeof data.number === "string" && data.number.trim
+                    ? data.number.trim()
+                    : (_a = data.number) !== null && _a !== void 0 ? _a : null,
+                authority: data.authority != null &&
+                    typeof data.authority === "string" &&
+                    data.authority.trim
                     ? data.authority.trim()
-                    : data.authority,
-                expiryDate: (_a = data.expiryDate) !== null && _a !== void 0 ? _a : null,
-                metadata: data.metadata != null ? data.metadata : undefined,
+                    : (_b = data.authority) !== null && _b !== void 0 ? _b : null,
+                expiryDate: data.expiryDate
+                    ? new Date(data.expiryDate)
+                    : null,
+                documentType: (_c = data.documentType) !== null && _c !== void 0 ? _c : undefined,
+                standardReference: (_d = data.standardReference) !== null && _d !== void 0 ? _d : undefined,
+                scope: (_e = data.scope) !== null && _e !== void 0 ? _e : undefined,
+                documentUrl: (_f = data.documentUrl) !== null && _f !== void 0 ? _f : undefined,
             },
         });
         return {
             id: cert.id,
             title: cert.title,
-            imageUrl: (_b = cert.imageUrl) !== null && _b !== void 0 ? _b : null,
+            imageUrl: (_g = cert.imageUrl) !== null && _g !== void 0 ? _g : null,
         };
+    }
+    async setCertificatesForBatch(batchId, issuerProfileId, certificateIds) {
+        const batch = await this.prisma.productBatch.findFirst({
+            where: { batchId, minterProfileId: issuerProfileId },
+            select: { id: true },
+        });
+        if (!batch) {
+            throw new Error("Batch not found or you are not the minter.");
+        }
+        const validIds = certificateIds.filter(Number.isFinite);
+        const certs = await this.prisma.certificate.findMany({
+            where: {
+                id: { in: validIds },
+                issuerProfileId,
+            },
+            select: { id: true },
+        });
+        const ids = certs.map((c) => c.id);
+        await this.prisma.productBatch.update({
+            where: { batchId },
+            data: {
+                certificates: {
+                    set: ids.map((id) => ({ id })),
+                },
+            },
+        });
+    }
+    async getCertificateIdsByBatchId(batchId, issuerProfileId) {
+        const batch = await this.prisma.productBatch.findFirst({
+            where: { batchId, minterProfileId: issuerProfileId },
+            include: {
+                certificates: { select: { id: true } },
+            },
+        });
+        if (!batch)
+            return [];
+        return batch.certificates.map((c) => c.id);
     }
 };
 exports.PrismaCertificateRepository = PrismaCertificateRepository;

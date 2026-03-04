@@ -16,8 +16,8 @@ export function CertTable({ styles, items }: Props) {
             <th>Title</th>
             <th>No.</th>
             <th>Authority</th>
+            <th>Document type</th>
             <th>Expiry</th>
-            <th>Product batch</th>
             <th>Image</th>
             <th>Issued</th>
           </tr>
@@ -29,21 +29,9 @@ export function CertTable({ styles, items }: Props) {
               <td>{cert.title}</td>
               <td>{cert.number || '—'}</td>
               <td>{cert.authority || '—'}</td>
+              <td>{cert.documentType || '—'}</td>
               <td>
                 {cert.expiryDate ? formatDate(cert.expiryDate) : '—'}
-              </td>
-              <td>
-                <span title={cert.productBatchCode}>
-                  {cert.productBatchName ?? cert.productBatchCode}
-                </span>
-                {cert.productBatchName && (
-                  <br />
-                )}
-                {cert.productBatchName && (
-                  <small style={{ color: '#6b7280', fontSize: '0.8125rem' }}>
-                    {cert.productBatchCode}
-                  </small>
-                )}
               </td>
               <td>
                 {cert.imageUrl ? (

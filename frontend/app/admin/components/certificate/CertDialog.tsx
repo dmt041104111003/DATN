@@ -12,23 +12,24 @@ const styles = { ...formStyles, ...buttonStyles, ...dialogStyles };
 
 type CreateProps = {
   open: boolean;
-  batchOptions: { id: string; name: string; policyId?: string | null }[];
   onClose: () => void;
   onSuccess: () => void;
 };
 
 export function CertCreateDialog({
   open,
-  batchOptions,
   onClose,
   onSuccess,
 }: CreateProps) {
   const [title, setTitle] = useState('');
   const [imageDataUrl, setImageDataUrl] = useState('');
-  const [batchId, setBatchId] = useState('');
   const [number, setNumber] = useState('');
   const [authority, setAuthority] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [documentType, setDocumentType] = useState('');
+  const [standardReference, setStandardReference] = useState('');
+  const [scope, setScope] = useState('');
+  const [documentUrl, setDocumentUrl] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,13 +38,16 @@ export function CertCreateDialog({
     if (open) {
       setTitle('');
       setImageDataUrl('');
-      setBatchId(batchOptions[0]?.id ?? '');
       setNumber('');
       setAuthority('');
       setExpiryDate('');
+      setDocumentType('');
+      setStandardReference('');
+      setScope('');
+      setDocumentUrl('');
       setError('');
     }
-  }, [open, batchOptions]);
+  }, [open]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,8 +68,8 @@ export function CertCreateDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!title.trim() || !batchId.trim()) {
-      setError('Title and batch are required.');
+    if (!title.trim()) {
+      setError('Title is required.');
       return;
     }
     if (!number.trim()) {
@@ -93,11 +97,14 @@ export function CertCreateDialog({
       });
       await createCertificate(token, {
         title: title.trim(),
-        batchId: batchId.trim(),
         imageUrl: url,
         number: number.trim(),
         authority: authority.trim(),
         expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+        documentType: documentType.trim() || undefined,
+        standardReference: standardReference.trim() || undefined,
+        scope: scope.trim() || undefined,
+        documentUrl: documentUrl.trim() || undefined,
       });
       onSuccess();
       onClose();
@@ -188,6 +195,62 @@ export function CertCreateDialog({
             />
           </div>
           <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-documentType" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Document type (optional)
+            </label>
+            <input
+              id="cert-documentType"
+              type="text"
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
+              placeholder="e.g. Quality inspection, Test report"
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-standardReference" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Standard reference (optional)
+            </label>
+            <input
+              id="cert-standardReference"
+              type="text"
+              value={standardReference}
+              onChange={(e) => setStandardReference(e.target.value)}
+              placeholder="e.g. ISO 22000, TCVN..."
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-scope" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Scope (optional)
+            </label>
+            <input
+              id="cert-scope"
+              type="text"
+              value={scope}
+              onChange={(e) => setScope(e.target.value)}
+              placeholder="Phạm vi / mô tả ngắn"
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label htmlFor="cert-documentUrl" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+              Document URL (optional)
+            </label>
+            <input
+              id="cert-documentUrl"
+              type="url"
+              value={documentUrl}
+              onChange={(e) => setDocumentUrl(e.target.value)}
+              placeholder="https://... or ipfs://..."
+              className={styles.input}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div style={{ marginBottom: 12 }}>
             <label htmlFor="cert-image" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
               Certificate image
             </label>
@@ -214,26 +277,6 @@ export function CertCreateDialog({
                 <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Image selected</span>
               )}
             </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label htmlFor="cert-batch" style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
-              Product batch
-            </label>
-            <select
-              id="cert-batch"
-              value={batchId}
-              onChange={(e) => setBatchId(e.target.value)}
-              required
-              className={styles.input}
-              style={{ width: '100%' }}
-            >
-              <option value="">Select batch...</option>
-              {batchOptions.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} ({b.id})
-                </option>
-              ))}
-            </select>
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button type="button" className={styles.btnSecondary} onClick={onClose}>

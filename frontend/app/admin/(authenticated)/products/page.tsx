@@ -21,6 +21,7 @@ import type { ProfileOption } from '../../types';
 import { uploadFileToIpfs } from '../../lib/ipfs';
 import { getAuthToken } from '../../lib/account';
 import { getBatchByAssetName, getProductRoadmap } from '../../lib/product';
+import { getCertificates, getCertificateIdsByBatch, setCertificatesForBatch } from '../../lib/certificate';
 import { encodeTraceId } from '@/utils/utils';
 import { ProductDialog } from '../../components/product/ProductDialog';
 
@@ -61,6 +62,8 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastAddedReceiverRef = useRef<string | null>(null);
+  const [certificateOptions, setCertificateOptions] = useState<{ id: number; title: string }[]>([]);
+  const [selectedCertificateIds, setSelectedCertificateIds] = useState<number[]>([]);
 
   useEffect(() => {
     const account = readAccountFromToken();
@@ -215,6 +218,7 @@ export default function ProductsPage() {
     setMinterCoordinates('');
     setError('');
     setOpen(false);
+    setSelectedCertificateIds([]);
   };
 
   const loadProfiles = async (): Promise<ProfileOption[]> => {
@@ -231,6 +235,17 @@ export default function ProductsPage() {
     return list;
   };
 
+  const loadCertificateOptions = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const { items } = await getCertificates(token, { pageSize: 500 });
+      setCertificateOptions(items.map((c) => ({ id: c.id, title: c.title })));
+    } catch {
+      setCertificateOptions([]);
+    }
+  };
+
   const openAdd = () => {
     resetForm();
     setCode(randomAssetName());
@@ -238,6 +253,8 @@ export default function ProductsPage() {
     setMinterLocation(account?.location ?? '');
     setMinterCoordinates(account?.coordinates ?? '');
     void loadProfiles();
+    setSelectedCertificateIds([]);
+    void loadCertificateOptions();
     setOpen(true);
   };
 
@@ -261,6 +278,12 @@ export default function ProductsPage() {
 
     const token = getAuthToken();
     if (token) {
+      try {
+        const ids = await getCertificateIdsByBatch(token, p.code);
+        setSelectedCertificateIds(ids);
+      } catch {
+        setSelectedCertificateIds([]);
+      }
       try {
         const roadmap = await getProductRoadmap(token, p.code);
         const list: string[] = [];
@@ -291,6 +314,7 @@ export default function ProductsPage() {
       }
     }
 
+    void loadCertificateOptions();
     setOpen(true);
   };
 
@@ -411,6 +435,11 @@ export default function ProductsPage() {
           const confirmData = await confirmRes.json();
           throw new Error(confirmData?.message || confirmData?.error || 'Confirm failed.');
         }
+      }
+
+      try {
+        await setCertificatesForBatch(token, assetName, selectedCertificateIds);
+      } catch {
       }
 
       await loadBatches();
@@ -639,6 +668,9 @@ export default function ProductsPage() {
         onImageUrlChange={setImageUrl}
         onUploadClick={() => imageInputRef.current?.click()}
         onImageUpload={handleImageUpload}
+        certificateOptions={certificateOptions}
+        selectedCertificateIds={selectedCertificateIds}
+        onCertificateIdsChange={setSelectedCertificateIds}
       />
 
     </>

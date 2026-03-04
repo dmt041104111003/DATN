@@ -34,6 +34,20 @@ let CertificateService = class CertificateService {
     async create(issuerProfileId, data) {
         return this.createCertificateUseCase.execute(issuerProfileId, data);
     }
+    async setCertificatesForBatch(batchId, issuerProfileId, certificateIds) {
+        try {
+            await this.repository.setCertificatesForBatch(batchId, issuerProfileId, certificateIds);
+        }
+        catch (err) {
+            if (err instanceof Error && err.message.includes("Batch not found")) {
+                throw new common_1.BadRequestException(err.message);
+            }
+            throw err;
+        }
+    }
+    async getCertificateIdsByBatchId(batchId, issuerProfileId) {
+        return this.repository.getCertificateIdsByBatchId(batchId, issuerProfileId);
+    }
 };
 exports.CertificateService = CertificateService;
 exports.CertificateService = CertificateService = __decorate([

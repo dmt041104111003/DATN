@@ -1,8 +1,8 @@
 export interface ListCertificatesOptions {
-  batchId?: string;
   search?: string;
   page?: number;
   pageSize?: number;
+  attachedToBatchId?: string;
 }
 
 export interface CertificateListItem {
@@ -13,11 +13,10 @@ export interface CertificateListItem {
   number: string | null;
   authority: string | null;
   expiryDate: Date | null;
-  batchId: string;
-  batchName: string;
-  productBatchCode: string;
-  productBatchName: string | null;
-  metadata: unknown;
+  documentType: string | null;
+  standardReference: string | null;
+  scope: string | null;
+  documentUrl: string | null;
 }
 
 export interface CertificateDetail {
@@ -28,21 +27,22 @@ export interface CertificateDetail {
   number: string | null;
   authority: string | null;
   expiryDate: Date | null;
-  metadata: unknown;
-  batchId: string;
-  batchName: string;
-  productBatchCode: string;
-  productBatchName: string | null;
+  documentType: string | null;
+  standardReference: string | null;
+  scope: string | null;
+  documentUrl: string | null;
 }
 
 export interface CreateCertificateData {
   title: string;
-  batchId: string;
   imageUrl: string;
   number?: string;
   authority?: string;
   expiryDate?: Date | string;
-  metadata?: Record<string, unknown>;
+  documentType?: string | null;
+  standardReference?: string | null;
+  scope?: string | null;
+  documentUrl?: string | null;
 }
 
 export interface CertificateRepositoryPort {
@@ -56,15 +56,21 @@ export interface CertificateRepositoryPort {
     issuerProfileId: number
   ): Promise<CertificateDetail | null>;
 
-  batchExistsForIssuer(
-    batchCode: string,
-    issuerProfileId: number
-  ): Promise<boolean>;
-
   createCertificate(
     issuerProfileId: number,
     data: CreateCertificateData
   ): Promise<{ id: number; title: string; imageUrl: string | null }>;
+
+  setCertificatesForBatch(
+    batchId: string,
+    issuerProfileId: number,
+    certificateIds: number[]
+  ): Promise<void>;
+
+  getCertificateIdsByBatchId(
+    batchId: string,
+    issuerProfileId: number
+  ): Promise<number[]>;
 }
 
 export const CERTIFICATE_REPOSITORY = "CERTIFICATE_REPOSITORY";

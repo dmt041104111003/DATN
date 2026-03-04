@@ -17,14 +17,13 @@ export class CreateCertificateUseCase {
     data: CreateCertificateData
   ): Promise<{ id: number; title: string; imageUrl: string | null }> {
     const title = (data.title || "").trim();
-    const batchId = (data.batchId || "").trim();
     const imageUrl = (data.imageUrl || "").trim();
     const number = (data.number || "").trim();
     const authority = (data.authority || "").trim();
     const expiryRaw = data.expiryDate;
 
-    if (!title || !batchId) {
-      throw new BadRequestException("title and batchId are required.");
+    if (!title) {
+      throw new BadRequestException("title is required.");
     }
     if (!imageUrl) {
       throw new BadRequestException(
@@ -48,24 +47,16 @@ export class CreateCertificateUseCase {
       expiryDate = d;
     }
 
-    const batchExists = await this.repository.batchExistsForIssuer(
-      batchId,
-      issuerProfileId
-    );
-    if (!batchExists) {
-      throw new BadRequestException(
-        "Batch not found or you are not the minter.",
-      );
-    }
-
     return this.repository.createCertificate(issuerProfileId, {
       title,
-      batchId,
       imageUrl,
       number,
       authority,
       expiryDate,
-      metadata: data.metadata,
+      documentType: data.documentType,
+      standardReference: data.standardReference,
+      scope: data.scope,
+      documentUrl: data.documentUrl,
     });
   }
 }

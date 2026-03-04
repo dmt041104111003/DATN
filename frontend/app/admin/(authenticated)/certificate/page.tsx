@@ -11,7 +11,6 @@ import {
   getCertificates,
   type Certificate,
 } from '../../lib/certificate';
-import { getBatchesList } from '../../lib/product';
 import { CertHeader } from '../../components/certificate/CertHeader';
 import { CertSearch } from '../../components/certificate/CertSearch';
 import { CertTable } from '../../components/certificate/CertTable';
@@ -30,7 +29,6 @@ export default function CertificatePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [batchOptions, setBatchOptions] = useState<{ id: string; name: string; policyId: string | null }[]>([]);
 
   useEffect(() => {
     const account = readAccountFromToken();
@@ -68,24 +66,9 @@ export default function CertificatePage() {
     }
   };
 
-  const loadBatches = async () => {
-    const token = getAuthToken();
-    if (!token) return;
-    try {
-      const batches = await getBatchesList(token);
-      setBatchOptions(batches.map((b) => ({ id: b.code, name: b.name, policyId: b.policyId ?? null })));
-    } catch {
-      setBatchOptions([]);
-    }
-  };
-
   useEffect(() => {
     void loadCertificates();
   }, [page, searchQuery]);
-
-  useEffect(() => {
-    if (createDialogOpen) void loadBatches();
-  }, [createDialogOpen]);
 
   useEffect(() => {
     setPage(1);
@@ -122,8 +105,7 @@ export default function CertificatePage() {
       ) : items.length === 0 ? (
         <div className={styles.formCard}>
           <p className={styles.formHint}>
-            No certificates yet. Add a certificate for your product batch (e.g. quality
-            inspection, test report stored on IPFS).
+            No certificates yet. Create certificates here, then import them into products when editing a product.
           </p>
         </div>
       ) : (
@@ -144,7 +126,6 @@ export default function CertificatePage() {
 
       <CertCreateDialog
         open={createDialogOpen}
-        batchOptions={batchOptions}
         onClose={() => setCreateDialogOpen(false)}
         onSuccess={loadCertificates}
       />

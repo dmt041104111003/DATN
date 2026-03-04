@@ -9,11 +9,13 @@ export declare class ListCertificatesUseCase {
             title: string;
             imageUrl: string | null;
             issuedAt: Date;
-            batchId: string;
-            batchName: string;
-            productBatchCode: string;
-            productBatchName: string | null;
-            metadata: unknown;
+            number: string | null;
+            authority: string | null;
+            expiryDate: Date | null;
+            documentType: string | null;
+            standardReference: string | null;
+            scope: string | null;
+            documentUrl: string | null;
         }[];
     }>;
 }

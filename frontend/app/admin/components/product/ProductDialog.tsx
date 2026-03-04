@@ -27,6 +27,9 @@ type Props = {
   minterCoordinates: string;
   imageUrl: string;
   imageInputRef: RefObject<HTMLInputElement | null>;
+  certificateOptions: { id: number; title: string }[];
+  selectedCertificateIds: number[];
+  onCertificateIdsChange: (ids: number[]) => void;
   onClose: () => void;
   onSubmit: (e: FormEvent) => void;
   onNameChange: (v: string) => void;
@@ -73,6 +76,9 @@ export function ProductDialog(props: Props) {
     minterCoordinates,
     imageUrl,
     imageInputRef,
+    certificateOptions,
+    selectedCertificateIds,
+    onCertificateIdsChange,
     onClose,
     onSubmit,
     onNameChange,
@@ -197,6 +203,34 @@ export function ProductDialog(props: Props) {
                 onChange={(e) => onExpiryChange(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Import certificates</label>
+              <p className={styles.formHint} style={{ marginBottom: 6 }}>
+                Attach certificates to this product. Create certificates in Certificates first, then select them here.
+              </p>
+              <select
+                className={styles.input}
+                multiple
+                value={selectedCertificateIds.map(String)}
+                onChange={(e) => {
+                  const selected = Array.from(
+                    (e.target as HTMLSelectElement).selectedOptions,
+                    (o) => parseInt(o.value, 10)
+                  );
+                  onCertificateIdsChange(selected.filter((n) => !Number.isNaN(n)));
+                }}
+                style={{ minHeight: 80 }}
+              >
+                {certificateOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} (#{c.id})
+                  </option>
+                ))}
+              </select>
+              {certificateOptions.length === 0 && (
+                <p className={styles.formHint}>No certificates yet. Add them in Certificates.</p>
+              )}
             </div>
             <div className={styles.formGroup}>
               <label className={styles.label}>Receivers</label>
