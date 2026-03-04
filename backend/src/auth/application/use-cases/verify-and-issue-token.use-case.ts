@@ -61,8 +61,10 @@ export class VerifyAndIssueTokenUseCase {
     );
 
     if (!profile) {
+      const roles = await this.authRepository.findAllRoles();
       return {
         needProfile: true as const,
+        roles,
       };
     }
 

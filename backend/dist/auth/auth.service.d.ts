@@ -23,6 +23,10 @@ export declare class AuthService {
         };
     } | {
         needProfile: true;
+        roles: {
+            id: number;
+            code: string;
+        }[];
     }>;
     createProfileAndIssueToken(params: CreateProfileAndIssueTokenParams): Promise<{
         token: string;

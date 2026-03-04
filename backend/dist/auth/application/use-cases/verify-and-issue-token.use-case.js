@@ -44,8 +44,10 @@ let VerifyAndIssueTokenUseCase = class VerifyAndIssueTokenUseCase {
         const wallet = await this.authRepository.upsertWallet(addr, new Date());
         const profile = await this.authRepository.findProfileByWalletAddress(wallet.address);
         if (!profile) {
+            const roles = await this.authRepository.findAllRoles();
             return {
                 needProfile: true,
+                roles,
             };
         }
         const secret = this.config.jwtSecret;

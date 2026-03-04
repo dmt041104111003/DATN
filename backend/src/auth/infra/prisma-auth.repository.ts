@@ -3,6 +3,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import {
   AuthRepositoryPort,
   Profile,
+  RoleOption,
   UpsertProfileParams,
   Wallet,
 } from "../domain/auth.repository";
@@ -37,6 +38,15 @@ export class PrismaAuthRepository implements AuthRepositoryPort {
       location: profile.location,
       coordinates: profile.coordinates,
     };
+  }
+
+  async findAllRoles(): Promise<RoleOption[]> {
+    return [
+      { id: 1, code: "ENTERPRISE" },
+      { id: 2, code: "TRANSIT" },
+      { id: 3, code: "AGENT" },
+      { id: 4, code: "SHIPPER" },
+    ];
   }
 
   async upsertProfile(params: UpsertProfileParams): Promise<Profile> {

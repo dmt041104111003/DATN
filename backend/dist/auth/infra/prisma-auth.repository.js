@@ -44,6 +44,14 @@ let PrismaAuthRepository = class PrismaAuthRepository {
             coordinates: profile.coordinates,
         };
     }
+    async findAllRoles() {
+        return [
+            { id: 1, code: "ENTERPRISE" },
+            { id: 2, code: "TRANSIT" },
+            { id: 3, code: "AGENT" },
+            { id: 4, code: "SHIPPER" },
+        ];
+    }
     async upsertProfile(params) {
         const { walletAddress, roleCode, displayName, location, coordinates } = params;
         const profile = await this.prisma.profile.upsert({

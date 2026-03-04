@@ -11,6 +11,10 @@ export interface Profile {
     location: string | null;
     coordinates: string | null;
 }
+export interface RoleOption {
+    id: number;
+    code: string;
+}
 export interface UpsertProfileParams {
     walletAddress: string;
     roleCode: string;
@@ -21,6 +25,7 @@ export interface UpsertProfileParams {
 export interface AuthRepositoryPort {
     upsertWallet(address: string, lastLogin: Date): Promise<Wallet>;
     findProfileByWalletAddress(address: string): Promise<Profile | null>;
+    findAllRoles(): Promise<RoleOption[]>;
     upsertProfile(params: UpsertProfileParams): Promise<Profile>;
     findProfileRoleCodeById(profileId: number): Promise<string | null>;
 }

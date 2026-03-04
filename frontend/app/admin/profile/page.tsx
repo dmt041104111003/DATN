@@ -58,7 +58,8 @@ export default function ProfilePage() {
 
   const handleSubmit = async () => {
     setError('');
-    if (!stakeAddress || !selectedRoleId || !displayName) {
+    const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null;
+    if (!stakeAddress || !selectedRole || !displayName) {
       setError('Please select a role and fill in all required fields.');
       return;
     }
@@ -70,7 +71,7 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           stakeAddress,
-          roleId: selectedRoleId,
+          roleCode: selectedRole.code,
           displayName,
           location: location.trim() || undefined,
           coordinates: coordinates.trim() || undefined,

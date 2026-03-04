@@ -43,6 +43,10 @@ export class AuthService {
           }
         | {
             needProfile: true;
+            roles: {
+              id: number;
+              code: string;
+            }[];
           }
   > {
     return this.verifyAndIssueTokenUseCase.execute(params);
