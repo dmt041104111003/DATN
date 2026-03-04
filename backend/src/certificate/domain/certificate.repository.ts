@@ -41,7 +41,7 @@ export interface CreateCertificateData {
   imageUrl: string;
   number?: string;
   authority?: string;
-  expiryDate?: Date;
+  expiryDate?: Date | string;
   metadata?: Record<string, unknown>;
 }
 
