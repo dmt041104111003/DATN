@@ -112,7 +112,7 @@ export interface ProductRepositoryPort {
 
   markBatchBurned(
     batchId: string,
-    nextMetadata: object
+    burnTxHash: string
   ): Promise<void>;
 
   createRoadmaps(

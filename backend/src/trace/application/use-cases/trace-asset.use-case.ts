@@ -199,9 +199,9 @@ export class TraceAssetUseCase {
                 batchId: batch.batchId,
                 profileId: lastProfile.id,
               },
-              select: { status: true },
+              select: { status: true, consumedAt: true },
             });
-          lifecycleCompleted = warehouseRow?.status === "BURNED";
+          lifecycleCompleted = warehouseRow?.status === "CONSUMED";
         }
       }
     }

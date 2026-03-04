@@ -216,7 +216,7 @@ export class RecordProductTxUseCase {
     }
 
     if (action === "BURN") {
-      await this.repository.markBatchBurned(assetName);
+      await this.repository.markBatchBurned(assetName, txHash);
       await this.warehouse.markAsBurned(profileId, assetName);
       return;
     }

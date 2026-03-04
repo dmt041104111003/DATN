@@ -11,8 +11,8 @@ export class MarkBurnedUseCase {
     private readonly repository: WarehouseRepositoryPort
   ) {}
 
-  execute(profileId: number, batchId: string): Promise<void> {
-    return this.repository.markAsBurnedForProfile(profileId, batchId);
+  execute(profileId: number, batchId: string, burnTxHash?: string): Promise<void> {
+    return this.repository.markAsBurnedForProfile(profileId, batchId, burnTxHash);
   }
 }
 

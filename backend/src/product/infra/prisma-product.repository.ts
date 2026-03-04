@@ -230,12 +230,12 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     });
   }
 
-  async markBatchBurned(code: string): Promise<void> {
+  async markBatchBurned(code: string, burnTxHash: string): Promise<void> {
     await (this.prisma as any).productBatch.update({
       where: { batchId: code },
       data: {
         burned: true,
-        burnTxHash: undefined,
+        burnTxHash,
         burnedAt: new Date(),
       },
     });

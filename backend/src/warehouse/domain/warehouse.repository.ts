@@ -18,7 +18,7 @@ export interface WarehouseRepositoryPort {
 
   markAsShippedForProfile(profileId: number, batchId: string): Promise<void>;
 
-  markAsBurnedForProfile(profileId: number, batchId: string): Promise<void>;
+  markAsBurnedForProfile(profileId: number, batchId: string, burnTxHash?: string): Promise<void>;
 
   addToWarehouseForProfile(profileId: number, batchId: string): Promise<void>;
 

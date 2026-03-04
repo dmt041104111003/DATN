@@ -14,7 +14,7 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
     profileId: number
   ): Promise<WarehouseInventoryItem[]> {
     const rows = await (this.prisma as any).warehouseInventory.findMany({
-      where: { profileId },
+      where: { profileId, status: "IN_WAREHOUSE" },
       include: {
         batch: {
           select: { id: true, name: true, image: true, policyId: true },
@@ -52,16 +52,23 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
   ): Promise<void> {
     await (this.prisma as any).warehouseInventory.updateMany({
       where: { batchId, profileId },
-      data: { status: "SHIPPED" },
+      data: { status: "ON_WAY", shippedAt: new Date(), lastMovedAt: new Date() },
     });
   }
 
   async markAsBurnedForProfile(
     profileId: number,
-    batchId: string
+    batchId: string,
+    burnTxHash?: string
   ): Promise<void> {
-    await (this.prisma as any).warehouseInventory.deleteMany({
+    await (this.prisma as any).warehouseInventory.updateMany({
       where: { batchId, profileId },
+      data: {
+        status: "CONSUMED",
+        consumedAt: new Date(),
+        burnTxHash: burnTxHash ?? null,
+        lastMovedAt: new Date(),
+      },
     });
   }
 
