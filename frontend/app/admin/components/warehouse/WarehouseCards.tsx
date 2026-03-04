@@ -26,11 +26,11 @@ export function WarehouseCards({ styles, items, onDetail, onBurn, onLock, burnin
         <div key={`wh-card-${item.batchId}-${index}`} className={styles.tableCard}>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Batch</span>
-            <span className={styles.tableCardValue}>
-              {item.batchName}
+            <span className={styles.tableCardValue} title={`${item.batchName}\n${item.batchId}`}>
+              {item.batchName.length > 20 ? `${item.batchName.slice(0, 18)}…` : item.batchName}
               <br />
               <small style={{ color: '#6b7280', fontSize: '0.8125rem' }}>
-                {item.batchId}
+                {item.batchId.length > 20 ? `${item.batchId.slice(0, 18)}…` : item.batchId}
               </small>
             </span>
           </div>

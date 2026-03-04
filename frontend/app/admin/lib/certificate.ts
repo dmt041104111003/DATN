@@ -110,3 +110,47 @@ export async function createCertificate(
   }
   return data;
 }
+
+export async function updateCertificate(
+  token: string,
+  id: number,
+  body: {
+    title?: string;
+    imageUrl?: string;
+    number?: string;
+    authority?: string;
+    expiryDate?: string;
+    documentType?: string;
+    standardReference?: string;
+    scope?: string;
+    documentUrl?: string;
+  },
+): Promise<{ id: number; title: string; imageUrl: string | null }> {
+  const res = await fetch(
+    `${BACKEND_URL}/certificate/${id}?token=${encodeURIComponent(token)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message ?? data?.error ?? 'Failed to update certificate');
+  }
+  return data;
+}
+
+export async function deleteCertificate(
+  token: string,
+  id: number,
+): Promise<void> {
+  const res = await fetch(
+    `${BACKEND_URL}/certificate/${id}?token=${encodeURIComponent(token)}`,
+    { method: 'DELETE' },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.message ?? data?.error ?? 'Failed to delete certificate');
+  }
+}

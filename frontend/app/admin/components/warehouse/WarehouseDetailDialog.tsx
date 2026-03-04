@@ -107,7 +107,7 @@ export function WarehouseDetailDialog({ open, item, onClose }: Props) {
                     href={item.image}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={styles.btnSecondary}
+                    className={styles.btnText}
                     style={{ display: 'inline-block' }}
                   >
                     View image

@@ -1,43 +1,49 @@
 .tableWrap {
   width: 100%;
+  overflow-x: clip;
 }
 
-/* All buttons in table as text links */
-.tableWrap .btnPrimary,
-.tableWrap .btnSecondary,
-.tableWrap .btnDanger {
+/* All action buttons: text only, no card/box (match hashed CSS module classes) */
+.tableWrap [class*="btnPrimary"],
+.tableWrap [class*="btnSecondary"],
+.tableWrap [class*="btnDanger"] {
   background: none !important;
   border: none !important;
   padding: 0 !important;
-  min-width: auto;
-  height: auto;
-  border-radius: 0;
-  font-size: inherit;
-  font-weight: 500;
-  color: #2563eb;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
+  min-width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  font-weight: 500 !important;
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
 }
 
-.tableWrap .btnPrimary:hover:not(:disabled),
-.tableWrap .btnSecondary:hover:not(:disabled) {
-  color: #1d4ed8;
+.tableWrap [class*="btnPrimary"]:hover:not(:disabled),
+.tableWrap [class*="btnSecondary"]:hover:not(:disabled) {
+  color: #1d4ed8 !important;
+  background: none !important;
+  border: none !important;
 }
 
-.tableWrap .btnDanger {
-  color: #dc2626;
+.tableWrap [class*="btnDanger"] {
+  color: #dc2626 !important;
 }
 
-.tableWrap .btnDanger:hover:not(:disabled) {
-  color: #b91c1c;
+.tableWrap [class*="btnDanger"]:hover:not(:disabled) {
+  color: #b91c1c !important;
+  background: none !important;
+  border: none !important;
 }
 
-.tableWrap .btnPrimary:disabled,
-.tableWrap .btnSecondary:disabled,
-.tableWrap .btnDanger:disabled {
-  color: #9ca3af;
-  cursor: not-allowed;
+.tableWrap [class*="btnPrimary"]:disabled,
+.tableWrap [class*="btnSecondary"]:disabled,
+.tableWrap [class*="btnDanger"]:disabled {
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
 }
 
 .tableCards {
@@ -109,48 +115,54 @@
     flex-wrap: wrap;
   }
 
-  /* Buttons in cards as text links */
-  .tableCards .btnPrimary,
-  .tableCards .btnSecondary,
-  .tableCards .btnDanger {
+  /* Action buttons in cards: text only */
+  .tableCards [class*="btnPrimary"],
+  .tableCards [class*="btnSecondary"],
+  .tableCards [class*="btnDanger"] {
     background: none !important;
     border: none !important;
     padding: 0 !important;
-    min-width: auto;
-    height: auto;
-    border-radius: 0;
-    font-size: inherit;
-    font-weight: 500;
-    color: #2563eb;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
+    min-width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    font-size: inherit !important;
+    font-weight: 500 !important;
+    color: #2563eb !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
   }
 
-  .tableCards .btnPrimary:hover:not(:disabled),
-  .tableCards .btnSecondary:hover:not(:disabled) {
-    color: #1d4ed8;
+  .tableCards [class*="btnPrimary"]:hover:not(:disabled),
+  .tableCards [class*="btnSecondary"]:hover:not(:disabled) {
+    color: #1d4ed8 !important;
+    background: none !important;
+    border: none !important;
   }
 
-  .tableCards .btnDanger {
-    color: #dc2626;
+  .tableCards [class*="btnDanger"] {
+    color: #dc2626 !important;
   }
 
-  .tableCards .btnDanger:hover:not(:disabled) {
-    color: #b91c1c;
+  .tableCards [class*="btnDanger"]:hover:not(:disabled) {
+    color: #b91c1c !important;
+    background: none !important;
+    border: none !important;
   }
 
-  .tableCards .btnPrimary:disabled,
-  .tableCards .btnSecondary:disabled,
-  .tableCards .btnDanger:disabled {
-    color: #9ca3af;
-    cursor: not-allowed;
+  .tableCards [class*="btnPrimary"]:disabled,
+  .tableCards [class*="btnSecondary"]:disabled,
+  .tableCards [class*="btnDanger"]:disabled {
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
   }
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .table th {
@@ -171,6 +183,14 @@
   color: #374151;
 }
 
+.table td .cellTruncate {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table tr:hover {
   background: #fafafa;
 }
@@ -181,7 +201,48 @@
   flex-wrap: wrap;
 }
 
-/* Actions container - buttons already styled by .tableWrap rules above */
+/* Any action area: buttons as text only (for list/card views on all pages) */
+.actions [class*="btnPrimary"],
+.actions [class*="btnSecondary"],
+.actions [class*="btnDanger"] {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  min-width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  font-weight: 500 !important;
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.actions [class*="btnPrimary"]:hover:not(:disabled),
+.actions [class*="btnSecondary"]:hover:not(:disabled) {
+  color: #1d4ed8 !important;
+  background: none !important;
+  border: none !important;
+}
+
+.actions [class*="btnDanger"] {
+  color: #dc2626 !important;
+}
+
+.actions [class*="btnDanger"]:hover:not(:disabled) {
+  color: #b91c1c !important;
+  background: none !important;
+  border: none !important;
+}
+
+.actions [class*="btnPrimary"]:disabled,
+.actions [class*="btnSecondary"]:disabled,
+.actions [class*="btnDanger"]:disabled {
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+}
 
 .tableLink {
   background: none;

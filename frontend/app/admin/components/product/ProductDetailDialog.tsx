@@ -98,7 +98,7 @@ export function ProductDetailDialog({ open, product, onClose }: Props) {
                     href={product.imageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={styles.btnSecondary}
+                    className={styles.btnText}
                     style={{ display: 'inline-block' }}
                   >
                     View image

@@ -117,6 +117,39 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
             imageUrl: (_g = cert.imageUrl) !== null && _g !== void 0 ? _g : null,
         };
     }
+    async updateCertificate(id, issuerProfileId, data) {
+        var _a, _b, _c, _d, _e, _f, _g;
+        const existing = await this.prisma.certificate.findFirst({
+            where: { id, issuerProfileId },
+        });
+        if (!existing) {
+            throw new Error("Certificate not found");
+        }
+        const cert = await this.prisma.certificate.update({
+            where: { id },
+            data: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (data.title != null && { title: data.title })), (data.imageUrl != null && { imageUrl: data.imageUrl })), (data.number !== undefined && { number: (_a = data.number) !== null && _a !== void 0 ? _a : null })), (data.authority !== undefined && { authority: (_b = data.authority) !== null && _b !== void 0 ? _b : null })), (data.expiryDate !== undefined && {
+                expiryDate: data.expiryDate
+                    ? new Date(data.expiryDate)
+                    : null,
+            })), (data.documentType !== undefined && { documentType: (_c = data.documentType) !== null && _c !== void 0 ? _c : null })), (data.standardReference !== undefined && { standardReference: (_d = data.standardReference) !== null && _d !== void 0 ? _d : null })), (data.scope !== undefined && { scope: (_e = data.scope) !== null && _e !== void 0 ? _e : null })), (data.documentUrl !== undefined && { documentUrl: (_f = data.documentUrl) !== null && _f !== void 0 ? _f : null })),
+        });
+        return {
+            id: cert.id,
+            title: cert.title,
+            imageUrl: (_g = cert.imageUrl) !== null && _g !== void 0 ? _g : null,
+        };
+    }
+    async deleteCertificate(id, issuerProfileId) {
+        const existing = await this.prisma.certificate.findFirst({
+            where: { id, issuerProfileId },
+        });
+        if (!existing) {
+            throw new Error("Certificate not found");
+        }
+        await this.prisma.certificate.delete({
+            where: { id },
+        });
+    }
     async setCertificatesForBatch(batchId, issuerProfileId, certificateIds) {
         const batch = await this.prisma.productBatch.findFirst({
             where: { batchId, minterProfileId: issuerProfileId },

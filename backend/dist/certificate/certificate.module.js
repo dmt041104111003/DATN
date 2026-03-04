@@ -17,6 +17,8 @@ const prisma_certificate_repository_1 = require("./infra/prisma-certificate.repo
 const list_certificates_use_case_1 = require("./application/use-cases/list-certificates.use-case");
 const get_certificate_by_id_use_case_1 = require("./application/use-cases/get-certificate-by-id.use-case");
 const create_certificate_use_case_1 = require("./application/use-cases/create-certificate.use-case");
+const update_certificate_use_case_1 = require("./application/use-cases/update-certificate.use-case");
+const delete_certificate_use_case_1 = require("./application/use-cases/delete-certificate.use-case");
 let CertificateModule = class CertificateModule {
 };
 exports.CertificateModule = CertificateModule;
@@ -32,6 +34,8 @@ exports.CertificateModule = CertificateModule = __decorate([
             list_certificates_use_case_1.ListCertificatesUseCase,
             get_certificate_by_id_use_case_1.GetCertificateByIdUseCase,
             create_certificate_use_case_1.CreateCertificateUseCase,
+            update_certificate_use_case_1.UpdateCertificateUseCase,
+            delete_certificate_use_case_1.DeleteCertificateUseCase,
         ],
         controllers: [certificate_controller_1.CertificateController],
     })

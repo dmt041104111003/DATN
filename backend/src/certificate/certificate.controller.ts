@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Put, Body, Param, Query, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
 import { AuthService } from "../auth/auth.service";
 import { CertificateService } from "./certificate.service";
-import { CreateCertificateDto } from "./dto/certificate.dto";
+import { CreateCertificateDto, UpdateCertificateDto } from "./dto/certificate.dto";
 
 const ENTERPRISE_ROLE = "ENTERPRISE";
 
@@ -141,5 +141,57 @@ export class CertificateController {
       scope: body.scope,
       documentUrl: body.documentUrl,
     });
+  }
+
+  @Patch(":id")
+  async update(
+    @Param("id") idStr: string,
+    @Body() body: UpdateCertificateDto,
+    @Query("token") token?: string,
+  ): Promise<{ id: number; title: string; imageUrl: string | null }> {
+    if (!token || typeof token !== "string" || !token.trim()) {
+      throw new UnauthorizedException("Missing or invalid token.");
+    }
+    const profileId = await this.auth.getProfileIdFromToken(token.trim());
+    const role = await this.auth.getProfileRoleFromToken(token.trim());
+    if ((role ?? "").toUpperCase() !== ENTERPRISE_ROLE) {
+      throw new ForbiddenException("Only ENTERPRISE can update certificates.");
+    }
+    const id = parseInt(idStr, 10);
+    if (!Number.isFinite(id)) {
+      throw new BadRequestException("Invalid certificate id.");
+    }
+    return this.certificate.update(id, profileId, {
+      title: body.title?.trim(),
+      imageUrl: body.imageUrl?.trim(),
+      number: body.number?.trim() ?? null,
+      authority: body.authority?.trim() ?? null,
+      expiryDate: body.expiryDate,
+      documentType: body.documentType?.trim() ?? null,
+      standardReference: body.standardReference?.trim() ?? null,
+      scope: body.scope?.trim() ?? null,
+      documentUrl: body.documentUrl?.trim() ?? null,
+    });
+  }
+
+  @Delete(":id")
+  async delete(
+    @Param("id") idStr: string,
+    @Query("token") token?: string,
+  ): Promise<{ ok: boolean }> {
+    if (!token || typeof token !== "string" || !token.trim()) {
+      throw new UnauthorizedException("Missing or invalid token.");
+    }
+    const profileId = await this.auth.getProfileIdFromToken(token.trim());
+    const role = await this.auth.getProfileRoleFromToken(token.trim());
+    if ((role ?? "").toUpperCase() !== ENTERPRISE_ROLE) {
+      throw new ForbiddenException("Only ENTERPRISE can delete certificates.");
+    }
+    const id = parseInt(idStr, 10);
+    if (!Number.isFinite(id)) {
+      throw new BadRequestException("Invalid certificate id.");
+    }
+    await this.certificate.delete(id, profileId);
+    return { ok: true };
   }
 }

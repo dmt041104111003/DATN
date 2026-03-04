@@ -1,4 +1,5 @@
 import type { Product } from '../../types';
+import { truncate } from '../../utils/string';
 
 type Props = {
   styles: Record<string, string>;
@@ -18,9 +19,7 @@ export function ProductsTable({ styles, items, onDetail, onEdit, onRevoke, onDow
             <th>ID</th>
             <th>Batch ID</th>
             <th>Name</th>
-            <th>SKU</th>
             <th>Category</th>
-            <th>Image</th>
             <th>Download</th>
             <th>Actions</th>
           </tr>
@@ -28,7 +27,7 @@ export function ProductsTable({ styles, items, onDetail, onEdit, onRevoke, onDow
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={8} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+              <td colSpan={6} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
                 No data
               </td>
             </tr>
@@ -36,15 +35,17 @@ export function ProductsTable({ styles, items, onDetail, onEdit, onRevoke, onDow
             items.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
-              <td>
-                <code style={{ fontSize: '0.8125rem' }} title={p.code}>
-                  {p.code.length > 16 ? `${p.code.slice(0, 14)}…` : p.code}
+              <td title={p.code}>
+                <code style={{ fontSize: '0.8125rem' }} className={styles.cellTruncate}>
+                  {truncate(p.code, 18)}
                 </code>
               </td>
-              <td>{p.nameEn}</td>
-              <td>{p.sku || '—'}</td>
-              <td>{p.productCategory || '—'}</td>
-              <td>{p.imageUrl ? 'Yes' : '—'}</td>
+              <td title={p.nameEn}>
+                <span className={styles.cellTruncate}>{truncate(p.nameEn)}</span>
+              </td>
+              <td title={p.productCategory ?? ''}>
+                <span className={styles.cellTruncate}>{p.productCategory || '—'}</span>
+              </td>
               <td>
                 <button
                   type="button"

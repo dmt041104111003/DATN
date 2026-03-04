@@ -8,6 +8,8 @@ import { PrismaCertificateRepository } from "./infra/prisma-certificate.reposito
 import { ListCertificatesUseCase } from "./application/use-cases/list-certificates.use-case";
 import { GetCertificateByIdUseCase } from "./application/use-cases/get-certificate-by-id.use-case";
 import { CreateCertificateUseCase } from "./application/use-cases/create-certificate.use-case";
+import { UpdateCertificateUseCase } from "./application/use-cases/update-certificate.use-case";
+import { DeleteCertificateUseCase } from "./application/use-cases/delete-certificate.use-case";
 
 @Module({
   imports: [PrismaModule, AuthModule],
@@ -20,6 +22,8 @@ import { CreateCertificateUseCase } from "./application/use-cases/create-certifi
     ListCertificatesUseCase,
     GetCertificateByIdUseCase,
     CreateCertificateUseCase,
+    UpdateCertificateUseCase,
+    DeleteCertificateUseCase,
   ],
   controllers: [CertificateController],
 })

@@ -1,6 +1,6 @@
 import { AuthService } from "../auth/auth.service";
 import { CertificateService } from "./certificate.service";
-import { CreateCertificateDto } from "./dto/certificate.dto";
+import { CreateCertificateDto, UpdateCertificateDto } from "./dto/certificate.dto";
 export declare class CertificateController {
     private readonly certificate;
     private readonly auth;
@@ -34,5 +34,13 @@ export declare class CertificateController {
         id: number;
         title: string;
         imageUrl: string | null;
+    }>;
+    update(idStr: string, body: UpdateCertificateDto, token?: string): Promise<{
+        id: number;
+        title: string;
+        imageUrl: string | null;
+    }>;
+    delete(idStr: string, token?: string): Promise<{
+        ok: boolean;
     }>;
 }

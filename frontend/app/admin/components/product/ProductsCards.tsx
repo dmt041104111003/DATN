@@ -1,4 +1,5 @@
 import type { Product } from '../../types';
+import { truncate } from '../../utils/string';
 
 type Props = {
   styles: Record<string, string>;
@@ -21,19 +22,27 @@ export function ProductsCards({ styles, items, onDetail, onEdit, onRevoke, onDow
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Batch ID</span>
-            <span className={styles.tableCardValue}>{p.code}</span>
+            <span className={styles.tableCardValue} title={p.code}>
+              {truncate(p.code, 18)}
+            </span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Name</span>
-            <span className={styles.tableCardValue}>{p.nameEn}</span>
+            <span className={styles.tableCardValue} title={p.nameEn}>
+              {truncate(p.nameEn)}
+            </span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>SKU</span>
-            <span className={styles.tableCardValue}>{p.sku || '—'}</span>
+            <span className={styles.tableCardValue} title={p.sku ?? ''}>
+              {truncate(p.sku)}
+            </span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Category</span>
-            <span className={styles.tableCardValue}>{p.productCategory || '—'}</span>
+            <span className={styles.tableCardValue} title={p.productCategory ?? ''}>
+              {truncate(p.productCategory)}
+            </span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Image</span>

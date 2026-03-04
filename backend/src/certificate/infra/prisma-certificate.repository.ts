@@ -6,6 +6,7 @@ import {
   CertificateRepositoryPort,
   CreateCertificateData,
   ListCertificatesOptions,
+  UpdateCertificateData,
 } from "../domain/certificate.repository";
 
 @Injectable()
@@ -135,6 +136,59 @@ export class PrismaCertificateRepository implements CertificateRepositoryPort {
       title: cert.title,
       imageUrl: cert.imageUrl ?? null,
     };
+  }
+
+  async updateCertificate(
+    id: number,
+    issuerProfileId: number,
+    data: UpdateCertificateData
+  ): Promise<{ id: number; title: string; imageUrl: string | null }> {
+    const existing = await this.prisma.certificate.findFirst({
+      where: { id, issuerProfileId },
+    });
+    if (!existing) {
+      throw new Error("Certificate not found");
+    }
+
+    const cert = await this.prisma.certificate.update({
+      where: { id },
+      data: {
+        ...(data.title != null && { title: data.title }),
+        ...(data.imageUrl != null && { imageUrl: data.imageUrl }),
+        ...(data.number !== undefined && { number: data.number ?? null }),
+        ...(data.authority !== undefined && { authority: data.authority ?? null }),
+        ...(data.expiryDate !== undefined && {
+          expiryDate: data.expiryDate
+            ? new Date(data.expiryDate as string | Date)
+            : null,
+        }),
+        ...(data.documentType !== undefined && { documentType: data.documentType ?? null }),
+        ...(data.standardReference !== undefined && { standardReference: data.standardReference ?? null }),
+        ...(data.scope !== undefined && { scope: data.scope ?? null }),
+        ...(data.documentUrl !== undefined && { documentUrl: data.documentUrl ?? null }),
+      },
+    });
+
+    return {
+      id: cert.id,
+      title: cert.title,
+      imageUrl: cert.imageUrl ?? null,
+    };
+  }
+
+  async deleteCertificate(
+    id: number,
+    issuerProfileId: number
+  ): Promise<void> {
+    const existing = await this.prisma.certificate.findFirst({
+      where: { id, issuerProfileId },
+    });
+    if (!existing) {
+      throw new Error("Certificate not found");
+    }
+    await this.prisma.certificate.delete({
+      where: { id },
+    });
   }
 
   async setCertificatesForBatch(

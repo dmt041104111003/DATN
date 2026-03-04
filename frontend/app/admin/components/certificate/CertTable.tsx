@@ -1,13 +1,16 @@
 import type { Certificate } from '../../lib/certificate';
 import { formatDate } from '../../utils/date';
+import { truncate } from '../../utils/string';
 
 type Props = {
   styles: Record<string, string>;
   items: Certificate[];
   onDetail?: (cert: Certificate) => void;
+  onEdit?: (cert: Certificate) => void;
+  onDelete?: (cert: Certificate) => void;
 };
 
-export function CertTable({ styles, items, onDetail }: Props) {
+export function CertTable({ styles, items, onDetail, onEdit, onDelete }: Props) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -17,11 +20,7 @@ export function CertTable({ styles, items, onDetail }: Props) {
             <th>Title</th>
             <th>No.</th>
             <th>Authority</th>
-            <th>Document type</th>
-            <th>Standard</th>
-            <th>Scope</th>
             <th>Expiry</th>
-            <th>Image</th>
             <th>Issued</th>
             <th>Actions</th>
           </tr>
@@ -29,7 +28,7 @@ export function CertTable({ styles, items, onDetail }: Props) {
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={11} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+              <td colSpan={7} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
                 No data
               </td>
             </tr>
@@ -37,49 +36,51 @@ export function CertTable({ styles, items, onDetail }: Props) {
             items.map((cert) => (
             <tr key={cert.id}>
               <td>{cert.id}</td>
-              <td>{cert.title}</td>
-              <td>{cert.number || '—'}</td>
-              <td>{cert.authority || '—'}</td>
-              <td>{cert.documentType || '—'}</td>
-              <td>{cert.standardReference || '—'}</td>
-              <td>
-                <span title={cert.scope ?? ''}>
-                  {cert.scope && cert.scope.length > 20 ? `${cert.scope.slice(0, 20)}…` : (cert.scope || '—')}
-                </span>
+              <td title={cert.title}>
+                <span className={styles.cellTruncate}>{truncate(cert.title)}</span>
+              </td>
+              <td title={cert.number ?? ''}>
+                <span className={styles.cellTruncate}>{cert.number || '—'}</span>
+              </td>
+              <td title={cert.authority ?? ''}>
+                <span className={styles.cellTruncate}>{cert.authority || '—'}</span>
               </td>
               <td>
                 {cert.expiryDate ? formatDate(cert.expiryDate) : '—'}
               </td>
-              <td>
-                {cert.imageUrl ? (
-                  <a
-                    href={cert.imageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Open image"
-                    style={{
-                      fontSize: '0.8125rem',
-                      color: 'inherit',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    View
-                  </a>
-                ) : (
-                  '—'
-                )}
-              </td>
               <td>{formatDate(cert.issuedAt)}</td>
               <td>
                 <div className={styles.actions}>
-                  <button
-                    type="button"
-                    className={styles.btnSecondary}
-                    onClick={() => onDetail?.(cert)}
-                    title="View details"
-                  >
-                    Detail
-                  </button>
+                  {onDetail && (
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={() => onDetail(cert)}
+                      title="View details"
+                    >
+                      Detail
+                    </button>
+                  )}
+                  {onEdit && (
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={() => onEdit(cert)}
+                      title="Edit certificate"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      className={styles.btnDanger}
+                      onClick={() => onDelete(cert)}
+                      title="Delete certificate"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

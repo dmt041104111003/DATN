@@ -107,7 +107,7 @@ export function CertDetailDialog({ open, cert, onClose }: Props) {
                     href={cert.imageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={styles.btnSecondary}
+                    className={styles.btnText}
                     style={{ display: 'inline-block' }}
                   >
                     View image

@@ -1,6 +1,7 @@
-export function truncate(str: string, len = 12): string {
-  if (!str || str.length <= len) return str;
-  return str.slice(0, len) + '…';
+export function truncate(str: string | null | undefined, len = 20): string {
+  if (str == null || str === '') return '—';
+  const t = String(str).trim();
+  return t.length > len ? t.slice(0, len) + '…' : t;
 }
 
 export function shortenAddress(addr: string, head = 12, tail = 8): string {

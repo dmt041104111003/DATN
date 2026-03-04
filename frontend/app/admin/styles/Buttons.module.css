@@ -47,6 +47,23 @@
   background: #d1d5db;
 }
 
+/* Text-only link/button (no card/box) */
+.btnText {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  font: inherit;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.btnText:hover {
+  color: #1d4ed8;
+}
+
 .addIcon {
   display: inline-flex;
   align-items: center;

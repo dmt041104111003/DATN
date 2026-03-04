@@ -117,6 +117,48 @@ let CertificateController = class CertificateController {
             documentUrl: body.documentUrl,
         });
     }
+    async update(idStr, body, token) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        if (!token || typeof token !== "string" || !token.trim()) {
+            throw new common_1.UnauthorizedException("Missing or invalid token.");
+        }
+        const profileId = await this.auth.getProfileIdFromToken(token.trim());
+        const role = await this.auth.getProfileRoleFromToken(token.trim());
+        if ((role !== null && role !== void 0 ? role : "").toUpperCase() !== ENTERPRISE_ROLE) {
+            throw new common_1.ForbiddenException("Only ENTERPRISE can update certificates.");
+        }
+        const id = parseInt(idStr, 10);
+        if (!Number.isFinite(id)) {
+            throw new common_1.BadRequestException("Invalid certificate id.");
+        }
+        return this.certificate.update(id, profileId, {
+            title: (_a = body.title) === null || _a === void 0 ? void 0 : _a.trim(),
+            imageUrl: (_b = body.imageUrl) === null || _b === void 0 ? void 0 : _b.trim(),
+            number: (_d = (_c = body.number) === null || _c === void 0 ? void 0 : _c.trim()) !== null && _d !== void 0 ? _d : null,
+            authority: (_f = (_e = body.authority) === null || _e === void 0 ? void 0 : _e.trim()) !== null && _f !== void 0 ? _f : null,
+            expiryDate: body.expiryDate,
+            documentType: (_h = (_g = body.documentType) === null || _g === void 0 ? void 0 : _g.trim()) !== null && _h !== void 0 ? _h : null,
+            standardReference: (_k = (_j = body.standardReference) === null || _j === void 0 ? void 0 : _j.trim()) !== null && _k !== void 0 ? _k : null,
+            scope: (_m = (_l = body.scope) === null || _l === void 0 ? void 0 : _l.trim()) !== null && _m !== void 0 ? _m : null,
+            documentUrl: (_p = (_o = body.documentUrl) === null || _o === void 0 ? void 0 : _o.trim()) !== null && _p !== void 0 ? _p : null,
+        });
+    }
+    async delete(idStr, token) {
+        if (!token || typeof token !== "string" || !token.trim()) {
+            throw new common_1.UnauthorizedException("Missing or invalid token.");
+        }
+        const profileId = await this.auth.getProfileIdFromToken(token.trim());
+        const role = await this.auth.getProfileRoleFromToken(token.trim());
+        if ((role !== null && role !== void 0 ? role : "").toUpperCase() !== ENTERPRISE_ROLE) {
+            throw new common_1.ForbiddenException("Only ENTERPRISE can delete certificates.");
+        }
+        const id = parseInt(idStr, 10);
+        if (!Number.isFinite(id)) {
+            throw new common_1.BadRequestException("Invalid certificate id.");
+        }
+        await this.certificate.delete(id, profileId);
+        return { ok: true };
+    }
 };
 exports.CertificateController = CertificateController;
 __decorate([
@@ -163,6 +205,23 @@ __decorate([
     __metadata("design:paramtypes", [certificate_dto_1.CreateCertificateDto, String]),
     __metadata("design:returntype", Promise)
 ], CertificateController.prototype, "create", null);
+__decorate([
+    (0, common_1.Patch)(":id"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Query)("token")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, certificate_dto_1.UpdateCertificateDto, String]),
+    __metadata("design:returntype", Promise)
+], CertificateController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(":id"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Query)("token")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], CertificateController.prototype, "delete", null);
 exports.CertificateController = CertificateController = __decorate([
     (0, common_1.Controller)("certificate"),
     __metadata("design:paramtypes", [certificate_service_1.CertificateService,

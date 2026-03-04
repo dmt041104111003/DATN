@@ -1,5 +1,6 @@
 import type { OrderDeliveryItem } from '../../lib/order';
 import { formatDate } from '../../utils/date';
+import { truncate } from '../../utils/string';
 
 type Props = {
   styles: Record<string, string>;
@@ -32,17 +33,15 @@ export function OrderTable({ styles, items, onDetail, onComplete }: Props) {
           ) : (
             items.map((d) => (
             <tr key={d.id}>
-              <td>
-                <span title={d.batchId}>{d.batchId.slice(0, 12)}…</span>
+              <td title={d.batchId}>
+                <span className={styles.cellTruncate}>{truncate(d.batchId, 16)}</span>
               </td>
-              <td>
-                <span title={d.recipientAddress}>
-                  {d.recipientAddress.slice(0, 16)}…
-                </span>
+              <td title={d.recipientAddress}>
+                <span className={styles.cellTruncate}>{truncate(d.recipientAddress, 24)}</span>
               </td>
-              <td>
-                <code style={{ fontSize: '0.75rem' }}>
-                  {d.lockTxHash.slice(0, 10)}…#{d.scriptOutputIndex}
+              <td title={`${d.lockTxHash}#${d.scriptOutputIndex}`}>
+                <code style={{ fontSize: '0.75rem' }} className={styles.cellTruncate}>
+                  {truncate(d.lockTxHash, 14)}…#{d.scriptOutputIndex}
                 </code>
               </td>
               <td>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAuthToken } from '../../lib/account';
 import { uploadImage } from '../../lib/upload';
-import { createCertificate } from '../../lib/certificate';
+import { createCertificate, updateCertificate, type Certificate } from '../../lib/certificate';
 import formStyles from '../../styles/Form.module.css';
 import buttonStyles from '../../styles/Buttons.module.css';
 import dialogStyles from '../../styles/Dialog.module.css';
@@ -14,40 +14,65 @@ type CreateProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editingCert?: Certificate | null;
 };
 
 export function CertCreateDialog({
   open,
   onClose,
   onSuccess,
+  editingCert = null,
 }: CreateProps) {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState('Quality inspection certificate');
   const [imageDataUrl, setImageDataUrl] = useState('');
-  const [number, setNumber] = useState('');
-  const [authority, setAuthority] = useState('');
+  const [number, setNumber] = useState('1234/ORD-NBC');
+  const [authority, setAuthority] = useState('NBC, Ministry of Agriculture');
   const [expiryDate, setExpiryDate] = useState('');
-  const [documentType, setDocumentType] = useState('');
-  const [standardReference, setStandardReference] = useState('');
-  const [scope, setScope] = useState('');
+  const [documentType, setDocumentType] = useState('Quality inspection, Test report');
+  const [standardReference, setStandardReference] = useState('ISO 22000, national standards');
+  const [scope, setScope] = useState('Scope of certification or short description');
   const [documentUrl, setDocumentUrl] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const DEFAULT_TITLE = 'Quality inspection certificate';
+  const DEFAULT_NUMBER = '1234/ORD-NBC';
+  const DEFAULT_AUTHORITY = 'NBC, Ministry of Agriculture';
+  const DEFAULT_DOCUMENT_TYPE = 'Quality inspection, Test report';
+  const DEFAULT_STANDARD_REF = 'ISO 22000, national standards';
+  const DEFAULT_SCOPE = 'Scope of certification or short description';
+
   useEffect(() => {
     if (open) {
-      setTitle('');
-      setImageDataUrl('');
-      setNumber('');
-      setAuthority('');
-      setExpiryDate('');
-      setDocumentType('');
-      setStandardReference('');
-      setScope('');
-      setDocumentUrl('');
+      if (editingCert) {
+        setTitle(editingCert.title ?? '');
+        setImageDataUrl('');
+        setNumber(editingCert.number ?? '');
+        setAuthority(editingCert.authority ?? '');
+        setExpiryDate(
+          editingCert.expiryDate
+            ? new Date(editingCert.expiryDate).toISOString().slice(0, 10)
+            : ''
+        );
+        setDocumentType(editingCert.documentType ?? '');
+        setStandardReference(editingCert.standardReference ?? '');
+        setScope(editingCert.scope ?? '');
+        setDocumentUrl(editingCert.documentUrl ?? '');
+      } else {
+        setTitle(DEFAULT_TITLE);
+        setImageDataUrl('');
+        setNumber(DEFAULT_NUMBER);
+        setAuthority(DEFAULT_AUTHORITY);
+        setExpiryDate('');
+        setDocumentType(DEFAULT_DOCUMENT_TYPE);
+        setStandardReference(DEFAULT_STANDARD_REF);
+        setScope(DEFAULT_SCOPE);
+        setDocumentUrl('');
+      }
       setError('');
     }
-  }, [open]);
+  }, [open, editingCert?.id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,7 +105,12 @@ export function CertCreateDialog({
       setError('Certificate authority is required.');
       return;
     }
-    if (!imageDataUrl) {
+    const isEdit = !!editingCert;
+    if (!isEdit && !imageDataUrl) {
+      setError('Please upload a certificate image.');
+      return;
+    }
+    if (isEdit && !imageDataUrl && !editingCert?.imageUrl) {
       setError('Please upload a certificate image.');
       return;
     }
@@ -91,25 +121,54 @@ export function CertCreateDialog({
     }
     setSubmitting(true);
     try {
-      const { url } = await uploadImage(token, {
-        imageDataUrl,
-        folder: 'certificates',
-      });
-      await createCertificate(token, {
-        title: title.trim(),
-        imageUrl: url,
-        number: number.trim(),
-        authority: authority.trim(),
-        expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined,
-        documentType: documentType.trim() || undefined,
-        standardReference: standardReference.trim() || undefined,
-        scope: scope.trim() || undefined,
-        documentUrl: documentUrl.trim() || undefined,
-      });
+      let imageUrlToUse: string;
+      if (imageDataUrl) {
+        const { url } = await uploadImage(token, {
+          imageDataUrl,
+          folder: 'certificates',
+        });
+        imageUrlToUse = url;
+      } else if (editingCert?.imageUrl) {
+        imageUrlToUse = editingCert.imageUrl;
+      } else {
+        throw new Error('Image is required.');
+      }
+
+      if (isEdit) {
+        await updateCertificate(token, editingCert.id, {
+          title: title.trim(),
+          imageUrl: imageUrlToUse,
+          number: number.trim(),
+          authority: authority.trim(),
+          expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+          documentType: documentType.trim() || undefined,
+          standardReference: standardReference.trim() || undefined,
+          scope: scope.trim() || undefined,
+          documentUrl: documentUrl.trim() || undefined,
+        });
+      } else {
+        await createCertificate(token, {
+          title: title.trim(),
+          imageUrl: imageUrlToUse,
+          number: number.trim(),
+          authority: authority.trim(),
+          expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+          documentType: documentType.trim() || undefined,
+          standardReference: standardReference.trim() || undefined,
+          scope: scope.trim() || undefined,
+          documentUrl: documentUrl.trim() || undefined,
+        });
+      }
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create certificate.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : isEdit
+            ? 'Failed to update certificate.'
+            : 'Failed to create certificate.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -124,7 +183,9 @@ export function CertCreateDialog({
         aria-modal="true"
       >
         <div className={styles.dialogHeader}>
-          <h2 className={styles.dialogTitle}>Add certificate</h2>
+          <h2 className={styles.dialogTitle}>
+            {editingCert ? 'Edit certificate' : 'Add certificate'}
+          </h2>
           <button
             type="button"
             className={styles.dialogClose}
@@ -160,7 +221,7 @@ export function CertCreateDialog({
               type="text"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
-              placeholder="e.g. 1234/QĐ-NBC"
+              placeholder="e.g. 1234/ORD-NBC"
               required
               className={styles.input}
               style={{ width: '100%' }}
@@ -175,7 +236,7 @@ export function CertCreateDialog({
               type="text"
               value={authority}
               onChange={(e) => setAuthority(e.target.value)}
-              placeholder="e.g. NBC, Bộ NN&PTNT..."
+              placeholder="e.g. NBC, Ministry of Agriculture"
               required
               className={styles.input}
               style={{ width: '100%' }}
@@ -217,7 +278,7 @@ export function CertCreateDialog({
               type="text"
               value={standardReference}
               onChange={(e) => setStandardReference(e.target.value)}
-              placeholder="e.g. ISO 22000, TCVN..."
+              placeholder="e.g. ISO 22000, national standards"
               className={styles.input}
               style={{ width: '100%' }}
             />
@@ -231,7 +292,7 @@ export function CertCreateDialog({
               type="text"
               value={scope}
               onChange={(e) => setScope(e.target.value)}
-              placeholder="Phạm vi / mô tả ngắn"
+              placeholder="e.g. Scope of certification, short description"
               className={styles.input}
               style={{ width: '100%' }}
             />
@@ -276,6 +337,9 @@ export function CertCreateDialog({
               {imageDataUrl && (
                 <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Image selected</span>
               )}
+              {editingCert?.imageUrl && !imageDataUrl && (
+                <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Current image kept</span>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -283,7 +347,13 @@ export function CertCreateDialog({
               Cancel
             </button>
             <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create'}
+              {submitting
+                ? editingCert
+                  ? 'Saving...'
+                  : 'Creating...'
+                : editingCert
+                  ? 'Save'
+                  : 'Create'}
             </button>
           </div>
         </form>

@@ -27,9 +27,9 @@ export function OrderCards({ styles, items, onDetail, onComplete }: Props) {
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Tx</span>
-            <span className={styles.tableCardValue}>
+            <span className={styles.tableCardValue} title={`${d.lockTxHash}#${d.scriptOutputIndex}`}>
               <code style={{ fontSize: '0.75rem' }}>
-                {d.lockTxHash.slice(0, 10)}…#{d.scriptOutputIndex}
+                {d.lockTxHash.length > 14 ? `${d.lockTxHash.slice(0, 12)}…` : d.lockTxHash}…#{d.scriptOutputIndex}
               </code>
             </span>
           </div>

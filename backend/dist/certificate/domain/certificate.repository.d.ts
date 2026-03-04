@@ -41,6 +41,17 @@ export interface CreateCertificateData {
     scope?: string | null;
     documentUrl?: string | null;
 }
+export interface UpdateCertificateData {
+    title?: string;
+    imageUrl?: string;
+    number?: string | null;
+    authority?: string | null;
+    expiryDate?: Date | string | null;
+    documentType?: string | null;
+    standardReference?: string | null;
+    scope?: string | null;
+    documentUrl?: string | null;
+}
 export interface CertificateRepositoryPort {
     listCertificates(issuerProfileId: number, options?: ListCertificatesOptions): Promise<{
         total: number;
@@ -52,6 +63,12 @@ export interface CertificateRepositoryPort {
         title: string;
         imageUrl: string | null;
     }>;
+    updateCertificate(id: number, issuerProfileId: number, data: UpdateCertificateData): Promise<{
+        id: number;
+        title: string;
+        imageUrl: string | null;
+    }>;
+    deleteCertificate(id: number, issuerProfileId: number): Promise<void>;
     setCertificatesForBatch(batchId: string, issuerProfileId: number, certificateIds: number[]): Promise<void>;
     getCertificateIdsByBatchId(batchId: string, issuerProfileId: number): Promise<number[]>;
 }

@@ -1,5 +1,6 @@
 import type { WarehouseItem } from '../../lib/warehouse';
 import { formatDate } from '../../utils/date';
+import { truncate } from '../../utils/string';
 
 type Props = {
   styles: Record<string, string>;
@@ -43,11 +44,11 @@ export function WarehouseTable({ styles, items, onDetail, onBurn, onLock, burnin
             const canLock = item.status === 'IN_WAREHOUSE' && !!item.policyId;
             return (
             <tr key={`wh-${item.batchId}-${index}`}>
-              <td>
-                <span title={item.batchId}>{item.batchName}</span>
+              <td title={`${item.batchName}\n${item.batchId}`}>
+                <span className={styles.cellTruncate}>{truncate(item.batchName)}</span>
                 <br />
-                <small style={{ color: '#6b7280', fontSize: '0.8125rem' }}>
-                  {item.batchId}
+                <small style={{ color: '#6b7280', fontSize: '0.8125rem' }} className={styles.cellTruncate} title={item.batchId}>
+                  {truncate(item.batchId, 16)}
                 </small>
               </td>
               <td>{statusLabel}</td>
