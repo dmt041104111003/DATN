@@ -143,6 +143,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       heightCm: batch.heightCm ?? null,
       storageCondition: batch.storageCondition ?? null,
       originSiteCode: batch.originSiteCode ?? null,
+      referenceUtxo: batch.referenceUtxo ?? null,
       lastUpdateTxHash: batch.lastUpdateTxHash ?? null,
       lastUpdateAt: batch.lastUpdateAt ?? null,
       revokeTxHash: batch.revokeTxHash ?? null,

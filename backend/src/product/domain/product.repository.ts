@@ -28,6 +28,7 @@ export interface ProductBatchSnapshot {
   heightCm: number | null;
   storageCondition: string | null;
   originSiteCode: string | null;
+  referenceUtxo: string | null;
   lastUpdateTxHash: string | null;
   lastUpdateAt: Date | null;
   revokeTxHash: string | null;

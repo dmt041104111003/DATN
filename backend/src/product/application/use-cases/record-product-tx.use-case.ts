@@ -74,6 +74,7 @@ export class RecordProductTxUseCase {
         heightCm: master.heightCm != null ? Number(master.heightCm) : null,
         storageCondition: master.storageCondition ?? null,
         originSiteCode: master.originSiteCode ?? null,
+        referenceUtxo: `${txHash}#0`,
       };
 
       await this.repository.upsertBatchOnMint(mintParams);
@@ -166,6 +167,7 @@ export class RecordProductTxUseCase {
           null,
         originSiteCode:
           (baseProps as any).originSiteCode ?? batch.originSiteCode ?? null,
+        referenceUtxo: `${txHash}#0`,
       });
 
       const receivers = params.receivers ?? [];
