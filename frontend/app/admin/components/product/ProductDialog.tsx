@@ -12,6 +12,11 @@ type Props = {
   code: string;
   nameEn: string;
   descriptionEn: string;
+  sku: string;
+  unitOfMeasure: string;
+  productCategory: string;
+  storageCondition: string;
+  originSiteCode: string;
   expiryDate: string;
   receiverList: string[];
   receiverDisplayNames: string[];
@@ -26,6 +31,11 @@ type Props = {
   onSubmit: (e: FormEvent) => void;
   onNameChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
+  onSkuChange: (v: string) => void;
+  onUnitOfMeasureChange: (v: string) => void;
+  onProductCategoryChange: (v: string) => void;
+  onStorageConditionChange: (v: string) => void;
+  onOriginSiteCodeChange: (v: string) => void;
   onExpiryChange: (v: string) => void;
   onAddReceiverFromProfile: (profile: ProfileOption) => void;
   onReceiverLocationsChange: (v: string) => void;
@@ -48,6 +58,11 @@ export function ProductDialog(props: Props) {
     code,
     nameEn,
     descriptionEn,
+    sku,
+    unitOfMeasure,
+    productCategory,
+    storageCondition,
+    originSiteCode,
     expiryDate,
     receiverList,
     receiverDisplayNames,
@@ -62,6 +77,11 @@ export function ProductDialog(props: Props) {
     onSubmit,
     onNameChange,
     onDescriptionChange,
+    onSkuChange,
+    onUnitOfMeasureChange,
+    onProductCategoryChange,
+    onStorageConditionChange,
+    onOriginSiteCodeChange,
     onExpiryChange,
     onAddReceiverFromProfile,
     onReceiverLocationsChange,
@@ -121,14 +141,52 @@ export function ProductDialog(props: Props) {
               />
             </div>
             <div className={styles.formGroup}>
+              <label className={styles.label}>SKU (optional)</label>
+              <input
+                className={styles.input}
+                value={sku}
+                onChange={(e) => onSkuChange(e.target.value)}
+                placeholder="Internal SKU"
+              />
+            </div>
+            <div className={styles.formGroup}>
               <label className={styles.label}>Description</label>
               <textarea
                 className={styles.textarea}
-                rows={4}
+                rows={3}
                 value={descriptionEn}
                 onChange={(e) => onDescriptionChange(e.target.value)}
                 placeholder="Enter product description"
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Logistics info (optional)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
+                <input
+                  className={styles.input}
+                  value={unitOfMeasure}
+                  onChange={(e) => onUnitOfMeasureChange(e.target.value)}
+                  placeholder="Unit (e.g. KG, CARTON)"
+                />
+                <input
+                  className={styles.input}
+                  value={productCategory}
+                  onChange={(e) => onProductCategoryChange(e.target.value)}
+                  placeholder="Category"
+                />
+                <input
+                  className={styles.input}
+                  value={storageCondition}
+                  onChange={(e) => onStorageConditionChange(e.target.value)}
+                  placeholder="Storage (ambient/chilled/...)"
+                />
+                <input
+                  className={styles.input}
+                  value={originSiteCode}
+                  onChange={(e) => onOriginSiteCodeChange(e.target.value)}
+                  placeholder="Origin site/warehouse code"
+                />
+              </div>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.label}>Expiry</label>

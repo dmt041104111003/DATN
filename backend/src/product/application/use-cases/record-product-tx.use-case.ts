@@ -49,8 +49,9 @@ export class RecordProductTxUseCase {
           expiryDate = d;
         }
       }
+      const master = properties as any;
       const mintParams: MintBatchParams = {
-        code: assetName,
+        batchId: assetName,
         name,
         description: description || null,
         image: image || null,
@@ -59,6 +60,20 @@ export class RecordProductTxUseCase {
         policyId: params.policyId,
         minterProfileId: profileId,
         expiryDate,
+        sku: master.sku ?? null,
+        gtin: master.gtin ?? null,
+        hsCode: master.hsCode ?? null,
+        unitOfMeasure: master.unitOfMeasure ?? null,
+        productCategory: master.productCategory ?? null,
+        grossWeightKg:
+          master.grossWeightKg != null ? Number(master.grossWeightKg) : null,
+        netWeightKg:
+          master.netWeightKg != null ? Number(master.netWeightKg) : null,
+        lengthCm: master.lengthCm != null ? Number(master.lengthCm) : null,
+        widthCm: master.widthCm != null ? Number(master.widthCm) : null,
+        heightCm: master.heightCm != null ? Number(master.heightCm) : null,
+        storageCondition: master.storageCondition ?? null,
+        originSiteCode: master.originSiteCode ?? null,
       };
 
       await this.repository.upsertBatchOnMint(mintParams);
@@ -92,12 +107,9 @@ export class RecordProductTxUseCase {
     }
 
     if (action === "UPDATE") {
-      let nextExpiryDate: Date | null = null;
-      const baseProps =
-        (params.properties as any) ?? {};
-      const rawNextExpiry =
-        (baseProps as any)?.ngayHetHan ??
-        ((batch.properties as any)?.ngayHetHan as unknown);
+      let nextExpiryDate: Date | null = batch.expiryDate ?? null;
+      const baseProps = (params.properties as any) ?? {};
+      const rawNextExpiry = (baseProps as any)?.ngayHetHan;
       if (rawNextExpiry) {
         const d =
           rawNextExpiry instanceof Date
@@ -113,7 +125,7 @@ export class RecordProductTxUseCase {
           : (batch.description as string | null);
 
       await this.repository.updateBatch({
-        code: assetName,
+        batchId: assetName,
         name: params.name ?? batch.name,
         description: nextDescription,
         image: params.image ?? batch.image,
@@ -121,6 +133,39 @@ export class RecordProductTxUseCase {
         expiryDate: nextExpiryDate ?? null,
         lastUpdateTxHash: txHash,
         lastUpdateAt: new Date().toISOString(),
+        sku: (baseProps as any).sku ?? batch.sku ?? null,
+        gtin: (baseProps as any).gtin ?? batch.gtin ?? null,
+        hsCode: (baseProps as any).hsCode ?? batch.hsCode ?? null,
+        unitOfMeasure:
+          (baseProps as any).unitOfMeasure ?? batch.unitOfMeasure ?? null,
+        productCategory:
+          (baseProps as any).productCategory ?? batch.productCategory ?? null,
+        grossWeightKg:
+          (baseProps as any).grossWeightKg != null
+            ? Number((baseProps as any).grossWeightKg)
+            : batch.grossWeightKg ?? null,
+        netWeightKg:
+          (baseProps as any).netWeightKg != null
+            ? Number((baseProps as any).netWeightKg)
+            : batch.netWeightKg ?? null,
+        lengthCm:
+          (baseProps as any).lengthCm != null
+            ? Number((baseProps as any).lengthCm)
+            : batch.lengthCm ?? null,
+        widthCm:
+          (baseProps as any).widthCm != null
+            ? Number((baseProps as any).widthCm)
+            : batch.widthCm ?? null,
+        heightCm:
+          (baseProps as any).heightCm != null
+            ? Number((baseProps as any).heightCm)
+            : batch.heightCm ?? null,
+        storageCondition:
+          (baseProps as any).storageCondition ??
+          batch.storageCondition ??
+          null,
+        originSiteCode:
+          (baseProps as any).originSiteCode ?? batch.originSiteCode ?? null,
       });
 
       const receivers = params.receivers ?? [];

@@ -27,7 +27,7 @@ export class ProductController {
     @Query("token") token?: string,
   ): Promise<{
     total: number;
-    items: { id: number; code: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[];
+    items: { id: number; batchId: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[];
   }> {
     if (!token || typeof token !== "string" || !token.trim()) {
       throw new UnauthorizedException("Missing or invalid token.");
@@ -294,7 +294,7 @@ export class ProductController {
   async getRoadmap(
     @Query("code") code: string | undefined,
     @Query("token") token?: string,
-  ): Promise<{ items: { hopIndex: number; receiverAddress: string | null }[] }> {
+  ): Promise<{ items: { stepIndex: number; toAddress: string | null }[] }> {
     if (!token || typeof token !== "string" || !token.trim()) {
       throw new UnauthorizedException("Missing or invalid token.");
     }

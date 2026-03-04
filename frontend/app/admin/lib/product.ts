@@ -3,7 +3,7 @@ const BACKEND_URL =
 
 export type BatchListItem = {
   id: number;
-  code: string;
+  batchId: string;
   name: string;
   image: string | null;
   createdAt: string;
@@ -11,9 +11,9 @@ export type BatchListItem = {
 };
 
 export type ProductRoadmapHop = {
-  hopIndex: number;
-  senderAddress: string | null;
-  receiverAddress: string | null;
+  stepIndex: number;
+  fromAddress: string | null;
+  toAddress: string | null;
 };
 
 export async function getBatchesList(token: string): Promise<BatchListItem[]> {
@@ -26,9 +26,9 @@ export async function getBatchesList(token: string): Promise<BatchListItem[]> {
   }
   const items = data?.items ?? [];
   return Array.isArray(items)
-    ? items.map((b: { id?: number; code?: string; name?: string; image?: string | null; createdAt?: string; policyId?: string | null }) => ({
+    ? items.map((b: { id?: number; batchId?: string; name?: string; image?: string | null; createdAt?: string; policyId?: string | null }) => ({
         id: Number(b?.id ?? 0),
-        code: String(b?.code ?? ''),
+        batchId: String(b?.batchId ?? ''),
         name: String(b?.name ?? ''),
         image: b?.image ?? null,
         createdAt: b?.createdAt ? String(b.createdAt) : '',
@@ -87,11 +87,11 @@ export async function getProductRoadmap(
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map(
     (r: any): ProductRoadmapHop => ({
-      hopIndex: Number(r?.hopIndex ?? 0),
-      senderAddress:
-        r?.senderAddress != null ? String(r.senderAddress) : null,
-      receiverAddress:
-        r?.receiverAddress != null ? String(r.receiverAddress) : null,
+      stepIndex: Number(r?.stepIndex ?? 0),
+      fromAddress:
+        r?.fromAddress != null ? String(r.fromAddress) : null,
+      toAddress:
+        r?.toAddress != null ? String(r.toAddress) : null,
     }),
   );
 }

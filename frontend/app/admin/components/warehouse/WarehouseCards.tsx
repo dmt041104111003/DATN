@@ -26,7 +26,7 @@ export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Received</span>
-            <span className={styles.tableCardValue}>{formatDate(item.mintedAt)}</span>
+            <span className={styles.tableCardValue}>{formatDate(item.receivedAt)}</span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Shipped</span>

@@ -12,8 +12,8 @@ export class ListRoadmapUseCase {
     private readonly repository: ProductRepositoryPort
   ) {}
 
-  execute(batchCode: string): Promise<ProductRoadmapHop[]> {
-    return this.repository.listRoadmap(batchCode);
+  execute(batchId: string): Promise<ProductRoadmapHop[]> {
+    return this.repository.listRoadmap(batchId);
   }
 }
 

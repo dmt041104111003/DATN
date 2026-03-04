@@ -41,6 +41,11 @@ export default function ProductsPage() {
   const [nameEn, setNameEn] = useState('Cam sành XNK 1.5kg');
   const [descriptionEn, setDescriptionEn] = useState('Sample traceability product');
   const [imageUrl, setImageUrl] = useState('');
+  const [sku, setSku] = useState('SKU-TRACE-001');
+  const [unitOfMeasure, setUnitOfMeasure] = useState('CARTON');
+  const [productCategory, setProductCategory] = useState('FRUIT');
+  const [storageCondition, setStorageCondition] = useState('AMBIENT');
+  const [originSiteCode, setOriginSiteCode] = useState('WH-HCM-01');
   const [expiryDate, setExpiryDate] = useState(nowForDateTimeLocal);
   const [receiverList, setReceiverList] = useState<string[]>([]);
   const [receiverDisplayNames, setReceiverDisplayNames] = useState<string[]>([]);
@@ -87,12 +92,33 @@ export default function ProductsPage() {
     }
     const items: any[] = Array.isArray(data?.items) ? data.items : [];
     const mapped: Product[] = items
-      .map((b: { id?: number; code?: string; name?: string; description?: string | null; image?: string | null }) => ({
+      .map((b: {
+        id?: number;
+        batchId?: string;
+        name?: string;
+        description?: string | null;
+        image?: string | null;
+        sku?: string | null;
+        unitOfMeasure?: string | null;
+        productCategory?: string | null;
+        storageCondition?: string | null;
+        originSiteCode?: string | null;
+        grossWeightKg?: number | null;
+        netWeightKg?: number | null;
+      }) => ({
         id: Number(b?.id ?? 0),
-        code: String(b?.code ?? ''),
+        code: String(b?.batchId ?? ''),
         nameEn: String(b?.name ?? ''),
         descriptionEn: b?.description != null ? String(b.description) : null,
         imageUrl: b?.image ? String(b.image) : null,
+        sku: b?.sku ?? null,
+        unitOfMeasure: b?.unitOfMeasure ?? null,
+        productCategory: b?.productCategory ?? null,
+        storageCondition: b?.storageCondition ?? null,
+        originSiteCode: b?.originSiteCode ?? null,
+        grossWeightKg:
+          b?.grossWeightKg != null ? Number(b.grossWeightKg) : null,
+        netWeightKg: b?.netWeightKg != null ? Number(b.netWeightKg) : null,
       }))
       .filter((p) => !!p.code);
     setProducts(mapped);
@@ -175,6 +201,11 @@ export default function ProductsPage() {
     setNameEn('Cam sành XNK 1.5kg');
     setDescriptionEn('Sample traceability product');
     setImageUrl('');
+    setSku('SKU-TRACE-001');
+    setUnitOfMeasure('CARTON');
+    setProductCategory('FRUIT');
+    setStorageCondition('AMBIENT');
+    setOriginSiteCode('WH-HCM-01');
     setExpiryDate(nowForDateTimeLocal());
     setReceiverList([]);
     setReceiverDisplayNames([]);
@@ -216,6 +247,11 @@ export default function ProductsPage() {
     setNameEn(p.nameEn);
     setDescriptionEn(p.descriptionEn ?? '');
     setImageUrl(p.imageUrl ?? '');
+    setSku(p.sku ?? '');
+    setUnitOfMeasure(p.unitOfMeasure ?? '');
+    setProductCategory(p.productCategory ?? '');
+    setStorageCondition(p.storageCondition ?? '');
+    setOriginSiteCode(p.originSiteCode ?? '');
     setError('');
     const account = readAccountFromToken();
     setMinterLocation(account?.location ?? '');
@@ -233,7 +269,7 @@ export default function ProductsPage() {
         const coords: string[] = [];
 
         roadmap.forEach((hop) => {
-          const addr = hop.receiverAddress?.trim();
+          const addr = hop.toAddress?.trim();
           if (!addr) return;
           const prof = existingProfiles.find(
             (x) => x.walletAddress.trim().toLowerCase() === addr.toLowerCase(),
@@ -293,6 +329,11 @@ export default function ProductsPage() {
     const properties: Record<string, unknown> = {
       ngayHetHan: effectiveExpiry,
       current_holder_id: account.stakeAddress,
+      sku: sku || undefined,
+      unitOfMeasure: unitOfMeasure || undefined,
+      productCategory: productCategory || undefined,
+      storageCondition: storageCondition || undefined,
+      originSiteCode: originSiteCode || undefined,
     };
 
     setLoading(true);
@@ -565,6 +606,11 @@ export default function ProductsPage() {
         code={code}
         nameEn={nameEn}
         descriptionEn={descriptionEn}
+        sku={sku}
+        unitOfMeasure={unitOfMeasure}
+        productCategory={productCategory}
+        storageCondition={storageCondition}
+        originSiteCode={originSiteCode}
         expiryDate={expiryDate}
         receiverList={receiverList}
         receiverDisplayNames={receiverDisplayNames}
@@ -579,6 +625,11 @@ export default function ProductsPage() {
         onSubmit={handleSubmit}
         onNameChange={setNameEn}
         onDescriptionChange={setDescriptionEn}
+        onSkuChange={setSku}
+        onUnitOfMeasureChange={setUnitOfMeasure}
+        onProductCategoryChange={setProductCategory}
+        onStorageConditionChange={setStorageCondition}
+        onOriginSiteCodeChange={setOriginSiteCode}
         onExpiryChange={setExpiryDate}
         onAddReceiverFromProfile={addReceiverFromProfile}
         onReceiverLocationsChange={setReceiverLocations}

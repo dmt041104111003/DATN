@@ -31,7 +31,7 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
                   {item.batchId}
                 </small>
               </td>
-              <td>{formatDate(item.mintedAt)}</td>
+              <td>{formatDate(item.receivedAt)}</td>
               <td>{item.status === 'SHIPPED' ? 'Yes' : '—'}</td>
               <td>
                 <div className={styles.actions}>

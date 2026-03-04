@@ -70,12 +70,12 @@ export class TraceAssetUseCase {
 
     const batch = await this.prisma.productBatch.findFirst({
       where: {
-        code: assetNameTrimmed,
+        batchId: assetNameTrimmed,
         ...(policyIdTrimmed ? { policyId: policyIdTrimmed } : {}),
       },
       include: {
         minterProfile: true,
-        roadmaps: { orderBy: { hopIndex: "asc" } },
+        roadmaps: { orderBy: { stepIndex: "asc" } },
       },
     });
 
@@ -128,7 +128,7 @@ export class TraceAssetUseCase {
           title: enterpriseCert.title,
           imageUrl: enterpriseCert.imageUrl ?? null,
           issuedAt: enterpriseCert.issuedAt,
-          batchId: batch.code,
+            batchId: batch.batchId,
         };
       }
     }
@@ -165,10 +165,10 @@ export class TraceAssetUseCase {
       .filter(Boolean);
 
     const checkpointsPassed = roadmaps.map((r, i) => ({
-      step: r.hopIndex + 1,
+      step: r.stepIndex + 1,
       label:
         receiverLocationsArr[i] ??
-        (r.action || `Step ${r.hopIndex + 1}`),
+        (r.action || `Step ${r.stepIndex + 1}`),
       txHash: r.txHash ?? undefined,
       completed: !!r.txHash,
     }));
@@ -186,7 +186,7 @@ export class TraceAssetUseCase {
       nft222Quantity === "0"
     ) {
       const lastHop = roadmaps[roadmaps.length - 1];
-      const lastReceiverAddress = lastHop?.receiverAddress?.trim();
+      const lastReceiverAddress = lastHop?.toAddress?.trim();
       if (lastReceiverAddress) {
         const lastProfile = await this.prisma.profile.findUnique({
           where: { walletAddress: lastReceiverAddress },
@@ -197,7 +197,7 @@ export class TraceAssetUseCase {
             await this.prisma.warehouseInventory.findUnique({
               where: {
                 batchId_profileId: {
-                  batchId: batch.code,
+                  batchId: batch.batchId,
                   profileId: lastProfile.id,
                 },
               },
@@ -224,7 +224,7 @@ export class TraceAssetUseCase {
         : null);
 
     const receiverAddressesRaw = roadmaps.map((r) =>
-      (r.receiverAddress ?? "").trim(),
+      (r.toAddress ?? "").trim(),
     );
     const receiverProfiles =
       receiverAddressesRaw.length > 0
@@ -252,7 +252,7 @@ export class TraceAssetUseCase {
     const receiverPoints: Array<{ lat: number; lng: number } | null> =
       [];
     for (let i = 0; i < roadmaps.length; i++) {
-      const addr = (roadmaps[i].receiverAddress ?? "")
+      const addr = (roadmaps[i].toAddress ?? "")
         .trim()
         .toLowerCase();
       const profile = addr ? profileByWallet.get(addr) : null;
@@ -334,7 +334,7 @@ export class TraceAssetUseCase {
           } else {
             const idx = roadmapList.findIndex(
               (r) =>
-                (r.receiverAddress ?? "")
+                (r.toAddress ?? "")
                   .trim()
                   .toLowerCase() === holderLower,
             );
@@ -417,7 +417,7 @@ export class TraceAssetUseCase {
     }
 
     for (let i = 0; i < roadmaps.length; i++) {
-      const addrRaw = (roadmaps[i].receiverAddress ?? "").trim();
+      const addrRaw = (roadmaps[i].toAddress ?? "").trim();
       if (!addrRaw) {
         roadmapToHopIndex[i] = -1;
         continue;
@@ -444,7 +444,7 @@ export class TraceAssetUseCase {
     }
 
     const deliveries = await this.prisma.deliveryOrder.findMany({
-      where: { batchId: batch.code },
+      where: { batchId: batch.batchId },
       orderBy: { createdAt: "asc" },
     });
 

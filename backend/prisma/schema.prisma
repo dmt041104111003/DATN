@@ -31,15 +31,27 @@ model Profile {
 }
 
 model ProductBatch {
-  id              Int      @id @default(autoincrement())
-  code            String   @unique 
-  name            String
-  description     String?
-  image           String?
-  standard        String?
-  mintTxHash      String?
-  policyId        String?
-  expiryDate      DateTime?
+  id               Int      @id @default(autoincrement())
+  batchId          String   @unique @map("code")
+  name             String
+  description      String?
+  image            String?
+  sku              String?
+  gtin             String?
+  hsCode           String?
+  unitOfMeasure    String?
+  productCategory  String?
+  grossWeightKg    Float?
+  netWeightKg      Float?
+  lengthCm         Float?
+  widthCm          Float?
+  heightCm         Float?
+  storageCondition String?
+  originSiteCode   String?
+  standard         String?
+  mintTxHash       String?
+  policyId         String?
+  expiryDate       DateTime?
   lastUpdateTxHash String?
   lastUpdateAt     DateTime?
   revokeTxHash     String?
@@ -48,14 +60,14 @@ model ProductBatch {
   burnTxHash       String?
   burnedAt         DateTime?
   burned           Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
 
-  minterProfileId Int
-  minterProfile   Profile  @relation("ProfileBatches", fields: [minterProfileId], references: [id])
+  minterProfileId  Int
+  minterProfile    Profile  @relation("ProfileBatches", fields: [minterProfileId], references: [id])
 
-  certificates    Certificate[]
-  roadmaps        Roadmap[]
-  inventories     WarehouseInventory[]
+  certificates     Certificate[]
+  roadmaps         Roadmap[]
+  inventories      WarehouseInventory[]
 }
 
 model WarehouseInventory {
@@ -63,9 +75,16 @@ model WarehouseInventory {
   batchId     String
   profileId   Int
   status      String    @default("IN_WAREHOUSE")
-  mintedAt    DateTime  @default(now())
+  receivedAt  DateTime  @default(now()) @map("mintedAt")
+  warehouseCode String?
+  zone          String?
+  aisle         String?
+  rack          String?
+  bin           String?
+  lastMovedAt   DateTime?
+  shippedAt     DateTime?
 
-  batch   ProductBatch @relation(fields: [batchId], references: [code], onDelete: Cascade)
+  batch   ProductBatch @relation(fields: [batchId], references: [batchId], onDelete: Cascade)
   profile Profile      @relation("WarehouseOwner", fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([batchId, profileId])
@@ -81,7 +100,7 @@ model Certificate {
   expiryDate       DateTime?
 
   batchId          String
-  batch            ProductBatch @relation(fields: [batchId], references: [code])
+  batch            ProductBatch @relation(fields: [batchId], references: [batchId])
 
   issuerProfileId  Int
   issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
@@ -93,14 +112,22 @@ model Certificate {
 model Roadmap {
   id              Int      @id @default(autoincrement())
   batchId         String
-  senderAddress   String   @default("")
-  receiverAddress String
-  hopIndex        Int      @default(0)
+  fromAddress     String   @default("") @map("senderAddress")
+  toAddress       String   @map("receiverAddress")
+  stepIndex       Int      @default(0) @map("hopIndex")
   action          String
   txHash          String?
   createdAt       DateTime @default(now())
+  legType         String?
+  transportMode   String?
+  carrierName     String?
+  routeCode       String?
+  plannedDepartureAt DateTime?
+  plannedArrivalAt   DateTime?
+  actualDepartureAt  DateTime?
+  actualArrivalAt    DateTime?
 
-  batch           ProductBatch @relation(fields: [batchId], references: [code], onDelete: Cascade)
+  batch           ProductBatch @relation(fields: [batchId], references: [batchId], onDelete: Cascade)
 }
 
 enum DeliveryStatus {
@@ -124,6 +151,20 @@ model DeliveryOrder {
   unlockTxHash           String?
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
+  shipmentNo             String?
+  customerCode           String?
+  shipToName             String?
+  shipToAddress          String?
+  shipToCity             String?
+  shipToCountry          String?
+  shipToPhone            String?
+  carrierName            String?
+  transportMode          String?
+  trackingNumber         String?
+  plannedPickupAt        DateTime?
+  plannedDeliveryAt      DateTime?
+  actualPickupAt         DateTime?
+  actualDeliveryAt       DateTime?
 
   @@unique([lockTxHash, scriptOutputIndex])
 }

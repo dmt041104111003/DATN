@@ -4,6 +4,13 @@ export type Product = {
   nameEn: string;
   descriptionEn: string | null;
   imageUrl: string | null;
+  sku?: string | null;
+  unitOfMeasure?: string | null;
+  productCategory?: string | null;
+  storageCondition?: string | null;
+  originSiteCode?: string | null;
+  grossWeightKg?: number | null;
+  netWeightKg?: number | null;
 };
 
 export type Account = {
