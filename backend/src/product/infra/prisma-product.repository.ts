@@ -17,7 +17,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     profileId: number
   ): Promise<ProductBatchListItem[]> {
     const items = await (this.prisma as any).productBatch.findMany({
-      where: { minterProfileId: profileId },
+      where: { minterProfileId: profileId, revoked: false },
       select: {
         id: true,
         code: true,
@@ -25,18 +25,12 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         description: true,
         image: true,
         createdAt: true,
-        metadata: true,
         policyId: true,
       },
       orderBy: [{ createdAt: "asc" }, { code: "asc" }],
     });
     if (!Array.isArray(items)) return [];
-    const visible = items.filter((b) => {
-      const meta = b.metadata as Record<string, unknown> | null;
-      const db = meta?._db as Record<string, unknown> | undefined;
-      return !db || db.revoked !== true;
-    });
-    return visible.map(
+    return items.map(
       (b): ProductBatchListItem => ({
         id: b.id,
         code: b.code,
@@ -56,11 +50,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       description,
       image,
       standard,
-      properties,
-      metadata,
       mintTxHash,
       policyId,
       minterProfileId,
+      expiryDate,
     } = params;
     await (this.prisma as any).productBatch.upsert({
       where: { code },
@@ -70,11 +63,10 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         description,
         image,
         standard,
-        properties,
-        metadata,
         mintTxHash,
         policyId: policyId ?? undefined,
         minterProfileId,
+        ...(expiryDate !== undefined && { expiryDate }),
       },
       update: {
         mintTxHash,
@@ -82,9 +74,8 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         description,
         image,
         standard,
-        properties,
-        metadata,
         policyId: policyId ?? undefined,
+        ...(expiryDate !== undefined && { expiryDate }),
       },
     });
   }
@@ -100,9 +91,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       description: batch.description ?? null,
       image: batch.image ?? null,
       standard: batch.standard ?? null,
-      properties: batch.properties,
-      metadata: batch.metadata,
       policyId: batch.policyId ?? null,
+      expiryDate: batch.expiryDate ?? null,
+      lastUpdateTxHash: batch.lastUpdateTxHash ?? null,
+      lastUpdateAt: batch.lastUpdateAt ?? null,
+      revokeTxHash: batch.revokeTxHash ?? null,
+      revokedAt: batch.revokedAt ?? null,
+      revoked: batch.revoked ?? false,
+      burnTxHash: batch.burnTxHash ?? null,
+      burnedAt: batch.burnedAt ?? null,
+      burned: batch.burned ?? false,
     };
   }
 
@@ -122,7 +120,16 @@ export class PrismaProductRepository implements ProductRepositoryPort {
   }
 
   async updateBatch(params: UpdateBatchParams): Promise<void> {
-    const { code, name, description, image, standard, properties, metadata } = params;
+    const {
+      code,
+      name,
+      description,
+      image,
+      standard,
+      expiryDate,
+      lastUpdateTxHash,
+      lastUpdateAt,
+    } = params;
     await (this.prisma as any).productBatch.update({
       where: { code },
       data: {
@@ -130,26 +137,31 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         ...(description !== undefined && { description }),
         ...(image !== undefined && { image }),
         ...(standard !== undefined && { standard }),
-        properties,
-        metadata,
+        ...(expiryDate !== undefined && { expiryDate }),
+        ...(lastUpdateTxHash !== undefined && { lastUpdateTxHash }),
+        ...(lastUpdateAt !== undefined && { lastUpdateAt }),
       },
     });
   }
 
-  async markBatchRevoked(code: string, nextMetadata: object): Promise<void> {
+  async markBatchRevoked(code: string): Promise<void> {
     await (this.prisma as any).productBatch.update({
       where: { code },
       data: {
-        metadata: nextMetadata,
+        revoked: true,
+        revokeTxHash: undefined,
+        revokedAt: new Date(),
       },
     });
   }
 
-  async markBatchBurned(code: string, nextMetadata: object): Promise<void> {
+  async markBatchBurned(code: string): Promise<void> {
     await (this.prisma as any).productBatch.update({
       where: { code },
       data: {
-        metadata: nextMetadata,
+        burned: true,
+        burnTxHash: undefined,
+        burnedAt: new Date(),
       },
     });
   }

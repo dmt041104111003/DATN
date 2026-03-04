@@ -4,7 +4,6 @@ import {
   MintBatchParams,
   ProductRepositoryPort,
 } from "../../domain/product.repository";
-import { mergeDbMeta } from "../../product.helpers";
 import { WarehouseService } from "../../../warehouse/warehouse.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 
@@ -38,27 +37,28 @@ export class RecordProductTxUseCase {
       const description = params.description ?? "";
       const image = params.image ?? "";
       const properties = params.properties != null ? params.properties : {};
-      const metadata =
-        params.metadata != null && typeof params.metadata === "object"
-          ? params.metadata
-          : {
-              name,
-              description,
-              image,
-              standard: params.standard ?? "Traceability-v1",
-            };
-
+      let expiryDate: Date | undefined;
+      const rawExpiry =
+        (properties as any)?.ngayHetHan ??
+        (params.properties as any)?.ngayHetHan ??
+        undefined;
+      if (rawExpiry) {
+        const d =
+          rawExpiry instanceof Date ? rawExpiry : new Date(String(rawExpiry));
+        if (!Number.isNaN(d.getTime())) {
+          expiryDate = d;
+        }
+      }
       const mintParams: MintBatchParams = {
         code: assetName,
         name,
         description: description || null,
         image: image || null,
         standard: params.standard ?? "Traceability-v1",
-        properties,
-        metadata,
         mintTxHash: txHash,
         policyId: params.policyId,
         minterProfileId: profileId,
+        expiryDate,
       };
 
       await this.repository.upsertBatchOnMint(mintParams);
@@ -92,21 +92,21 @@ export class RecordProductTxUseCase {
     }
 
     if (action === "UPDATE") {
-      const updatePatch = {
-        lastUpdateTxHash: txHash,
-        lastUpdateAt: new Date().toISOString(),
-      };
-      const nextMetadata =
-        params.metadata && typeof params.metadata === "object"
-          ? mergeDbMeta(batch.metadata, {
-              ...params.metadata,
-              ...updatePatch,
-            })
-          : mergeDbMeta(batch.metadata, updatePatch);
-      const nextProperties =
-        params.properties != null
-          ? params.properties
-          : ((batch.properties as object) ?? {});
+      let nextExpiryDate: Date | null = null;
+      const baseProps =
+        (params.properties as any) ?? {};
+      const rawNextExpiry =
+        (baseProps as any)?.ngayHetHan ??
+        ((batch.properties as any)?.ngayHetHan as unknown);
+      if (rawNextExpiry) {
+        const d =
+          rawNextExpiry instanceof Date
+            ? rawNextExpiry
+            : new Date(String(rawNextExpiry));
+        if (!Number.isNaN(d.getTime())) {
+          nextExpiryDate = d;
+        }
+      }
       const nextDescription =
         params.description !== undefined
           ? params.description
@@ -118,8 +118,9 @@ export class RecordProductTxUseCase {
         description: nextDescription,
         image: params.image ?? batch.image,
         standard: params.standard ?? batch.standard,
-        properties: nextProperties,
-        metadata: nextMetadata,
+        expiryDate: nextExpiryDate ?? null,
+        lastUpdateTxHash: txHash,
+        lastUpdateAt: new Date().toISOString(),
       });
 
       const receivers = params.receivers ?? [];
@@ -144,12 +145,7 @@ export class RecordProductTxUseCase {
     }
 
     if (action === "REVOKE") {
-      const nextMetadata = mergeDbMeta(batch.metadata, {
-        revokeTxHash: txHash,
-        revokedAt: new Date().toISOString(),
-        revoked: true,
-      });
-      await this.repository.markBatchRevoked(assetName, nextMetadata);
+      await this.repository.markBatchRevoked(assetName);
 
       const receivers = params.receivers ?? [];
       if (receivers.length > 0) {
@@ -173,12 +169,7 @@ export class RecordProductTxUseCase {
     }
 
     if (action === "BURN") {
-      const nextMetadata = mergeDbMeta(batch.metadata, {
-        burnTxHash: txHash,
-        burnedAt: new Date().toISOString(),
-        burned: true,
-      });
-      await this.repository.markBatchBurned(assetName, nextMetadata);
+      await this.repository.markBatchBurned(assetName);
       await this.warehouse.markAsBurned(profileId, assetName);
       return;
     }

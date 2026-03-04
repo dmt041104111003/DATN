@@ -37,10 +37,17 @@ model ProductBatch {
   description     String?
   image           String?
   standard        String?
-  properties      Json?
-  metadata        Json?
   mintTxHash      String?
   policyId        String?
+  expiryDate      DateTime?
+  lastUpdateTxHash String?
+  lastUpdateAt     DateTime?
+  revokeTxHash     String?
+  revokedAt        DateTime?
+  revoked          Boolean  @default(false)
+  burnTxHash       String?
+  burnedAt         DateTime?
+  burned           Boolean  @default(false)
   createdAt       DateTime @default(now())
 
   minterProfileId Int

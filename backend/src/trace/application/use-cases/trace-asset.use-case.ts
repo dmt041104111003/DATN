@@ -85,16 +85,20 @@ export class TraceAssetUseCase {
       );
     }
 
-    const rawMetadata = (batch.metadata as Record<string, unknown>) ?? {};
     const metadata: Record<string, unknown> = {
-      ...rawMetadata,
-      policy_id:
-        batch.policyId ??
-        (rawMetadata as Record<string, unknown>)["policy_id"],
-      name:
-        batch.name ?? (rawMetadata as Record<string, unknown>)["name"],
+      name: batch.name,
+      description: batch.description,
+      image: batch.image,
+      standard: batch.standard ?? "Traceability-v1",
+      policy_id: batch.policyId ?? undefined,
     };
-    const properties = (batch.properties as Record<string, unknown>) ?? {};
+    const properties: Record<string, unknown> = {};
+    if (batch.expiryDate) {
+      properties.ngayHetHan =
+        batch.expiryDate instanceof Date
+          ? batch.expiryDate.toISOString()
+          : String(batch.expiryDate);
+    }
 
     const burnStatus: "active" | "burned" =
       nft222Quantity === "0" ? "burned" : "active";

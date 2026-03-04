@@ -14,9 +14,16 @@ export interface ProductBatchSnapshot {
   description: string | null;
   image: string | null;
   standard: string | null;
-  properties: unknown;
-  metadata: unknown;
   policyId: string | null;
+  expiryDate: Date | null;
+  lastUpdateTxHash: string | null;
+  lastUpdateAt: Date | null;
+  revokeTxHash: string | null;
+  revokedAt: Date | null;
+  revoked: boolean;
+  burnTxHash: string | null;
+  burnedAt: Date | null;
+  burned: boolean;
 }
 
 export interface ProductRoadmapHop {
@@ -31,11 +38,10 @@ export interface MintBatchParams {
   description: string | null;
   image: string | null;
   standard: string;
-  properties: object;
-  metadata: object;
   mintTxHash: string;
   policyId?: string;
   minterProfileId: number;
+  expiryDate?: Date | string | null;
 }
 
 export interface UpdateBatchParams {
@@ -44,8 +50,9 @@ export interface UpdateBatchParams {
   description?: string | null;
   image?: string | null;
   standard?: string | null;
-  properties: object;
-  metadata: object;
+  expiryDate?: Date | string | null;
+  lastUpdateTxHash?: string | null;
+  lastUpdateAt?: Date | string | null;
 }
 
 export interface ProductRepositoryPort {
