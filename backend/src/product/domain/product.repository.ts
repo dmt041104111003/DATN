@@ -19,7 +19,6 @@ export interface ProductBatchSnapshot {
   sku: string | null;
   gtin: string | null;
   hsCode: string | null;
-  unitOfMeasure: string | null;
   productCategory: string | null;
   grossWeightKg: number | null;
   netWeightKg: number | null;
@@ -58,7 +57,6 @@ export interface MintBatchParams {
   sku?: string | null;
   gtin?: string | null;
   hsCode?: string | null;
-  unitOfMeasure?: string | null;
   productCategory?: string | null;
   grossWeightKg?: number | null;
   netWeightKg?: number | null;
@@ -82,7 +80,6 @@ export interface UpdateBatchParams {
   sku?: string | null;
   gtin?: string | null;
   hsCode?: string | null;
-  unitOfMeasure?: string | null;
   productCategory?: string | null;
   grossWeightKg?: number | null;
   netWeightKg?: number | null;

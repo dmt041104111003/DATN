@@ -155,14 +155,6 @@ export default function WarehousePage() {
 
       {loading ? (
         <p className={styles.formHint}>Loading...</p>
-      ) : items.length === 0 ? (
-        <div className={styles.formCard}>
-          <p className={styles.formHint}>
-            Your warehouse is empty. Each account has its own warehouse: ENTERPRISE
-            gets items here after minting; other roles can only burn if the wallet
-            holds the NFT.
-          </p>
-        </div>
       ) : (
         <>
           <WarehouseTable

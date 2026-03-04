@@ -95,12 +95,6 @@ export default function OrderPage() {
 
       {loading ? (
         <p className={styles.formHint}>Loading...</p>
-      ) : deliveries.length === 0 ? (
-        <div className={styles.formCard}>
-          <p className={styles.formHint}>
-            No orders in delivery. Orders appear here after stock out from warehouse.
-          </p>
-        </div>
       ) : (
         <>
           <OrderTable

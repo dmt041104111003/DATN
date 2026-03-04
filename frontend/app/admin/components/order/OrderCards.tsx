@@ -37,7 +37,7 @@ export function OrderCards({ styles, items, onComplete }: Props) {
               {d.status === 'DELIVERED' ? (
                 <span style={{ color: '#059669', fontWeight: 600 }}>DELIVERED</span>
               ) : (
-                <span>IN_DELIVERY</span>
+                <span>IN_TRANSIT</span>
               )}
             </span>
           </div>

@@ -15,19 +15,34 @@ export function ProductsTable({ styles, items, onEdit, onRevoke, onDownloadQr }:
         <thead>
           <tr>
             <th>ID</th>
-            <th>Code</th>
+            <th>Batch ID</th>
             <th>Name</th>
+            <th>SKU</th>
+            <th>Category</th>
             <th>Image</th>
             <th>Download</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((p) => (
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={8} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+                No data
+              </td>
+            </tr>
+          ) : (
+            items.map((p) => (
             <tr key={p.id}>
               <td>{p.id}</td>
-              <td>{p.code}</td>
+              <td>
+                <code style={{ fontSize: '0.8125rem' }} title={p.code}>
+                  {p.code.length > 16 ? `${p.code.slice(0, 14)}…` : p.code}
+                </code>
+              </td>
               <td>{p.nameEn}</td>
+              <td>{p.sku || '—'}</td>
+              <td>{p.productCategory || '—'}</td>
               <td>{p.imageUrl ? 'Yes' : '—'}</td>
               <td>
                 <button
@@ -58,7 +73,8 @@ export function ProductsTable({ styles, items, onEdit, onRevoke, onDownloadQr }:
                 </div>
               </td>
             </tr>
-          ))}
+          ))
+          )}
         </tbody>
       </table>
     </div>

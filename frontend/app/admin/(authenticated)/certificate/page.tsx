@@ -102,12 +102,6 @@ export default function CertificatePage() {
 
       {loading && items.length === 0 ? (
         <p className={styles.formHint}>Loading...</p>
-      ) : items.length === 0 ? (
-        <div className={styles.formCard}>
-          <p className={styles.formHint}>
-            No certificates yet. Create certificates here, then import them into products when editing a product.
-          </p>
-        </div>
       ) : (
         <>
           <CertTable

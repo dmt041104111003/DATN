@@ -15,15 +15,32 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>Name</th>
+            <th>Batch</th>
+            <th>Status</th>
             <th>Received</th>
-            <th>Shipped</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
-            <tr key={item.batchId}>
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={4} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+                No data
+              </td>
+            </tr>
+          ) : (
+            items.map((item, index) => {
+            const statusLabel =
+              item.status === 'CONSUMED'
+                ? 'Consumed'
+                : item.status === 'ON_WAY'
+                  ? 'On way'
+                  : 'In warehouse';
+            const canBurn =
+              item.status === 'IN_WAREHOUSE' && burningBatchId !== item.batchId;
+            const canLock = item.status === 'IN_WAREHOUSE' && !!item.policyId;
+            return (
+            <tr key={`wh-${item.batchId}-${index}`}>
               <td>
                 <span title={item.batchId}>{item.batchName}</span>
                 <br />
@@ -31,15 +48,15 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
                   {item.batchId}
                 </small>
               </td>
+              <td>{statusLabel}</td>
               <td>{formatDate(item.receivedAt)}</td>
-              <td>{item.status === 'SHIPPED' ? 'Yes' : '—'}</td>
               <td>
                 <div className={styles.actions}>
                   <button
                     type="button"
                     className={styles.btnSecondary}
                     onClick={() => onLock(item)}
-                    disabled={item.status === 'SHIPPED' || !item.policyId}
+                    disabled={!canLock}
                     title="Stock out"
                   >
                     Stock out
@@ -48,15 +65,17 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
                     type="button"
                     className={styles.btnDanger}
                     onClick={() => onBurn(item)}
-                    disabled={burningBatchId === item.batchId || item.status === 'SHIPPED' || item.status === 'BURNED'}
+                    disabled={!canBurn}
                     title="Burn (wallet must hold this NFT)"
-                    >
+                  >
                     {burningBatchId === item.batchId ? 'Burning...' : 'Burn'}
                   </button>
                 </div>
               </td>
             </tr>
-          ))}
+            );
+          })
+          )}
         </tbody>
       </table>
     </div>

@@ -11,19 +11,28 @@ type Props = {
 export function ProductsCards({ styles, items, onEdit, onRevoke, onDownloadQr }: Props) {
   return (
     <div className={styles.tableCards}>
-      {items.map((p) => (
+      {items.length === 0 ? null : (
+        items.map((p) => (
         <div key={p.id} className={styles.tableCard}>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>ID</span>
             <span className={styles.tableCardValue}>{p.id}</span>
           </div>
           <div className={styles.tableCardRow}>
-            <span className={styles.tableCardLabel}>Code</span>
+            <span className={styles.tableCardLabel}>Batch ID</span>
             <span className={styles.tableCardValue}>{p.code}</span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Name</span>
             <span className={styles.tableCardValue}>{p.nameEn}</span>
+          </div>
+          <div className={styles.tableCardRow}>
+            <span className={styles.tableCardLabel}>SKU</span>
+            <span className={styles.tableCardValue}>{p.sku || '—'}</span>
+          </div>
+          <div className={styles.tableCardRow}>
+            <span className={styles.tableCardLabel}>Category</span>
+            <span className={styles.tableCardValue}>{p.productCategory || '—'}</span>
           </div>
           <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Image</span>
@@ -57,7 +66,8 @@ export function ProductsCards({ styles, items, onEdit, onRevoke, onDownloadQr }:
             </div>
           </div>
         </div>
-      ))}
+      ))
+      )}
     </div>
   );
 }

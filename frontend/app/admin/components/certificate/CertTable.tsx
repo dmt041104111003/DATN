@@ -17,19 +17,34 @@ export function CertTable({ styles, items }: Props) {
             <th>No.</th>
             <th>Authority</th>
             <th>Document type</th>
+            <th>Standard</th>
+            <th>Scope</th>
             <th>Expiry</th>
             <th>Image</th>
             <th>Issued</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((cert) => (
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={10} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+                No data
+              </td>
+            </tr>
+          ) : (
+            items.map((cert) => (
             <tr key={cert.id}>
               <td>{cert.id}</td>
               <td>{cert.title}</td>
               <td>{cert.number || '—'}</td>
               <td>{cert.authority || '—'}</td>
               <td>{cert.documentType || '—'}</td>
+              <td>{cert.standardReference || '—'}</td>
+              <td>
+                <span title={cert.scope ?? ''}>
+                  {cert.scope && cert.scope.length > 20 ? `${cert.scope.slice(0, 20)}…` : (cert.scope || '—')}
+                </span>
+              </td>
               <td>
                 {cert.expiryDate ? formatDate(cert.expiryDate) : '—'}
               </td>
@@ -54,7 +69,8 @@ export function CertTable({ styles, items }: Props) {
               </td>
               <td>{formatDate(cert.issuedAt)}</td>
             </tr>
-          ))}
+          ))
+          )}
         </tbody>
       </table>
     </div>

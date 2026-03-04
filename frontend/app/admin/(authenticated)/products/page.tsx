@@ -43,7 +43,6 @@ export default function ProductsPage() {
   const [descriptionEn, setDescriptionEn] = useState('Sample traceability product');
   const [imageUrl, setImageUrl] = useState('');
   const [sku, setSku] = useState('SKU-TRACE-001');
-  const [unitOfMeasure, setUnitOfMeasure] = useState('CARTON');
   const [productCategory, setProductCategory] = useState('FRUIT');
   const [storageCondition, setStorageCondition] = useState('AMBIENT');
   const [originSiteCode, setOriginSiteCode] = useState('WH-HCM-01');
@@ -102,7 +101,6 @@ export default function ProductsPage() {
         description?: string | null;
         image?: string | null;
         sku?: string | null;
-        unitOfMeasure?: string | null;
         productCategory?: string | null;
         storageCondition?: string | null;
         originSiteCode?: string | null;
@@ -115,7 +113,6 @@ export default function ProductsPage() {
         descriptionEn: b?.description != null ? String(b.description) : null,
         imageUrl: b?.image ? String(b.image) : null,
         sku: b?.sku ?? null,
-        unitOfMeasure: b?.unitOfMeasure ?? null,
         productCategory: b?.productCategory ?? null,
         storageCondition: b?.storageCondition ?? null,
         originSiteCode: b?.originSiteCode ?? null,
@@ -205,7 +202,6 @@ export default function ProductsPage() {
     setDescriptionEn('Sample traceability product');
     setImageUrl('');
     setSku('SKU-TRACE-001');
-    setUnitOfMeasure('CARTON');
     setProductCategory('FRUIT');
     setStorageCondition('AMBIENT');
     setOriginSiteCode('WH-HCM-01');
@@ -265,7 +261,6 @@ export default function ProductsPage() {
     setDescriptionEn(p.descriptionEn ?? '');
     setImageUrl(p.imageUrl ?? '');
     setSku(p.sku ?? '');
-    setUnitOfMeasure(p.unitOfMeasure ?? '');
     setProductCategory(p.productCategory ?? '');
     setStorageCondition(p.storageCondition ?? '');
     setOriginSiteCode(p.originSiteCode ?? '');
@@ -354,7 +349,6 @@ export default function ProductsPage() {
       ngayHetHan: effectiveExpiry,
       current_holder_id: account.stakeAddress,
       sku: sku || undefined,
-      unitOfMeasure: unitOfMeasure || undefined,
       productCategory: productCategory || undefined,
       storageCondition: storageCondition || undefined,
       originSiteCode: originSiteCode || undefined,
@@ -636,7 +630,6 @@ export default function ProductsPage() {
         nameEn={nameEn}
         descriptionEn={descriptionEn}
         sku={sku}
-        unitOfMeasure={unitOfMeasure}
         productCategory={productCategory}
         storageCondition={storageCondition}
         originSiteCode={originSiteCode}
@@ -655,7 +648,6 @@ export default function ProductsPage() {
         onNameChange={setNameEn}
         onDescriptionChange={setDescriptionEn}
         onSkuChange={setSku}
-        onUnitOfMeasureChange={setUnitOfMeasure}
         onProductCategoryChange={setProductCategory}
         onStorageConditionChange={setStorageCondition}
         onOriginSiteCodeChange={setOriginSiteCode}

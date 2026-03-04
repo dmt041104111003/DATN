@@ -20,7 +20,14 @@ export function OrderTable({ styles, items, onComplete }: Props) {
           </tr>
         </thead>
         <tbody>
-          {items.map((d) => (
+          {items.length === 0 ? (
+            <tr>
+              <td colSpan={5} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+                No data
+              </td>
+            </tr>
+          ) : (
+            items.map((d) => (
             <tr key={d.id}>
               <td>
                 <span title={d.batchId}>{d.batchId.slice(0, 12)}…</span>
@@ -39,7 +46,7 @@ export function OrderTable({ styles, items, onComplete }: Props) {
                 {d.status === 'DELIVERED' ? (
                   <span style={{ color: '#059669', fontWeight: 600 }}>DELIVERED</span>
                 ) : (
-                  <span>IN_DELIVERY</span>
+                  <span>IN_TRANSIT</span>
                 )}
               </td>
               <td>
@@ -56,7 +63,8 @@ export function OrderTable({ styles, items, onComplete }: Props) {
                 </div>
               </td>
             </tr>
-          ))}
+          ))
+          )}
         </tbody>
       </table>
     </div>

@@ -26,7 +26,7 @@ export default function Pagination(props: PaginationProps) {
     <div className={styles.wrap}>
       {totalItems != null && (
         <span className={styles.info}>
-          {totalItems === 0 ? 'No data' : `Showing ${start}-${end} of ${totalItems}`}
+          {totalItems === 0 ? `Showing 0 of 0` : `Showing ${start}-${end} of ${totalItems}`}
         </span>
       )}
       <nav className={styles.nav} aria-label="Pagination">

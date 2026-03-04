@@ -13,7 +13,6 @@ type Props = {
   nameEn: string;
   descriptionEn: string;
   sku: string;
-  unitOfMeasure: string;
   productCategory: string;
   storageCondition: string;
   originSiteCode: string;
@@ -35,7 +34,6 @@ type Props = {
   onNameChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onSkuChange: (v: string) => void;
-  onUnitOfMeasureChange: (v: string) => void;
   onProductCategoryChange: (v: string) => void;
   onStorageConditionChange: (v: string) => void;
   onOriginSiteCodeChange: (v: string) => void;
@@ -62,7 +60,6 @@ export function ProductDialog(props: Props) {
     nameEn,
     descriptionEn,
     sku,
-    unitOfMeasure,
     productCategory,
     storageCondition,
     originSiteCode,
@@ -84,7 +81,6 @@ export function ProductDialog(props: Props) {
     onNameChange,
     onDescriptionChange,
     onSkuChange,
-    onUnitOfMeasureChange,
     onProductCategoryChange,
     onStorageConditionChange,
     onOriginSiteCodeChange,
@@ -168,12 +164,6 @@ export function ProductDialog(props: Props) {
             <div className={styles.formGroup}>
               <label className={styles.label}>Logistics info (optional)</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
-                <input
-                  className={styles.input}
-                  value={unitOfMeasure}
-                  onChange={(e) => onUnitOfMeasureChange(e.target.value)}
-                  placeholder="Unit (e.g. KG, CARTON)"
-                />
                 <input
                   className={styles.input}
                   value={productCategory}

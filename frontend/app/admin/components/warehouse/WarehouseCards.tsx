@@ -12,10 +12,19 @@ type Props = {
 export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }: Props) {
   return (
     <div className={styles.tableCards}>
-      {items.map((item) => (
-        <div key={item.batchId} className={styles.tableCard}>
+      {items.map((item, index) => {
+        const statusLabel =
+          item.status === 'CONSUMED'
+            ? 'Consumed'
+            : item.status === 'ON_WAY'
+              ? 'On way'
+              : 'In warehouse';
+        const canBurn = item.status === 'IN_WAREHOUSE' && burningBatchId !== item.batchId;
+        const canLock = item.status === 'IN_WAREHOUSE' && !!item.policyId;
+        return (
+        <div key={`wh-card-${item.batchId}-${index}`} className={styles.tableCard}>
           <div className={styles.tableCardRow}>
-            <span className={styles.tableCardLabel}>Name</span>
+            <span className={styles.tableCardLabel}>Batch</span>
             <span className={styles.tableCardValue}>
               {item.batchName}
               <br />
@@ -25,12 +34,12 @@ export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }
             </span>
           </div>
           <div className={styles.tableCardRow}>
-            <span className={styles.tableCardLabel}>Received</span>
-            <span className={styles.tableCardValue}>{formatDate(item.receivedAt)}</span>
+            <span className={styles.tableCardLabel}>Status</span>
+            <span className={styles.tableCardValue}>{statusLabel}</span>
           </div>
           <div className={styles.tableCardRow}>
-            <span className={styles.tableCardLabel}>Shipped</span>
-            <span className={styles.tableCardValue}>{item.status === 'SHIPPED' ? 'Yes' : '—'}</span>
+            <span className={styles.tableCardLabel}>Received</span>
+            <span className={styles.tableCardValue}>{formatDate(item.receivedAt)}</span>
           </div>
           <div className={styles.tableCardActions}>
             <div className={styles.actions}>
@@ -38,16 +47,16 @@ export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }
                 type="button"
                 className={styles.btnSecondary}
                 onClick={() => onLock(item)}
-                disabled={item.status === 'SHIPPED' || !item.policyId}
+                disabled={!canLock}
                 title="Stock out"
-                >
-                  Stock out
-                </button>
+              >
+                Stock out
+              </button>
               <button
                 type="button"
                 className={styles.btnDanger}
                 onClick={() => onBurn(item)}
-                disabled={burningBatchId === item.batchId || item.status === 'SHIPPED' || item.status === 'BURNED'}
+                disabled={!canBurn}
                 title="Burn"
               >
                 {burningBatchId === item.batchId ? 'Burning...' : 'Burn'}
@@ -55,7 +64,8 @@ export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

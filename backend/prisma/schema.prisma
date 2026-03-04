@@ -39,7 +39,6 @@ model ProductBatch {
   sku              String?
   gtin             String?
   hsCode           String?
-  unitOfMeasure    String?
   productCategory  String?
   grossWeightKg    Float?
   netWeightKg      Float?

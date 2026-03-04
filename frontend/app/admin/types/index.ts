@@ -5,7 +5,6 @@ export type Product = {
   descriptionEn: string | null;
   imageUrl: string | null;
   sku?: string | null;
-  unitOfMeasure?: string | null;
   productCategory?: string | null;
   storageCondition?: string | null;
   originSiteCode?: string | null;

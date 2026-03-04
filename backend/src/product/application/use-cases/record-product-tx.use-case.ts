@@ -63,7 +63,6 @@ export class RecordProductTxUseCase {
         sku: master.sku ?? null,
         gtin: master.gtin ?? null,
         hsCode: master.hsCode ?? null,
-        unitOfMeasure: master.unitOfMeasure ?? null,
         productCategory: master.productCategory ?? null,
         grossWeightKg:
           master.grossWeightKg != null ? Number(master.grossWeightKg) : null,
@@ -137,8 +136,6 @@ export class RecordProductTxUseCase {
         sku: (baseProps as any).sku ?? batch.sku ?? null,
         gtin: (baseProps as any).gtin ?? batch.gtin ?? null,
         hsCode: (baseProps as any).hsCode ?? batch.hsCode ?? null,
-        unitOfMeasure:
-          (baseProps as any).unitOfMeasure ?? batch.unitOfMeasure ?? null,
         productCategory:
           (baseProps as any).productCategory ?? batch.productCategory ?? null,
         grossWeightKg:
