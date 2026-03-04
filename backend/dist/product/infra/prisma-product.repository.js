@@ -28,14 +28,16 @@ let PrismaProductRepository = class PrismaProductRepository {
                 createdAt: true,
                 policyId: true,
                 sku: true,
-                productCategory: true,
+                grossWeightKg: true,
+                netWeightKg: true,
+                originSiteCode: true,
             },
             orderBy: [{ createdAt: "asc" }, { batchId: "asc" }],
         });
         if (!Array.isArray(items))
             return [];
         return items.map((b) => {
-            var _a, _b, _c;
+            var _a, _b, _c, _d, _e, _f, _g;
             return ({
                 id: b.id,
                 batchId: b.batchId,
@@ -44,28 +46,32 @@ let PrismaProductRepository = class PrismaProductRepository {
                 image: (_b = b.image) !== null && _b !== void 0 ? _b : null,
                 createdAt: b.createdAt,
                 policyId: (_c = b.policyId) !== null && _c !== void 0 ? _c : null,
+                sku: (_d = b.sku) !== null && _d !== void 0 ? _d : null,
+                grossWeightKg: (_e = b.grossWeightKg) !== null && _e !== void 0 ? _e : null,
+                netWeightKg: (_f = b.netWeightKg) !== null && _f !== void 0 ? _f : null,
+                originSiteCode: (_g = b.originSiteCode) !== null && _g !== void 0 ? _g : null,
             });
         });
     }
     async upsertBatchOnMint(params) {
-        const { batchId, name, description, image, standard, mintTxHash, policyId, minterProfileId, expiryDate, sku, gtin, hsCode, productCategory, grossWeightKg, netWeightKg, lengthCm, widthCm, heightCm, storageCondition, originSiteCode, referenceUtxo, } = params;
+        const { batchId, name, description, image, standard, mintTxHash, policyId, minterProfileId, expiryDate, sku, gtin, hsCode, grossWeightKg, netWeightKg, lengthCm, widthCm, heightCm, originSiteCode, referenceUtxo, } = params;
         await this.prisma.productBatch.upsert({
             where: { batchId },
-            create: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ batchId,
+            create: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ batchId,
                 name,
                 description,
                 image,
                 standard,
-                mintTxHash, policyId: policyId !== null && policyId !== void 0 ? policyId : undefined, minterProfileId }, (expiryDate !== undefined && { expiryDate })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (productCategory !== undefined && { productCategory })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (storageCondition !== undefined && { storageCondition })), (originSiteCode !== undefined && { originSiteCode })), (referenceUtxo !== undefined && { referenceUtxo })),
-            update: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ mintTxHash,
+                mintTxHash, policyId: policyId !== null && policyId !== void 0 ? policyId : undefined, minterProfileId }, (expiryDate !== undefined && { expiryDate })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (originSiteCode !== undefined && { originSiteCode })), (referenceUtxo !== undefined && { referenceUtxo })),
+            update: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ mintTxHash,
                 name,
                 description,
                 image,
-                standard, policyId: policyId !== null && policyId !== void 0 ? policyId : undefined }, (expiryDate !== undefined && { expiryDate })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (productCategory !== undefined && { productCategory })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (storageCondition !== undefined && { storageCondition })), (originSiteCode !== undefined && { originSiteCode })), (referenceUtxo !== undefined && { referenceUtxo })),
+                standard, policyId: policyId !== null && policyId !== void 0 ? policyId : undefined }, (expiryDate !== undefined && { expiryDate })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (originSiteCode !== undefined && { originSiteCode })), (referenceUtxo !== undefined && { referenceUtxo })),
         });
     }
     async findBatchByCode(code) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
         const batch = await this.prisma.productBatch.findUnique({
             where: { batchId: code },
         });
@@ -82,23 +88,21 @@ let PrismaProductRepository = class PrismaProductRepository {
             sku: (_f = batch.sku) !== null && _f !== void 0 ? _f : null,
             gtin: (_g = batch.gtin) !== null && _g !== void 0 ? _g : null,
             hsCode: (_h = batch.hsCode) !== null && _h !== void 0 ? _h : null,
-            productCategory: (_j = batch.productCategory) !== null && _j !== void 0 ? _j : null,
-            grossWeightKg: (_k = batch.grossWeightKg) !== null && _k !== void 0 ? _k : null,
-            netWeightKg: (_l = batch.netWeightKg) !== null && _l !== void 0 ? _l : null,
-            lengthCm: (_m = batch.lengthCm) !== null && _m !== void 0 ? _m : null,
-            widthCm: (_o = batch.widthCm) !== null && _o !== void 0 ? _o : null,
-            heightCm: (_p = batch.heightCm) !== null && _p !== void 0 ? _p : null,
-            storageCondition: (_q = batch.storageCondition) !== null && _q !== void 0 ? _q : null,
-            originSiteCode: (_r = batch.originSiteCode) !== null && _r !== void 0 ? _r : null,
-            referenceUtxo: (_s = batch.referenceUtxo) !== null && _s !== void 0 ? _s : null,
-            lastUpdateTxHash: (_t = batch.lastUpdateTxHash) !== null && _t !== void 0 ? _t : null,
-            lastUpdateAt: (_u = batch.lastUpdateAt) !== null && _u !== void 0 ? _u : null,
-            revokeTxHash: (_v = batch.revokeTxHash) !== null && _v !== void 0 ? _v : null,
-            revokedAt: (_w = batch.revokedAt) !== null && _w !== void 0 ? _w : null,
-            revoked: (_x = batch.revoked) !== null && _x !== void 0 ? _x : false,
-            burnTxHash: (_y = batch.burnTxHash) !== null && _y !== void 0 ? _y : null,
-            burnedAt: (_z = batch.burnedAt) !== null && _z !== void 0 ? _z : null,
-            burned: (_0 = batch.burned) !== null && _0 !== void 0 ? _0 : false,
+            grossWeightKg: (_j = batch.grossWeightKg) !== null && _j !== void 0 ? _j : null,
+            netWeightKg: (_k = batch.netWeightKg) !== null && _k !== void 0 ? _k : null,
+            lengthCm: (_l = batch.lengthCm) !== null && _l !== void 0 ? _l : null,
+            widthCm: (_m = batch.widthCm) !== null && _m !== void 0 ? _m : null,
+            heightCm: (_o = batch.heightCm) !== null && _o !== void 0 ? _o : null,
+            originSiteCode: (_p = batch.originSiteCode) !== null && _p !== void 0 ? _p : null,
+            referenceUtxo: (_q = batch.referenceUtxo) !== null && _q !== void 0 ? _q : null,
+            lastUpdateTxHash: (_r = batch.lastUpdateTxHash) !== null && _r !== void 0 ? _r : null,
+            lastUpdateAt: (_s = batch.lastUpdateAt) !== null && _s !== void 0 ? _s : null,
+            revokeTxHash: (_t = batch.revokeTxHash) !== null && _t !== void 0 ? _t : null,
+            revokedAt: (_u = batch.revokedAt) !== null && _u !== void 0 ? _u : null,
+            revoked: (_v = batch.revoked) !== null && _v !== void 0 ? _v : false,
+            burnTxHash: (_w = batch.burnTxHash) !== null && _w !== void 0 ? _w : null,
+            burnedAt: (_x = batch.burnedAt) !== null && _x !== void 0 ? _x : null,
+            burned: (_y = batch.burned) !== null && _y !== void 0 ? _y : false,
         };
     }
     async getMinterWalletAddressByBatchCode(code) {
@@ -117,10 +121,10 @@ let PrismaProductRepository = class PrismaProductRepository {
         return typeof addr === "string" && addr.trim() ? addr.trim() : null;
     }
     async updateBatch(params) {
-        const { batchId, name, description, image, standard, expiryDate, lastUpdateTxHash, lastUpdateAt, sku, gtin, hsCode, productCategory, grossWeightKg, netWeightKg, lengthCm, widthCm, heightCm, storageCondition, originSiteCode, } = params;
+        const { batchId, name, description, image, standard, expiryDate, lastUpdateTxHash, lastUpdateAt, sku, gtin, hsCode, grossWeightKg, netWeightKg, lengthCm, widthCm, heightCm, originSiteCode, } = params;
         await this.prisma.productBatch.update({
             where: { batchId },
-            data: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (name !== undefined && { name })), (description !== undefined && { description })), (image !== undefined && { image })), (standard !== undefined && { standard })), (expiryDate !== undefined && { expiryDate })), (lastUpdateTxHash !== undefined && { lastUpdateTxHash })), (lastUpdateAt !== undefined && { lastUpdateAt })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (productCategory !== undefined && { productCategory })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (storageCondition !== undefined && { storageCondition })), (originSiteCode !== undefined && { originSiteCode })),
+            data: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (name !== undefined && { name })), (description !== undefined && { description })), (image !== undefined && { image })), (standard !== undefined && { standard })), (expiryDate !== undefined && { expiryDate })), (lastUpdateTxHash !== undefined && { lastUpdateTxHash })), (lastUpdateAt !== undefined && { lastUpdateAt })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (originSiteCode !== undefined && { originSiteCode })),
         });
     }
     async markBatchRevoked(code) {

@@ -15,6 +15,10 @@ export declare class ProductController {
             image: string | null;
             createdAt: Date;
             policyId: string | null;
+            sku: string | null;
+            grossWeightKg: number | null;
+            netWeightKg: number | null;
+            originSiteCode: string | null;
         }[];
     }>;
     mint(body: MintProductDto, token?: string): Promise<{

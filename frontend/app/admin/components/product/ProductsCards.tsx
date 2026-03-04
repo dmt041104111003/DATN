@@ -39,12 +39,6 @@ export function ProductsCards({ styles, items, onDetail, onEdit, onRevoke, onDow
             </span>
           </div>
           <div className={styles.tableCardRow}>
-            <span className={styles.tableCardLabel}>Category</span>
-            <span className={styles.tableCardValue} title={p.productCategory ?? ''}>
-              {truncate(p.productCategory)}
-            </span>
-          </div>
-          <div className={styles.tableCardRow}>
             <span className={styles.tableCardLabel}>Image</span>
             <span className={styles.tableCardValue}>
               {p.imageUrl ? 'Yes' : '—'}

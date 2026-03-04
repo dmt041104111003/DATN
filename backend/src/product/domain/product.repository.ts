@@ -6,6 +6,10 @@ export interface ProductBatchListItem {
   image: string | null;
   createdAt: Date;
   policyId: string | null;
+  sku: string | null;
+  grossWeightKg: number | null;
+  netWeightKg: number | null;
+  originSiteCode: string | null;
 }
 
 export interface ProductBatchSnapshot {
@@ -19,13 +23,11 @@ export interface ProductBatchSnapshot {
   sku: string | null;
   gtin: string | null;
   hsCode: string | null;
-  productCategory: string | null;
   grossWeightKg: number | null;
   netWeightKg: number | null;
   lengthCm: number | null;
   widthCm: number | null;
   heightCm: number | null;
-  storageCondition: string | null;
   originSiteCode: string | null;
   referenceUtxo: string | null;
   lastUpdateTxHash: string | null;
@@ -57,13 +59,11 @@ export interface MintBatchParams {
   sku?: string | null;
   gtin?: string | null;
   hsCode?: string | null;
-  productCategory?: string | null;
   grossWeightKg?: number | null;
   netWeightKg?: number | null;
   lengthCm?: number | null;
   widthCm?: number | null;
   heightCm?: number | null;
-  storageCondition?: string | null;
   originSiteCode?: string | null;
   referenceUtxo?: string | null;
 }
@@ -80,13 +80,11 @@ export interface UpdateBatchParams {
   sku?: string | null;
   gtin?: string | null;
   hsCode?: string | null;
-  productCategory?: string | null;
   grossWeightKg?: number | null;
   netWeightKg?: number | null;
   lengthCm?: number | null;
   widthCm?: number | null;
   heightCm?: number | null;
-  storageCondition?: string | null;
   originSiteCode?: string | null;
   referenceUtxo?: string | null;
 }

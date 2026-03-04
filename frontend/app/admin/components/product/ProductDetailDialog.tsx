@@ -79,8 +79,6 @@ export function ProductDetailDialog({ open, product, onClose }: Props) {
               <DetailRow label="Name" value={product.nameEn} />
               <DetailRow label="Description" value={product.descriptionEn} />
               <DetailRow label="SKU" value={product.sku ?? undefined} />
-              <DetailRow label="Category" value={product.productCategory ?? undefined} />
-              <DetailRow label="Storage condition" value={product.storageCondition ?? undefined} />
               <DetailRow label="Origin site" value={product.originSiteCode ?? undefined} />
               <DetailRow label="Gross weight (kg)" value={product.grossWeightKg ?? undefined} />
               <DetailRow label="Net weight (kg)" value={product.netWeightKg ?? undefined} />

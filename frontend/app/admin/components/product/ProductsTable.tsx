@@ -19,7 +19,6 @@ export function ProductsTable({ styles, items, onDetail, onEdit, onRevoke, onDow
             <th>ID</th>
             <th>Batch ID</th>
             <th>Name</th>
-            <th>Category</th>
             <th>Download</th>
             <th>Actions</th>
           </tr>
@@ -27,7 +26,7 @@ export function ProductsTable({ styles, items, onDetail, onEdit, onRevoke, onDow
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={6} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+              <td colSpan={5} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
                 No data
               </td>
             </tr>
@@ -42,9 +41,6 @@ export function ProductsTable({ styles, items, onDetail, onEdit, onRevoke, onDow
               </td>
               <td title={p.nameEn}>
                 <span className={styles.cellTruncate}>{truncate(p.nameEn)}</span>
-              </td>
-              <td title={p.productCategory ?? ''}>
-                <span className={styles.cellTruncate}>{p.productCategory || '—'}</span>
               </td>
               <td>
                 <button

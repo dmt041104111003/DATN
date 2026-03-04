@@ -5,11 +5,9 @@ export type Product = {
   descriptionEn: string | null;
   imageUrl: string | null;
   sku?: string | null;
-  productCategory?: string | null;
-  storageCondition?: string | null;
-  originSiteCode?: string | null;
   grossWeightKg?: number | null;
   netWeightKg?: number | null;
+  originSiteCode?: string | null;
 };
 
 export type Account = {

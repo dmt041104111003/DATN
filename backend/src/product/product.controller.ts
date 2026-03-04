@@ -27,7 +27,7 @@ export class ProductController {
     @Query("token") token?: string,
   ): Promise<{
     total: number;
-    items: { id: number; batchId: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[];
+    items: { id: number; batchId: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null; sku: string | null; grossWeightKg: number | null; netWeightKg: number | null; originSiteCode: string | null }[];
   }> {
     if (!token || typeof token !== "string" || !token.trim()) {
       throw new UnauthorizedException("Missing or invalid token.");

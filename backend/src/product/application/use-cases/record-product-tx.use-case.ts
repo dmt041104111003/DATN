@@ -50,6 +50,10 @@ export class RecordProductTxUseCase {
         }
       }
       const master = properties as any;
+      const minterProfile = await (this.prisma as any).profile.findUnique({
+        where: { id: profileId },
+        select: { walletAddress: true, location: true },
+      });
       const mintParams: MintBatchParams = {
         batchId: assetName,
         name,
@@ -63,7 +67,6 @@ export class RecordProductTxUseCase {
         sku: master.sku ?? null,
         gtin: master.gtin ?? null,
         hsCode: master.hsCode ?? null,
-        productCategory: master.productCategory ?? null,
         grossWeightKg:
           master.grossWeightKg != null ? Number(master.grossWeightKg) : null,
         netWeightKg:
@@ -71,8 +74,7 @@ export class RecordProductTxUseCase {
         lengthCm: master.lengthCm != null ? Number(master.lengthCm) : null,
         widthCm: master.widthCm != null ? Number(master.widthCm) : null,
         heightCm: master.heightCm != null ? Number(master.heightCm) : null,
-        storageCondition: master.storageCondition ?? null,
-        originSiteCode: master.originSiteCode ?? null,
+        originSiteCode: minterProfile?.location ?? null,
         referenceUtxo: `${txHash}#0`,
       };
 
@@ -80,10 +82,7 @@ export class RecordProductTxUseCase {
 
       const receivers = params.receivers ?? [];
       if (receivers.length > 0) {
-        const profile = await (this.prisma as any).profile.findUnique({
-          where: { id: profileId },
-          select: { walletAddress: true },
-        });
+        const profile = minterProfile;
         const senderAddress =
           profile?.walletAddress && typeof profile.walletAddress === "string"
             ? profile.walletAddress.trim()
@@ -124,6 +123,11 @@ export class RecordProductTxUseCase {
           ? params.description
           : (batch.description as string | null);
 
+      const updaterProfile = await (this.prisma as any).profile.findUnique({
+        where: { id: profileId },
+        select: { walletAddress: true, location: true },
+      });
+
       await this.repository.updateBatch({
         batchId: assetName,
         name: params.name ?? batch.name,
@@ -136,8 +140,6 @@ export class RecordProductTxUseCase {
         sku: (baseProps as any).sku ?? batch.sku ?? null,
         gtin: (baseProps as any).gtin ?? batch.gtin ?? null,
         hsCode: (baseProps as any).hsCode ?? batch.hsCode ?? null,
-        productCategory:
-          (baseProps as any).productCategory ?? batch.productCategory ?? null,
         grossWeightKg:
           (baseProps as any).grossWeightKg != null
             ? Number((baseProps as any).grossWeightKg)
@@ -158,21 +160,13 @@ export class RecordProductTxUseCase {
           (baseProps as any).heightCm != null
             ? Number((baseProps as any).heightCm)
             : batch.heightCm ?? null,
-        storageCondition:
-          (baseProps as any).storageCondition ??
-          batch.storageCondition ??
-          null,
-        originSiteCode:
-          (baseProps as any).originSiteCode ?? batch.originSiteCode ?? null,
+        originSiteCode: updaterProfile?.location ?? batch.originSiteCode ?? null,
         referenceUtxo: `${txHash}#0`,
       });
 
       const receivers = params.receivers ?? [];
       if (receivers.length > 0) {
-        const profile = await (this.prisma as any).profile.findUnique({
-          where: { id: profileId },
-          select: { walletAddress: true },
-        });
+        const profile = updaterProfile;
         const senderAddress =
           profile?.walletAddress && typeof profile.walletAddress === "string"
             ? profile.walletAddress.trim()

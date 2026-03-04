@@ -45,9 +45,8 @@ export default function ProductsPage() {
   const [descriptionEn, setDescriptionEn] = useState('Sample traceability product');
   const [imageUrl, setImageUrl] = useState('');
   const [sku, setSku] = useState('SKU-TRACE-001');
-  const [productCategory, setProductCategory] = useState('FRUIT');
-  const [storageCondition, setStorageCondition] = useState('AMBIENT');
-  const [originSiteCode, setOriginSiteCode] = useState('WH-HCM-01');
+  const [grossWeightKg, setGrossWeightKg] = useState('');
+  const [netWeightKg, setNetWeightKg] = useState('');
   const [expiryDate, setExpiryDate] = useState(nowForDateTimeLocal);
   const [receiverList, setReceiverList] = useState<string[]>([]);
   const [receiverDisplayNames, setReceiverDisplayNames] = useState<string[]>([]);
@@ -103,11 +102,9 @@ export default function ProductsPage() {
         description?: string | null;
         image?: string | null;
         sku?: string | null;
-        productCategory?: string | null;
-        storageCondition?: string | null;
-        originSiteCode?: string | null;
         grossWeightKg?: number | null;
         netWeightKg?: number | null;
+        originSiteCode?: string | null;
       }) => ({
         id: Number(b?.id ?? 0),
         code: String(b?.batchId ?? ''),
@@ -115,12 +112,10 @@ export default function ProductsPage() {
         descriptionEn: b?.description != null ? String(b.description) : null,
         imageUrl: b?.image ? String(b.image) : null,
         sku: b?.sku ?? null,
-        productCategory: b?.productCategory ?? null,
-        storageCondition: b?.storageCondition ?? null,
-        originSiteCode: b?.originSiteCode ?? null,
         grossWeightKg:
           b?.grossWeightKg != null ? Number(b.grossWeightKg) : null,
         netWeightKg: b?.netWeightKg != null ? Number(b.netWeightKg) : null,
+        originSiteCode: b?.originSiteCode ?? null,
       }))
       .filter((p) => !!p.code);
     setProducts(mapped);
@@ -204,9 +199,8 @@ export default function ProductsPage() {
     setDescriptionEn('Sample traceability product');
     setImageUrl('');
     setSku('SKU-TRACE-001');
-    setProductCategory('FRUIT');
-    setStorageCondition('AMBIENT');
-    setOriginSiteCode('WH-HCM-01');
+    setGrossWeightKg('');
+    setNetWeightKg('');
     setExpiryDate(nowForDateTimeLocal());
     setReceiverList([]);
     setReceiverDisplayNames([]);
@@ -263,9 +257,8 @@ export default function ProductsPage() {
     setDescriptionEn(p.descriptionEn ?? '');
     setImageUrl(p.imageUrl ?? '');
     setSku(p.sku ?? '');
-    setProductCategory(p.productCategory ?? '');
-    setStorageCondition(p.storageCondition ?? '');
-    setOriginSiteCode(p.originSiteCode ?? '');
+    setGrossWeightKg(p.grossWeightKg != null ? String(p.grossWeightKg) : '');
+    setNetWeightKg(p.netWeightKg != null ? String(p.netWeightKg) : '');
     setError('');
     const account = readAccountFromToken();
     setMinterLocation(account?.location ?? '');
@@ -351,9 +344,8 @@ export default function ProductsPage() {
       ngayHetHan: effectiveExpiry,
       current_holder_id: account.stakeAddress,
       sku: sku || undefined,
-      productCategory: productCategory || undefined,
-      storageCondition: storageCondition || undefined,
-      originSiteCode: originSiteCode || undefined,
+      grossWeightKg: grossWeightKg ? Number(grossWeightKg) : undefined,
+      netWeightKg: netWeightKg ? Number(netWeightKg) : undefined,
     };
 
     setLoading(true);
@@ -404,6 +396,7 @@ export default function ProductsPage() {
               assetName,
               profileId,
               name: nameEn,
+              description: descriptionEn || undefined,
               image: effectiveImage,
               standard: 'Traceability-v1',
               properties,
@@ -414,6 +407,7 @@ export default function ProductsPage() {
               txHash,
               assetName,
               name: nameEn,
+              description: descriptionEn || undefined,
               image: effectiveImage,
               minterProfileId: profileId,
               policyId: data.policyId,
@@ -634,9 +628,8 @@ export default function ProductsPage() {
         nameEn={nameEn}
         descriptionEn={descriptionEn}
         sku={sku}
-        productCategory={productCategory}
-        storageCondition={storageCondition}
-        originSiteCode={originSiteCode}
+        grossWeightKg={grossWeightKg}
+        netWeightKg={netWeightKg}
         expiryDate={expiryDate}
         receiverList={receiverList}
         receiverDisplayNames={receiverDisplayNames}
@@ -652,9 +645,8 @@ export default function ProductsPage() {
         onNameChange={setNameEn}
         onDescriptionChange={setDescriptionEn}
         onSkuChange={setSku}
-        onProductCategoryChange={setProductCategory}
-        onStorageConditionChange={setStorageCondition}
-        onOriginSiteCodeChange={setOriginSiteCode}
+        onGrossWeightChange={setGrossWeightKg}
+        onNetWeightChange={setNetWeightKg}
         onExpiryChange={setExpiryDate}
         onAddReceiverFromProfile={addReceiverFromProfile}
         onReceiverLocationsChange={setReceiverLocations}

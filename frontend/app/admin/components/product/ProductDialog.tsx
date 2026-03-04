@@ -13,9 +13,8 @@ type Props = {
   nameEn: string;
   descriptionEn: string;
   sku: string;
-  productCategory: string;
-  storageCondition: string;
-  originSiteCode: string;
+  grossWeightKg: string;
+  netWeightKg: string;
   expiryDate: string;
   receiverList: string[];
   receiverDisplayNames: string[];
@@ -34,9 +33,8 @@ type Props = {
   onNameChange: (v: string) => void;
   onDescriptionChange: (v: string) => void;
   onSkuChange: (v: string) => void;
-  onProductCategoryChange: (v: string) => void;
-  onStorageConditionChange: (v: string) => void;
-  onOriginSiteCodeChange: (v: string) => void;
+  onGrossWeightChange: (v: string) => void;
+  onNetWeightChange: (v: string) => void;
   onExpiryChange: (v: string) => void;
   onAddReceiverFromProfile: (profile: ProfileOption) => void;
   onReceiverLocationsChange: (v: string) => void;
@@ -60,9 +58,8 @@ export function ProductDialog(props: Props) {
     nameEn,
     descriptionEn,
     sku,
-    productCategory,
-    storageCondition,
-    originSiteCode,
+    grossWeightKg,
+    netWeightKg,
     expiryDate,
     receiverList,
     receiverDisplayNames,
@@ -81,9 +78,8 @@ export function ProductDialog(props: Props) {
     onNameChange,
     onDescriptionChange,
     onSkuChange,
-    onProductCategoryChange,
-    onStorageConditionChange,
-    onOriginSiteCodeChange,
+    onGrossWeightChange,
+    onNetWeightChange,
     onExpiryChange,
     onAddReceiverFromProfile,
     onReceiverLocationsChange,
@@ -152,6 +148,29 @@ export function ProductDialog(props: Props) {
               />
             </div>
             <div className={styles.formGroup}>
+              <label className={styles.label}>Weight (optional)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <input
+                  className={styles.input}
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={grossWeightKg}
+                  onChange={(e) => onGrossWeightChange(e.target.value)}
+                  placeholder="Gross weight (kg)"
+                />
+                <input
+                  className={styles.input}
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={netWeightKg}
+                  onChange={(e) => onNetWeightChange(e.target.value)}
+                  placeholder="Net weight (kg)"
+                />
+              </div>
+            </div>
+            <div className={styles.formGroup}>
               <label className={styles.label}>Description</label>
               <textarea
                 className={styles.textarea}
@@ -160,29 +179,6 @@ export function ProductDialog(props: Props) {
                 onChange={(e) => onDescriptionChange(e.target.value)}
                 placeholder="Enter product description"
               />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Logistics info (optional)</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 8 }}>
-                <input
-                  className={styles.input}
-                  value={productCategory}
-                  onChange={(e) => onProductCategoryChange(e.target.value)}
-                  placeholder="Category"
-                />
-                <input
-                  className={styles.input}
-                  value={storageCondition}
-                  onChange={(e) => onStorageConditionChange(e.target.value)}
-                  placeholder="Storage (ambient/chilled/...)"
-                />
-                <input
-                  className={styles.input}
-                  value={originSiteCode}
-                  onChange={(e) => onOriginSiteCodeChange(e.target.value)}
-                  placeholder="Origin site/warehouse code"
-                />
-              </div>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.label}>Expiry</label>
@@ -199,25 +195,74 @@ export function ProductDialog(props: Props) {
               <p className={styles.formHint} style={{ marginBottom: 6 }}>
                 Attach certificates to this product. Create certificates in Certificates first, then select them here.
               </p>
-              <select
-                className={styles.input}
-                multiple
-                value={selectedCertificateIds.map(String)}
-                onChange={(e) => {
-                  const selected = Array.from(
-                    (e.target as HTMLSelectElement).selectedOptions,
-                    (o) => parseInt(o.value, 10)
-                  );
-                  onCertificateIdsChange(selected.filter((n) => !Number.isNaN(n)));
-                }}
-                style={{ minHeight: 80 }}
-              >
-                {certificateOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title} (#{c.id})
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+                <select
+                  className={styles.input}
+                  style={{ flex: '1 1 200px' }}
+                  value=""
+                  onChange={(e) => {
+                    const id = parseInt(e.target.value, 10);
+                    if (Number.isNaN(id)) return;
+                    if (!selectedCertificateIds.includes(id)) {
+                      onCertificateIdsChange([...selectedCertificateIds, id]);
+                    }
+                    requestAnimationFrame(() => {
+                      (e.target as HTMLSelectElement).value = '';
+                    });
+                  }}
+                >
+                  <option value="">Select certificate to attach</option>
+                  {certificateOptions
+                    .filter((c) => !selectedCertificateIds.includes(c.id))
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title} (#{c.id})
+                      </option>
+                    ))}
+                </select>
+              </div>
+              {selectedCertificateIds.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {selectedCertificateIds.map((id) => {
+                    const cert = certificateOptions.find((c) => c.id === id);
+                    return (
+                      <div
+                        key={id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          background: 'var(--accent-bg, #eff6ff)',
+                          fontSize: 14,
+                        }}
+                      >
+                        <span>{cert ? cert.title : `Certificate`} (#{id})</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onCertificateIdsChange(selectedCertificateIds.filter((x) => x !== id))
+                          }
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#ef4444',
+                            fontWeight: 600,
+                            fontSize: 16,
+                            lineHeight: 1,
+                            padding: '2px 6px',
+                          }}
+                          aria-label="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
               {certificateOptions.length === 0 && (
                 <p className={styles.formHint}>No certificates yet. Add them in Certificates.</p>
               )}
