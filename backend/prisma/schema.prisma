@@ -72,7 +72,7 @@ model ProductBatch {
 
 model WarehouseInventory {
   id          Int       @id @default(autoincrement())
-  batchId     String
+  batchId     String   @unique
   profileId   Int
   status      String    @default("IN_WAREHOUSE")
   receivedAt  DateTime  @default(now()) @map("mintedAt")
@@ -86,8 +86,6 @@ model WarehouseInventory {
 
   batch   ProductBatch @relation(fields: [batchId], references: [batchId], onDelete: Cascade)
   profile Profile      @relation("WarehouseOwner", fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([batchId, profileId])
 }
 
 model Certificate {

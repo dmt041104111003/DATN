@@ -194,12 +194,10 @@ export class TraceAssetUseCase {
         });
         if (lastProfile) {
           const warehouseRow =
-            await this.prisma.warehouseInventory.findUnique({
+            await this.prisma.warehouseInventory.findFirst({
               where: {
-                batchId_profileId: {
-                  batchId: batch.batchId,
-                  profileId: lastProfile.id,
-                },
+                batchId: batch.batchId,
+                profileId: lastProfile.id,
               },
               select: { status: true },
             });

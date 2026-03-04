@@ -70,9 +70,9 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
     batchId: string
   ): Promise<void> {
     await (this.prisma as any).warehouseInventory.upsert({
-      where: { batchId_profileId: { batchId, profileId } },
-      create: { batchId, profileId },
-      update: {},
+      where: { batchId },
+      create: { batchId, profileId, status: "IN_WAREHOUSE" },
+      update: { profileId, status: "IN_WAREHOUSE", shippedAt: null, lastMovedAt: new Date() },
     });
   }
 
