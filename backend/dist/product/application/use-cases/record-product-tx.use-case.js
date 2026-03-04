@@ -24,7 +24,7 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
         this.prisma = prisma;
     }
     async execute(params) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
         const { action, txHash, assetName, profileId } = params;
         if (action === "MINT") {
             const name = (_a = params.name) !== null && _a !== void 0 ? _a : "";
@@ -55,18 +55,13 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
                 minterProfileId: profileId,
                 expiryDate,
                 sku: (_h = master.sku) !== null && _h !== void 0 ? _h : null,
-                gtin: (_j = master.gtin) !== null && _j !== void 0 ? _j : null,
-                hsCode: (_k = master.hsCode) !== null && _k !== void 0 ? _k : null,
                 grossWeightKg: master.grossWeightKg != null ? Number(master.grossWeightKg) : null,
                 netWeightKg: master.netWeightKg != null ? Number(master.netWeightKg) : null,
-                lengthCm: master.lengthCm != null ? Number(master.lengthCm) : null,
-                widthCm: master.widthCm != null ? Number(master.widthCm) : null,
-                heightCm: master.heightCm != null ? Number(master.heightCm) : null,
-                originSiteCode: (_l = minterProfile === null || minterProfile === void 0 ? void 0 : minterProfile.location) !== null && _l !== void 0 ? _l : null,
+                originSiteCode: (_j = minterProfile === null || minterProfile === void 0 ? void 0 : minterProfile.location) !== null && _j !== void 0 ? _j : null,
                 referenceUtxo: `${txHash}#0`,
             };
             await this.repository.upsertBatchOnMint(mintParams);
-            const receivers = (_m = params.receivers) !== null && _m !== void 0 ? _m : [];
+            const receivers = (_k = params.receivers) !== null && _k !== void 0 ? _k : [];
             if (receivers.length > 0) {
                 const profile = minterProfile;
                 const senderAddress = (profile === null || profile === void 0 ? void 0 : profile.walletAddress) && typeof profile.walletAddress === "string"
@@ -82,8 +77,8 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
             throw new common_1.BadRequestException(`Batch not found: ${assetName}`);
         }
         if (action === "UPDATE") {
-            let nextExpiryDate = (_o = batch.expiryDate) !== null && _o !== void 0 ? _o : null;
-            const baseProps = (_p = params.properties) !== null && _p !== void 0 ? _p : {};
+            let nextExpiryDate = (_l = batch.expiryDate) !== null && _l !== void 0 ? _l : null;
+            const baseProps = (_m = params.properties) !== null && _m !== void 0 ? _m : {};
             const rawNextExpiry = baseProps === null || baseProps === void 0 ? void 0 : baseProps.ngayHetHan;
             if (rawNextExpiry) {
                 const d = rawNextExpiry instanceof Date
@@ -102,35 +97,24 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
             });
             await this.repository.updateBatch({
                 batchId: assetName,
-                name: (_q = params.name) !== null && _q !== void 0 ? _q : batch.name,
+                name: (_o = params.name) !== null && _o !== void 0 ? _o : batch.name,
                 description: nextDescription,
-                image: (_r = params.image) !== null && _r !== void 0 ? _r : batch.image,
-                standard: (_s = params.standard) !== null && _s !== void 0 ? _s : batch.standard,
+                image: (_p = params.image) !== null && _p !== void 0 ? _p : batch.image,
+                standard: (_q = params.standard) !== null && _q !== void 0 ? _q : batch.standard,
                 expiryDate: nextExpiryDate !== null && nextExpiryDate !== void 0 ? nextExpiryDate : null,
                 lastUpdateTxHash: txHash,
                 lastUpdateAt: new Date().toISOString(),
-                sku: (_u = (_t = baseProps.sku) !== null && _t !== void 0 ? _t : batch.sku) !== null && _u !== void 0 ? _u : null,
-                gtin: (_w = (_v = baseProps.gtin) !== null && _v !== void 0 ? _v : batch.gtin) !== null && _w !== void 0 ? _w : null,
-                hsCode: (_y = (_x = baseProps.hsCode) !== null && _x !== void 0 ? _x : batch.hsCode) !== null && _y !== void 0 ? _y : null,
+                sku: (_s = (_r = baseProps.sku) !== null && _r !== void 0 ? _r : batch.sku) !== null && _s !== void 0 ? _s : null,
                 grossWeightKg: baseProps.grossWeightKg != null
                     ? Number(baseProps.grossWeightKg)
-                    : (_z = batch.grossWeightKg) !== null && _z !== void 0 ? _z : null,
+                    : (_t = batch.grossWeightKg) !== null && _t !== void 0 ? _t : null,
                 netWeightKg: baseProps.netWeightKg != null
                     ? Number(baseProps.netWeightKg)
-                    : (_0 = batch.netWeightKg) !== null && _0 !== void 0 ? _0 : null,
-                lengthCm: baseProps.lengthCm != null
-                    ? Number(baseProps.lengthCm)
-                    : (_1 = batch.lengthCm) !== null && _1 !== void 0 ? _1 : null,
-                widthCm: baseProps.widthCm != null
-                    ? Number(baseProps.widthCm)
-                    : (_2 = batch.widthCm) !== null && _2 !== void 0 ? _2 : null,
-                heightCm: baseProps.heightCm != null
-                    ? Number(baseProps.heightCm)
-                    : (_3 = batch.heightCm) !== null && _3 !== void 0 ? _3 : null,
-                originSiteCode: (_5 = (_4 = updaterProfile === null || updaterProfile === void 0 ? void 0 : updaterProfile.location) !== null && _4 !== void 0 ? _4 : batch.originSiteCode) !== null && _5 !== void 0 ? _5 : null,
+                    : (_u = batch.netWeightKg) !== null && _u !== void 0 ? _u : null,
+                originSiteCode: (_w = (_v = updaterProfile === null || updaterProfile === void 0 ? void 0 : updaterProfile.location) !== null && _v !== void 0 ? _v : batch.originSiteCode) !== null && _w !== void 0 ? _w : null,
                 referenceUtxo: `${txHash}#0`,
             });
-            const receivers = (_6 = params.receivers) !== null && _6 !== void 0 ? _6 : [];
+            const receivers = (_x = params.receivers) !== null && _x !== void 0 ? _x : [];
             if (receivers.length > 0) {
                 const profile = updaterProfile;
                 const senderAddress = (profile === null || profile === void 0 ? void 0 : profile.walletAddress) && typeof profile.walletAddress === "string"
@@ -142,7 +126,7 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
         }
         if (action === "REVOKE") {
             await this.repository.markBatchRevoked(assetName);
-            const receivers = (_7 = params.receivers) !== null && _7 !== void 0 ? _7 : [];
+            const receivers = (_y = params.receivers) !== null && _y !== void 0 ? _y : [];
             if (receivers.length > 0) {
                 const profile = await this.prisma.profile.findUnique({
                     where: { id: profileId },

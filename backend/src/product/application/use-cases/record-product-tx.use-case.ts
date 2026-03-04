@@ -65,15 +65,10 @@ export class RecordProductTxUseCase {
         minterProfileId: profileId,
         expiryDate,
         sku: master.sku ?? null,
-        gtin: master.gtin ?? null,
-        hsCode: master.hsCode ?? null,
         grossWeightKg:
           master.grossWeightKg != null ? Number(master.grossWeightKg) : null,
         netWeightKg:
           master.netWeightKg != null ? Number(master.netWeightKg) : null,
-        lengthCm: master.lengthCm != null ? Number(master.lengthCm) : null,
-        widthCm: master.widthCm != null ? Number(master.widthCm) : null,
-        heightCm: master.heightCm != null ? Number(master.heightCm) : null,
         originSiteCode: minterProfile?.location ?? null,
         referenceUtxo: `${txHash}#0`,
       };
@@ -138,8 +133,6 @@ export class RecordProductTxUseCase {
         lastUpdateTxHash: txHash,
         lastUpdateAt: new Date().toISOString(),
         sku: (baseProps as any).sku ?? batch.sku ?? null,
-        gtin: (baseProps as any).gtin ?? batch.gtin ?? null,
-        hsCode: (baseProps as any).hsCode ?? batch.hsCode ?? null,
         grossWeightKg:
           (baseProps as any).grossWeightKg != null
             ? Number((baseProps as any).grossWeightKg)
@@ -148,18 +141,6 @@ export class RecordProductTxUseCase {
           (baseProps as any).netWeightKg != null
             ? Number((baseProps as any).netWeightKg)
             : batch.netWeightKg ?? null,
-        lengthCm:
-          (baseProps as any).lengthCm != null
-            ? Number((baseProps as any).lengthCm)
-            : batch.lengthCm ?? null,
-        widthCm:
-          (baseProps as any).widthCm != null
-            ? Number((baseProps as any).widthCm)
-            : batch.widthCm ?? null,
-        heightCm:
-          (baseProps as any).heightCm != null
-            ? Number((baseProps as any).heightCm)
-            : batch.heightCm ?? null,
         originSiteCode: updaterProfile?.location ?? batch.originSiteCode ?? null,
         referenceUtxo: `${txHash}#0`,
       });

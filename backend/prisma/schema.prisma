@@ -37,13 +37,8 @@ model ProductBatch {
   description      String?
   image            String?
   sku              String?
-  gtin             String?
-  hsCode           String?
   grossWeightKg    Float?
   netWeightKg      Float?
-  lengthCm         Float?
-  widthCm          Float?
-  heightCm         Float?
   originSiteCode   String?
   standard         String?
   mintTxHash       String?

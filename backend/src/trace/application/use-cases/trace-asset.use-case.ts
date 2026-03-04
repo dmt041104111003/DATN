@@ -76,6 +76,11 @@ export class TraceAssetUseCase {
       include: {
         minterProfile: true,
         roadmaps: { orderBy: { stepIndex: "asc" } },
+        certificates: {
+          include: {
+            issuerProfile: true,
+          },
+        },
       },
     });
 
@@ -85,11 +90,13 @@ export class TraceAssetUseCase {
       );
     }
 
+    const standard = batch.standard ?? "Traceability-v1";
+
     const metadata: Record<string, unknown> = {
       name: batch.name,
       description: batch.description,
       image: batch.image,
-      standard: batch.standard ?? "Traceability-v1",
+      standard,
       policy_id: batch.policyId ?? undefined,
     };
     const properties: Record<string, unknown> = {};
@@ -102,6 +109,41 @@ export class TraceAssetUseCase {
 
     const burnStatus: "active" | "burned" =
       nft222Quantity === "0" ? "burned" : "active";
+
+    const coreCertificates =
+      (batch.certificates ?? []).map((c: any) => ({
+        id: c.id as number,
+        title: c.title as string,
+        number: (c.number as string) ?? null,
+        authority: (c.authority as string) ?? null,
+        expiryDate: c.expiryDate
+          ? (c.expiryDate instanceof Date
+              ? c.expiryDate.toISOString()
+              : new Date(c.expiryDate as any).toISOString())
+          : null,
+        documentUrl: (c.documentUrl as string) ?? null,
+        issuerName:
+          (c.issuerProfile?.displayName as string | undefined) ?? null,
+      })) ?? [];
+
+    const core = {
+      policyId: policyIdTrimmed,
+      assetName: assetNameTrimmed,
+      standard,
+      referenceUtxo:
+        (batch.referenceUtxo as string | null | undefined) ?? null,
+      batch: {
+        name: batch.name as string,
+        description: (batch.description as string | null) ?? null,
+        image: (batch.image as string | null) ?? null,
+        originSiteCode: (batch.originSiteCode as string | null) ?? null,
+        minterName:
+          (batch.minterProfile?.displayName as string | undefined) ?? null,
+        minterLocation:
+          (batch.minterProfile?.location as string | undefined) ?? null,
+      },
+      certificates: coreCertificates,
+    };
 
     let cert:
       | {
@@ -447,6 +489,21 @@ export class TraceAssetUseCase {
     });
 
     const executedPairs = new Set<string>();
+    const deliveryByPair = new Map<
+      string,
+      {
+        id: number;
+        status: DeliveryStatus;
+        senderAddress: string | null;
+        recipientAddress: string | null;
+        createdAt: Date;
+        actualPickupAt: Date | null;
+        actualDeliveryAt: Date | null;
+        partialSignedByAddress: string | null;
+        secondSignedByAddress: string | null;
+      }
+    >();
+
     for (const d of deliveries) {
       if (
         d.status === DeliveryStatus.IN_TRANSIT ||
@@ -456,6 +513,17 @@ export class TraceAssetUseCase {
         const to = (d.recipientAddress ?? "").trim().toLowerCase();
         if (from && to) {
           executedPairs.add(`${from}->${to}`);
+          deliveryByPair.set(`${from}->${to}`, {
+            id: d.id,
+            status: d.status,
+            senderAddress: d.senderAddress,
+            recipientAddress: d.recipientAddress,
+            createdAt: d.createdAt,
+            actualPickupAt: d.actualPickupAt ?? null,
+            actualDeliveryAt: d.actualDeliveryAt ?? null,
+            partialSignedByAddress: d.partialSignedByAddress ?? null,
+            secondSignedByAddress: d.secondSignedByAddress ?? null,
+          });
         }
       }
     }
@@ -539,6 +607,171 @@ export class TraceAssetUseCase {
       ];
     }
 
+    const routeSteps =
+      roadmaps.length > 0
+        ? await Promise.all(
+            roadmaps.map(async (rm, index) => {
+              const fromAddrLower =
+                index === 0
+                  ? minterWalletLower
+                  : ((roadmaps[index - 1].toAddress ?? "")
+                      .trim()
+                      .toLowerCase() || null);
+              const toAddrLower = (rm.toAddress ?? "").trim().toLowerCase() || null;
+
+              const fromProfile = fromAddrLower
+                ? profileByWallet.get(fromAddrLower) ?? null
+                : null;
+              const toProfile = toAddrLower
+                ? profileByWallet.get(toAddrLower) ?? null
+                : null;
+
+              const pairKey =
+                fromAddrLower && toAddrLower
+                  ? `${fromAddrLower}->${toAddrLower}`
+                  : "";
+              const d = pairKey ? deliveryByPair.get(pairKey) : undefined;
+
+              let actualDepartureAt: string | null = null;
+              let txCreatedAt: string | null = null;
+              let delayedDeclaration = false;
+              if (d) {
+                // dùng actualPickupAt như "thời điểm rời kho" (actualDepartureAt logic)
+                if (d.actualPickupAt) {
+                  actualDepartureAt = d.actualPickupAt.toISOString();
+                }
+                if (d.createdAt) {
+                  txCreatedAt = d.createdAt.toISOString();
+                }
+                if (actualDepartureAt && txCreatedAt) {
+                  const dep = new Date(actualDepartureAt).getTime();
+                  const created = new Date(txCreatedAt).getTime();
+                  const diffMs = Math.abs(dep - created);
+                  const oneDayMs = 24 * 60 * 60 * 1000;
+                  delayedDeclaration = diffMs > oneDayMs;
+                }
+              }
+
+              return {
+                stepIndex: rm.stepIndex,
+                from: {
+                  address: fromAddrLower,
+                  name: (fromProfile as any)?.displayName ?? null,
+                  location: (fromProfile as any)?.location ?? null,
+                },
+                to: {
+                  address: toAddrLower,
+                  name: (toProfile as any)?.displayName ?? null,
+                  location: (toProfile as any)?.location ?? null,
+                },
+                carrierName: (rm.carrierName as string | null) ?? null,
+                transportMode: (rm.transportMode as string | null) ?? null,
+                txHash: (rm.txHash as string | null) ?? null,
+                actualDepartureAt,
+                txCreatedAt,
+                delayedDeclaration,
+              };
+            }),
+          )
+        : [];
+
+    // Build shipping evidence list
+    const addrSet = new Set<string>();
+    for (const d of deliveries) {
+      if (d.senderAddress) {
+        addrSet.add(d.senderAddress.trim().toLowerCase());
+      }
+      if (d.recipientAddress) {
+        addrSet.add(d.recipientAddress.trim().toLowerCase());
+      }
+      if (d.partialSignedByAddress) {
+        addrSet.add(d.partialSignedByAddress.trim().toLowerCase());
+      }
+      if (d.secondSignedByAddress) {
+        addrSet.add(d.secondSignedByAddress.trim().toLowerCase());
+      }
+    }
+    const extraProfiles =
+      addrSet.size > 0
+        ? await this.prisma.profile.findMany({
+            where: {
+              walletAddress: {
+                in: Array.from(addrSet),
+              },
+            },
+            select: {
+              walletAddress: true,
+              displayName: true,
+            },
+          })
+        : [];
+    for (const p of extraProfiles) {
+      const key = p.walletAddress.trim().toLowerCase();
+      if (!profileByWallet.has(key)) {
+        profileByWallet.set(key, p as any);
+      }
+    }
+
+    const shippingDeliveries = deliveries.map((d) => {
+      const partialAddr = d.partialSignedByAddress
+        ? d.partialSignedByAddress.trim().toLowerCase()
+        : null;
+      const secondAddr = d.secondSignedByAddress
+        ? d.secondSignedByAddress.trim().toLowerCase()
+        : null;
+      const partialProfile = partialAddr
+        ? (profileByWallet.get(partialAddr) as any)
+        : null;
+      const secondProfile = secondAddr
+        ? (profileByWallet.get(secondAddr) as any)
+        : null;
+      return {
+        id: d.id,
+        status: d.status,
+        lockedInScript: d.status === DeliveryStatus.IN_TRANSIT,
+        partialSignedByAddress: d.partialSignedByAddress ?? null,
+        partialSignedByName: partialProfile?.displayName ?? null,
+        secondSignedByAddress: d.secondSignedByAddress ?? null,
+        secondSignedByName: secondProfile?.displayName ?? null,
+        actualPickupAt: d.actualPickupAt
+          ? d.actualPickupAt.toISOString()
+          : null,
+        actualDeliveryAt: d.actualDeliveryAt
+          ? d.actualDeliveryAt.toISOString()
+          : null,
+      };
+    });
+
+    // Inventory snapshot
+    const inventories = await this.prisma.warehouseInventory.findMany({
+      where: { batchId: batch.batchId },
+      orderBy: { receivedAt: "desc" },
+    });
+    let inventoryInfo: {
+      status: string | null;
+      zone: string | null;
+      aisle: string | null;
+      rack: string | null;
+      bin: string | null;
+      burnTxHash: string | null;
+      burned: boolean;
+    } | null = null;
+    if (inventories.length > 0) {
+      const inv = inventories[0];
+      inventoryInfo = {
+        status: inv.status ?? null,
+        zone: inv.zone ?? null,
+        aisle: inv.aisle ?? null,
+        rack: inv.rack ?? null,
+        bin: inv.bin ?? null,
+        burnTxHash: inv.burnTxHash ?? null,
+        burned:
+          inv.status === "CONSUMED" ||
+          !!inv.burnTxHash ||
+          burnStatus === "burned",
+      };
+    }
+
     return {
       metadata,
       properties,
@@ -559,6 +792,10 @@ export class TraceAssetUseCase {
         receiverLocationsArr,
         batch.image ?? null,
       ),
+      core,
+      route: { steps: routeSteps },
+      shipping: { deliveries: shippingDeliveries },
+      inventory: inventoryInfo,
     };
   }
 }

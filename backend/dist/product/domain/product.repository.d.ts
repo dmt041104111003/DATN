@@ -20,13 +20,8 @@ export interface ProductBatchSnapshot {
     policyId: string | null;
     expiryDate: Date | null;
     sku: string | null;
-    gtin: string | null;
-    hsCode: string | null;
     grossWeightKg: number | null;
     netWeightKg: number | null;
-    lengthCm: number | null;
-    widthCm: number | null;
-    heightCm: number | null;
     originSiteCode: string | null;
     referenceUtxo: string | null;
     lastUpdateTxHash: string | null;
@@ -54,13 +49,8 @@ export interface MintBatchParams {
     minterProfileId: number;
     expiryDate?: Date | string | null;
     sku?: string | null;
-    gtin?: string | null;
-    hsCode?: string | null;
     grossWeightKg?: number | null;
     netWeightKg?: number | null;
-    lengthCm?: number | null;
-    widthCm?: number | null;
-    heightCm?: number | null;
     originSiteCode?: string | null;
     referenceUtxo?: string | null;
 }

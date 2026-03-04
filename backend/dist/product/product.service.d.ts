@@ -1,7 +1,7 @@
 import type { UTxO } from "@meshsdk/core";
 import { CardanoService } from "../core/cardano/cardano.service";
 import { WarehouseService } from "../warehouse/warehouse.service";
-import { ProductRepositoryPort } from "./domain/product.repository";
+import { ProductRepositoryPort, type ProductBatchListItem } from "./domain/product.repository";
 import { ListBatchesUseCase } from "./application/use-cases/list-batches.use-case";
 import { RecordProductTxUseCase } from "./application/use-cases/record-product-tx.use-case";
 import { ListRoadmapUseCase } from "./application/use-cases/list-roadmap.use-case";
@@ -15,15 +15,7 @@ export declare class ProductService {
     private readonly listRoadmapUseCase;
     constructor(cardano: CardanoService, warehouse: WarehouseService, productRepository: ProductRepositoryPort, listBatchesUseCase: ListBatchesUseCase, recordProductTxUseCase: RecordProductTxUseCase, listRoadmapUseCase: ListRoadmapUseCase);
     private createContract;
-    listBatches(profileId: number): Promise<{
-        id: number;
-        batchId: string;
-        name: string;
-        description: string | null;
-        image: string | null;
-        createdAt: Date;
-        policyId: string | null;
-    }[]>;
+    listBatches(profileId: number): Promise<ProductBatchListItem[]>;
     listRoadmap(batchId: string): Promise<{
         stepIndex: number;
         toAddress: string | null;

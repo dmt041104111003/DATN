@@ -26,7 +26,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
         this.order = order;
     }
     async execute(policyId, assetName) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32;
         const policyIdTrimmed = policyId.trim();
         const assetNameTrimmed = assetName.trim();
         const ref100Unit = (0, utils_1.buildRef100Unit)(policyIdTrimmed, assetNameTrimmed, this.config.cip68Prefix);
@@ -35,7 +35,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             const ref100Asset = (await this.cardano.blockfrostFetcher.fetchSpecificAsset(ref100Unit));
             ref100Quantity = (_a = ref100Asset === null || ref100Asset === void 0 ? void 0 : ref100Asset.quantity) !== null && _a !== void 0 ? _a : "0";
         }
-        catch (_13) {
+        catch (_33) {
             throw new common_1.NotFoundException("Asset not found on chain for this policyId and assetName.");
         }
         if (ref100Quantity === "0") {
@@ -48,7 +48,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             const nft222Asset = (await this.cardano.blockfrostFetcher.fetchSpecificAsset(nft222Unit));
             nft222Quantity = (_b = nft222Asset === null || nft222Asset === void 0 ? void 0 : nft222Asset.quantity) !== null && _b !== void 0 ? _b : "0";
         }
-        catch (_14) {
+        catch (_34) {
             nft222Quantity = "0";
         }
         const batch = await this.prisma.productBatch.findFirst({
@@ -56,16 +56,22 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             include: {
                 minterProfile: true,
                 roadmaps: { orderBy: { stepIndex: "asc" } },
+                certificates: {
+                    include: {
+                        issuerProfile: true,
+                    },
+                },
             },
         });
         if (!batch) {
             throw new common_1.NotFoundException("Asset not found for this policy and asset name.");
         }
+        const standard = (_c = batch.standard) !== null && _c !== void 0 ? _c : "Traceability-v1";
         const metadata = {
             name: batch.name,
             description: batch.description,
             image: batch.image,
-            standard: (_c = batch.standard) !== null && _c !== void 0 ? _c : "Traceability-v1",
+            standard,
             policy_id: (_d = batch.policyId) !== null && _d !== void 0 ? _d : undefined,
         };
         const properties = {};
@@ -76,6 +82,37 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                     : String(batch.expiryDate);
         }
         const burnStatus = nft222Quantity === "0" ? "burned" : "active";
+        const coreCertificates = (_f = ((_e = batch.certificates) !== null && _e !== void 0 ? _e : []).map((c) => {
+            var _a, _b, _c, _d, _e;
+            return ({
+                id: c.id,
+                title: c.title,
+                number: (_a = c.number) !== null && _a !== void 0 ? _a : null,
+                authority: (_b = c.authority) !== null && _b !== void 0 ? _b : null,
+                expiryDate: c.expiryDate
+                    ? (c.expiryDate instanceof Date
+                        ? c.expiryDate.toISOString()
+                        : new Date(c.expiryDate).toISOString())
+                    : null,
+                documentUrl: (_c = c.documentUrl) !== null && _c !== void 0 ? _c : null,
+                issuerName: (_e = (_d = c.issuerProfile) === null || _d === void 0 ? void 0 : _d.displayName) !== null && _e !== void 0 ? _e : null,
+            });
+        })) !== null && _f !== void 0 ? _f : [];
+        const core = {
+            policyId: policyIdTrimmed,
+            assetName: assetNameTrimmed,
+            standard,
+            referenceUtxo: (_g = batch.referenceUtxo) !== null && _g !== void 0 ? _g : null,
+            batch: {
+                name: batch.name,
+                description: (_h = batch.description) !== null && _h !== void 0 ? _h : null,
+                image: (_j = batch.image) !== null && _j !== void 0 ? _j : null,
+                originSiteCode: (_k = batch.originSiteCode) !== null && _k !== void 0 ? _k : null,
+                minterName: (_m = (_l = batch.minterProfile) === null || _l === void 0 ? void 0 : _l.displayName) !== null && _m !== void 0 ? _m : null,
+                minterLocation: (_p = (_o = batch.minterProfile) === null || _o === void 0 ? void 0 : _o.location) !== null && _p !== void 0 ? _p : null,
+            },
+            certificates: coreCertificates,
+        };
         let cert;
         if (batch.minterProfileId) {
             const enterpriseCert = await this.prisma.certificate.findFirst({
@@ -89,7 +126,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                 cert = {
                     id: enterpriseCert.id,
                     title: enterpriseCert.title,
-                    imageUrl: (_e = enterpriseCert.imageUrl) !== null && _e !== void 0 ? _e : null,
+                    imageUrl: (_q = enterpriseCert.imageUrl) !== null && _q !== void 0 ? _q : null,
                     issuedAt: enterpriseCert.issuedAt,
                     batchId: batch.batchId,
                 };
@@ -110,9 +147,9 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                 batchId: cert.batchId,
             };
         }
-        const roadmaps = (_f = batch.roadmaps) !== null && _f !== void 0 ? _f : [];
-        const rawReceiverLocations = (_g = metadata.receiver_locations) !== null && _g !== void 0 ? _g : "";
-        const rawMinterLocation = (_h = metadata.minter_location) !== null && _h !== void 0 ? _h : "";
+        const roadmaps = (_r = batch.roadmaps) !== null && _r !== void 0 ? _r : [];
+        const rawReceiverLocations = (_s = metadata.receiver_locations) !== null && _s !== void 0 ? _s : "";
+        const rawMinterLocation = (_t = metadata.minter_location) !== null && _t !== void 0 ? _t : "";
         const decodedReceiverLocationsStr = (0, utils_2.decodeHexToUtf8)(rawReceiverLocations) || rawReceiverLocations;
         const decodedMinterLocation = (0, utils_2.decodeHexToUtf8)(rawMinterLocation) ||
             rawMinterLocation ||
@@ -140,7 +177,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             roadmaps.length > 0 &&
             nft222Quantity === "0") {
             const lastHop = roadmaps[roadmaps.length - 1];
-            const lastReceiverAddress = (_j = lastHop === null || lastHop === void 0 ? void 0 : lastHop.toAddress) === null || _j === void 0 ? void 0 : _j.trim();
+            const lastReceiverAddress = (_u = lastHop === null || lastHop === void 0 ? void 0 : lastHop.toAddress) === null || _u === void 0 ? void 0 : _u.trim();
             if (lastReceiverAddress) {
                 const lastProfile = await this.prisma.profile.findUnique({
                     where: { walletAddress: lastReceiverAddress },
@@ -158,11 +195,11 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                 }
             }
         }
-        const receiverCoords = (_k = metadata.receiver_coordinates) !== null && _k !== void 0 ? _k : "";
-        const minterCoords = (_l = metadata.minter_coordinates) !== null && _l !== void 0 ? _l : "";
+        const receiverCoords = (_v = metadata.receiver_coordinates) !== null && _v !== void 0 ? _v : "";
+        const minterCoords = (_w = metadata.minter_coordinates) !== null && _w !== void 0 ? _w : "";
         const receiverLocations = receiverLocationsArr;
         const minterLocation = decodedMinterLocation;
-        const minterCoordFromDb = ((_m = batch.minterProfile) === null || _m === void 0 ? void 0 : _m.coordinates)
+        const minterCoordFromDb = ((_x = batch.minterProfile) === null || _x === void 0 ? void 0 : _x.coordinates)
             ? (0, utils_2.parseOneCoordinate)(batch.minterProfile.coordinates)
             : null;
         const originPointsFromMetadata = (0, utils_2.parseCoordinates)(minterCoords);
@@ -191,7 +228,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
         const receiverPointsFromMetadata = (0, utils_2.parseCoordinates)(receiverCoords);
         const receiverPoints = [];
         for (let i = 0; i < roadmaps.length; i++) {
-            const addr = ((_o = roadmaps[i].toAddress) !== null && _o !== void 0 ? _o : "")
+            const addr = ((_y = roadmaps[i].toAddress) !== null && _y !== void 0 ? _y : "")
                 .trim()
                 .toLowerCase();
             const profile = addr ? profileByWallet.get(addr) : null;
@@ -199,10 +236,10 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                 ? (0, utils_2.parseOneCoordinate)(profile.coordinates)
                 : null;
             const fromMeta = receiverPointsFromMetadata[i];
-            const point = (_p = fromDb !== null && fromDb !== void 0 ? fromDb : fromMeta) !== null && _p !== void 0 ? _p : null;
+            const point = (_z = fromDb !== null && fromDb !== void 0 ? fromDb : fromMeta) !== null && _z !== void 0 ? _z : null;
             receiverPoints.push(point);
         }
-        const minterWalletLower = ((_r = (_q = batch.minterProfile) === null || _q === void 0 ? void 0 : _q.walletAddress) !== null && _r !== void 0 ? _r : "")
+        const minterWalletLower = ((_1 = (_0 = batch.minterProfile) === null || _0 === void 0 ? void 0 : _0.walletAddress) !== null && _1 !== void 0 ? _1 : "")
             .trim()
             .toLowerCase();
         let currentLocation;
@@ -212,16 +249,16 @@ let TraceAssetUseCase = class TraceAssetUseCase {
         if (burnStatus === "active") {
             try {
                 const holders = await this.cardano.blockfrostFetcher.fetchAssetAddresses(nft222Unit);
-                const holderAddress = holders.length > 0 ? (_s = holders[0].address) === null || _s === void 0 ? void 0 : _s.trim() : null;
+                const holderAddress = holders.length > 0 ? (_2 = holders[0].address) === null || _2 === void 0 ? void 0 : _2.trim() : null;
                 if (holderAddress) {
                     holderLower = holderAddress.toLowerCase();
-                    const roadmapList = (_t = batch.roadmaps) !== null && _t !== void 0 ? _t : [];
+                    const roadmapList = (_3 = batch.roadmaps) !== null && _3 !== void 0 ? _3 : [];
                     let scriptAddress = null;
                     try {
                         scriptAddress =
-                            (_v = (_u = this.order.getScriptAddress()) === null || _u === void 0 ? void 0 : _u.trim().toLowerCase()) !== null && _v !== void 0 ? _v : null;
+                            (_5 = (_4 = this.order.getScriptAddress()) === null || _4 === void 0 ? void 0 : _4.trim().toLowerCase()) !== null && _5 !== void 0 ? _5 : null;
                     }
-                    catch (_15) {
+                    catch (_35) {
                         scriptAddress = null;
                     }
                     let label;
@@ -235,7 +272,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                     else if (minterWalletLower &&
                         holderLower === minterWalletLower) {
                         label =
-                            (_y = (_x = (_w = batch.minterProfile) === null || _w === void 0 ? void 0 : _w.displayName) !== null && _x !== void 0 ? _x : minterLocation) !== null && _y !== void 0 ? _y : "Origin";
+                            (_8 = (_7 = (_6 = batch.minterProfile) === null || _6 === void 0 ? void 0 : _6.displayName) !== null && _7 !== void 0 ? _7 : minterLocation) !== null && _8 !== void 0 ? _8 : "Origin";
                         locationType = "minter";
                         if (originPoint) {
                             lat = originPoint.lat;
@@ -266,7 +303,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                                 },
                             });
                             label =
-                                (_1 = (_0 = (_z = receiverProfile === null || receiverProfile === void 0 ? void 0 : receiverProfile.displayName) !== null && _z !== void 0 ? _z : receiverLocationsArr[idx]) !== null && _0 !== void 0 ? _0 : roadmapList[idx].action) !== null && _1 !== void 0 ? _1 : `Stop ${idx + 1}`;
+                                (_11 = (_10 = (_9 = receiverProfile === null || receiverProfile === void 0 ? void 0 : receiverProfile.displayName) !== null && _9 !== void 0 ? _9 : receiverLocationsArr[idx]) !== null && _10 !== void 0 ? _10 : roadmapList[idx].action) !== null && _11 !== void 0 ? _11 : `Stop ${idx + 1}`;
                             const fromDb = (receiverProfile === null || receiverProfile === void 0 ? void 0 : receiverProfile.coordinates)
                                 ? (0, utils_2.parseOneCoordinate)(receiverProfile.coordinates)
                                 : null;
@@ -290,7 +327,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                     };
                 }
             }
-            catch (_16) {
+            catch (_36) {
             }
         }
         const hopInfos = [];
@@ -298,13 +335,13 @@ let TraceAssetUseCase = class TraceAssetUseCase {
         if (minterWalletLower) {
             hopInfos.push({
                 address: minterWalletLower,
-                label: (_3 = (_2 = batch.minterProfile) === null || _2 === void 0 ? void 0 : _2.displayName) !== null && _3 !== void 0 ? _3 : minterLocation,
+                label: (_13 = (_12 = batch.minterProfile) === null || _12 === void 0 ? void 0 : _12.displayName) !== null && _13 !== void 0 ? _13 : minterLocation,
                 point: originPoint,
                 isOrigin: true,
             });
         }
         for (let i = 0; i < roadmaps.length; i++) {
-            const addrRaw = ((_4 = roadmaps[i].toAddress) !== null && _4 !== void 0 ? _4 : "").trim();
+            const addrRaw = ((_14 = roadmaps[i].toAddress) !== null && _14 !== void 0 ? _14 : "").trim();
             if (!addrRaw) {
                 roadmapToHopIndex[i] = -1;
                 continue;
@@ -312,7 +349,7 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             const addrLower = addrRaw.toLowerCase();
             const profile = profileByWallet.get(addrLower);
             const point = receiverPoints[i];
-            const label = (_9 = (_8 = (_6 = (_5 = profile === null || profile === void 0 ? void 0 : profile.displayName) !== null && _5 !== void 0 ? _5 : receiverLocations[i]) !== null && _6 !== void 0 ? _6 : (_7 = checkpointsPassed[i]) === null || _7 === void 0 ? void 0 : _7.label) !== null && _8 !== void 0 ? _8 : roadmaps[i].action) !== null && _9 !== void 0 ? _9 : `Stop ${i + 1}`;
+            const label = (_19 = (_18 = (_16 = (_15 = profile === null || profile === void 0 ? void 0 : profile.displayName) !== null && _15 !== void 0 ? _15 : receiverLocations[i]) !== null && _16 !== void 0 ? _16 : (_17 = checkpointsPassed[i]) === null || _17 === void 0 ? void 0 : _17.label) !== null && _18 !== void 0 ? _18 : roadmaps[i].action) !== null && _19 !== void 0 ? _19 : `Stop ${i + 1}`;
             const hopIndex = hopInfos.length;
             hopInfos.push({
                 address: addrLower,
@@ -327,13 +364,25 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             orderBy: { createdAt: "asc" },
         });
         const executedPairs = new Set();
+        const deliveryByPair = new Map();
         for (const d of deliveries) {
             if (d.status === client_1.DeliveryStatus.IN_TRANSIT ||
                 d.status === client_1.DeliveryStatus.DELIVERED) {
-                const from = ((_10 = d.senderAddress) !== null && _10 !== void 0 ? _10 : "").trim().toLowerCase();
-                const to = ((_11 = d.recipientAddress) !== null && _11 !== void 0 ? _11 : "").trim().toLowerCase();
+                const from = ((_20 = d.senderAddress) !== null && _20 !== void 0 ? _20 : "").trim().toLowerCase();
+                const to = ((_21 = d.recipientAddress) !== null && _21 !== void 0 ? _21 : "").trim().toLowerCase();
                 if (from && to) {
                     executedPairs.add(`${from}->${to}`);
+                    deliveryByPair.set(`${from}->${to}`, {
+                        id: d.id,
+                        status: d.status,
+                        senderAddress: d.senderAddress,
+                        recipientAddress: d.recipientAddress,
+                        createdAt: d.createdAt,
+                        actualPickupAt: (_22 = d.actualPickupAt) !== null && _22 !== void 0 ? _22 : null,
+                        actualDeliveryAt: (_23 = d.actualDeliveryAt) !== null && _23 !== void 0 ? _23 : null,
+                        partialSignedByAddress: (_24 = d.partialSignedByAddress) !== null && _24 !== void 0 ? _24 : null,
+                        secondSignedByAddress: (_25 = d.secondSignedByAddress) !== null && _25 !== void 0 ? _25 : null,
+                    });
                 }
             }
         }
@@ -404,6 +453,147 @@ let TraceAssetUseCase = class TraceAssetUseCase {
                 },
             ];
         }
+        const routeSteps = roadmaps.length > 0
+            ? await Promise.all(roadmaps.map(async (rm, index) => {
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+                const fromAddrLower = index === 0
+                    ? minterWalletLower
+                    : (((_a = roadmaps[index - 1].toAddress) !== null && _a !== void 0 ? _a : "")
+                        .trim()
+                        .toLowerCase() || null);
+                const toAddrLower = ((_b = rm.toAddress) !== null && _b !== void 0 ? _b : "").trim().toLowerCase() || null;
+                const fromProfile = fromAddrLower
+                    ? (_c = profileByWallet.get(fromAddrLower)) !== null && _c !== void 0 ? _c : null
+                    : null;
+                const toProfile = toAddrLower
+                    ? (_d = profileByWallet.get(toAddrLower)) !== null && _d !== void 0 ? _d : null
+                    : null;
+                const pairKey = fromAddrLower && toAddrLower
+                    ? `${fromAddrLower}->${toAddrLower}`
+                    : "";
+                const d = pairKey ? deliveryByPair.get(pairKey) : undefined;
+                let actualDepartureAt = null;
+                let txCreatedAt = null;
+                let delayedDeclaration = false;
+                if (d) {
+                    if (d.actualPickupAt) {
+                        actualDepartureAt = d.actualPickupAt.toISOString();
+                    }
+                    if (d.createdAt) {
+                        txCreatedAt = d.createdAt.toISOString();
+                    }
+                    if (actualDepartureAt && txCreatedAt) {
+                        const dep = new Date(actualDepartureAt).getTime();
+                        const created = new Date(txCreatedAt).getTime();
+                        const diffMs = Math.abs(dep - created);
+                        const oneDayMs = 24 * 60 * 60 * 1000;
+                        delayedDeclaration = diffMs > oneDayMs;
+                    }
+                }
+                return {
+                    stepIndex: rm.stepIndex,
+                    from: {
+                        address: fromAddrLower,
+                        name: (_e = fromProfile === null || fromProfile === void 0 ? void 0 : fromProfile.displayName) !== null && _e !== void 0 ? _e : null,
+                        location: (_f = fromProfile === null || fromProfile === void 0 ? void 0 : fromProfile.location) !== null && _f !== void 0 ? _f : null,
+                    },
+                    to: {
+                        address: toAddrLower,
+                        name: (_g = toProfile === null || toProfile === void 0 ? void 0 : toProfile.displayName) !== null && _g !== void 0 ? _g : null,
+                        location: (_h = toProfile === null || toProfile === void 0 ? void 0 : toProfile.location) !== null && _h !== void 0 ? _h : null,
+                    },
+                    carrierName: (_j = rm.carrierName) !== null && _j !== void 0 ? _j : null,
+                    transportMode: (_k = rm.transportMode) !== null && _k !== void 0 ? _k : null,
+                    txHash: (_l = rm.txHash) !== null && _l !== void 0 ? _l : null,
+                    actualDepartureAt,
+                    txCreatedAt,
+                    delayedDeclaration,
+                };
+            }))
+            : [];
+        const addrSet = new Set();
+        for (const d of deliveries) {
+            if (d.senderAddress) {
+                addrSet.add(d.senderAddress.trim().toLowerCase());
+            }
+            if (d.recipientAddress) {
+                addrSet.add(d.recipientAddress.trim().toLowerCase());
+            }
+            if (d.partialSignedByAddress) {
+                addrSet.add(d.partialSignedByAddress.trim().toLowerCase());
+            }
+            if (d.secondSignedByAddress) {
+                addrSet.add(d.secondSignedByAddress.trim().toLowerCase());
+            }
+        }
+        const extraProfiles = addrSet.size > 0
+            ? await this.prisma.profile.findMany({
+                where: {
+                    walletAddress: {
+                        in: Array.from(addrSet),
+                    },
+                },
+                select: {
+                    walletAddress: true,
+                    displayName: true,
+                },
+            })
+            : [];
+        for (const p of extraProfiles) {
+            const key = p.walletAddress.trim().toLowerCase();
+            if (!profileByWallet.has(key)) {
+                profileByWallet.set(key, p);
+            }
+        }
+        const shippingDeliveries = deliveries.map((d) => {
+            var _a, _b, _c, _d;
+            const partialAddr = d.partialSignedByAddress
+                ? d.partialSignedByAddress.trim().toLowerCase()
+                : null;
+            const secondAddr = d.secondSignedByAddress
+                ? d.secondSignedByAddress.trim().toLowerCase()
+                : null;
+            const partialProfile = partialAddr
+                ? profileByWallet.get(partialAddr)
+                : null;
+            const secondProfile = secondAddr
+                ? profileByWallet.get(secondAddr)
+                : null;
+            return {
+                id: d.id,
+                status: d.status,
+                lockedInScript: d.status === client_1.DeliveryStatus.IN_TRANSIT,
+                partialSignedByAddress: (_a = d.partialSignedByAddress) !== null && _a !== void 0 ? _a : null,
+                partialSignedByName: (_b = partialProfile === null || partialProfile === void 0 ? void 0 : partialProfile.displayName) !== null && _b !== void 0 ? _b : null,
+                secondSignedByAddress: (_c = d.secondSignedByAddress) !== null && _c !== void 0 ? _c : null,
+                secondSignedByName: (_d = secondProfile === null || secondProfile === void 0 ? void 0 : secondProfile.displayName) !== null && _d !== void 0 ? _d : null,
+                actualPickupAt: d.actualPickupAt
+                    ? d.actualPickupAt.toISOString()
+                    : null,
+                actualDeliveryAt: d.actualDeliveryAt
+                    ? d.actualDeliveryAt.toISOString()
+                    : null,
+            };
+        });
+        const inventories = await this.prisma.warehouseInventory.findMany({
+            where: { batchId: batch.batchId },
+            orderBy: { receivedAt: "desc" },
+        });
+        let inventoryInfo = null;
+        if (inventories.length > 0) {
+            const inv = inventories[0];
+            inventoryInfo = {
+                status: (_26 = inv.status) !== null && _26 !== void 0 ? _26 : null,
+                zone: (_27 = inv.zone) !== null && _27 !== void 0 ? _27 : null,
+                aisle: (_28 = inv.aisle) !== null && _28 !== void 0 ? _28 : null,
+                rack: (_29 = inv.rack) !== null && _29 !== void 0 ? _29 : null,
+                bin: (_30 = inv.bin) !== null && _30 !== void 0 ? _30 : null,
+                burnTxHash: (_31 = inv.burnTxHash) !== null && _31 !== void 0 ? _31 : null,
+                burned: inv.status === "CONSUMED" ||
+                    !!inv.burnTxHash ||
+                    burnStatus === "burned",
+            };
+        }
         return {
             metadata,
             properties,
@@ -417,7 +607,11 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             burnStatus,
             mapData: finalMapData.length > 0 ? finalMapData : undefined,
             currentLocation,
-            display: (0, utils_2.buildDisplay)(metadata, properties, decodedMinterLocation, receiverLocationsArr, (_12 = batch.image) !== null && _12 !== void 0 ? _12 : null),
+            display: (0, utils_2.buildDisplay)(metadata, properties, decodedMinterLocation, receiverLocationsArr, (_32 = batch.image) !== null && _32 !== void 0 ? _32 : null),
+            core,
+            route: { steps: routeSteps },
+            shipping: { deliveries: shippingDeliveries },
+            inventory: inventoryInfo,
         };
     }
 };

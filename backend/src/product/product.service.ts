@@ -9,6 +9,7 @@ import { createReadOnlyWallet, buildMetadata } from "./product.helpers";
 import {
   PRODUCT_REPOSITORY,
   ProductRepositoryPort,
+  type ProductBatchListItem,
 } from "./domain/product.repository";
 import { ListBatchesUseCase } from "./application/use-cases/list-batches.use-case";
 import { RecordProductTxUseCase } from "./application/use-cases/record-product-tx.use-case";
@@ -44,9 +45,7 @@ export class ProductService {
     });
   }
 
-  async listBatches(profileId: number): Promise<
-    { id: number; batchId: string; name: string; description: string | null; image: string | null; createdAt: Date; policyId: string | null }[]
-  > {
+  async listBatches(profileId: number): Promise<ProductBatchListItem[]> {
     return this.listBatchesUseCase.execute(profileId);
   }
 
