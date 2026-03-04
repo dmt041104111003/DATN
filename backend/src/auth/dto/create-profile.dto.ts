@@ -1,10 +1,10 @@
-import { IsDefined, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsDefined, IsOptional, IsString } from "class-validator";
 import { StakeAddressInputDto } from "./stake-address.dto";
 
 export class CreateProfileDto extends StakeAddressInputDto {
-  @IsInt()
-  @Min(1)
-  roleId!: number;
+  @IsString()
+  @IsDefined()
+  roleCode!: string;
 
   @IsString()
   @IsDefined()

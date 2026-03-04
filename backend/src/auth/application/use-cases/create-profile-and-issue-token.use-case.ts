@@ -16,7 +16,7 @@ type StakeAddress = string;
 
 export interface CreateProfileAndIssueTokenParams {
   stakeAddress: StakeAddress;
-  roleId: number;
+  roleCode: string;
   displayName: string;
   location?: string;
   coordinates?: string;
@@ -31,7 +31,7 @@ export class CreateProfileAndIssueTokenUseCase {
   ) {}
 
   async execute(params: CreateProfileAndIssueTokenParams) {
-    const { stakeAddress, roleId, displayName, location, coordinates } = params;
+    const { stakeAddress, roleCode, displayName, location, coordinates } = params;
     const network = this.config.appNetwork === "mainnet" ? "mainnet" : "preprod";
     const addr = normalizeStakeAddress(stakeAddress, network);
 
@@ -43,15 +43,9 @@ export class CreateProfileAndIssueTokenUseCase {
 
     const wallet = await this.authRepository.upsertWallet(addr, new Date());
 
-    const role = await this.authRepository.findRoleById(roleId);
-
-    if (!role) {
-      throw new UnauthorizedException("Invalid role.");
-    }
-
     const profile = await this.authRepository.upsertProfile({
       walletAddress: wallet.address,
-      roleId: role.id,
+      roleCode: roleCode.toUpperCase(),
       displayName,
       location: location ?? null,
       coordinates: coordinates ?? null,
@@ -66,7 +60,7 @@ export class CreateProfileAndIssueTokenUseCase {
       sub: addr,
       stakeAddress: addr,
       profileId: profile.id,
-      role: profile.role.code,
+      role: profile.roleCode,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
       location: profile.location,
@@ -78,7 +72,7 @@ export class CreateProfileAndIssueTokenUseCase {
       token,
       profile: {
         id: profile.id,
-        role: profile.role.code,
+        role: profile.roleCode,
         displayName: profile.displayName,
         avatarUrl: profile.avatarUrl,
         location: profile.location ?? null,

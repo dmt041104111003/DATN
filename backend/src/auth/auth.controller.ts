@@ -48,10 +48,10 @@ export class AuthController {
   async createProfile(
     @Body() body: CreateProfileDto
   ) {
-    const { stakeAddress, roleId, displayName, location, coordinates } = body;
+    const { stakeAddress, roleCode, displayName, location, coordinates } = body;
     const addr = normalizeAddress(stakeAddress);
 
-    if (!addr || !roleId || !displayName) {
+    if (!addr || !roleCode || !displayName) {
       throw new HttpException(
         { error: "Missing profile information" },
         HttpStatus.BAD_REQUEST
@@ -60,7 +60,7 @@ export class AuthController {
 
     return this.authService.createProfileAndIssueToken({
       stakeAddress: addr,
-      roleId,
+      roleCode,
       displayName,
       location: location ?? undefined,
       coordinates: coordinates ?? undefined,

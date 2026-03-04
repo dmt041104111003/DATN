@@ -3,15 +3,10 @@ export interface Wallet {
   lastLogin: Date;
 }
 
-export interface Role {
-  id: number;
-  code: string;
-}
-
 export interface Profile {
   id: number;
   walletAddress: string;
-  role: Role;
+  roleCode: string;
   displayName: string;
   avatarUrl: string | null;
   location: string | null;
@@ -20,7 +15,7 @@ export interface Profile {
 
 export interface UpsertProfileParams {
   walletAddress: string;
-  roleId: number;
+  roleCode: string;
   displayName: string;
   location: string | null;
   coordinates: string | null;
@@ -30,10 +25,6 @@ export interface AuthRepositoryPort {
   upsertWallet(address: string, lastLogin: Date): Promise<Wallet>;
 
   findProfileByWalletAddress(address: string): Promise<Profile | null>;
-
-  findAllRoles(): Promise<Role[]>;
-
-  findRoleById(id: number): Promise<Role | null>;
 
   upsertProfile(params: UpsertProfileParams): Promise<Profile>;
 

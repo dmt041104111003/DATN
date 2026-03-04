@@ -14,25 +14,16 @@ model Wallet {
   profiles Profile[]
 }
 
-model Role {
-  id   Int    @id @default(autoincrement())
-  code String @unique
-
-  profiles Profile[]
-}
-
 model Profile {
   id            Int     @id @default(autoincrement())
   walletAddress String  @unique
-  roleId        Int
+  roleCode      String
   displayName   String
   avatarUrl     String?
   location      String?
   coordinates   String?
 
   wallet Wallet @relation(fields: [walletAddress], references: [address])
-  role   Role   @relation(fields: [roleId], references: [id])
-
   mintedBatches       ProductBatch[]        @relation("ProfileBatches")
   issuedCertificates  Certificate[]         @relation("CertificateIssuer")
   subjectCertificates Certificate[]         @relation("CertificateSubject")
