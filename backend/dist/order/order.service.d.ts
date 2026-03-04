@@ -83,6 +83,9 @@ export declare class OrderService {
         recipientAddress: string;
         senderAddress: string;
         ownerAddresses: string[];
+        scriptAddress?: string;
+        datumHash?: string;
+        datumJson?: unknown;
     }): Promise<{
         id: number;
     }>;

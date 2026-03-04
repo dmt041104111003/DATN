@@ -68,7 +68,9 @@ export class PrismaOrderRepository implements OrderRepositoryPort {
         policyId: params.policyId?.trim() ?? null,
         scriptAddress: params.scriptAddress?.trim() ?? null,
         datumHash: params.datumHash?.trim() ?? null,
-        datumJson: params.datumJson ?? null,
+        ...(params.datumJson !== undefined && {
+          datumJson: params.datumJson as Prisma.InputJsonValue,
+        }),
         recipientAddress: params.recipientAddress.trim(),
         senderAddress: params.senderAddress.trim(),
         ownerAddresses,

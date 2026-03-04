@@ -19,8 +19,8 @@ let MarkBurnedUseCase = class MarkBurnedUseCase {
     constructor(repository) {
         this.repository = repository;
     }
-    execute(profileId, batchId) {
-        return this.repository.markAsBurnedForProfile(profileId, batchId);
+    execute(profileId, batchId, burnTxHash) {
+        return this.repository.markAsBurnedForProfile(profileId, batchId, burnTxHash);
     }
 };
 exports.MarkBurnedUseCase = MarkBurnedUseCase;

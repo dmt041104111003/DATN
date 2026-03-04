@@ -23,32 +23,24 @@ let PrismaProfileRepository = class PrismaProfileRepository {
                 displayName: true,
                 location: true,
                 coordinates: true,
-                role: { select: { code: true } },
+                roleCode: true,
             },
             orderBy: { displayName: "asc" },
         });
         return profiles.map((p) => {
-            var _a, _b, _c, _d;
+            var _a, _b, _c;
             return ({
                 walletAddress: p.walletAddress,
                 displayName: p.displayName,
                 location: (_a = p.location) !== null && _a !== void 0 ? _a : null,
                 coordinates: (_b = p.coordinates) !== null && _b !== void 0 ? _b : null,
-                role: (_d = (_c = p.role) === null || _c === void 0 ? void 0 : _c.code) !== null && _d !== void 0 ? _d : null,
+                role: (_c = p.roleCode) !== null && _c !== void 0 ? _c : null,
             });
         });
     }
-    async findRoleByCode(code) {
-        const role = await this.prisma.role.findUnique({
-            where: { code },
-        });
-        if (!role)
-            return null;
-        return { id: role.id, code: role.code };
-    }
-    async listProfilesByRoleId(roleId) {
+    async listProfilesByRoleCode(roleCode) {
         const profiles = await this.prisma.profile.findMany({
-            where: { roleId },
+            where: { roleCode },
             select: { id: true, displayName: true, walletAddress: true },
             orderBy: { displayName: "asc" },
         });
@@ -70,7 +62,6 @@ let PrismaProfileRepository = class PrismaProfileRepository {
             })), (data.coordinates !== undefined && {
                 coordinates: data.coordinates || null,
             })),
-            include: { role: true, wallet: true },
         });
         return {
             id: profile.id,
@@ -79,7 +70,7 @@ let PrismaProfileRepository = class PrismaProfileRepository {
             avatarUrl: (_a = profile.avatarUrl) !== null && _a !== void 0 ? _a : null,
             location: (_b = profile.location) !== null && _b !== void 0 ? _b : null,
             coordinates: (_c = profile.coordinates) !== null && _c !== void 0 ? _c : null,
-            roleCode: profile.role.code,
+            roleCode: profile.roleCode,
         };
     }
     async updateProfileAvatarById(id, avatarUrl) {
@@ -89,7 +80,6 @@ let PrismaProfileRepository = class PrismaProfileRepository {
             data: {
                 avatarUrl,
             },
-            include: { role: true, wallet: true },
         });
         return {
             id: profile.id,
@@ -98,7 +88,7 @@ let PrismaProfileRepository = class PrismaProfileRepository {
             avatarUrl: (_a = profile.avatarUrl) !== null && _a !== void 0 ? _a : null,
             location: (_b = profile.location) !== null && _b !== void 0 ? _b : null,
             coordinates: (_c = profile.coordinates) !== null && _c !== void 0 ? _c : null,
-            roleCode: profile.role.code,
+            roleCode: profile.roleCode,
         };
     }
 };

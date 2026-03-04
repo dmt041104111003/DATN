@@ -15,7 +15,6 @@ export declare class VerifyAndIssueTokenUseCase {
     constructor(config: ConfigService, authRepository: AuthRepositoryPort, nonceStore: NonceStorePort);
     execute(params: VerifyAndIssueTokenParams): Promise<{
         needProfile: true;
-        roles: import("../../domain/auth.repository").Role[];
         token?: undefined;
         profile?: undefined;
     } | {
@@ -29,7 +28,6 @@ export declare class VerifyAndIssueTokenUseCase {
             coordinates: string | null;
         };
         needProfile?: undefined;
-        roles?: undefined;
     }>;
 }
 export {};

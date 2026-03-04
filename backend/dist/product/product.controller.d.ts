@@ -9,7 +9,7 @@ export declare class ProductController {
         total: number;
         items: {
             id: number;
-            code: string;
+            batchId: string;
             name: string;
             description: string | null;
             image: string | null;
@@ -47,8 +47,8 @@ export declare class ProductController {
     }>;
     getRoadmap(code: string | undefined, token?: string): Promise<{
         items: {
-            hopIndex: number;
-            receiverAddress: string | null;
+            stepIndex: number;
+            toAddress: string | null;
         }[];
     }>;
     getBatchByCode(code: string): Promise<{

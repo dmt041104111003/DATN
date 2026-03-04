@@ -2,5 +2,5 @@ import { ProductRepositoryPort, ProductRoadmapHop } from "../../domain/product.r
 export declare class ListRoadmapUseCase {
     private readonly repository;
     constructor(repository: ProductRepositoryPort);
-    execute(batchCode: string): Promise<ProductRoadmapHop[]>;
+    execute(batchId: string): Promise<ProductRoadmapHop[]>;
 }

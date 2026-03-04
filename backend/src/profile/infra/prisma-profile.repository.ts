@@ -64,7 +64,6 @@ export class PrismaProfileRepository implements ProfileRepositoryPort {
           coordinates: data.coordinates || null,
         }),
       },
-      include: { role: true, wallet: true },
     });
 
     return {
@@ -74,7 +73,7 @@ export class PrismaProfileRepository implements ProfileRepositoryPort {
       avatarUrl: profile.avatarUrl ?? null,
       location: profile.location ?? null,
       coordinates: profile.coordinates ?? null,
-      roleCode: profile.role.code,
+      roleCode: profile.roleCode,
     };
   }
 
@@ -87,7 +86,6 @@ export class PrismaProfileRepository implements ProfileRepositoryPort {
       data: {
         avatarUrl,
       },
-      include: { role: true, wallet: true },
     });
 
     return {
@@ -97,7 +95,7 @@ export class PrismaProfileRepository implements ProfileRepositoryPort {
       avatarUrl: profile.avatarUrl ?? null,
       location: profile.location ?? null,
       coordinates: profile.coordinates ?? null,
-      roleCode: profile.role.code,
+      roleCode: profile.roleCode,
     };
   }
 }

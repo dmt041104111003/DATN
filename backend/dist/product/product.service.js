@@ -40,8 +40,8 @@ let ProductService = class ProductService {
     async listBatches(profileId) {
         return this.listBatchesUseCase.execute(profileId);
     }
-    async listRoadmap(batchCode) {
-        return this.listRoadmapUseCase.execute(batchCode);
+    async listRoadmap(batchId) {
+        return this.listRoadmapUseCase.execute(batchId);
     }
     async mint(params) {
         var _a, _b, _c;
@@ -194,7 +194,7 @@ let ProductService = class ProductService {
         }
         return {
             policyId: batch.policyId,
-            assetName: batch.code,
+            assetName: batch.batchId,
             nftUnit: null,
         };
     }

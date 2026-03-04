@@ -6,7 +6,7 @@ export declare class PrismaWarehouseRepository implements WarehouseRepositoryPor
     listInventoryByProfileId(profileId: number): Promise<WarehouseInventoryItem[]>;
     removeInventoryForProfile(profileId: number, batchId: string): Promise<void>;
     markAsShippedForProfile(profileId: number, batchId: string): Promise<void>;
-    markAsBurnedForProfile(profileId: number, batchId: string): Promise<void>;
+    markAsBurnedForProfile(profileId: number, batchId: string, burnTxHash?: string): Promise<void>;
     addToWarehouseForProfile(profileId: number, batchId: string): Promise<void>;
     findRecipientByRoadmap(profileId: number, batchId: string): Promise<RecipientByRoadmapResult>;
 }

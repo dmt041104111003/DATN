@@ -20,10 +20,6 @@ export declare class AuthController {
         };
     } | {
         needProfile: true;
-        roles: {
-            id: number;
-            code: string;
-        }[];
     }>;
     createProfile(body: CreateProfileDto): Promise<{
         token: string;

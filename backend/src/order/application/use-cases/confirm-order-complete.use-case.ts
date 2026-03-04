@@ -82,7 +82,7 @@ export class ConfirmOrderCompleteUseCase {
     const profile = await this.prisma.profile.findFirst({
       where: {
         walletAddress: delivery.recipientAddress.trim(),
-        role: { code: { in: ["TRANSIT", "AGENT"] } },
+        roleCode: { in: ["TRANSIT", "AGENT"] },
       },
       select: { id: true },
     });

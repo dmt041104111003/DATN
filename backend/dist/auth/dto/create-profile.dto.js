@@ -16,10 +16,10 @@ class CreateProfileDto extends stake_address_dto_1.StakeAddressInputDto {
 }
 exports.CreateProfileDto = CreateProfileDto;
 __decorate([
-    (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1),
-    __metadata("design:type", Number)
-], CreateProfileDto.prototype, "roleId", void 0);
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsDefined)(),
+    __metadata("design:type", String)
+], CreateProfileDto.prototype, "roleCode", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsDefined)(),

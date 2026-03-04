@@ -18,31 +18,27 @@ let PrismaProductRepository = class PrismaProductRepository {
     }
     async listBatchesByMinter(profileId) {
         const items = await this.prisma.productBatch.findMany({
-            where: { minterProfileId: profileId },
+            where: { minterProfileId: profileId, revoked: false },
             select: {
                 id: true,
-                code: true,
+                batchId: true,
                 name: true,
                 description: true,
                 image: true,
                 createdAt: true,
-                metadata: true,
                 policyId: true,
+                sku: true,
+                productCategory: true,
             },
-            orderBy: [{ createdAt: "asc" }, { code: "asc" }],
+            orderBy: [{ createdAt: "asc" }, { batchId: "asc" }],
         });
         if (!Array.isArray(items))
             return [];
-        const visible = items.filter((b) => {
-            const meta = b.metadata;
-            const db = meta === null || meta === void 0 ? void 0 : meta._db;
-            return !db || db.revoked !== true;
-        });
-        return visible.map((b) => {
+        return items.map((b) => {
             var _a, _b, _c;
             return ({
                 id: b.id,
-                code: b.code,
+                batchId: b.batchId,
                 name: b.name,
                 description: (_a = b.description) !== null && _a !== void 0 ? _a : null,
                 image: (_b = b.image) !== null && _b !== void 0 ? _b : null,
@@ -52,55 +48,64 @@ let PrismaProductRepository = class PrismaProductRepository {
         });
     }
     async upsertBatchOnMint(params) {
-        const { code, name, description, image, standard, properties, metadata, mintTxHash, policyId, minterProfileId, } = params;
+        const { batchId, name, description, image, standard, mintTxHash, policyId, minterProfileId, expiryDate, sku, gtin, hsCode, unitOfMeasure, productCategory, grossWeightKg, netWeightKg, lengthCm, widthCm, heightCm, storageCondition, originSiteCode, referenceUtxo, } = params;
         await this.prisma.productBatch.upsert({
-            where: { code },
-            create: {
-                code,
+            where: { batchId },
+            create: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ batchId,
                 name,
                 description,
                 image,
                 standard,
-                properties,
-                metadata,
-                mintTxHash,
-                policyId: policyId !== null && policyId !== void 0 ? policyId : undefined,
-                minterProfileId,
-            },
-            update: {
-                mintTxHash,
+                mintTxHash, policyId: policyId !== null && policyId !== void 0 ? policyId : undefined, minterProfileId }, (expiryDate !== undefined && { expiryDate })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (unitOfMeasure !== undefined && { unitOfMeasure })), (productCategory !== undefined && { productCategory })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (storageCondition !== undefined && { storageCondition })), (originSiteCode !== undefined && { originSiteCode })), (referenceUtxo !== undefined && { referenceUtxo })),
+            update: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ mintTxHash,
                 name,
                 description,
                 image,
-                standard,
-                properties,
-                metadata,
-                policyId: policyId !== null && policyId !== void 0 ? policyId : undefined,
-            },
+                standard, policyId: policyId !== null && policyId !== void 0 ? policyId : undefined }, (expiryDate !== undefined && { expiryDate })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (unitOfMeasure !== undefined && { unitOfMeasure })), (productCategory !== undefined && { productCategory })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (storageCondition !== undefined && { storageCondition })), (originSiteCode !== undefined && { originSiteCode })), (referenceUtxo !== undefined && { referenceUtxo })),
         });
     }
     async findBatchByCode(code) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1;
         const batch = await this.prisma.productBatch.findUnique({
-            where: { code },
+            where: { batchId: code },
         });
         if (!batch)
             return null;
         return {
-            code: batch.code,
+            batchId: batch.batchId,
             name: batch.name,
             description: (_a = batch.description) !== null && _a !== void 0 ? _a : null,
             image: (_b = batch.image) !== null && _b !== void 0 ? _b : null,
             standard: (_c = batch.standard) !== null && _c !== void 0 ? _c : null,
-            properties: batch.properties,
-            metadata: batch.metadata,
             policyId: (_d = batch.policyId) !== null && _d !== void 0 ? _d : null,
+            expiryDate: (_e = batch.expiryDate) !== null && _e !== void 0 ? _e : null,
+            sku: (_f = batch.sku) !== null && _f !== void 0 ? _f : null,
+            gtin: (_g = batch.gtin) !== null && _g !== void 0 ? _g : null,
+            hsCode: (_h = batch.hsCode) !== null && _h !== void 0 ? _h : null,
+            unitOfMeasure: (_j = batch.unitOfMeasure) !== null && _j !== void 0 ? _j : null,
+            productCategory: (_k = batch.productCategory) !== null && _k !== void 0 ? _k : null,
+            grossWeightKg: (_l = batch.grossWeightKg) !== null && _l !== void 0 ? _l : null,
+            netWeightKg: (_m = batch.netWeightKg) !== null && _m !== void 0 ? _m : null,
+            lengthCm: (_o = batch.lengthCm) !== null && _o !== void 0 ? _o : null,
+            widthCm: (_p = batch.widthCm) !== null && _p !== void 0 ? _p : null,
+            heightCm: (_q = batch.heightCm) !== null && _q !== void 0 ? _q : null,
+            storageCondition: (_r = batch.storageCondition) !== null && _r !== void 0 ? _r : null,
+            originSiteCode: (_s = batch.originSiteCode) !== null && _s !== void 0 ? _s : null,
+            referenceUtxo: (_t = batch.referenceUtxo) !== null && _t !== void 0 ? _t : null,
+            lastUpdateTxHash: (_u = batch.lastUpdateTxHash) !== null && _u !== void 0 ? _u : null,
+            lastUpdateAt: (_v = batch.lastUpdateAt) !== null && _v !== void 0 ? _v : null,
+            revokeTxHash: (_w = batch.revokeTxHash) !== null && _w !== void 0 ? _w : null,
+            revokedAt: (_x = batch.revokedAt) !== null && _x !== void 0 ? _x : null,
+            revoked: (_y = batch.revoked) !== null && _y !== void 0 ? _y : false,
+            burnTxHash: (_z = batch.burnTxHash) !== null && _z !== void 0 ? _z : null,
+            burnedAt: (_0 = batch.burnedAt) !== null && _0 !== void 0 ? _0 : null,
+            burned: (_1 = batch.burned) !== null && _1 !== void 0 ? _1 : false,
         };
     }
     async getMinterWalletAddressByBatchCode(code) {
         var _a;
         const row = await this.prisma.productBatch.findUnique({
-            where: { code },
+            where: { batchId: code },
             select: {
                 minterProfile: {
                     select: {
@@ -113,38 +118,41 @@ let PrismaProductRepository = class PrismaProductRepository {
         return typeof addr === "string" && addr.trim() ? addr.trim() : null;
     }
     async updateBatch(params) {
-        const { code, name, description, image, standard, properties, metadata } = params;
+        const { batchId, name, description, image, standard, expiryDate, lastUpdateTxHash, lastUpdateAt, sku, gtin, hsCode, unitOfMeasure, productCategory, grossWeightKg, netWeightKg, lengthCm, widthCm, heightCm, storageCondition, originSiteCode, } = params;
         await this.prisma.productBatch.update({
-            where: { code },
-            data: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (name !== undefined && { name })), (description !== undefined && { description })), (image !== undefined && { image })), (standard !== undefined && { standard })), { properties,
-                metadata }),
+            where: { batchId },
+            data: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (name !== undefined && { name })), (description !== undefined && { description })), (image !== undefined && { image })), (standard !== undefined && { standard })), (expiryDate !== undefined && { expiryDate })), (lastUpdateTxHash !== undefined && { lastUpdateTxHash })), (lastUpdateAt !== undefined && { lastUpdateAt })), (sku !== undefined && { sku })), (gtin !== undefined && { gtin })), (hsCode !== undefined && { hsCode })), (unitOfMeasure !== undefined && { unitOfMeasure })), (productCategory !== undefined && { productCategory })), (grossWeightKg !== undefined && { grossWeightKg })), (netWeightKg !== undefined && { netWeightKg })), (lengthCm !== undefined && { lengthCm })), (widthCm !== undefined && { widthCm })), (heightCm !== undefined && { heightCm })), (storageCondition !== undefined && { storageCondition })), (originSiteCode !== undefined && { originSiteCode })),
         });
     }
-    async markBatchRevoked(code, nextMetadata) {
+    async markBatchRevoked(code) {
         await this.prisma.productBatch.update({
-            where: { code },
+            where: { batchId: code },
             data: {
-                metadata: nextMetadata,
+                revoked: true,
+                revokeTxHash: undefined,
+                revokedAt: new Date(),
             },
         });
     }
-    async markBatchBurned(code, nextMetadata) {
+    async markBatchBurned(code, burnTxHash) {
         await this.prisma.productBatch.update({
-            where: { code },
+            where: { batchId: code },
             data: {
-                metadata: nextMetadata,
+                burned: true,
+                burnTxHash,
+                burnedAt: new Date(),
             },
         });
     }
-    async createRoadmaps(batchId, action, senderAddress, receivers, txHash) {
+    async createRoadmaps(batchId, action, fromAddress, receivers, txHash) {
         if (receivers.length === 0)
             return;
         await this.prisma.roadmap.createMany({
-            data: receivers.map((receiverAddress, hopIndex) => ({
+            data: receivers.map((toAddress, stepIndex) => ({
                 batchId,
-                senderAddress,
-                receiverAddress,
-                hopIndex,
+                fromAddress,
+                toAddress,
+                stepIndex,
                 action,
                 txHash,
             })),
@@ -157,15 +165,15 @@ let PrismaProductRepository = class PrismaProductRepository {
             return [];
         const rows = await prisma.roadmap.findMany({
             where: { batchId: bid },
-            orderBy: { hopIndex: "asc" },
-            select: { hopIndex: true, senderAddress: true, receiverAddress: true },
+            orderBy: { stepIndex: "asc" },
+            select: { stepIndex: true, fromAddress: true, toAddress: true },
         });
         if (!Array.isArray(rows))
             return [];
         return rows.map((r) => ({
-            hopIndex: r.hopIndex,
-            senderAddress: r.senderAddress,
-            receiverAddress: r.receiverAddress,
+            stepIndex: r.stepIndex,
+            fromAddress: r.fromAddress,
+            toAddress: r.toAddress,
         }));
     }
 };

@@ -32,7 +32,7 @@ model Profile {
 
 model ProductBatch {
   id               Int      @id @default(autoincrement())
-  batchId          String   @unique @map("code")
+  batchId          String   @unique
   name             String
   description      String?
   image            String?
@@ -76,7 +76,7 @@ model WarehouseInventory {
   batchId     String
   profileId   Int
   status      String    @default("IN_WAREHOUSE")
-  receivedAt  DateTime  @default(now()) @map("mintedAt")
+  receivedAt  DateTime  @default(now())
   warehouseCode String?
   zone          String?
   aisle         String?
@@ -115,9 +115,9 @@ model Certificate {
 model Roadmap {
   id              Int      @id @default(autoincrement())
   batchId         String
-  fromAddress     String   @default("") @map("senderAddress")
-  toAddress       String   @map("receiverAddress")
-  stepIndex       Int      @default(0) @map("hopIndex")
+  fromAddress     String   @default("")
+  toAddress       String
+  stepIndex       Int      @default(0)
   action          String
   txHash          String?
   createdAt       DateTime @default(now())

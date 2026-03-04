@@ -61,11 +61,8 @@ export class VerifyAndIssueTokenUseCase {
     );
 
     if (!profile) {
-      const roles = await this.authRepository.findAllRoles();
-
       return {
         needProfile: true as const,
-        roles,
       };
     }
 
@@ -78,7 +75,7 @@ export class VerifyAndIssueTokenUseCase {
       sub: addr,
       stakeAddress: addr,
       profileId: profile.id,
-      role: profile.role.code,
+      role: profile.roleCode,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
       location: profile.location,
@@ -90,7 +87,7 @@ export class VerifyAndIssueTokenUseCase {
       token,
       profile: {
         id: profile.id,
-        role: profile.role.code,
+        role: profile.roleCode,
         displayName: profile.displayName,
         avatarUrl: profile.avatarUrl,
         location: profile.location ?? null,

@@ -45,14 +45,14 @@ let AuthController = class AuthController {
         });
     }
     async createProfile(body) {
-        const { stakeAddress, roleId, displayName, location, coordinates } = body;
+        const { stakeAddress, roleCode, displayName, location, coordinates } = body;
         const addr = (0, utils_1.normalizeAddress)(stakeAddress);
-        if (!addr || !roleId || !displayName) {
+        if (!addr || !roleCode || !displayName) {
             throw new common_1.HttpException({ error: "Missing profile information" }, common_1.HttpStatus.BAD_REQUEST);
         }
         return this.authService.createProfileAndIssueToken({
             stakeAddress: addr,
-            roleId,
+            roleCode,
             displayName,
             location: location !== null && location !== void 0 ? location : undefined,
             coordinates: coordinates !== null && coordinates !== void 0 ? coordinates : undefined,

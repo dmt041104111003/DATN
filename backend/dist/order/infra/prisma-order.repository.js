@@ -40,7 +40,7 @@ let PrismaOrderRepository = class PrismaOrderRepository {
         await this.prisma.$executeRaw(client_1.Prisma.sql `UPDATE "DeliveryOrder" SET "partialSignedTxHex" = ${partialTxHex}, "partialSignedByAddress" = ${walletAddress} WHERE id = ${deliveryId}`);
     }
     async upsertDeliveryOrder(params) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d, _e, _f, _g;
         const scriptOutputIndex = (_a = params.scriptOutputIndex) !== null && _a !== void 0 ? _a : 0;
         const ownerAddresses = Array.isArray(params.ownerAddresses)
             ? params.ownerAddresses
@@ -52,16 +52,9 @@ let PrismaOrderRepository = class PrismaOrderRepository {
                     scriptOutputIndex,
                 },
             },
-            create: {
-                lockTxHash: params.lockTxHash.trim(),
-                scriptOutputIndex,
-                batchId: params.batchId.trim(),
-                policyId: (_c = (_b = params.policyId) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : null,
-                recipientAddress: params.recipientAddress.trim(),
-                senderAddress: params.senderAddress.trim(),
-                ownerAddresses,
-                status: client_1.DeliveryStatus.IN_TRANSIT,
-            },
+            create: Object.assign(Object.assign({ lockTxHash: params.lockTxHash.trim(), scriptOutputIndex, batchId: params.batchId.trim(), policyId: (_c = (_b = params.policyId) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : null, scriptAddress: (_e = (_d = params.scriptAddress) === null || _d === void 0 ? void 0 : _d.trim()) !== null && _e !== void 0 ? _e : null, datumHash: (_g = (_f = params.datumHash) === null || _f === void 0 ? void 0 : _f.trim()) !== null && _g !== void 0 ? _g : null }, (params.datumJson !== undefined && {
+                datumJson: params.datumJson,
+            })), { recipientAddress: params.recipientAddress.trim(), senderAddress: params.senderAddress.trim(), ownerAddresses, status: client_1.DeliveryStatus.IN_TRANSIT }),
             update: {},
         });
         return { id: delivery.id };

@@ -10,7 +10,7 @@ export declare class WarehouseController {
             batchId: string;
             batchName: string;
             image: string | null;
-            mintedAt: Date;
+            receivedAt: Date;
             policyId: string | null;
             status: string;
         }[];

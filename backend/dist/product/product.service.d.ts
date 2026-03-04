@@ -17,16 +17,16 @@ export declare class ProductService {
     private createContract;
     listBatches(profileId: number): Promise<{
         id: number;
-        code: string;
+        batchId: string;
         name: string;
         description: string | null;
         image: string | null;
         createdAt: Date;
         policyId: string | null;
     }[]>;
-    listRoadmap(batchCode: string): Promise<{
-        hopIndex: number;
-        receiverAddress: string | null;
+    listRoadmap(batchId: string): Promise<{
+        stepIndex: number;
+        toAddress: string | null;
     }[]>;
     mint(params: {
         changeAddress: string;

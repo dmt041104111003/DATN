@@ -19,8 +19,8 @@ let ListRoadmapUseCase = class ListRoadmapUseCase {
     constructor(repository) {
         this.repository = repository;
     }
-    execute(batchCode) {
-        return this.repository.listRoadmap(batchCode);
+    execute(batchId) {
+        return this.repository.listRoadmap(batchId);
     }
 };
 exports.ListRoadmapUseCase = ListRoadmapUseCase;

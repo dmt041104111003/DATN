@@ -31,64 +31,41 @@ let PrismaAuthRepository = class PrismaAuthRepository {
     async findProfileByWalletAddress(address) {
         const profile = await this.prisma.profile.findFirst({
             where: { walletAddress: address },
-            include: { role: true },
         });
-        if (!profile || !profile.role)
+        if (!profile)
             return null;
         return {
             id: profile.id,
             walletAddress: profile.walletAddress,
-            role: {
-                id: profile.role.id,
-                code: profile.role.code,
-            },
+            roleCode: profile.roleCode,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
             location: profile.location,
             coordinates: profile.coordinates,
         };
     }
-    async findAllRoles() {
-        const roles = await this.prisma.role.findMany({
-            select: { id: true, code: true },
-            orderBy: { id: "asc" },
-        });
-        return roles;
-    }
-    async findRoleById(id) {
-        const role = await this.prisma.role.findUnique({
-            where: { id },
-        });
-        if (!role)
-            return null;
-        return { id: role.id, code: role.code };
-    }
     async upsertProfile(params) {
-        const { walletAddress, roleId, displayName, location, coordinates } = params;
+        const { walletAddress, roleCode, displayName, location, coordinates } = params;
         const profile = await this.prisma.profile.upsert({
             where: { walletAddress },
             update: {
-                roleId,
+                roleCode,
                 displayName,
                 location,
                 coordinates,
             },
             create: {
                 walletAddress,
-                roleId,
+                roleCode,
                 displayName,
                 location,
                 coordinates,
             },
-            include: { role: true },
         });
         return {
             id: profile.id,
             walletAddress: profile.walletAddress,
-            role: {
-                id: profile.role.id,
-                code: profile.role.code,
-            },
+            roleCode: profile.roleCode,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
             location: profile.location,
@@ -96,12 +73,12 @@ let PrismaAuthRepository = class PrismaAuthRepository {
         };
     }
     async findProfileRoleCodeById(profileId) {
-        var _a, _b;
+        var _a;
         const profile = await this.prisma.profile.findUnique({
             where: { id: profileId },
-            select: { role: { select: { code: true } } },
+            select: { roleCode: true },
         });
-        return (_b = (_a = profile === null || profile === void 0 ? void 0 : profile.role) === null || _a === void 0 ? void 0 : _a.code) !== null && _b !== void 0 ? _b : null;
+        return (_a = profile === null || profile === void 0 ? void 0 : profile.roleCode) !== null && _a !== void 0 ? _a : null;
     }
 };
 exports.PrismaAuthRepository = PrismaAuthRepository;

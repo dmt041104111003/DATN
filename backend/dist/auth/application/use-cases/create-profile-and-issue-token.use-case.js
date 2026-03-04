@@ -25,20 +25,16 @@ let CreateProfileAndIssueTokenUseCase = class CreateProfileAndIssueTokenUseCase 
     }
     async execute(params) {
         var _a, _b;
-        const { stakeAddress, roleId, displayName, location, coordinates } = params;
+        const { stakeAddress, roleCode, displayName, location, coordinates } = params;
         const network = this.config.appNetwork === "mainnet" ? "mainnet" : "preprod";
         const addr = (0, utils_1.normalizeStakeAddress)(stakeAddress, network);
         if (!(0, utils_1.isPaymentAddress)(addr)) {
             throw new common_1.BadRequestException("Address must be a payment address (addr_test1... or addr1...) or a valid hex (56, 58 or 114 chars).");
         }
         const wallet = await this.authRepository.upsertWallet(addr, new Date());
-        const role = await this.authRepository.findRoleById(roleId);
-        if (!role) {
-            throw new common_1.UnauthorizedException("Invalid role.");
-        }
         const profile = await this.authRepository.upsertProfile({
             walletAddress: wallet.address,
-            roleId: role.id,
+            roleCode: roleCode.toUpperCase(),
             displayName,
             location: location !== null && location !== void 0 ? location : null,
             coordinates: coordinates !== null && coordinates !== void 0 ? coordinates : null,
@@ -51,7 +47,7 @@ let CreateProfileAndIssueTokenUseCase = class CreateProfileAndIssueTokenUseCase 
             sub: addr,
             stakeAddress: addr,
             profileId: profile.id,
-            role: profile.role.code,
+            role: profile.roleCode,
             displayName: profile.displayName,
             avatarUrl: profile.avatarUrl,
             location: profile.location,
@@ -62,7 +58,7 @@ let CreateProfileAndIssueTokenUseCase = class CreateProfileAndIssueTokenUseCase 
             token,
             profile: {
                 id: profile.id,
-                role: profile.role.code,
+                role: profile.roleCode,
                 displayName: profile.displayName,
                 avatarUrl: profile.avatarUrl,
                 location: (_a = profile.location) !== null && _a !== void 0 ? _a : null,

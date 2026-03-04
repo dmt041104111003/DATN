@@ -5,10 +5,6 @@ export interface ProfileListItem {
     coordinates: string | null;
     role: string | null;
 }
-export interface Role {
-    id: number;
-    code: string;
-}
 export interface ProfileBasic {
     id: number;
     displayName: string;
@@ -30,8 +26,7 @@ export interface UpdatedProfileWithRelations {
 }
 export interface ProfileRepositoryPort {
     listAllProfiles(): Promise<ProfileListItem[]>;
-    findRoleByCode(code: string): Promise<Role | null>;
-    listProfilesByRoleId(roleId: number): Promise<ProfileBasic[]>;
+    listProfilesByRoleCode(roleCode: string): Promise<ProfileBasic[]>;
     updateProfileById(id: number, data: UpdateProfileData): Promise<UpdatedProfileWithRelations>;
     updateProfileAvatarById(id: number, avatarUrl: string): Promise<UpdatedProfileWithRelations>;
 }

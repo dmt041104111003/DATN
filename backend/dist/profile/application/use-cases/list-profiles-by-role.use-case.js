@@ -23,10 +23,7 @@ let ListProfilesByRoleUseCase = class ListProfilesByRoleUseCase {
         const code = (roleCode || "").trim().toUpperCase();
         if (!code)
             return [];
-        const role = await this.repository.findRoleByCode(code);
-        if (!role)
-            return [];
-        return this.repository.listProfilesByRoleId(role.id);
+        return this.repository.listProfilesByRoleCode(code);
     }
 };
 exports.ListProfilesByRoleUseCase = ListProfilesByRoleUseCase;

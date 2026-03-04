@@ -3,7 +3,7 @@ import { AuthRepositoryPort } from "../../domain/auth.repository";
 type StakeAddress = string;
 export interface CreateProfileAndIssueTokenParams {
     stakeAddress: StakeAddress;
-    roleId: number;
+    roleCode: string;
     displayName: string;
     location?: string;
     coordinates?: string;

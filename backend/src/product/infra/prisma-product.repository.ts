@@ -68,6 +68,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
       heightCm,
       storageCondition,
       originSiteCode,
+      referenceUtxo,
     } = params;
     await (this.prisma as any).productBatch.upsert({
       where: { batchId },
@@ -93,6 +94,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         ...(heightCm !== undefined && { heightCm }),
         ...(storageCondition !== undefined && { storageCondition }),
         ...(originSiteCode !== undefined && { originSiteCode }),
+        ...(referenceUtxo !== undefined && { referenceUtxo }),
       },
       update: {
         mintTxHash,
@@ -114,6 +116,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
         ...(heightCm !== undefined && { heightCm }),
         ...(storageCondition !== undefined && { storageCondition }),
         ...(originSiteCode !== undefined && { originSiteCode }),
+        ...(referenceUtxo !== undefined && { referenceUtxo }),
       },
     });
   }

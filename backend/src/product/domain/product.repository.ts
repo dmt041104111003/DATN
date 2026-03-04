@@ -67,6 +67,7 @@ export interface MintBatchParams {
   heightCm?: number | null;
   storageCondition?: string | null;
   originSiteCode?: string | null;
+  referenceUtxo?: string | null;
 }
 
 export interface UpdateBatchParams {
@@ -90,6 +91,7 @@ export interface UpdateBatchParams {
   heightCm?: number | null;
   storageCondition?: string | null;
   originSiteCode?: string | null;
+  referenceUtxo?: string | null;
 }
 
 export interface ProductRepositoryPort {
@@ -106,8 +108,7 @@ export interface ProductRepositoryPort {
   updateBatch(params: UpdateBatchParams): Promise<void>;
 
   markBatchRevoked(
-    batchId: string,
-    nextMetadata: object
+    batchId: string
   ): Promise<void>;
 
   markBatchBurned(

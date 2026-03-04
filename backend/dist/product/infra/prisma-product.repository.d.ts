@@ -8,8 +8,8 @@ export declare class PrismaProductRepository implements ProductRepositoryPort {
     findBatchByCode(code: string): Promise<ProductBatchSnapshot | null>;
     getMinterWalletAddressByBatchCode(code: string): Promise<string | null>;
     updateBatch(params: UpdateBatchParams): Promise<void>;
-    markBatchRevoked(code: string, nextMetadata: object): Promise<void>;
-    markBatchBurned(code: string, nextMetadata: object): Promise<void>;
-    createRoadmaps(batchId: string, action: "MINT" | "UPDATE" | "REVOKE", senderAddress: string, receivers: string[], txHash: string): Promise<void>;
+    markBatchRevoked(code: string): Promise<void>;
+    markBatchBurned(code: string, burnTxHash: string): Promise<void>;
+    createRoadmaps(batchId: string, action: "MINT" | "UPDATE" | "REVOKE", fromAddress: string, receivers: string[], txHash: string): Promise<void>;
     listRoadmap(batchId: string): Promise<ProductRoadmapHop[]>;
 }
