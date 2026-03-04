@@ -4,9 +4,10 @@ import { formatDate } from '../../utils/date';
 type Props = {
   styles: Record<string, string>;
   items: Certificate[];
+  onDetail?: (cert: Certificate) => void;
 };
 
-export function CertTable({ styles, items }: Props) {
+export function CertTable({ styles, items, onDetail }: Props) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -22,12 +23,13 @@ export function CertTable({ styles, items }: Props) {
             <th>Expiry</th>
             <th>Image</th>
             <th>Issued</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={10} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+              <td colSpan={11} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
                 No data
               </td>
             </tr>
@@ -68,6 +70,18 @@ export function CertTable({ styles, items }: Props) {
                 )}
               </td>
               <td>{formatDate(cert.issuedAt)}</td>
+              <td>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    onClick={() => onDetail?.(cert)}
+                    title="View details"
+                  >
+                    Detail
+                  </button>
+                </div>
+              </td>
             </tr>
           ))
           )}

@@ -19,6 +19,7 @@ import { WarehouseSearch } from '../../components/warehouse/WarehouseSearch';
 import { WarehouseTable } from '../../components/warehouse/WarehouseTable';
 import { WarehouseCards } from '../../components/warehouse/WarehouseCards';
 import { WarehouseLockDialog } from '../../components/warehouse/WarehouseLockDialog';
+import { WarehouseDetailDialog } from '../../components/warehouse/WarehouseDetailDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles };
 const PAGE_SIZE = 10;
@@ -35,6 +36,7 @@ export default function WarehousePage() {
   const [page, setPage] = useState(1);
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
   const [lockDialogItem, setLockDialogItem] = useState<WarehouseItem | null>(null);
+  const [detailItem, setDetailItem] = useState<WarehouseItem | null>(null);
 
   useEffect(() => {
     const account = readAccountFromToken();
@@ -153,40 +155,41 @@ export default function WarehousePage() {
         </p>
       )}
 
-      {loading ? (
-        <p className={styles.formHint}>Loading...</p>
-      ) : (
-        <>
-          <WarehouseTable
-            styles={styles}
-            items={paginatedList}
-            onBurn={handleBurn}
-            onLock={handleLock}
-            burningBatchId={burningBatchId}
-          />
-          <WarehouseCards
-            styles={styles}
-            items={paginatedList}
-            onBurn={handleBurn}
-            onLock={handleLock}
-            burningBatchId={burningBatchId}
-          />
+      <WarehouseTable
+        styles={styles}
+        items={paginatedList}
+        onDetail={setDetailItem}
+        onBurn={handleBurn}
+        onLock={handleLock}
+        burningBatchId={burningBatchId}
+      />
+      <WarehouseCards
+        styles={styles}
+        items={paginatedList}
+        onDetail={setDetailItem}
+        onBurn={handleBurn}
+        onLock={handleLock}
+        burningBatchId={burningBatchId}
+      />
 
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            totalItems={filteredItems.length}
-            pageSize={PAGE_SIZE}
-          />
-        </>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        totalItems={filteredItems.length}
+        pageSize={PAGE_SIZE}
+      />
 
       <WarehouseLockDialog
         open={lockDialogOpen}
         item={lockDialogItem}
         onClose={() => { setLockDialogOpen(false); setLockDialogItem(null); }}
         onSuccess={loadMyWarehouse}
+      />
+      <WarehouseDetailDialog
+        open={!!detailItem}
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
       />
     </>
   );

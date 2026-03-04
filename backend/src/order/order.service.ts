@@ -267,6 +267,7 @@ export class OrderService {
     partialSignedByAddress: string | null;
     secondSignedByAddress: string | null;
     unlockTxHash: string | null;
+    outAt: Date | null;
   }[]> {
     return this.listOrdersForProfileUseCase.execute(profileId);
   }

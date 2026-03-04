@@ -21,6 +21,7 @@ export class WarehouseController {
       batchName: string;
       image: string | null;
       receivedAt: Date;
+      outAt: Date | null;
       policyId: string | null;
       status: string;
     }[];

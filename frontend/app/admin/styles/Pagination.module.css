@@ -17,44 +17,47 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
+/* Pagination as text links (no card/box) */
 .btn {
-  min-width: 36px;
-  height: 36px;
-  padding: 0 0.5rem;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
+  min-width: auto;
+  height: auto;
+  padding: 0 0.35rem;
+  border: none;
+  background: none;
+  color: #2563eb;
   font-size: 0.875rem;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
+  color: #1d4ed8;
 }
 
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  color: #9ca3af;
 }
 
 .btnActive {
-  min-width: 36px;
-  height: 36px;
-  padding: 0 0.5rem;
-  border: 1px solid #2d2d3a;
-  background: #2d2d3a;
-  color: #fff;
+  min-width: auto;
+  height: auto;
+  padding: 0 0.35rem;
+  border: none;
+  background: none;
+  color: #374151;
   font-size: 0.875rem;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: default;
+  text-decoration: none;
 }
 
 .ellipsis {
@@ -72,20 +75,15 @@
 }
 
 :global(.dark) .btn {
-  border-color: #4b5563;
-  background: #374151;
-  color: #e5e7eb;
+  color: #60a5fa;
 }
 
 :global(.dark) .btn:hover:not(:disabled) {
-  background: #4b5563;
-  border-color: #6b7280;
+  color: #93c5fd;
 }
 
 :global(.dark) .btnActive {
-  border-color: #ea2035;
-  background: #ea2035;
-  color: #fff;
+  color: #e5e7eb;
 }
 
 :global(.dark) .ellipsis {
@@ -105,8 +103,6 @@
 
   .btn,
   .btnActive {
-    min-width: 32px;
-    height: 32px;
     font-size: 0.8125rem;
   }
 }

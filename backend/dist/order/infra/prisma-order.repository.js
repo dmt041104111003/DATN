@@ -89,7 +89,14 @@ let PrismaOrderRepository = class PrismaOrderRepository {
         };
     }
     async markOrderDelivered(id, unlockTxHash, secondSignedByAddress) {
-        await this.prisma.$executeRaw(client_1.Prisma.sql `UPDATE "DeliveryOrder" SET status = 'DELIVERED', "unlockTxHash" = ${unlockTxHash}, "secondSignedByAddress" = ${secondSignedByAddress} WHERE id = ${id}`);
+        const now = new Date();
+        await this.prisma.$executeRaw `
+      UPDATE "DeliveryOrder"
+      SET status = 'DELIVERED', "unlockTxHash" = ${unlockTxHash},
+          "secondSignedByAddress" = ${secondSignedByAddress},
+          "actualDeliveryAt" = ${now}
+      WHERE id = ${id}
+    `;
     }
 };
 exports.PrismaOrderRepository = PrismaOrderRepository;

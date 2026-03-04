@@ -49,6 +49,9 @@ export class ListOrdersForProfileUseCase {
         partialSignedByAddress: r.partialSignedByAddress ?? null,
         secondSignedByAddress: r.secondSignedByAddress ?? null,
         unlockTxHash: r.unlockTxHash ?? null,
+        outAt:
+          r.actualDeliveryAt ??
+          (String(r.status) === "DELIVERED" ? r.updatedAt ?? null : null),
       }));
   }
 }

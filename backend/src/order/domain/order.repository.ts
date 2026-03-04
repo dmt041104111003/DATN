@@ -17,6 +17,8 @@ export interface DeliveryOrderRow {
   partialSignedByAddress: string | null;
   secondSignedByAddress: string | null;
   unlockTxHash: string | null;
+  actualDeliveryAt?: Date | null;
+  updatedAt?: Date;
 }
 
 export interface OrderSummary {
@@ -36,6 +38,7 @@ export interface OrderSummary {
   partialSignedByAddress: string | null;
   secondSignedByAddress: string | null;
   unlockTxHash: string | null;
+  outAt: Date | null;
 }
 
 export interface OrderRecordParams {

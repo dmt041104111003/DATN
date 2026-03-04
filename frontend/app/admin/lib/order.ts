@@ -50,6 +50,7 @@ export type OrderDeliveryItem = {
   senderAddress: string;
   ownerAddresses: string[];
   status: string;
+  outAt?: string | null;
   partialSignedTxHex?: string | null;
   partialSignedByAddress?: string | null;
   secondSignedByAddress?: string | null;

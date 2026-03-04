@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import type { AccountProfileProps } from '../../types';
 import { ProfileForm } from './ProfileForm';
 import layoutStyles from '../../styles/AccountProfile.module.css';
@@ -24,13 +25,7 @@ export function AccountProfile({
   onSubmit,
   onChangeAvatar,
 }: AccountProfileProps) {
-  if (!account) {
-    return (
-      <div className={styles.formCard}>
-        <p className={styles.loadingText}>Loading account from session...</p>
-      </div>
-    );
-  }
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className={styles.formCard}>
@@ -41,7 +36,7 @@ export function AccountProfile({
         <div className={styles.accountAvatarCol}>
           <div className={styles.accountAvatarCircle}>
             <img
-              src={account.avatarUrl || '/avatar.png'}
+              src={account?.avatarUrl || '/avatar.png'}
               alt="Avatar"
               className={styles.accountAvatarImage}
             />
@@ -49,12 +44,13 @@ export function AccountProfile({
           <button
             type="button"
             className={styles.btnSecondary}
-            onClick={onChangeAvatar as unknown as () => void}
-            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || !account}
           >
             {uploading ? 'Uploading avatar...' : 'Change avatar'}
           </button>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             className={styles.accountHiddenInput}
@@ -69,11 +65,11 @@ export function AccountProfile({
             }`}
           >
             <h1 className={styles.accountName}>
-              {account.displayName || 'Unnamed account'}
+              {account?.displayName || 'Unnamed account'}
             </h1>
-            <div className={styles.accountStake}>{account.stakeAddress}</div>
+            <div className={styles.accountStake}>{account?.stakeAddress ?? ''}</div>
             <div className={styles.accountRole}>
-              <span>{account.roleCode}</span>
+              <span>{account?.roleCode ?? ''}</span>
             </div>
           </div>
 
@@ -87,14 +83,14 @@ export function AccountProfile({
               onChangeLocation={onChangeLocation}
               coordinates={coordinates}
               onChangeCoordinates={onChangeCoordinates}
-              disabled={loading}
+              disabled={loading || !account}
             />
 
             <div className={styles.accountActions}>
               <button
                 type="submit"
                 className={styles.btnPrimary}
-                disabled={loading}
+                disabled={loading || !account}
               >
                 {loading ? 'Saving...' : 'Save changes'}
               </button>

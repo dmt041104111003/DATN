@@ -34,7 +34,7 @@ let ListOrdersForProfileUseCase = class ListOrdersForProfileUseCase {
             return owners.some((addr) => (addr || "").trim().toLowerCase() === lower);
         })
             .map((r) => {
-            var _a, _b, _c, _d, _e, _f, _g;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
             return ({
                 id: r.id,
                 lockTxHash: r.lockTxHash,
@@ -54,6 +54,7 @@ let ListOrdersForProfileUseCase = class ListOrdersForProfileUseCase {
                 partialSignedByAddress: (_e = r.partialSignedByAddress) !== null && _e !== void 0 ? _e : null,
                 secondSignedByAddress: (_f = r.secondSignedByAddress) !== null && _f !== void 0 ? _f : null,
                 unlockTxHash: (_g = r.unlockTxHash) !== null && _g !== void 0 ? _g : null,
+                outAt: (_h = r.actualDeliveryAt) !== null && _h !== void 0 ? _h : (String(r.status) === "DELIVERED" ? (_j = r.updatedAt) !== null && _j !== void 0 ? _j : null : null),
             });
         });
     }

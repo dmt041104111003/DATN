@@ -1,12 +1,14 @@
 import type { OrderDeliveryItem } from '../../lib/order';
+import { formatDate } from '../../utils/date';
 
 type Props = {
   styles: Record<string, string>;
   items: OrderDeliveryItem[];
+  onDetail?: (d: OrderDeliveryItem) => void;
   onComplete: (d: OrderDeliveryItem) => void;
 };
 
-export function OrderTable({ styles, items, onComplete }: Props) {
+export function OrderTable({ styles, items, onDetail, onComplete }: Props) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -16,13 +18,14 @@ export function OrderTable({ styles, items, onComplete }: Props) {
             <th>Recipient</th>
             <th>Tx</th>
             <th>Status</th>
+            <th>Out</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={5} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+              <td colSpan={6} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
                 No data
               </td>
             </tr>
@@ -49,16 +52,27 @@ export function OrderTable({ styles, items, onComplete }: Props) {
                   <span>IN_TRANSIT</span>
                 )}
               </td>
+              <td>{d.outAt ? formatDate(d.outAt) : '–'}</td>
               <td>
                 <div className={styles.actions}>
+                  {onDetail && (
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={() => onDetail(d)}
+                      title="View details"
+                    >
+                      Detail
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={styles.btnPrimary}
                     onClick={() => onComplete(d)}
                     disabled={d.status === 'DELIVERED' || !!d.unlockTxHash}
-                    title="View details"
+                    title="Complete delivery"
                   >
-                    Detail
+                    Complete
                   </button>
                 </div>
               </td>

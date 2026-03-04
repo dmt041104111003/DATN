@@ -124,9 +124,14 @@ export class PrismaOrderRepository implements OrderRepositoryPort {
     unlockTxHash: string,
     secondSignedByAddress: string | null
   ): Promise<void> {
-    await this.prisma.$executeRaw(
-      Prisma.sql`UPDATE "DeliveryOrder" SET status = 'DELIVERED', "unlockTxHash" = ${unlockTxHash}, "secondSignedByAddress" = ${secondSignedByAddress} WHERE id = ${id}`,
-    );
+    const now = new Date();
+    await this.prisma.$executeRaw`
+      UPDATE "DeliveryOrder"
+      SET status = 'DELIVERED', "unlockTxHash" = ${unlockTxHash},
+          "secondSignedByAddress" = ${secondSignedByAddress},
+          "actualDeliveryAt" = ${now}
+      WHERE id = ${id}
+    `;
   }
 }
 

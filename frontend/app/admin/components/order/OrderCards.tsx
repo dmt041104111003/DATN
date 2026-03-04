@@ -1,12 +1,14 @@
 import type { OrderDeliveryItem } from '../../lib/order';
+import { formatDate } from '../../utils/date';
 
 type Props = {
   styles: Record<string, string>;
   items: OrderDeliveryItem[];
+  onDetail?: (d: OrderDeliveryItem) => void;
   onComplete: (d: OrderDeliveryItem) => void;
 };
 
-export function OrderCards({ styles, items, onComplete }: Props) {
+export function OrderCards({ styles, items, onDetail, onComplete }: Props) {
   return (
     <div className={styles.tableCards}>
       {items.map((d) => (
@@ -41,16 +43,30 @@ export function OrderCards({ styles, items, onComplete }: Props) {
               )}
             </span>
           </div>
+          <div className={styles.tableCardRow}>
+            <span className={styles.tableCardLabel}>Out</span>
+            <span className={styles.tableCardValue}>{d.outAt ? formatDate(d.outAt) : '–'}</span>
+          </div>
           <div className={styles.tableCardActions}>
             <div className={styles.actions}>
+              {onDetail && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => onDetail(d)}
+                  title="View details"
+                >
+                  Detail
+                </button>
+              )}
               <button
                 type="button"
                 className={styles.btnPrimary}
                 onClick={() => onComplete(d)}
                 disabled={d.status === 'DELIVERED' || !!d.unlockTxHash}
-                title="View details"
+                title="Complete delivery"
               >
-                Detail
+                Complete
               </button>
             </div>
           </div>

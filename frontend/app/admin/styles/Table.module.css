@@ -2,6 +2,44 @@
   width: 100%;
 }
 
+/* All buttons in table as text links */
+.tableWrap .btnPrimary,
+.tableWrap .btnSecondary,
+.tableWrap .btnDanger {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  min-width: auto;
+  height: auto;
+  border-radius: 0;
+  font-size: inherit;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.tableWrap .btnPrimary:hover:not(:disabled),
+.tableWrap .btnSecondary:hover:not(:disabled) {
+  color: #1d4ed8;
+}
+
+.tableWrap .btnDanger {
+  color: #dc2626;
+}
+
+.tableWrap .btnDanger:hover:not(:disabled) {
+  color: #b91c1c;
+}
+
+.tableWrap .btnPrimary:disabled,
+.tableWrap .btnSecondary:disabled,
+.tableWrap .btnDanger:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
 .tableCards {
   display: none;
 }
@@ -18,11 +56,16 @@
   }
 
   .tableCard {
-    background: #fff;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
+    background: transparent;
+    border-radius: 0;
+    padding: 1rem 0;
+    box-shadow: none;
+    border: none;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .tableCard:last-child {
+    border-bottom: none;
   }
 
   .tableCardRow {
@@ -65,6 +108,44 @@
   .tableCardActions .actions {
     flex-wrap: wrap;
   }
+
+  /* Buttons in cards as text links */
+  .tableCards .btnPrimary,
+  .tableCards .btnSecondary,
+  .tableCards .btnDanger {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    min-width: auto;
+    height: auto;
+    border-radius: 0;
+    font-size: inherit;
+    font-weight: 500;
+    color: #2563eb;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .tableCards .btnPrimary:hover:not(:disabled),
+  .tableCards .btnSecondary:hover:not(:disabled) {
+    color: #1d4ed8;
+  }
+
+  .tableCards .btnDanger {
+    color: #dc2626;
+  }
+
+  .tableCards .btnDanger:hover:not(:disabled) {
+    color: #b91c1c;
+  }
+
+  .tableCards .btnPrimary:disabled,
+  .tableCards .btnSecondary:disabled,
+  .tableCards .btnDanger:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
 }
 
 .table {
@@ -97,7 +178,10 @@
 .actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
+
+/* Actions container - buttons already styled by .tableWrap rules above */
 
 .tableLink {
   background: none;

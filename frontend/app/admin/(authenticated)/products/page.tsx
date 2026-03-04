@@ -24,6 +24,7 @@ import { getBatchByAssetName, getProductRoadmap } from '../../lib/product';
 import { getCertificates, getCertificateIdsByBatch, setCertificatesForBatch } from '../../lib/certificate';
 import { encodeTraceId } from '@/utils/utils';
 import { ProductDialog } from '../../components/product/ProductDialog';
+import { ProductDetailDialog } from '../../components/product/ProductDetailDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
 const PAGE_SIZE = 10;
@@ -37,6 +38,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
   const [code, setCode] = useState('');
   const [nameEn, setNameEn] = useState('Cam sành XNK 1.5kg');
@@ -598,6 +600,7 @@ export default function ProductsPage() {
       <ProductsTable
         styles={styles}
         items={paginatedList}
+        onDetail={setDetailProduct}
         onEdit={openEdit}
         onRevoke={handleRevoke}
         onDownloadQr={handleDownloadQr}
@@ -606,6 +609,7 @@ export default function ProductsPage() {
       <ProductsCards
         styles={styles}
         items={paginatedList}
+        onDetail={setDetailProduct}
         onEdit={openEdit}
         onRevoke={handleRevoke}
         onDownloadQr={handleDownloadQr}
@@ -663,6 +667,12 @@ export default function ProductsPage() {
         certificateOptions={certificateOptions}
         selectedCertificateIds={selectedCertificateIds}
         onCertificateIdsChange={setSelectedCertificateIds}
+      />
+
+      <ProductDetailDialog
+        open={!!detailProduct}
+        product={detailProduct}
+        onClose={() => setDetailProduct(null)}
       />
 
     </>

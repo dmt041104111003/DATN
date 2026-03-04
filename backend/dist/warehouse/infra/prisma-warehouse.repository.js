@@ -18,7 +18,7 @@ let PrismaWarehouseRepository = class PrismaWarehouseRepository {
     }
     async listInventoryByProfileId(profileId) {
         const rows = await this.prisma.warehouseInventory.findMany({
-            where: { profileId, status: "IN_WAREHOUSE" },
+            where: { profileId },
             include: {
                 batch: {
                     select: { id: true, name: true, image: true, policyId: true },
@@ -28,14 +28,15 @@ let PrismaWarehouseRepository = class PrismaWarehouseRepository {
         });
         const visible = (rows || []).filter((inv) => { var _a; return String((_a = inv === null || inv === void 0 ? void 0 : inv.status) !== null && _a !== void 0 ? _a : "IN_WAREHOUSE") !== "BURNED"; });
         return visible.map((inv) => {
-            var _a, _b, _c, _d, _e, _f, _g;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
             return ({
                 batchId: inv.batchId,
                 batchName: (_b = (_a = inv.batch) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : inv.batchId,
                 image: (_d = (_c = inv.batch) === null || _c === void 0 ? void 0 : _c.image) !== null && _d !== void 0 ? _d : null,
                 receivedAt: inv.receivedAt,
-                policyId: (_f = (_e = inv.batch) === null || _e === void 0 ? void 0 : _e.policyId) !== null && _f !== void 0 ? _f : null,
-                status: (_g = inv.status) !== null && _g !== void 0 ? _g : "IN_WAREHOUSE",
+                outAt: (_f = (_e = inv.shippedAt) !== null && _e !== void 0 ? _e : inv.consumedAt) !== null && _f !== void 0 ? _f : null,
+                policyId: (_h = (_g = inv.batch) === null || _g === void 0 ? void 0 : _g.policyId) !== null && _h !== void 0 ? _h : null,
+                status: (_j = inv.status) !== null && _j !== void 0 ? _j : "IN_WAREHOUSE",
             });
         });
     }

@@ -4,12 +4,13 @@ import { formatDate } from '../../utils/date';
 type Props = {
   styles: Record<string, string>;
   items: WarehouseItem[];
+  onDetail?: (item: WarehouseItem) => void;
   onBurn: (item: WarehouseItem) => void;
   onLock: (item: WarehouseItem) => void;
   burningBatchId: string | null;
 };
 
-export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }: Props) {
+export function WarehouseTable({ styles, items, onDetail, onBurn, onLock, burningBatchId }: Props) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -18,13 +19,14 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
             <th>Batch</th>
             <th>Status</th>
             <th>Received</th>
+            <th>Out</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={4} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
+              <td colSpan={5} style={{ textAlign: 'center', color: '#6b7280', padding: '1.5rem' }}>
                 No data
               </td>
             </tr>
@@ -50,8 +52,19 @@ export function WarehouseTable({ styles, items, onBurn, onLock, burningBatchId }
               </td>
               <td>{statusLabel}</td>
               <td>{formatDate(item.receivedAt)}</td>
+              <td>{item.outAt ? formatDate(item.outAt) : '–'}</td>
               <td>
                 <div className={styles.actions}>
+                  {onDetail && (
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      onClick={() => onDetail(item)}
+                      title="View details"
+                    >
+                      Detail
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={styles.btnSecondary}

@@ -43,6 +43,7 @@ export declare class OrderController {
             partialSignedByAddress: string | null;
             secondSignedByAddress: string | null;
             unlockTxHash: string | null;
+            outAt: string | null;
         }[];
     }>;
     savePartialTx(id: string, token: string | undefined, body: SavePartialTxDto): Promise<{

@@ -3,12 +3,13 @@ import type { Product } from '../../types';
 type Props = {
   styles: Record<string, string>;
   items: Product[];
+  onDetail?: (p: Product) => void;
   onEdit: (p: Product) => void;
   onRevoke: (id: number) => void;
   onDownloadQr: (p: Product) => void;
 };
 
-export function ProductsCards({ styles, items, onEdit, onRevoke, onDownloadQr }: Props) {
+export function ProductsCards({ styles, items, onDetail, onEdit, onRevoke, onDownloadQr }: Props) {
   return (
     <div className={styles.tableCards}>
       {items.length === 0 ? null : (
@@ -42,6 +43,16 @@ export function ProductsCards({ styles, items, onEdit, onRevoke, onDownloadQr }:
           </div>
           <div className={styles.tableCardActions}>
             <div className={styles.actions}>
+              {onDetail && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => onDetail(p)}
+                  title="View details"
+                >
+                  Detail
+                </button>
+              )}
               <button
                 type="button"
                 className={styles.btnSecondary}

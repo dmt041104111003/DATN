@@ -14,7 +14,7 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
     profileId: number
   ): Promise<WarehouseInventoryItem[]> {
     const rows = await (this.prisma as any).warehouseInventory.findMany({
-      where: { profileId, status: "IN_WAREHOUSE" },
+      where: { profileId },
       include: {
         batch: {
           select: { id: true, name: true, image: true, policyId: true },
@@ -31,6 +31,7 @@ export class PrismaWarehouseRepository implements WarehouseRepositoryPort {
         batchName: inv.batch?.name ?? inv.batchId,
         image: inv.batch?.image ?? null,
         receivedAt: inv.receivedAt,
+        outAt: inv.shippedAt ?? inv.consumedAt ?? null,
         policyId: inv.batch?.policyId ?? null,
         status: inv.status ?? "IN_WAREHOUSE",
       })

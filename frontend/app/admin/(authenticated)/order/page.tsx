@@ -14,6 +14,7 @@ import { OrderSearch } from '../../components/order/OrderSearch';
 import { OrderTable } from '../../components/order/OrderTable';
 import { OrderCards } from '../../components/order/OrderCards';
 import { OrderDialog } from '../../components/order/OrderDialog';
+import { OrderDetailDialog } from '../../components/order/OrderDetailDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles, ...dialogStyles, ...paginationStyles };
 const PAGE_SIZE = 10;
@@ -25,6 +26,7 @@ export default function OrderPage() {
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDelivery, setDialogDelivery] = useState<OrderDeliveryItem | null>(null);
+  const [detailDelivery, setDetailDelivery] = useState<OrderDeliveryItem | null>(null);
 
   const loadDeliveries = async () => {
     const token = getAuthToken();
@@ -93,36 +95,37 @@ export default function OrderPage() {
       <OrderHeader styles={styles} />
       <OrderSearch styles={styles} query={searchQuery} onChange={setSearchQuery} />
 
-      {loading ? (
-        <p className={styles.formHint}>Loading...</p>
-      ) : (
-        <>
-          <OrderTable
-            styles={styles}
-            items={paginatedList}
-            onComplete={handleComplete}
-          />
-          <OrderCards
-            styles={styles}
-            items={paginatedList}
-            onComplete={handleComplete}
-          />
+      <OrderTable
+        styles={styles}
+        items={paginatedList}
+        onDetail={setDetailDelivery}
+        onComplete={handleComplete}
+      />
+      <OrderCards
+        styles={styles}
+        items={paginatedList}
+        onDetail={setDetailDelivery}
+        onComplete={handleComplete}
+      />
 
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            totalItems={filteredItems.length}
-            pageSize={PAGE_SIZE}
-          />
-        </>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        totalItems={filteredItems.length}
+        pageSize={PAGE_SIZE}
+      />
 
       <OrderDialog
         open={dialogOpen}
         delivery={dialogDelivery}
         onClose={handleDialogClose}
         onSuccess={loadDeliveries}
+      />
+      <OrderDetailDialog
+        open={!!detailDelivery}
+        delivery={detailDelivery}
+        onClose={() => setDetailDelivery(null)}
       />
     </>
   );

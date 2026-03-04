@@ -4,12 +4,13 @@ import { formatDate } from '../../utils/date';
 type Props = {
   styles: Record<string, string>;
   items: WarehouseItem[];
+  onDetail?: (item: WarehouseItem) => void;
   onBurn: (item: WarehouseItem) => void;
   onLock: (item: WarehouseItem) => void;
   burningBatchId: string | null;
 };
 
-export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }: Props) {
+export function WarehouseCards({ styles, items, onDetail, onBurn, onLock, burningBatchId }: Props) {
   return (
     <div className={styles.tableCards}>
       {items.map((item, index) => {
@@ -41,8 +42,22 @@ export function WarehouseCards({ styles, items, onBurn, onLock, burningBatchId }
             <span className={styles.tableCardLabel}>Received</span>
             <span className={styles.tableCardValue}>{formatDate(item.receivedAt)}</span>
           </div>
+          <div className={styles.tableCardRow}>
+            <span className={styles.tableCardLabel}>Out</span>
+            <span className={styles.tableCardValue}>{item.outAt ? formatDate(item.outAt) : '–'}</span>
+          </div>
           <div className={styles.tableCardActions}>
             <div className={styles.actions}>
+              {onDetail && (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => onDetail(item)}
+                  title="View details"
+                >
+                  Detail
+                </button>
+              )}
               <button
                 type="button"
                 className={styles.btnSecondary}

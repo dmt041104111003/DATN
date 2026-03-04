@@ -71,6 +71,7 @@ export declare class OrderService {
         partialSignedByAddress: string | null;
         secondSignedByAddress: string | null;
         unlockTxHash: string | null;
+        outAt: Date | null;
     }[]>;
     savePartialSignedTx(deliveryId: number, profileId: number, partialTxHex: string): Promise<{
         ok: boolean;

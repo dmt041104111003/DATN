@@ -15,6 +15,7 @@ import { CertHeader } from '../../components/certificate/CertHeader';
 import { CertSearch } from '../../components/certificate/CertSearch';
 import { CertTable } from '../../components/certificate/CertTable';
 import { CertCreateDialog } from '../../components/certificate/CertDialog';
+import { CertDetailDialog } from '../../components/certificate/CertDetailDialog';
 
 const styles = { ...formStyles, ...tableStyles, ...buttonStyles };
 const PAGE_SIZE = 10;
@@ -29,6 +30,7 @@ export default function CertificatePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailCert, setDetailCert] = useState<Certificate | null>(null);
 
   useEffect(() => {
     const account = readAccountFromToken();
@@ -100,28 +102,28 @@ export default function CertificatePage() {
         </p>
       )}
 
-      {loading && items.length === 0 ? (
-        <p className={styles.formHint}>Loading...</p>
-      ) : (
-        <>
-          <CertTable
-            styles={styles}
-            items={paginatedList}
-          />
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            totalItems={total}
-            pageSize={PAGE_SIZE}
-          />
-        </>
-      )}
+      <CertTable
+        styles={styles}
+        items={paginatedList}
+        onDetail={setDetailCert}
+      />
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        totalItems={total}
+        pageSize={PAGE_SIZE}
+      />
 
       <CertCreateDialog
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
         onSuccess={loadCertificates}
+      />
+      <CertDetailDialog
+        open={!!detailCert}
+        cert={detailCert}
+        onClose={() => setDetailCert(null)}
       />
     </>
   );
