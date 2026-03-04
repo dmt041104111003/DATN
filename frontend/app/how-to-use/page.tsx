@@ -11,10 +11,9 @@ export default function HowToUsePage() {
   return (
     <LanguageProvider>
       <>
+       
         <Header />
-        <main className="min-h-screen pt-[60px] md:pt-[80px]">
           <HowToUse />
-        </main>
         <FAQ />
         <Contact />
         <Footer />

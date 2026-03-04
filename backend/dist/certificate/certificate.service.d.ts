@@ -1,4 +1,4 @@
-import { CertificateRepositoryPort } from "./domain/certificate.repository";
+import { CertificateRepositoryPort, CreateCertificateData } from "./domain/certificate.repository";
 import { ListCertificatesUseCase } from "./application/use-cases/list-certificates.use-case";
 import { GetCertificateByIdUseCase } from "./application/use-cases/get-certificate-by-id.use-case";
 import { CreateCertificateUseCase } from "./application/use-cases/create-certificate.use-case";
@@ -38,12 +38,7 @@ export declare class CertificateService {
         productBatchCode: string;
         productBatchName: string | null;
     }>;
-    create(issuerProfileId: number, data: {
-        title: string;
-        batchId: string;
-        imageUrl: string;
-        metadata?: Record<string, unknown>;
-    }): Promise<{
+    create(issuerProfileId: number, data: CreateCertificateData): Promise<{
         id: number;
         title: string;
         imageUrl: string | null;

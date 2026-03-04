@@ -57,7 +57,7 @@ let CertificateController = class CertificateController {
         return this.certificate.getById(id, profileId);
     }
     async create(body, token) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d, _e;
         if (!token || typeof token !== "string" || !token.trim()) {
             throw new common_1.UnauthorizedException("Missing or invalid token.");
         }
@@ -72,10 +72,19 @@ let CertificateController = class CertificateController {
         if (!((_c = body.imageUrl) === null || _c === void 0 ? void 0 : _c.trim())) {
             throw new common_1.BadRequestException("imageUrl is required (upload image via POST /upload/image first).");
         }
+        if (!((_d = body.number) === null || _d === void 0 ? void 0 : _d.trim())) {
+            throw new common_1.BadRequestException("Certificate number (No.) is required.");
+        }
+        if (!((_e = body.authority) === null || _e === void 0 ? void 0 : _e.trim())) {
+            throw new common_1.BadRequestException("Certificate authority is required.");
+        }
         return this.certificate.create(profileId, {
             title: body.title,
             batchId: body.batchId,
             imageUrl: body.imageUrl,
+            number: body.number,
+            authority: body.authority,
+            expiryDate: body.expiryDate,
             metadata: body.metadata,
         });
     }

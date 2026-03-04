@@ -121,6 +121,7 @@ export class PrismaCertificateRepository implements CertificateRepositoryPort {
         imageUrl: data.imageUrl,
         batchId: data.batchId,
         issuerProfileId,
+        subjectProfileId: issuerProfileId,
         number: data.number != null && data.number.trim ? data.number.trim() : data.number,
         authority:
           data.authority != null && data.authority.trim

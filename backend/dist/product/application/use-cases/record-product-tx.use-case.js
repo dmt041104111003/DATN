@@ -17,10 +17,12 @@ const common_1 = require("@nestjs/common");
 const product_repository_1 = require("../../domain/product.repository");
 const product_helpers_1 = require("../../product.helpers");
 const warehouse_service_1 = require("../../../warehouse/warehouse.service");
+const prisma_service_1 = require("../../../prisma/prisma.service");
 let RecordProductTxUseCase = class RecordProductTxUseCase {
-    constructor(repository, warehouse) {
+    constructor(repository, warehouse, prisma) {
         this.repository = repository;
         this.warehouse = warehouse;
+        this.prisma = prisma;
     }
     async execute(params) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
@@ -53,7 +55,14 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
             await this.repository.upsertBatchOnMint(mintParams);
             const receivers = (_f = params.receivers) !== null && _f !== void 0 ? _f : [];
             if (receivers.length > 0) {
-                await this.repository.createRoadmaps(assetName, "MINT", receivers, txHash);
+                const profile = await this.prisma.profile.findUnique({
+                    where: { id: profileId },
+                    select: { walletAddress: true },
+                });
+                const senderAddress = (profile === null || profile === void 0 ? void 0 : profile.walletAddress) && typeof profile.walletAddress === "string"
+                    ? profile.walletAddress.trim()
+                    : "";
+                await this.repository.createRoadmaps(assetName, "MINT", senderAddress, receivers, txHash);
             }
             await this.warehouse.addToWarehouse(profileId, assetName);
             return;
@@ -87,7 +96,14 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
             });
             const receivers = (_l = params.receivers) !== null && _l !== void 0 ? _l : [];
             if (receivers.length > 0) {
-                await this.repository.createRoadmaps(assetName, "UPDATE", receivers, txHash);
+                const profile = await this.prisma.profile.findUnique({
+                    where: { id: profileId },
+                    select: { walletAddress: true },
+                });
+                const senderAddress = (profile === null || profile === void 0 ? void 0 : profile.walletAddress) && typeof profile.walletAddress === "string"
+                    ? profile.walletAddress.trim()
+                    : "";
+                await this.repository.createRoadmaps(assetName, "UPDATE", senderAddress, receivers, txHash);
             }
             return;
         }
@@ -100,7 +116,14 @@ let RecordProductTxUseCase = class RecordProductTxUseCase {
             await this.repository.markBatchRevoked(assetName, nextMetadata);
             const receivers = (_m = params.receivers) !== null && _m !== void 0 ? _m : [];
             if (receivers.length > 0) {
-                await this.repository.createRoadmaps(assetName, "REVOKE", receivers, txHash);
+                const profile = await this.prisma.profile.findUnique({
+                    where: { id: profileId },
+                    select: { walletAddress: true },
+                });
+                const senderAddress = (profile === null || profile === void 0 ? void 0 : profile.walletAddress) && typeof profile.walletAddress === "string"
+                    ? profile.walletAddress.trim()
+                    : "";
+                await this.repository.createRoadmaps(assetName, "REVOKE", senderAddress, receivers, txHash);
             }
             return;
         }
@@ -120,6 +143,7 @@ exports.RecordProductTxUseCase = RecordProductTxUseCase;
 exports.RecordProductTxUseCase = RecordProductTxUseCase = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_1.Inject)(product_repository_1.PRODUCT_REPOSITORY)),
-    __metadata("design:paramtypes", [Object, warehouse_service_1.WarehouseService])
+    __metadata("design:paramtypes", [Object, warehouse_service_1.WarehouseService,
+        prisma_service_1.PrismaService])
 ], RecordProductTxUseCase);
 //# sourceMappingURL=record-product-tx.use-case.js.map

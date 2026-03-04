@@ -75,7 +75,6 @@ export class TraceAssetUseCase {
       },
       include: {
         minterProfile: true,
-        certificates: { take: 1, orderBy: { issuedAt: "desc" } },
         roadmaps: { orderBy: { hopIndex: "asc" } },
       },
     });
@@ -100,7 +99,35 @@ export class TraceAssetUseCase {
     const burnStatus: "active" | "burned" =
       nft222Quantity === "0" ? "burned" : "active";
 
-    const cert = batch.certificates?.[0];
+    let cert:
+      | {
+          id: number;
+          title: string;
+          imageUrl: string | null;
+          issuedAt: Date | string;
+          batchId: string;
+        }
+      | undefined;
+
+    // Chỉ dùng certificate cấp cho doanh nghiệp (Profile), không dùng cert theo từng lô
+    if (batch.minterProfileId) {
+      const enterpriseCert = await this.prisma.certificate.findFirst({
+        where: { subjectProfileId: batch.minterProfileId },
+        orderBy: [
+          { expiryDate: "desc" },
+          { issuedAt: "desc" },
+        ],
+      });
+      if (enterpriseCert) {
+        cert = {
+          id: enterpriseCert.id,
+          title: enterpriseCert.title,
+          imageUrl: enterpriseCert.imageUrl ?? null,
+          issuedAt: enterpriseCert.issuedAt,
+          batchId: batch.code,
+        };
+      }
+    }
     let certificateUrl: string | null = null;
     let certificate: TraceResponse["certificate"] | undefined;
     if (cert) {

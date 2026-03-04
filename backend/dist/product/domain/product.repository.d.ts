@@ -19,6 +19,7 @@ export interface ProductBatchSnapshot {
 }
 export interface ProductRoadmapHop {
     hopIndex: number;
+    senderAddress: string | null;
     receiverAddress: string | null;
 }
 export interface MintBatchParams {
@@ -50,7 +51,7 @@ export interface ProductRepositoryPort {
     updateBatch(params: UpdateBatchParams): Promise<void>;
     markBatchRevoked(code: string, nextMetadata: object): Promise<void>;
     markBatchBurned(code: string, nextMetadata: object): Promise<void>;
-    createRoadmaps(batchId: string, action: "MINT" | "UPDATE" | "REVOKE", receivers: string[], txHash: string): Promise<void>;
+    createRoadmaps(batchId: string, action: "MINT" | "UPDATE" | "REVOKE", senderAddress: string, receivers: string[], txHash: string): Promise<void>;
     listRoadmap(batchId: string): Promise<ProductRoadmapHop[]>;
 }
 export declare const PRODUCT_REPOSITORY = "PRODUCT_REPOSITORY";

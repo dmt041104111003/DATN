@@ -26,17 +26,16 @@ let PrismaWarehouseRepository = class PrismaWarehouseRepository {
             },
             orderBy: { mintedAt: "desc" },
         });
-        const visible = (rows || []).filter((inv) => { var _a, _b; return ((_a = inv === null || inv === void 0 ? void 0 : inv.quantity) !== null && _a !== void 0 ? _a : 1) > 0 && String((_b = inv === null || inv === void 0 ? void 0 : inv.status) !== null && _b !== void 0 ? _b : "IN_WAREHOUSE") !== "BURNED"; });
+        const visible = (rows || []).filter((inv) => { var _a; return String((_a = inv === null || inv === void 0 ? void 0 : inv.status) !== null && _a !== void 0 ? _a : "IN_WAREHOUSE") !== "BURNED"; });
         return visible.map((inv) => {
-            var _a, _b, _c, _d, _e, _f, _g, _h;
+            var _a, _b, _c, _d, _e, _f, _g;
             return ({
                 batchId: inv.batchId,
                 batchName: (_b = (_a = inv.batch) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : inv.batchId,
                 image: (_d = (_c = inv.batch) === null || _c === void 0 ? void 0 : _c.image) !== null && _d !== void 0 ? _d : null,
-                quantity: (_e = inv.quantity) !== null && _e !== void 0 ? _e : 1,
                 mintedAt: inv.mintedAt,
-                policyId: (_g = (_f = inv.batch) === null || _f === void 0 ? void 0 : _f.policyId) !== null && _g !== void 0 ? _g : null,
-                status: (_h = inv.status) !== null && _h !== void 0 ? _h : "IN_WAREHOUSE",
+                policyId: (_f = (_e = inv.batch) === null || _e === void 0 ? void 0 : _e.policyId) !== null && _f !== void 0 ? _f : null,
+                status: (_g = inv.status) !== null && _g !== void 0 ? _g : "IN_WAREHOUSE",
             });
         });
     }
@@ -59,8 +58,8 @@ let PrismaWarehouseRepository = class PrismaWarehouseRepository {
     async addToWarehouseForProfile(profileId, batchId) {
         await this.prisma.warehouseInventory.upsert({
             where: { batchId_profileId: { batchId, profileId } },
-            create: { batchId, profileId, quantity: 1 },
-            update: { quantity: { increment: 1 } },
+            create: { batchId, profileId },
+            update: {},
         });
     }
     async findRecipientByRoadmap(profileId, batchId) {

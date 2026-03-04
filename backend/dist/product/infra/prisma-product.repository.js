@@ -136,12 +136,13 @@ let PrismaProductRepository = class PrismaProductRepository {
             },
         });
     }
-    async createRoadmaps(batchId, action, receivers, txHash) {
+    async createRoadmaps(batchId, action, senderAddress, receivers, txHash) {
         if (receivers.length === 0)
             return;
         await this.prisma.roadmap.createMany({
             data: receivers.map((receiverAddress, hopIndex) => ({
                 batchId,
+                senderAddress,
                 receiverAddress,
                 hopIndex,
                 action,
@@ -157,12 +158,13 @@ let PrismaProductRepository = class PrismaProductRepository {
         const rows = await prisma.roadmap.findMany({
             where: { batchId: bid },
             orderBy: { hopIndex: "asc" },
-            select: { hopIndex: true, receiverAddress: true },
+            select: { hopIndex: true, senderAddress: true, receiverAddress: true },
         });
         if (!Array.isArray(rows))
             return [];
         return rows.map((r) => ({
             hopIndex: r.hopIndex,
+            senderAddress: r.senderAddress,
             receiverAddress: r.receiverAddress,
         }));
     }

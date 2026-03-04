@@ -55,7 +55,6 @@ let TraceAssetUseCase = class TraceAssetUseCase {
             where: Object.assign({ code: assetNameTrimmed }, (policyIdTrimmed ? { policyId: policyIdTrimmed } : {})),
             include: {
                 minterProfile: true,
-                certificates: { take: 1, orderBy: { issuedAt: "desc" } },
                 roadmaps: { orderBy: { hopIndex: "asc" } },
             },
         });
@@ -66,7 +65,25 @@ let TraceAssetUseCase = class TraceAssetUseCase {
         const metadata = Object.assign(Object.assign({}, rawMetadata), { policy_id: (_d = batch.policyId) !== null && _d !== void 0 ? _d : rawMetadata["policy_id"], name: (_e = batch.name) !== null && _e !== void 0 ? _e : rawMetadata["name"] });
         const properties = (_f = batch.properties) !== null && _f !== void 0 ? _f : {};
         const burnStatus = nft222Quantity === "0" ? "burned" : "active";
-        const cert = (_g = batch.certificates) === null || _g === void 0 ? void 0 : _g[0];
+        let cert;
+        if (batch.minterProfileId) {
+            const enterpriseCert = await this.prisma.certificate.findFirst({
+                where: { subjectProfileId: batch.minterProfileId },
+                orderBy: [
+                    { expiryDate: "desc" },
+                    { issuedAt: "desc" },
+                ],
+            });
+            if (enterpriseCert) {
+                cert = {
+                    id: enterpriseCert.id,
+                    title: enterpriseCert.title,
+                    imageUrl: (_g = enterpriseCert.imageUrl) !== null && _g !== void 0 ? _g : null,
+                    issuedAt: enterpriseCert.issuedAt,
+                    batchId: batch.code,
+                };
+            }
+        }
         let certificateUrl = null;
         let certificate;
         if (cert) {

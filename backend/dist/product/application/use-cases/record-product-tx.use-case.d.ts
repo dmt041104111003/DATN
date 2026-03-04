@@ -1,9 +1,11 @@
 import { ProductRepositoryPort } from "../../domain/product.repository";
 import { WarehouseService } from "../../../warehouse/warehouse.service";
+import { PrismaService } from "../../../prisma/prisma.service";
 export declare class RecordProductTxUseCase {
     private readonly repository;
     private readonly warehouse;
-    constructor(repository: ProductRepositoryPort, warehouse: WarehouseService);
+    private readonly prisma;
+    constructor(repository: ProductRepositoryPort, warehouse: WarehouseService, prisma: PrismaService);
     execute(params: {
         action: "MINT" | "UPDATE" | "REVOKE" | "BURN";
         txHash: string;

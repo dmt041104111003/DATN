@@ -94,10 +94,6 @@ function buildMetadata(opts) {
         properties: JSON.stringify(properties),
         _pk: opts.pk,
         receivers: opts.receivers,
-        receiver_locations: opts.receiver_locations,
-        receiver_coordinates: opts.receiver_coordinates,
-        minter_location: opts.minter_location,
-        minter_coordinates: opts.minter_coordinates,
     };
     return meta;
 }

@@ -9,6 +9,9 @@ export interface CertificateListItem {
     title: string;
     imageUrl: string | null;
     issuedAt: Date;
+    number: string | null;
+    authority: string | null;
+    expiryDate: Date | null;
     batchId: string;
     batchName: string;
     productBatchCode: string;
@@ -20,6 +23,9 @@ export interface CertificateDetail {
     title: string;
     imageUrl: string | null;
     issuedAt: Date;
+    number: string | null;
+    authority: string | null;
+    expiryDate: Date | null;
     metadata: unknown;
     batchId: string;
     batchName: string;
@@ -30,6 +36,9 @@ export interface CreateCertificateData {
     title: string;
     batchId: string;
     imageUrl: string;
+    number?: string;
+    authority?: string;
+    expiryDate?: Date | string;
     metadata?: Record<string, unknown>;
 }
 export interface CertificateRepositoryPort {

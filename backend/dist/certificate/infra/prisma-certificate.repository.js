@@ -48,23 +48,26 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
         return {
             total,
             items: items.map((c) => {
-                var _a, _b, _c, _d, _e, _f;
+                var _a, _b, _c, _d, _e, _f, _g, _h, _j;
                 return ({
                     id: c.id,
                     title: c.title,
                     imageUrl: (_a = c.imageUrl) !== null && _a !== void 0 ? _a : null,
                     issuedAt: c.issuedAt,
+                    number: (_b = c.number) !== null && _b !== void 0 ? _b : null,
+                    authority: (_c = c.authority) !== null && _c !== void 0 ? _c : null,
+                    expiryDate: (_d = c.expiryDate) !== null && _d !== void 0 ? _d : null,
                     batchId: c.batchId,
-                    batchName: (_c = (_b = c.batch) === null || _b === void 0 ? void 0 : _b.name) !== null && _c !== void 0 ? _c : c.batchId,
+                    batchName: (_f = (_e = c.batch) === null || _e === void 0 ? void 0 : _e.name) !== null && _f !== void 0 ? _f : c.batchId,
                     productBatchCode: c.batchId,
-                    productBatchName: (_e = (_d = c.batch) === null || _d === void 0 ? void 0 : _d.name) !== null && _e !== void 0 ? _e : null,
-                    metadata: (_f = c.metadata) !== null && _f !== void 0 ? _f : null,
+                    productBatchName: (_h = (_g = c.batch) === null || _g === void 0 ? void 0 : _g.name) !== null && _h !== void 0 ? _h : null,
+                    metadata: (_j = c.metadata) !== null && _j !== void 0 ? _j : null,
                 });
             }),
         };
     }
     async getCertificateById(id, issuerProfileId) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         const cert = await this.prisma.certificate.findFirst({
             where: { id, issuerProfileId },
             include: { batch: { select: { code: true, name: true } } },
@@ -76,11 +79,14 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
             title: cert.title,
             imageUrl: (_a = cert.imageUrl) !== null && _a !== void 0 ? _a : null,
             issuedAt: cert.issuedAt,
-            metadata: (_b = cert.metadata) !== null && _b !== void 0 ? _b : null,
+            number: (_b = cert.number) !== null && _b !== void 0 ? _b : null,
+            authority: (_c = cert.authority) !== null && _c !== void 0 ? _c : null,
+            expiryDate: (_d = cert.expiryDate) !== null && _d !== void 0 ? _d : null,
+            metadata: (_e = cert.metadata) !== null && _e !== void 0 ? _e : null,
             batchId: cert.batchId,
-            batchName: (_d = (_c = cert.batch) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : cert.batchId,
+            batchName: (_g = (_f = cert.batch) === null || _f === void 0 ? void 0 : _f.name) !== null && _g !== void 0 ? _g : cert.batchId,
             productBatchCode: cert.batchId,
-            productBatchName: (_f = (_e = cert.batch) === null || _e === void 0 ? void 0 : _e.name) !== null && _f !== void 0 ? _f : null,
+            productBatchName: (_j = (_h = cert.batch) === null || _h === void 0 ? void 0 : _h.name) !== null && _j !== void 0 ? _j : null,
         };
     }
     async batchExistsForIssuer(batchCode, issuerProfileId) {
@@ -90,20 +96,26 @@ let PrismaCertificateRepository = class PrismaCertificateRepository {
         return !!batch;
     }
     async createCertificate(issuerProfileId, data) {
-        var _a;
+        var _a, _b;
         const cert = await this.prisma.certificate.create({
             data: {
                 title: data.title,
                 imageUrl: data.imageUrl,
                 batchId: data.batchId,
                 issuerProfileId,
+                subjectProfileId: issuerProfileId,
+                number: data.number != null && data.number.trim ? data.number.trim() : data.number,
+                authority: data.authority != null && data.authority.trim
+                    ? data.authority.trim()
+                    : data.authority,
+                expiryDate: (_a = data.expiryDate) !== null && _a !== void 0 ? _a : null,
                 metadata: data.metadata != null ? data.metadata : undefined,
             },
         });
         return {
             id: cert.id,
             title: cert.title,
-            imageUrl: (_a = cert.imageUrl) !== null && _a !== void 0 ? _a : null,
+            imageUrl: (_b = cert.imageUrl) !== null && _b !== void 0 ? _b : null,
         };
     }
 };

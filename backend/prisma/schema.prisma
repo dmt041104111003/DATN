@@ -33,9 +33,10 @@ model Profile {
   wallet Wallet @relation(fields: [walletAddress], references: [address])
   role   Role   @relation(fields: [roleId], references: [id])
 
-  mintedBatches       ProductBatch[]   @relation("ProfileBatches")
-  issuedCertificates  Certificate[]     @relation("CertificateIssuer")
-  warehouseInventory  WarehouseInventory[]   @relation("WarehouseOwner")
+  mintedBatches       ProductBatch[]        @relation("ProfileBatches")
+  issuedCertificates  Certificate[]         @relation("CertificateIssuer")
+  subjectCertificates Certificate[]         @relation("CertificateSubject")
+  warehouseInventory  WarehouseInventory[]  @relation("WarehouseOwner")
 }
 
 model ProductBatch {
@@ -86,6 +87,9 @@ model Certificate {
 
   issuerProfileId  Int
   issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
+
+  subjectProfileId Int?
+  subjectProfile   Profile?     @relation("CertificateSubject", fields: [subjectProfileId], references: [id])
 }
 
 model Roadmap {
