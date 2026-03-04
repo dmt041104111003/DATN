@@ -141,6 +141,9 @@ model DeliveryOrder {
   scriptOutputIndex      Int                @default(0)
   batchId                String
   policyId               String?
+  scriptAddress          String?
+  datumHash              String?
+  datumJson              Json?
   recipientAddress       String
   senderAddress          String
   ownerAddresses         Json

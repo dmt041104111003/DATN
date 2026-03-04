@@ -291,12 +291,18 @@ export class OrderService {
     recipientAddress: string;
     senderAddress: string;
     ownerAddresses: string[];
+    scriptAddress?: string;
+    datumHash?: string;
+    datumJson?: unknown;
   }): Promise<{ id: number }> {
     const recordParams: OrderRecordParams = {
       lockTxHash: params.lockTxHash,
       scriptOutputIndex: params.scriptOutputIndex,
       batchId: params.batchId,
       policyId: params.policyId,
+      scriptAddress: params.scriptAddress,
+      datumHash: params.datumHash,
+      datumJson: params.datumJson,
       recipientAddress: params.recipientAddress,
       senderAddress: params.senderAddress,
       ownerAddresses: params.ownerAddresses,
