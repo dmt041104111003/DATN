@@ -28,6 +28,7 @@ import { ProductTypeController } from './product-type/product-type.controller';
 import { ProductTypeService } from './product-type/product-type.service';
 import { CertificationController } from './certification/certification.controller';
 import { CertificationService } from './certification/certification.service';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -40,7 +41,7 @@ import { CertificationService } from './certification/certification.service';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [AuthController, ProfileController, AssetController, ContractController, TraceController, WarehouseController, OrderController, BurnController, AssetImageController, ProducerController, ProductTypeController, CertificationController],
+  controllers: [AuthController, ProfileController, AssetController, ContractController, TraceController, WarehouseController, OrderController, BurnController, AssetImageController, ProducerController, ProductTypeController, CertificationController, HealthController],
   providers: [AuthService, PrismaService, ProfileService, JwtStrategy, AssetService, ContractService, TraceService, WarehouseService, OrderService, BurnService, AssetImageService, ProducerService, ProductTypeService, CertificationService],
 })
 export class AppModule {}
