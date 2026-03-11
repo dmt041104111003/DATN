@@ -5,102 +5,149 @@
 
 ### English overview
 
-#### Description
-- **Goal**: build a shipment/lot traceability platform based on CIP‑68 NFTs, allowing businesses to digitize products, track their lifecycle on Cardano, and manage an “NFT warehouse” according to user roles.
+#### What this project is
+- **Trace.Lab3** is an **on-chain shipment / lot traceability platform** on Cardano.
+- Each product lot is modeled as a **CIP‑68 NFT** whose **metadata is updated on-chain** as the lot moves through the supply chain.
+- The system combines:
+  - A **web frontend** for operators (scan, create, track lots),
+  - A **NestJS backend** for enterprise logic and user/tenant management,
+  - **Aiken smart contracts** enforcing mint / update / burn rules and multi‑party control.
 
-#### Roles
+#### Business roles
 
-| Role              | Main tasks                                                                 |
-|-------------------|---------------------------------------------------------------------------|
-| Admin             | Manage tenants/organizations, user accounts, roles, high‑level settings. |
-| Product manager   | Create/update product lots, attach metadata, trigger mint/update/burn.   |
-| Warehouse operator| Scan lots in/out, confirm hops in the roadmap, manage on‑chain status.   |
-| Viewer/auditor    | View traceability history and verify lot authenticity.                   |
+| **Role**           | **Main responsibilities**                                                  |
+|--------------------|---------------------------------------------------------------------------|
+| **Admin**          | Manage tenants/organizations, user accounts, roles, global configuration.|
+| **Product manager**| Define product lots, attach metadata, trigger on‑chain mint/update/burn. |
+| **Warehouse op.**  | Scan lots in/out, confirm roadmap hops, keep on‑chain state in sync.     |
+| **Viewer / auditor** | View traceability history, verify authenticity of any lot.             |
 
-#### Backend & Frontend
+#### High‑level architecture
 
-| Layer    | Language & framework                   |
-|---------|-----------------------------------------|
-| Backend | TypeScript, NestJS on Express           |
-| Frontend| Next.js (App Router), React, TypeScript |
+- **Frontend (Next.js App Router, React, TypeScript)**
+  - Web UI for:
+    - Creating product lots and QR codes.
+    - Scanning QR codes to open the lot detail page.
+    - Viewing full traceability history and roadmap.
+  - Uses **Mesh SDK** + **Blockfrost** to read blockchain data and build transactions where needed.
 
+- **Backend (NestJS on Express, TypeScript)**
+  - Multi‑tenant / organization management.
+  - Users, roles, authentication/authorization (JWT + Passport).
+  - Orchestration of transaction building based on **Cardano multisig policy**.
+  - Integration with Blockfrost / Cardano libs to:
+    - Query UTXOs and CIP‑68 metadata.
+    - Prepare mint / update / burn transactions for the frontend wallet to sign.
 
-#### Smart contract
-- **Encoding lots as CIP‑68 NFTs**:
-  - Each product lot is represented by a **CIP‑68 NFT** on Cardano, with:
-    - A **representative NFT token** for the lot (user‑facing asset).
-    - A **datum / reference NFT** carrying the data payload (expiry, current holder, roadmap, etc.).
-  - This mechanism enables:
-    - **Uniqueness** (unique asset name per lot).
-    - **Traceability** via changes to holder/address state and related metadata.
+- **Smart contracts (Aiken, Plutus v3)**
+  - **CIP‑68 pattern** with:
+    - A **reference NFT** (CIP68\_100) locked at the contract address, holding lot metadata in the datum.
+    - A **user‑facing NFT** (CIP68\_222) held in the owner’s wallet as proof of ownership.
+  - Two main validators (typical design):
+    - **Mint validator**: controls creation and burn of lot NFTs under a **multi‑owner policy**.
+    - **Store / update validator**: controls metadata updates (roadmap, location, status, expiry, etc.).
 
-- **Managing the mint – update – burn lifecycle on CIP‑68**:
-  - **Mint**: the contract receives parameters (policy, assetName, CIP‑68 metadata) to issue the NFT corresponding to the product lot.
-  - **Update**: instead of burning and recreating the NFT, CIP‑68 allows updating **datum / on‑chain metadata** while preserving the trace history:
-    - Update `propertiesJson` (expiry, current_holder_id, coordinates, receiver list, `Traceability-v1` standard, …).
-    - Update the roadmap (sequence of shipping hops) without breaking the link to the original lot.
-  - **Burn**: the contract enforces conditions for burning the NFT (policy, time, valid owner), reflecting the end of the lot’s lifecycle.
+#### CIP‑68 lot model
 
-- **Multisig policy on Cardano (core technology protecting lot operations)**:
-  - The policy script can be configured as **multisig**:
-    - Combine multiple keys: e.g. a **script key** (controlled by the system) + the enterprise’s **stake key**.
-    - Only when the required key set signs together will mint/update/burn transactions be valid.
-  - This helps:
-    - Reduce the risk of unilateral operations (no single party can arbitrarily mint/burn).
-    - Align with multi‑party control/logistics models in research (multi‑party control).
-  - In practice:
-    - The backend builds transactions according to the multisig policy (requiring multiple witnesses).
-    - The frontend/wallet is responsible for collecting signatures (witnesses) from corresponding users, then submitting to the Cardano network.
+- Each **lot** is identified by a **unique asset name** under a specific policy.
+- The **reference NFT datum** holds:
+  - Core product info (brand, model, description, material, etc.).
+  - **Traceability payload**:
+    - `expiry`, `current_holder_id`, GPS coordinates,
+    - `receiver_list`,
+    - a `Traceability-v1` standard marker,
+    - **roadmap**: list of shipping / logistics hops.
+- **Updating a lot**:
+  - Instead of burning and reminting, the contract updates the **datum / on‑chain metadata** while preserving history.
+  - Every state change is written to the chain, so the full lifecycle is auditable.
+
+#### Multisig policy & security
+
+- The minting policy is designed to be **multi‑signature capable**:
+  - Typically combines a **system “script key”** with the enterprise’s **stake key**.
+  - A transaction is only valid when the **required key set** signs together.
+- This enables:
+  - **No unilateral control** by a single party over mint/burn/update.
+  - Alignment with **multi‑party logistics and internal control** models.
+- In practice:
+  - The **backend** builds transactions according to the policy and required witnesses.
+  - The **frontend / wallet** collects user signatures and submits to the Cardano network.
+
 
 </details>
 
 <details>
 <summary><strong>Tiếng Việt</strong></summary>
 
-### Mô tả
-- **Mục tiêu**: xây dựng nền tảng truy xuất nguồn gốc lô hàng dựa trên NFT CIP‑68, cho phép doanh nghiệp số hóa sản phẩm, theo dõi vòng đời trên Cardano và quản lý “kho NFT” theo vai trò người dùng.
+### Tổng quan dự án
 
-### Vai trò
+- **Trace.Lab3** là nền tảng **truy xuất nguồn gốc lô hàng on‑chain** trên Cardano.
+- Mỗi **lô sản phẩm** được mã hóa thành **NFT CIP‑68**, metadata của NFT được **cập nhật trực tiếp trên blockchain** khi lô di chuyển trong chuỗi cung ứng.
+- Hệ thống gồm:
+  - **Frontend** (Next.js) cho người dùng thao tác, quét QR, xem lịch sử.
+  - **Backend** (NestJS) cho logic doanh nghiệp, quản lý tenant/người dùng/quyền.
+  - **Smart contract Aiken** bảo vệ quy tắc mint / update / burn và cơ chế đa chữ ký.
 
-| Vai trò              | Nhiệm vụ chính                                                           |
-|----------------------|-------------------------------------------------------------------------|
-| Admin                | Quản lý tổ chức/tenant, tài khoản người dùng, phân quyền, cấu hình hệ thống. |
-| Product manager      | Tạo/cập nhật lô sản phẩm, gắn metadata, thao tác mint/update/burn NFT. |
-| Warehouse operator   | Quét nhập/xuất lô, xác nhận các bước (hop) trong roadmap, cập nhật trạng thái on‑chain. |
-| Viewer/Auditor       | Xem lịch sử truy xuất, kiểm tra tính xác thực của từng lô hàng.        |
+### Vai trò nghiệp vụ
 
-### Backend & Frontend
+| **Vai trò**            | **Nhiệm vụ chính**                                                      |
+|------------------------|-------------------------------------------------------------------------|
+| **Admin**              | Quản lý tổ chức/tenant, tài khoản, phân quyền, cấu hình toàn hệ thống.|
+| **Product manager**    | Tạo/cập nhật lô, gắn metadata, thao tác mint/update/burn NFT.          |
+| **Warehouse operator** | Quét nhập/xuất lô, xác nhận các bước (hop) trong roadmap, đồng bộ trạng thái on‑chain. |
+| **Viewer / Auditor**   | Xem lịch sử truy xuất, kiểm tra tính xác thực của từng lô.            |
 
-| Lớp     | Ngôn ngữ & framework                    |
-|---------|-----------------------------------------|
-| Backend | TypeScript, NestJS trên Express         |
-| Frontend| Next.js (App Router), React, TypeScript |
+### Kiến trúc tổng quan
 
-### Smart contract
-- **Mã hóa lô hàng thành NFT CIP‑68**:
-  - Mỗi lô sản phẩm được biểu diễn bằng một **CIP‑68 NFT** trên Cardano, với:
-    - **Token NFT đại diện** cho lô hàng (user-facing asset).
-    - **Datum / reference NFT** mang payload dữ liệu (expiry, current holder, roadmap, v.v.).
-  - Cơ chế này cho phép:
-    - **Tính duy nhất** (unique asset name theo lô).
-    - **Tính truy vết** thông qua thay đổi trạng thái holder/address và metadata liên quan.
+- **Frontend (Next.js App Router + React + TypeScript)**
+  - Giao diện web:
+    - Tạo lô hàng, tạo QR code.
+    - Quét QR code để mở trang chi tiết lô.
+    - Hiển thị timeline / roadmap di chuyển của lô.
+  - Sử dụng **Mesh SDK** và **Blockfrost API** để đọc dữ liệu on‑chain và hỗ trợ build transaction.
 
-### Quản lý vòng đời mint – update – burn trên CIP‑68
-- **Mint**: hợp đồng nhận các tham số (policy, assetName, metadata CIP‑68) để phát hành NFT tương ứng với lô sản phẩm.
-- **Update**: thay vì đốt và tạo lại NFT, CIP‑68 cho phép cập nhật **datum / metadata on-chain**, duy trì lịch sử truy vết:
-  - Cập nhật `propertiesJson` (expiry, current_holder_id, tọa độ, receiver list, tiêu chuẩn `Traceability-v1`, …).
-  - Cập nhật roadmap (chuỗi hop vận chuyển) mà không phá vỡ liên kết tới lô gốc.
-- **Burn**: hợp đồng áp đặt điều kiện hủy NFT (policy, thời điểm, chủ sở hữu hợp lệ), phản ánh kết thúc vòng đời lô hàng.
+- **Backend (NestJS trên Express, TypeScript)**
+  - API cho:
+    - Quản lý tenant, tổ chức, tài khoản, phân quyền (JWT, Passport).
+    - Điều phối thao tác với Cardano: chuẩn bị transaction mint / update / burn theo policy.
+  - Tích hợp **Blockfrost** và thư viện Cardano để:
+    - Đọc UTXO, metadata CIP‑68.
+    - Tạo transaction thô chuyển cho ví frontend ký.
 
-### Multisig policy trên Cardano (công nghệ lõi bảo vệ thao tác lô hàng)
-- Policy script có thể được cấu hình dạng **multisig**:
-  - Kết hợp nhiều khóa: ví dụ **script key** (do hệ thống kiểm soát) + **stake key** của doanh nghiệp.
-  - Chỉ khi tập khóa yêu cầu cùng ký, giao dịch mint/update/burn mới hợp lệ.
-- Điều này giúp:
-  - Giảm rủi ro thao tác đơn lẻ (một bên không tự ý mint/burn).
-  - Bám sát mô hình kiểm soát nội bộ/logistics đa bên trong nghiên cứu NCKH (multi‑party control).
-- Về mặt thực thi:
-  - Backend build transaction theo policy multisig (yêu cầu nhiều witness).
-  - Frontend/ví chịu trách nhiệm thu thập chữ ký (witness) từ người dùng tương ứng, sau đó submit lên mạng Cardano.
+- **Smart contract (Aiken, Plutus v3)**
+  - Mô hình **CIP‑68** với:
+    - **Reference NFT (CIP68\_100)** khóa tại địa chỉ hợp đồng, chứa metadata lô trong datum.
+    - **User NFT (CIP68\_222)** nằm trong ví người dùng, đóng vai trò bằng chứng sở hữu.
+  - Bộ validator điển hình:
+    - **Mint validator**: kiểm soát tạo / hủy lot NFT theo chính sách nhiều chủ sở hữu.
+    - **Store / update validator**: kiểm soát cập nhật metadata (roadmap, vị trí, trạng thái, hạn sử dụng, …).
+
+### Mô hình CIP‑68 cho lô hàng
+
+- Mỗi lô tương ứng với **asset name duy nhất** dưới một policy.
+- **Datum của reference NFT** lưu:
+  - Thông tin sản phẩm: thương hiệu, model, mô tả, vật liệu, v.v.
+  - Payload truy xuất:
+    - `expiry`, `current_holder_id`, toạ độ GPS,
+    - `receiver_list`,
+    - nhãn tiêu chuẩn `Traceability-v1`,
+    - **roadmap**: danh sách các hop vận chuyển.
+- **Khi cập nhật lô**:
+  - Không cần đốt và mint lại NFT; contract cho phép **cập nhật datum / metadata on‑chain**.
+  - Mỗi lần thay đổi đều ghi on‑chain nên lịch sử truy vết được bảo toàn.
+
+### Multisig policy & an toàn hệ thống
+
+- Policy script được thiết kế hỗ trợ **đa chữ ký (multisig)**:
+  - Kết hợp **khóa script của hệ thống** và **stake key của doanh nghiệp** (hoặc các bên liên quan).
+  - Giao dịch chỉ hợp lệ khi **tập khóa yêu cầu cùng ký**.
+- Lợi ích:
+  - Tránh việc một bên có thể tự ý mint/burn/update lô.
+  - Phù hợp với mô hình kiểm soát nội bộ và logistics đa bên trong nghiên cứu.
+- Thực thi:
+  - **Backend** build transaction theo policy và khai báo các witness bắt buộc.
+  - **Frontend / ví** thu thập chữ ký từ người dùng và submit lên mạng Cardano.
+
+
 
 </details>
