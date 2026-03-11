@@ -1,93 +1,75 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Patch, Post, Query } from "@nestjs/common";
-import { AuthService } from "../auth/auth.service";
-import { ProfileService } from "./profile.service";
+import { Controller, Post, Patch, Body, HttpException, HttpStatus, UseGuards, Req, Get } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProfileService } from './profile.service';
 
-@Controller("profile")
+export interface CreateProfileDto {
+  roleCode: string;
+  displayName: string;
+  location?: string;
+}
+
+export interface UpdateProfileDto {
+  displayName?: string;
+  location?: string;
+}
+
+@Controller('profile')
 export class ProfileController {
-  constructor(
-    private readonly profileService: ProfileService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly profileService: ProfileService) {}
 
-  @Get("profiles")
-  async listProfiles(@Query("token") token?: string) {
-    if (!token) {
+  @Get('list')
+  @UseGuards(JwtAuthGuard)
+  async listProfiles(@Req() req: any) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+
+    if (!walletAddress) {
       throw new HttpException(
-        { error: "Missing token" },
-        HttpStatus.BAD_REQUEST
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
       );
     }
-    return this.profileService.listProfilesFromToken(token);
+
+    return this.profileService.listProfiles(walletAddress);
   }
 
-  @Get("profiles/by-role")
-  async listProfilesByRole(
-    @Query("role") role?: string,
-    @Query("token") token?: string,
-  ) {
-    if (!role?.trim()) {
-      throw new HttpException(
-        { error: "Missing role" },
-        HttpStatus.BAD_REQUEST
-      );
+  @Get('public/:walletAddress')
+  async getPublicProfile(@Req() req: any) {
+    const walletAddress = (req?.params?.walletAddress || '').trim();
+    if (!walletAddress) {
+      throw new HttpException('walletAddress is required', HttpStatus.BAD_REQUEST);
     }
-    if (!token?.trim()) {
-      throw new HttpException(
-        { error: "Missing token" },
-        HttpStatus.UNAUTHORIZED
-      );
+    return this.profileService.getPublicProfile(walletAddress);
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  async createProfile(@Body() body: CreateProfileDto, @Req() req: any) {
+    try {
+      const userId = req.user.sub;
+      return this.profileService.createProfile(userId, body);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    await this.authService.getProfileIdFromToken(token.trim());
-    return this.profileService.listProfilesByRoleCode(role.trim());
   }
 
   @Patch()
-  async updateProfile(
-    @Body()
-    body: {
-      token?: string;
-      displayName?: string;
-      location?: string;
-      coordinates?: string;
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@Body() body: UpdateProfileDto, @Req() req: any) {
+    try {
+      const profileId = req.user.profileId;
+      if (!profileId) {
+        throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
+      }
+      return this.profileService.updateProfile(profileId, body);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-  ) {
-    const { token, displayName, location, coordinates } = body;
-
-    if (!token || !displayName) {
-      throw new HttpException(
-        { error: "Missing profile update information" },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-
-    return this.profileService.updateProfileFromToken({
-      token,
-      displayName,
-      location,
-      coordinates,
-    });
-  }
-
-  @Post("avatar")
-  async uploadAvatar(
-    @Body()
-    body: {
-      token?: string;
-      imageDataUrl?: string;
-    }
-  ) {
-    const { token, imageDataUrl } = body;
-
-    if (!token || !imageDataUrl) {
-      throw new HttpException(
-        { error: "Missing avatar upload information" },
-        HttpStatus.BAD_REQUEST
-      );
-    }
-
-    return this.profileService.uploadProfileAvatarFromToken({
-      token,
-      imageDataUrl,
-    });
   }
 }

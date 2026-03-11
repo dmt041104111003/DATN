@@ -1,99 +1,64 @@
-import { Controller, Get, Post, Body, Query, BadRequestException, UnauthorizedException, ForbiddenException } from "@nestjs/common";
-import { AuthService } from "../auth/auth.service";
-import { WarehouseService } from "./warehouse.service";
-import { WarehouseBatchIdDto } from "./dto/warehouse.dto";
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
+import { WarehouseService } from './warehouse.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-const WAREHOUSE_ROLES = ["ENTERPRISE", "TRANSIT", "AGENT"] as const;
-
-@Controller("warehouse")
+@Controller('warehouses')
+@UseGuards(JwtAuthGuard)
 export class WarehouseController {
-  constructor(
-    private readonly warehouse: WarehouseService,
-    private readonly auth: AuthService,
-  ) {}
+  constructor(private readonly warehouseService: WarehouseService) {}
+
+  private getWalletAddress(req: any): string {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    return walletAddress;
+  }
 
   @Get()
-  async getMyWarehouse(
-    @Query("token") token?: string,
-  ): Promise<{
-    items: {
-      batchId: string;
-      batchName: string;
-      image: string | null;
-      receivedAt: Date;
-      outAt: Date | null;
-      policyId: string | null;
-      status: string;
-    }[];
-  }> {
-    if (!token || typeof token !== "string" || !token.trim()) {
-      throw new UnauthorizedException("Missing or invalid token.");
-    }
-    const profileId = await this.auth.getProfileIdFromToken(token.trim());
-    const role = await this.auth.getProfileRoleFromToken(token.trim());
-    if (!WAREHOUSE_ROLES.includes((role ?? "").toUpperCase() as (typeof WAREHOUSE_ROLES)[number])) {
-      throw new ForbiddenException("Only ENTERPRISE, TRANSIT and AGENT can access warehouse.");
-    }
-    const items = await this.warehouse.listMyWarehouseInventory(profileId);
-    return { items };
+  async list(@Req() req: any) {
+    return this.warehouseService.list(this.getWalletAddress(req));
   }
 
-  @Post("remove-item")
-  async removeItem(
-    @Body() body: WarehouseBatchIdDto,
-    @Query("token") token?: string,
-  ): Promise<{ ok: boolean }> {
-    if (!token || typeof token !== "string" || !token.trim()) {
-      throw new UnauthorizedException("Missing or invalid token.");
-    }
-    const profileId = await this.auth.getProfileIdFromToken(token.trim());
-    const role = await this.auth.getProfileRoleFromToken(token.trim());
-    if (!WAREHOUSE_ROLES.includes((role ?? "").toUpperCase() as (typeof WAREHOUSE_ROLES)[number])) {
-      throw new ForbiddenException("Only ENTERPRISE, TRANSIT and AGENT can remove item from warehouse.");
-    }
-    if (!body.batchId || typeof body.batchId !== "string" || !body.batchId.trim()) {
-      throw new BadRequestException("batchId is required.");
-    }
-    await this.warehouse.removeOneFromWarehouse(profileId, body.batchId.trim());
-    return { ok: true };
+  @Post()
+  async create(
+    @Req() req: any,
+    @Body()
+    body: {
+      code: string;
+      name: string;
+      maxAssets?: number | null;
+    },
+  ) {
+    return this.warehouseService.create(body, this.getWalletAddress(req));
   }
 
-  @Post("mark-shipped")
-  async markShipped(
-    @Body() body: WarehouseBatchIdDto,
-    @Query("token") token?: string,
-  ): Promise<{ ok: boolean }> {
-    if (!token || typeof token !== "string" || !token.trim()) {
-      throw new UnauthorizedException("Missing or invalid token.");
-    }
-    const profileId = await this.auth.getProfileIdFromToken(token.trim());
-    const role = await this.auth.getProfileRoleFromToken(token.trim());
-    if (!WAREHOUSE_ROLES.includes((role ?? "").toUpperCase() as (typeof WAREHOUSE_ROLES)[number])) {
-      throw new ForbiddenException("Only ENTERPRISE, TRANSIT and AGENT can mark item as shipped.");
-    }
-    if (!body.batchId || typeof body.batchId !== "string" || !body.batchId.trim()) {
-      throw new BadRequestException("batchId is required.");
-    }
-    await this.warehouse.markAsShipped(profileId, body.batchId.trim());
-    return { ok: true };
+  @Patch(':id')
+  async update(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      name?: string;
+      isActive?: boolean;
+      maxAssets?: number | null;
+    },
+  ) {
+    return this.warehouseService.update(id, this.getWalletAddress(req), body);
   }
 
-  @Get("recipient-by-roadmap")
-  async getRecipientByRoadmap(
-    @Query("batchId") batchId: string | undefined,
-    @Query("token") token: string | undefined,
-  ): Promise<{ recipientAddress: string | null }> {
-    if (!token || typeof token !== "string" || !token.trim()) {
-      throw new UnauthorizedException("Missing or invalid token.");
-    }
-    const profileId = await this.auth.getProfileIdFromToken(token.trim());
-    const role = await this.auth.getProfileRoleFromToken(token.trim());
-    if (!WAREHOUSE_ROLES.includes((role ?? "").toUpperCase() as (typeof WAREHOUSE_ROLES)[number])) {
-      throw new ForbiddenException("Only ENTERPRISE, TRANSIT and AGENT can use recipient-by-roadmap.");
-    }
-    if (!batchId || typeof batchId !== "string" || !batchId.trim()) {
-      return { recipientAddress: null };
-    }
-    return this.warehouse.getRecipientByRoadmap(profileId, batchId.trim());
+  @Delete(':id')
+  async remove(@Req() req: any, @Param('id') id: string) {
+    return this.warehouseService.remove(id, this.getWalletAddress(req));
+  }
+
+  @Get(':id/assets')
+  async getAssets(@Req() req: any, @Param('id') id: string) {
+    return this.warehouseService.getAssets(id, this.getWalletAddress(req));
   }
 }
+

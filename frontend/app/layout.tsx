@@ -1,41 +1,44 @@
-import type { ReactNode } from "react";
-import Script from "next/script";
 import "./globals.css";
-import "../styles/landing.css";
-import "../styles/globe.min.151d0a8243e1.css";
-import "../styles/globe.override.css";
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import QueryClientProvider from "@/providers/query";
+import { AppShell } from "@/components/AppShell";
 
-export const metadata = {
-  title: "Trace.Lab3 - Origin Traceability",
-  description: "Trace.Lab3 - Origin Traceability",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Traceability",
+  description:
+    "A Cardano-based traceability solution for products using NFTs and QR codes.",
   icons: {
     icon: "/logo.svg",
   },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
       <head>
-        <link
-          href="https://fonts.googleapis.com/icon?family=Material+Icons"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       </head>
-      <body>
-        {children}
-        <Script
-          src="https://code.jquery.com/jquery-3.6.0.min.js"
-          strategy="beforeInteractive"
-        />
-        <Script src="/js/d3.min.js" strategy="beforeInteractive" />
-        <Script src="/js/topojson.min.js" strategy="beforeInteractive" />
-        <Script src="/js/animation-data.js" strategy="beforeInteractive" />
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"
-          strategy="beforeInteractive"
-        />
-        <Script src="/js/globe.js" strategy="afterInteractive" />
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <QueryClientProvider>
+          <AppShell>{children}</AppShell>
+        </QueryClientProvider>
       </body>
     </html>
   );

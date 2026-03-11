@@ -1,171 +1,178 @@
-datasource db {
-  provider = "postgresql"
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Wallet {
-  address   String   @id
-  nonce     String?  @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-  lastLogin DateTime?
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
-  profiles Profile[]
+model Wallet {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  lastLogin DateTime
+  profiles  Profile[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("wallets")
 }
 
 model Profile {
-  id            Int     @id @default(autoincrement())
-  walletAddress String  @unique
-  roleCode      String
-  displayName   String
-  avatarUrl     String?
-  location      String?
-  coordinates   String?
+  id          String   @id @default(cuid())
+  wallet      Wallet   @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
+  walletAddress String
+  roleCode    String
+  displayName String
+  location    String?
+  avatarUrl   String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  wallet Wallet @relation(fields: [walletAddress], references: [address])
-  mintedBatches       ProductBatch[]        @relation("ProfileBatches")
-  issuedCertificates  Certificate[]         @relation("CertificateIssuer")
-  subjectCertificates Certificate[]         @relation("CertificateSubject")
-  warehouseInventory  WarehouseInventory[]  @relation("WarehouseOwner")
+  @@unique([walletAddress, roleCode])
+  @@map("profiles")
 }
 
-model ProductBatch {
-  id               Int      @id @default(autoincrement())
-  batchId          String   @unique
-  name             String
-  description      String?
-  image            String?
-  sku              String?
-  grossWeightKg    Float?
-  netWeightKg      Float?
-  originSiteCode   String?
-  standard         String?
-  mintTxHash       String?
-  policyId         String?
-  expiryDate       DateTime?
-  referenceUtxo    String?
-  lastUpdateTxHash String?
-  lastUpdateAt     DateTime?
-  revokeTxHash     String?
-  revokedAt        DateTime?
-  revoked          Boolean  @default(false)
-  burnTxHash       String?
-  burnedAt         DateTime?
-  burned           Boolean  @default(false)
-  createdAt        DateTime @default(now())
+model Asset {
+  id                 String   @id @default(cuid())
+  policyId           String
+  assetName          String
+  unit               String   @unique
+  txHash             String
+  owners             String
+  ownerWalletAddress String
+  warehouse          Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  warehouseId        String?
+  name               String
+  description        String
+  brand              String?
+  model              String?
+  material           String?
+  battery            String?
+  image              String?
+  mediaType          String?
+  roadmap            String?
+  location           String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  minterProfileId  Int
-  minterProfile    Profile  @relation("ProfileBatches", fields: [minterProfileId], references: [id])
-
-  certificates     Certificate[]
-  roadmaps         Roadmap[]
-  inventories      WarehouseInventory[]
+  @@index([ownerWalletAddress])
+  @@map("assets")
 }
 
-model WarehouseInventory {
-  id          Int       @id @default(autoincrement())
-  batchId     String
-  profileId   Int
-  status      String    @default("IN_WAREHOUSE")
-  receivedAt  DateTime  @default(now())
-  warehouseCode String?
-  zone          String?
-  aisle         String?
-  rack          String?
-  bin           String?
-  lastMovedAt   DateTime?
-  shippedAt     DateTime?
-  consumedAt    DateTime?
-  burnTxHash    String?
+model Warehouse {
+  id                 String   @id @default(cuid())
+  code               String
+  name               String
+  ownerWalletAddress String
+  isActive           Boolean  @default(true)
+  maxAssets          Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  batch   ProductBatch @relation(fields: [batchId], references: [batchId], onDelete: Cascade)
-  profile Profile      @relation("WarehouseOwner", fields: [profileId], references: [id], onDelete: Cascade)
+  assets    Asset[]
 
-  @@unique([batchId, profileId])
+  @@unique([ownerWalletAddress, code])
+  @@index([ownerWalletAddress])
+  @@map("warehouses")
 }
 
-model Certificate {
-  id               Int       @id @default(autoincrement())
-  title            String
-  imageUrl         String?
-  issuedAt         DateTime  @default(now())
-  number           String?
-  authority        String?
-  expiryDate       DateTime?
-  documentType     String?
-  standardReference String?
-  scope            String?
-  documentUrl      String?
-
-  issuerProfileId  Int
-  issuerProfile    Profile      @relation("CertificateIssuer", fields: [issuerProfileId], references: [id])
-  subjectProfileId Int?
-  subjectProfile   Profile?     @relation("CertificateSubject", fields: [subjectProfileId], references: [id])
-
-  productBatches   ProductBatch[]
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  RECEIVED
+  CANCELLED
 }
 
-model Roadmap {
-  id              Int      @id @default(autoincrement())
-  batchId         String
-  fromAddress     String   @default("")
-  toAddress       String
-  stepIndex       Int      @default(0)
-  action          String
-  txHash          String?
-  createdAt       DateTime @default(now())
-  legType         String?
-  transportMode   String?
-  carrierName     String?
-  routeCode       String?
-  plannedDepartureAt DateTime?
-  plannedArrivalAt   DateTime?
-  actualDepartureAt  DateTime?
-  actualArrivalAt    DateTime?
+model Order {
+  id                   String      @id @default(cuid())
+  assetUnit             String
+  policyId              String
+  assetName             String
+  senderWalletAddress   String
+  receiverWalletAddress String
+  txHash                String?
+  status                OrderStatus @default(PENDING)
+  receiverWarehouseId   String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
-  batch           ProductBatch @relation(fields: [batchId], references: [batchId], onDelete: Cascade)
+  @@index([senderWalletAddress])
+  @@index([receiverWalletAddress])
+  @@index([assetUnit])
+  @@map("orders")
 }
 
-enum DeliveryStatus {
-  IN_TRANSIT
-  DELIVERED
+model BurnRecord {
+  id                  String   @id @default(cuid())
+  assetUnit           String
+  policyId            String
+  assetName           String
+  burnerWalletAddress String
+  txHash              String
+  createdAt           DateTime @default(now())
+
+  @@index([burnerWalletAddress])
+  @@index([assetUnit])
+  @@map("burn_records")
 }
 
-model DeliveryOrder {
-  id                     Int                @id @default(autoincrement())
-  lockTxHash             String
-  scriptOutputIndex      Int                @default(0)
-  batchId                String
-  policyId               String?
-  scriptAddress          String?
-  datumHash              String?
-  datumJson              Json?
-  recipientAddress       String
-  senderAddress          String
-  ownerAddresses         Json
-  status                 DeliveryStatus    @default(IN_TRANSIT)
-  partialSignedTxHex     String?            @db.Text
-  partialSignedByAddress String?
-  secondSignedByAddress  String?
-  unlockTxHash           String?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
-  shipmentNo             String?
-  customerCode           String?
-  shipToName             String?
-  shipToAddress          String?
-  shipToCity             String?
-  shipToCountry          String?
-  shipToPhone            String?
-  carrierName            String?
-  transportMode          String?
-  trackingNumber         String?
-  plannedPickupAt        DateTime?
-  plannedDeliveryAt      DateTime?
-  actualPickupAt         DateTime?
-  actualDeliveryAt       DateTime?
+model AssetImage {
+  id        String   @id @default(cuid())
+  ownerWalletAddress String
+  name      String
+  mimeType  String
+  ipfsHash  String
+  url       String
+  createdAt DateTime @default(now())
 
-  @@unique([lockTxHash, scriptOutputIndex])
+  @@index([ownerWalletAddress])
+  @@map("asset_images")
 }
 
+model Producer {
+  id                 String   @id @default(cuid())
+  ownerWalletAddress String
+  name               String
+  code               String?
+  location           String?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([ownerWalletAddress])
+  @@map("producers")
+}
+
+model ProductType {
+  id                 String   @id @default(cuid())
+  ownerWalletAddress String
+  name               String
+  code               String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([ownerWalletAddress])
+  @@map("product_types")
+}
+
+model Certification {
+  id                 String   @id @default(cuid())
+  ownerWalletAddress String
+  name               String
+  issuer             String?
+  certCode           String?
+  validFrom          DateTime?
+  validTo            DateTime?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([ownerWalletAddress])
+  @@map("certifications")
+}

@@ -1,262 +1,261 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Query,
-  Param,
-  BadRequestException,
-  UnauthorizedException,
-} from "@nestjs/common";
-import { OrderService } from "./order.service";
-import { AuthService } from "../auth/auth.service";
-import {
-  BuildLockTxDto,
-  BuildUnlockTxDto,
-  ParseDatumDto,
-  MergePartialTxDto,
-  OrderConfirmDto,
-  OrderCompleteDto,
-  SavePartialTxDto,
-} from "./dto/order.dto";
+  UseGuards,
+  Req,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { OrderService, OrderCheckResult } from './order.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@Controller("order")
+@Controller('order')
+@UseGuards(JwtAuthGuard)
 export class OrderController {
-  constructor(
-    private readonly order: OrderService,
-    private readonly auth: AuthService,
-  ) {}
+  constructor(private readonly orderService: OrderService) {}
 
-  @Get("script-address")
-  getScriptAddress(): { scriptAddress: string } {
-    return { scriptAddress: this.order.getScriptAddress() };
-  }
+  @Post('check')
+  async check(
+    @Req() req: any,
+    @Body() body: { assetName?: string },
+  ): Promise<OrderCheckResult> {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
 
-  @Get("script-utxos")
-  async getScriptUtxos(
-    @Query("scriptAddress") scriptAddress?: string,
-  ): Promise<{ utxos: unknown[] }> {
-    const utxos = await this.order.getScriptUtxos(scriptAddress);
-    return { utxos };
-  }
-
-  @Get("script-utxo-by-asset")
-  async getScriptUtxoByAsset(
-    @Query("policyId") policyId?: string,
-    @Query("assetName") assetName?: string,
-    @Query("scriptAddress") scriptAddress?: string,
-  ): Promise<{ utxo: unknown | null }> {
-    if (!policyId?.trim() || !assetName?.trim()) {
-      throw new BadRequestException("Missing policyId or assetName.");
-    }
-    const utxo = await this.order.getScriptUtxoByAsset(
-      policyId.trim(),
-      assetName.trim(),
-      scriptAddress?.trim() || undefined,
-    );
-    return { utxo };
-  }
-
-  @Post("parse-datum")
-  async parseDatum(
-    @Body() body: ParseDatumDto,
-  ): Promise<{
-    ownersPkh: string[];
-    threshold: number;
-    recipientPkh: string;
-    recipientAddress: string;
-    ownerAddresses: string[];
-  }> {
-    if (!body.scriptUtxo?.input || !body.scriptUtxo?.output) {
-      throw new BadRequestException("Missing scriptUtxo (input + output).");
-    }
-    return this.order.parseDatumFromUtxo(body.scriptUtxo);
-  }
-
-  @Post("build-lock-tx")
-  async buildLockTx(@Body() body: BuildLockTxDto): Promise<{ unsignedTx: string; scriptAddress: string }> {
-    if (
-      !body.scriptAddress ||
-      !body.ownersPkh?.length ||
-      body.threshold == null ||
-      !body.recipientPkh ||
-      !body.assets?.length ||
-      !body.changeAddress ||
-      !body.utxos?.length
-    ) {
-      throw new BadRequestException(
-        "Missing scriptAddress, ownersPkh, threshold, recipientPkh, assets, changeAddress or utxos.",
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
       );
     }
-    const unsignedTx = await this.order.buildLockTx({
-      scriptAddress: body.scriptAddress,
-      ownersPkh: body.ownersPkh,
-      threshold: body.threshold,
-      recipientPkh: body.recipientPkh,
-      assets: body.assets,
-      changeAddress: body.changeAddress,
-      utxos: body.utxos,
-    });
-    return {
-      unsignedTx,
-      scriptAddress: body.scriptAddress,
-    };
-  }
 
-  @Post("confirm")
-  async confirmOrder(@Body() body: OrderConfirmDto): Promise<{ id: number }> {
-    if (!body.lockTxHash?.trim() || !body.batchId?.trim() || !body.recipientAddress?.trim()) {
-      throw new BadRequestException("Missing lockTxHash, batchId or recipientAddress.");
-    }
-    if (!body.senderAddress?.trim()) {
-      throw new BadRequestException("Missing senderAddress.");
-    }
-    if (!Array.isArray(body.ownerAddresses)) {
-      throw new BadRequestException("ownerAddresses must be an array.");
-    }
-    return this.order.recordOrder({
-      lockTxHash: body.lockTxHash,
-      scriptOutputIndex: body.scriptOutputIndex ?? 0,
-      batchId: body.batchId,
-      policyId: body.policyId,
-      recipientAddress: body.recipientAddress,
-      senderAddress: body.senderAddress,
-      ownerAddresses: body.ownerAddresses,
-      scriptAddress: body.scriptAddress,
-      datumHash: body.datumHash,
-      datumJson: body.datumJson,
-    });
-  }
-
-  @Get("deliveries")
-  async getDeliveries(
-    @Query("token") token?: string,
-  ): Promise<{
-    deliveries: {
-      id: number;
-      lockTxHash: string;
-      scriptOutputIndex: number;
-      batchId: string;
-      policyId: string | null;
-      recipientAddress: string;
-      senderAddress: string;
-      ownerAddresses: string[];
-      status: string;
-      partialSignedTxHex: string | null;
-      partialSignedByAddress: string | null;
-      secondSignedByAddress: string | null;
-      unlockTxHash: string | null;
-      outAt: string | null;
-    }[];
-  }> {
-    if (!token || typeof token !== "string" || !token.trim()) {
-      throw new UnauthorizedException("Missing or invalid token.");
-    }
-    const profileId = await this.auth.getProfileIdFromToken(token.trim());
-    const deliveries = await this.order.listOrdersForProfile(profileId);
-    return {
-      deliveries: deliveries.map((d) => ({
-        ...d,
-        outAt: d.outAt ? d.outAt.toISOString() : null,
-      })),
-    };
-  }
-
-  @Post("deliveries/:id/save-partial-tx")
-  async savePartialTx(
-    @Param("id") id: string,
-    @Query("token") token: string | undefined,
-    @Body() body: SavePartialTxDto,
-  ): Promise<{ ok: boolean }> {
-    if (!token || typeof token !== "string" || !token.trim()) {
-      throw new UnauthorizedException("Missing or invalid token.");
-    }
-    const deliveryId = Number(id);
-    if (!Number.isInteger(deliveryId) || deliveryId < 1) {
-      throw new BadRequestException("Invalid delivery id.");
-    }
-    if (!body.partialTxHex?.trim()) {
-      throw new BadRequestException("Missing partialTxHex.");
-    }
-    const profileId = await this.auth.getProfileIdFromToken(token.trim());
-    return this.order.savePartialSignedTx(deliveryId, profileId, body.partialTxHex.trim());
-  }
-
-  @Post("build-unlock-tx")
-  async buildUnlockTx(
-    @Body() body: BuildUnlockTxDto,
-  ): Promise<{ unsignedTx: string }> {
-    if (
-      !body.scriptUtxo?.input ||
-      !body.scriptUtxo?.output ||
-      !body.outputAddress ||
-      !body.signingOwnersPkh?.length ||
-      body.threshold == null ||
-      !body.collateral?.input ||
-      !body.changeAddress ||
-      !body.utxos
-    ) {
-      throw new BadRequestException(
-        "Missing scriptUtxo, outputAddress, signingOwnersPkh, threshold, collateral, changeAddress or utxos.",
-      );
-    }
-    if (body.signingOwnersPkh.length < body.threshold) {
-      throw new BadRequestException(
-        `signingOwnersPkh.length (${body.signingOwnersPkh.length}) < threshold (${body.threshold}).`,
-      );
-    }
-    const unsignedTx = await this.order.buildUnlockTx({
-      scriptUtxo: body.scriptUtxo,
-      outputAddress: body.outputAddress,
-      signingOwnersPkh: body.signingOwnersPkh,
-      threshold: body.threshold,
-      collateral: body.collateral,
-      changeAddress: body.changeAddress,
-      utxos: body.utxos,
-    });
-    return { unsignedTx };
-  }
-
-  @Post("merge-partial-tx")
-  mergePartialTx(
-    @Body() body: MergePartialTxDto,
-  ): { mergedTxHex: string; witnessCount: number; requiredSigners: string[] } {
-    if (!body.partialTxHex || !body.secondSignerResultHex) {
-      throw new BadRequestException(
-        "Missing partialTxHex or secondSignerResultHex.",
-      );
-    }
-    return this.order.mergePartialTx(
-      body.partialTxHex,
-      body.secondSignerResultHex,
+    return this.orderService.checkOrder(
+      walletAddress,
+      body?.assetName ?? '',
     );
   }
 
-  @Get("inspect-tx")
-  inspectTx(
-    @Query("txHex") txHex?: string,
-  ): { requiredSigners: string[]; witnessCount: number } {
-    if (!txHex?.trim()) {
-      throw new BadRequestException("Missing query txHex.");
+  @Post('clear-warehouse')
+  async clearWarehouse(
+    @Req() req: any,
+    @Body() body: { unit?: string },
+  ) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
-    return this.order.inspectTx(txHex);
+
+    const unit = (body?.unit || '').trim();
+    if (!unit) {
+      throw new HttpException('unit is required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.orderService.clearAssetFromWarehouse(walletAddress, unit);
   }
 
-  @Post("complete")
-  async completeOrder(
-    @Body() body: OrderCompleteDto,
-  ): Promise<{ ok: boolean; recipientAddress?: string }> {
-    if (!body.unlockTxHash?.trim()) {
-      throw new BadRequestException("Missing unlockTxHash.");
+  @Post('sent')
+  async listSent(@Req() req: any) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
-    if (typeof body.witnessCount !== "number" || body.witnessCount < 2) {
-      throw new BadRequestException("witnessCount is required and must be >= 2.");
+    return this.orderService.listSentOrders(walletAddress);
+  }
+
+  @Post('incoming')
+  async listIncoming(@Req() req: any) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
-    return this.order.confirmOrderComplete({
-      unlockTxHash: body.unlockTxHash,
-      witnessCount: body.witnessCount,
-      signedByAddress: body.signedByAddress?.trim() || undefined,
-      deliveryId: body.deliveryId,
+    return this.orderService.listIncomingOrders(walletAddress);
+  }
+
+  @Post('create')
+  async createOrder(@Req() req: any, @Body() body: {
+    receiverWalletAddress?: string;
+    policyId?: string;
+    assetName?: string;
+    unit?: string;
+    txHash?: string;
+  }) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const receiverWalletAddress = (body?.receiverWalletAddress || '').trim();
+    const policyId = (body?.policyId || '').trim();
+    const assetName = (body?.assetName || '').trim();
+    const unit = (body?.unit || '').trim();
+    const txHash = (body?.txHash || '').trim();
+
+    if (!receiverWalletAddress || !policyId || !assetName || !unit) {
+      throw new HttpException('Missing fields', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.orderService.createShippedOrder({
+      senderWalletAddress: walletAddress,
+      receiverWalletAddress,
+      policyId,
+      assetName,
+      unit,
+      txHash: txHash || null,
     });
+  }
+
+  @Post('ship')
+  async ship(@Req() req: any, @Body() body: {
+    receiverWalletAddress?: string;
+    policyId?: string;
+    assetName?: string;
+    unit?: string;
+    txHash?: string;
+  }) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const receiverWalletAddress = (body?.receiverWalletAddress || '').trim();
+    const policyId = (body?.policyId || '').trim();
+    const assetName = (body?.assetName || '').trim();
+    const unit = (body?.unit || '').trim();
+    const txHash = (body?.txHash || '').trim();
+
+    if (!receiverWalletAddress || !policyId || !assetName || !unit) {
+      throw new HttpException('Missing fields', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.orderService.ship({
+      senderWalletAddress: walletAddress,
+      receiverWalletAddress,
+      policyId,
+      assetName,
+      unit,
+      txHash: txHash || null,
+    });
+  }
+
+  @Post('confirm-receive')
+  async confirmReceive(@Req() req: any, @Body() body: { orderId?: string; warehouseId?: string }) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const orderId = (body?.orderId || '').trim();
+    const warehouseId = (body?.warehouseId || '').trim();
+    if (!orderId || !warehouseId) {
+      throw new HttpException('orderId and warehouseId are required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.orderService.confirmReceive({
+      receiverWalletAddress: walletAddress,
+      orderId,
+      warehouseId,
+    });
+  }
+
+  @Post('owners')
+  async owners(@Req() req: any, @Body() body: { orderId?: string }) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const orderId = (body?.orderId || '').trim();
+    if (!orderId) {
+      throw new HttpException('orderId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.orderService.getOwnersForOrder({
+      receiverWalletAddress: walletAddress,
+      orderId,
+    });
+  }
+
+  @Post('delete-sent')
+  async deleteSent(@Req() req: any, @Body() body: { orderId?: string }) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const orderId = (body?.orderId || '').trim();
+    if (!orderId) {
+      throw new HttpException('orderId is required', HttpStatus.BAD_REQUEST);
+    }
+    const result = await this.orderService.deleteSentOrder(
+      walletAddress,
+      orderId,
+    );
+    if (!result?.success) {
+      throw new HttpException(
+        result?.message || 'Failed to delete order',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return result;
+  }
+
+  @Post('delete-incoming')
+  async deleteIncoming(@Req() req: any, @Body() body: { orderId?: string }) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const orderId = (body?.orderId || '').trim();
+    if (!orderId) {
+      throw new HttpException('orderId is required', HttpStatus.BAD_REQUEST);
+    }
+    const result = await this.orderService.deleteIncomingOrder(
+      walletAddress,
+      orderId,
+    );
+    if (!result?.success) {
+      throw new HttpException(
+        result?.message || 'Failed to delete order',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return result;
   }
 }

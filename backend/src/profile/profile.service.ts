@@ -1,179 +1,160 @@
-import { Inject, Injectable, UnauthorizedException } from "@nestjs/common";
-import * as jwt from "jsonwebtoken";
-import { ConfigService } from "../core/config/config.service";
-import { AuthService } from "../auth/auth.service";
-import {
-  PROFILE_REPOSITORY,
-  ProfileRepositoryPort,
-} from "./domain/profile.repository";
-import { ListProfilesUseCase } from "./application/use-cases/list-profiles.use-case";
-import { ListProfilesByRoleUseCase } from "./application/use-cases/list-profiles-by-role.use-case";
-import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use-case";
-import { UploadProfileAvatarUseCase } from "./application/use-cases/upload-profile-avatar.use-case";
+import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class ProfileService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly auth: AuthService,
-    @Inject(PROFILE_REPOSITORY)
-    private readonly profileRepository: ProfileRepositoryPort,
-    private readonly listProfilesUseCase: ListProfilesUseCase,
-    private readonly listProfilesByRoleUseCase: ListProfilesByRoleUseCase,
-    private readonly updateProfileUseCase: UpdateProfileUseCase,
-    private readonly uploadProfileAvatarUseCase: UploadProfileAvatarUseCase
   ) {}
 
-  async listProfilesFromToken(token: string): Promise<
-    { walletAddress: string; displayName: string; location: string | null; coordinates: string | null; role: string | null }[]
-  > {
-    await this.auth.getProfileIdFromToken(token);
-
-    return this.listProfilesUseCase.execute();
-  }
-
-  async listProfilesByRoleCode(roleCode: string): Promise<{ id: number; displayName: string; walletAddress: string }[]> {
-    return this.listProfilesByRoleUseCase.execute(roleCode);
-  }
-
-  async updateProfileFromToken(params: {
-    token: string;
+  async createProfile(walletAddress: string, data: {
+    roleCode: string;
     displayName: string;
     location?: string;
-    coordinates?: string;
-  }): Promise<{
-    token: string;
-    profile: {
-      id: number;
-      role: string;
-      displayName: string;
-      avatarUrl: string | null;
-      location: string | null;
-      coordinates: string | null;
-    };
-  }> {
-    const { token, displayName, location, coordinates } = params;
-
-    const secret = this.config.jwtSecret;
-    if (!secret) {
-      throw new UnauthorizedException("JWT_SECRET is not configured.");
+  }) {
+    const addr = (walletAddress || '').trim();
+    const isPayment =
+      /^addr1[0-9a-z]+$/.test(addr) || /^addr_test1[0-9a-z]+$/.test(addr);
+    if (!isPayment) {
+      throw new BadRequestException(
+        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${walletAddress}`,
+      );
     }
 
-    let payload: unknown;
-    try {
-      payload = jwt.verify(token, secret) as unknown;
-    } catch {
-      throw new UnauthorizedException("Invalid token.");
-    }
-
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      typeof (payload as any).profileId !== "number"
-    ) {
-      throw new UnauthorizedException("Invalid token payload.");
-    }
-
-    const profileId = (payload as any).profileId as number;
-
-    const profile = await this.updateProfileUseCase.execute(profileId, {
-      displayName,
-      location,
-      coordinates,
+    const existingProfile = await this.prisma.profile.findFirst({
+      where: {
+        walletAddress: addr,
+        roleCode: data.roleCode,
+      },
     });
 
-    const nextPayload = {
-      sub: profile.walletAddress,
-      stakeAddress: profile.walletAddress,
+    if (existingProfile) {
+      throw new BadRequestException('Profile already exists for this role');
+    }
+
+    const location = (data.location || '').trim();
+    if (!location) {
+      throw new BadRequestException('Location is required.');
+    }
+
+    const profile = await this.prisma.profile.create({
+      data: {
+        walletAddress: addr,
+        roleCode: data.roleCode,
+        displayName: data.displayName,
+        location,
+      },
+    });
+
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new UnauthorizedException('JWT secret not configured');
+    }
+
+    const payload = {
+      sub: addr,
+      stakeAddress: addr,
       profileId: profile.id,
       role: profile.roleCode,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
       location: profile.location,
-      coordinates: profile.coordinates,
     };
 
-    const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
+    const token = jwt.sign(payload, secret, { expiresIn: '7d' });
 
     return {
-      token: nextToken,
+      token,
       profile: {
         id: profile.id,
         role: profile.roleCode,
         displayName: profile.displayName,
         avatarUrl: profile.avatarUrl,
-        location: profile.location ?? null,
-        coordinates: profile.coordinates ?? null,
+        location: profile.location,
       },
     };
   }
 
-  async uploadProfileAvatarFromToken(params: {
-    token: string;
-    imageDataUrl: string;
-  }): Promise<{
-    token: string;
-    profile: {
-      id: number;
-      role: string;
-      displayName: string;
-      avatarUrl: string | null;
-      location: string | null;
-      coordinates: string | null;
-    };
-  }> {
-    const { token, imageDataUrl } = params;
-
-    const secret = this.config.jwtSecret;
-    if (!secret) {
-      throw new UnauthorizedException("JWT_SECRET is not configured.");
+  async updateProfile(profileId: string, data: {
+    displayName?: string;
+    location?: string;
+  }) {
+    const displayName = typeof data.displayName === 'string' ? data.displayName.trim() : '';
+    const location = typeof data.location === 'string' ? data.location.trim() : '';
+    if (!displayName) {
+      throw new BadRequestException('Display name is required.');
+    }
+    if (!location) {
+      throw new BadRequestException('Location is required.');
     }
 
-    let payload: unknown;
-    try {
-      payload = jwt.verify(token, secret) as unknown;
-    } catch {
-      throw new UnauthorizedException("Invalid token.");
-    }
+    const profile = await this.prisma.profile.update({
+      where: { id: profileId },
+      data: {
+        displayName,
+        location,
+      },
+    });
 
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      typeof (payload as any).profileId !== "number"
-    ) {
-      throw new UnauthorizedException("Invalid token payload.");
-    }
-
-    const profileId = (payload as any).profileId as number;
-
-    const profile = await this.uploadProfileAvatarUseCase.execute(
-      profileId,
-      imageDataUrl
-    );
-
-    const nextPayload = {
-      sub: profile.walletAddress,
-      stakeAddress: profile.walletAddress,
-      profileId: profile.id,
+    return {
+      id: profile.id,
       role: profile.roleCode,
       displayName: profile.displayName,
       avatarUrl: profile.avatarUrl,
       location: profile.location,
-      coordinates: profile.coordinates,
     };
+  }
 
-    const nextToken = jwt.sign(nextPayload, secret, { expiresIn: "7d" });
+  async listProfiles(walletAddress: string) {
+    const addr = (walletAddress || '').trim();
+    if (!addr) {
+      throw new BadRequestException('Wallet address is required');
+    }
 
-    return {
-      token: nextToken,
-      profile: {
-        id: profile.id,
-        role: profile.roleCode,
-        displayName: profile.displayName,
-        avatarUrl: profile.avatarUrl,
-        location: profile.location ?? null,
-        coordinates: profile.coordinates ?? null,
+    const profiles = await this.prisma.profile.findMany({
+      where: {
+        isActive: true,
+        walletAddress: addr,
       },
-    };
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        walletAddress: true,
+        roleCode: true,
+        displayName: true,
+        location: true,
+        isActive: true,
+      },
+    });
+
+    return profiles;
+  }
+
+  async getPublicProfile(walletAddress: string) {
+    const addr = (walletAddress || '').trim();
+    const isPayment =
+      /^addr1[0-9a-z]+$/.test(addr) || /^addr_test1[0-9a-z]+$/.test(addr);
+    if (!isPayment) {
+      throw new BadRequestException(
+        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${walletAddress}`,
+      );
+    }
+
+    const profile = await this.prisma.profile.findFirst({
+      where: { walletAddress: addr, isActive: true },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        walletAddress: true,
+        roleCode: true,
+        displayName: true,
+        location: true,
+        isActive: true,
+      },
+    });
+
+    return { profile: profile || null };
   }
 }
