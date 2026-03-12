@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Head from "next/head";
-import { Check, MapPin, Calendar, Loader2, AlertCircle, Package, StickyNote } from "lucide-react";
+import { CheckCircle, MapPin, Calendar, Loader2, AlertCircle, Package, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { getProductTrace } from "@/actions/trace";
@@ -263,10 +263,23 @@ export default function ProductTraceabilityPage() {
             Supply chain checkpoints
           </h2>
 
-          <div className="relative z-0 flex items-center justify-between pt-0.5 pb-1.5">
-            {/* Track line */}
+          {/* Mobile: vertical timeline. Desktop: horizontal */}
+          <div className="relative z-0 flex flex-col md:flex-row md:items-center md:justify-between pt-0.5 pb-1.5">
+            {/* Track line - vertical on mobile */}
+            <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-200 rounded-full overflow-hidden -z-10 md:hidden">
+              <div
+                className="w-full bg-emerald-500 transition-all duration-500 ease-out"
+                style={{
+                  height:
+                    progressIndex >= 0 && waypoints.length > 1
+                      ? `${((progressIndex + 1) / waypoints.length) * 100}%`
+                      : "0%",
+                }}
+              />
+            </div>
+            {/* Track line - horizontal on desktop */}
             <div
-              className="absolute top-9 h-[2px] bg-gray-200 rounded-full overflow-hidden -z-10"
+              className="hidden md:block absolute top-9 h-[2px] bg-gray-200 rounded-full overflow-hidden -z-10"
               style={{
                 left: `${waypoints.length > 0 ? 50 / waypoints.length : 6}%`,
                 right: `${waypoints.length > 0 ? 50 / waypoints.length : 6}%`,
@@ -276,7 +289,7 @@ export default function ProductTraceabilityPage() {
                 className="h-full bg-emerald-500 transition-all duration-500 ease-out"
                 style={{
                   width:
-                    progressIndex >= 0
+                    progressIndex >= 0 && waypoints.length > 1
                       ? `${(progressIndex / (waypoints.length - 1)) * 100}%`
                       : "0%",
                 }}
@@ -290,10 +303,19 @@ export default function ProductTraceabilityPage() {
               const isClickable = index <= (progressIndex >= 0 ? progressIndex : 0);
 
               return (
-                <div key={loc} className="relative z-10 flex flex-col items-center flex-1 group">
+                <div
+                  key={loc}
+                  className={cn(
+                    "relative z-10 flex flex-col md:flex-col items-center flex-1 group",
+                    "flex-row items-center justify-start gap-3 py-2 md:py-0 pl-8 md:pl-0 md:mt-3"
+                  )}
+                >
                   {isCurrent && (
                     <span
-                      className="absolute -top-3 text-[#c41e3a] text-xs md:text-sm leading-none"
+                      className={cn(
+                        "absolute -top-3 text-xs md:text-sm leading-none hidden md:block",
+                        isRetired ? "text-green-500" : "text-[#c41e3a]"
+                      )}
                       aria-label="Current location"
                       title="Current location"
                     >
@@ -304,30 +326,28 @@ export default function ProductTraceabilityPage() {
                     onClick={() => isClickable && setSelectedStep(index)}
                     disabled={!isClickable}
                     className={cn(
-                      "relative flex items-center justify-center focus:outline-none cursor-pointer"
+                      "relative flex items-center justify-center focus:outline-none cursor-pointer flex-shrink-0"
                     )}
                   >
                     <span className="flex items-center justify-center rounded-full bg-white w-9 h-9 md:w-10 md:h-10">
+                      {isPast || isCompletedCurrent || (isCurrent && isRetired) ? (
+                        <CheckCircle className="w-8 h-8 md:w-9 md:h-9 text-green-500 flex-shrink-0" />
+                      ) : (
                       <span
                         className={cn(
                           "flex items-center justify-center rounded-full w-7 h-7 md:w-8 md:h-8 border-2 text-xs md:text-sm",
-                          isPast || isCompletedCurrent
-                            ? "bg-emerald-500 text-white border-emerald-500"
-                            : isCurrent
+                          isCurrent
                             ? "bg-[#c41e3a] text-white border-[#c41e3a]"
                             : "bg-emerald-400 text-white border-emerald-400",
                         )}
                       >
-                        {isPast || isCompletedCurrent ? (
-                          <Check className="w-4 h-4" />
-                        ) : (
-                          iconForLocation()
-                        )}
+                        {iconForLocation()}
                       </span>
+                      )}
                     </span>
                   </button>
 
-                  <span className="mt-3 text-xs md:text-sm font-medium text-gray-700 text-center leading-tight max-w-[110px]">
+                  <span className="mt-0 md:mt-3 text-xs md:text-sm font-medium text-gray-700 text-center md:leading-tight leading-tight text-left md:text-center max-w-[110px]">
                     {loc}
                     {isCurrent && (
                       <span className="block text-[10px] font-semibold mt-0.5">

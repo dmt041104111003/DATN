@@ -33,7 +33,7 @@ export default function ScanQR() {
         asset = false;
       }
       setIsAssetQr(asset);
-
+      setTimeout(() => setIsProcessing(false), 150);
       if (asset) {
         setTimeout(() => {
           window.location.href = text;
@@ -109,24 +109,35 @@ export default function ScanQR() {
             {result && (
               <div className="absolute inset-0 bg-black/80 flex items-center justify-center rounded-md overflow-hidden">
                 <div className="w-full px-4 py-6 text-center space-y-3 max-w-xs mx-auto">
-                  {isAssetQr ? (
-                    <CheckCircle className="w-14 h-14 text-green-500 mx-auto" />
+                  {isProcessing ? (
+                    <>
+                      <div className="w-14 h-14 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                      <p className="text-lg font-bold text-white">
+                        Checking…
+                      </p>
+                    </>
+                  ) : isAssetQr ? (
+                    <>
+                      <CheckCircle className="w-14 h-14 text-green-500 mx-auto" />
+                      <p className="text-lg font-bold text-white">
+                        Scan successful!
+                      </p>
+                      <p className="text-white/90 text-sm">Redirecting…</p>
+                    </>
                   ) : (
-                    <XCircle className="w-14 h-14 text-red-500 mx-auto" />
-                  )}
-                  <p className="text-lg font-bold text-white">
-                    {isAssetQr ? "Scan successful!" : "Scan failed"}
-                  </p>
-                  {isAssetQr ? (
-                    <p className="text-white/90 text-sm">Redirecting…</p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleRestart}
-                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-[#c41e3a] text-white text-sm font-semibold hover:bg-red-700 transition-colors"
-                    >
-                      Scan again
-                    </button>
+                    <>
+                      <XCircle className="w-14 h-14 text-red-500 mx-auto" />
+                      <p className="text-lg font-bold text-white">
+                        Scan failed
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleRestart}
+                        className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-[#c41e3a] text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+                      >
+                        Scan again
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

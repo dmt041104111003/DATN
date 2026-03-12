@@ -37,6 +37,7 @@ export function OrderScan() {
   const [isPaused, setIsPaused] = React.useState(false);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [scanMessage, setScanMessage] = React.useState("");
   const [showConfirm, setShowConfirm] = React.useState(false);
   const [confirmTxHash, setConfirmTxHash] = React.useState<string | null>(null);
 
@@ -98,51 +99,69 @@ export function OrderScan() {
       setReceiveWarehouseId("");
       setReceiveLocation("");
       setShowConfirm(false);
+      setScanMessage("");
 
       const incomingRes = await fetch(`${BACKEND_URL}/order/incoming`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!incomingRes.ok) {
-        setError("Failed to load incoming orders.");
+        setScanMessage("Failed to load incoming orders.");
         return;
       }
-      const data = (await incomingRes.json()) as OrderRow[];
-      const rows = Array.isArray(data) ? data : [];
-      const found = rows.find((r) => r.id === orderId);
+      const raw = await incomingRes.json();
+      const rows: OrderRow[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray((raw as any)?.data)
+        ? (raw as any).data
+        : Array.isArray((raw as any)?.orders)
+        ? (raw as any).orders
+        : [];
+      const orderIdNorm = String(orderId).trim();
+      const found = rows.find(
+        (r) => r != null && r.id != null && String(r.id).trim() === orderIdNorm
+      );
       if (!found) {
-        setError("");
+        setScanMessage(
+          "Order not found in your incoming list. Check that the QR is for an order sent to you and status is SHIPPED."
+        );
         return;
       }
       if (found.status !== "SHIPPED") {
-        setError("");
+        setScanMessage(
+          `Order status is "${found.status}". Only SHIPPED orders can be received here.`
+        );
         return;
       }
+      setScanMessage("");
       setOrder(found);
       setShowConfirm(true);
 
       setLoadingTrace(true);
       try {
         const meta = await fetchRef100Metadata(found.policyId, found.assetName);
-        if (!meta) return;
-        setTraceMeta(meta);
-        const stops = parseStops(meta["roadmap"]);
-        let defaultLoc =
-          typeof meta["location"] === "string"
-            ? ((meta["location"] as string) || "").trim()
-            : (stops[0] ?? "").trim();
+        if (!meta) {
+          setTraceMeta({});
+        } else {
+          setTraceMeta(meta);
+          const stops = parseStops(meta["roadmap"]);
+          let defaultLoc =
+            typeof meta["location"] === "string"
+              ? ((meta["location"] as string) || "").trim()
+              : (stops[0] ?? "").trim();
 
-        if (profileLocation) {
-          const match = stops.find(
-            (s) => s.trim().toLowerCase() === profileLocation.trim().toLowerCase(),
-          );
-          if (match) {
-            defaultLoc = match;
+          if (profileLocation) {
+            const match = stops.find(
+              (s) => s.trim().toLowerCase() === profileLocation.trim().toLowerCase(),
+            );
+            if (match) {
+              defaultLoc = match;
+            }
           }
-        }
 
-        if (defaultLoc) {
-          setReceiveLocation(defaultLoc);
+          if (defaultLoc) {
+            setReceiveLocation(defaultLoc);
+          }
         }
       } finally {
         setLoadingTrace(false);
@@ -163,11 +182,20 @@ export function OrderScan() {
       if (text.startsWith("http://") || text.startsWith("https://")) {
         url = new URL(text);
       } else if (typeof window !== "undefined") {
-        url = new URL(text, window.location.origin);
+        url = new URL(text.trim(), window.location.origin);
       }
-      const orderId = url?.searchParams.get("orderId");
+      let orderId: string | null = null;
+      if (url) {
+        orderId = url.searchParams.get("orderId")?.trim() || null;
+        if (!orderId && url.hash) {
+          const hashParams = new URLSearchParams(
+            url.hash.replace(/^#/, "").replace(/^\?/, "")
+          );
+          orderId = hashParams.get("orderId")?.trim() || null;
+        }
+      }
       if (!orderId) {
-        setError("QR does not contain a valid orderId.");
+        setScanMessage("QR does not contain a valid orderId.");
         setIsProcessing(false);
         return;
       }
@@ -175,7 +203,7 @@ export function OrderScan() {
         setIsProcessing(false);
       });
     } catch {
-      setError("Not a valid system QR.");
+      setScanMessage("Not a valid system QR.");
       setIsProcessing(false);
     }
   };
@@ -185,6 +213,7 @@ export function OrderScan() {
     setIsPaused(false);
     setIsProcessing(false);
     setError("");
+    setScanMessage("");
     setOrder(null);
     setTraceMeta(null);
     setReceiveWarehouseId("");
@@ -431,36 +460,35 @@ export function OrderScan() {
             {result && !confirmTxHash && (
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-md overflow-hidden">
                 <div className="w-full px-4 py-6 text-center space-y-3 max-w-xs mx-auto">
-                  {order ? (
-                    <CheckCircle className="w-14 h-14 text-green-500 mx-auto" />
+                  {isProcessing ? (
+                    <>
+                      <div className="w-14 h-14 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                      <p className="text-lg font-bold text-white">
+                        Checking order…
+                      </p>
+                    </>
+                  ) : order ? (
+                    <>
+                      <CheckCircle className="w-14 h-14 text-green-500 mx-auto" />
+                      <p className="text-lg font-bold text-white">
+                        Scan successful
+                      </p>
+                    </>
                   ) : (
-                    <XCircle className="w-14 h-14 text-red-500 mx-auto" />
+                    <>
+                      <XCircle className="w-14 h-14 text-red-500 mx-auto" />
+                      <p className="text-lg font-bold text-white">
+                        {scanMessage || "Scan failed"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleRestart}
+                        className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-[#c41e3a] text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+                      >
+                        Scan again
+                      </button>
+                    </>
                   )}
-                  <p className="text-lg font-bold text-white">
-                    {order ? "Scan successful" : "Scan failed"}
-                  </p>
-                  {!order && (
-                    <button
-                      type="button"
-                      onClick={handleRestart}
-                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-[#c41e3a] text-white text-sm font-semibold hover:bg-red-700 transition-colors"
-                    >
-                      Scan again
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-            {confirmTxHash && (
-              <div className="absolute inset-0 bg-black/80 flex items-center justify-center rounded-md overflow-hidden">
-                <div className="w-full px-4 text-center space-y-2">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
-                  <p className="text-sm font-semibold text-white">
-                    Order confirmed
-                  </p>
-                  <p className="text-white/90 text-[11px] break-all bg-black/40 rounded px-3 py-2 mx-auto max-w-xs">
-                    {confirmTxHash}
-                  </p>
                 </div>
               </div>
             )}
@@ -468,13 +496,30 @@ export function OrderScan() {
 
           {showConfirm && order && (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3"
+              className="fixed inset-0 z-50 flex items-center justify-center px-3"
+              style={{
+                backgroundColor: confirmTxHash ? "rgba(0,0,0,0.75)" : "rgba(0,0,0,0.6)",
+              }}
               onClick={() => {
-                if (!confirming) {
+                if (!confirming && !confirmTxHash) {
                   handleRestart();
                 }
               }}
             >
+              {confirmTxHash ? (
+                <div className="text-center pointer-events-none">
+                  <CheckCircle
+                    className="w-28 h-28 md:w-32 md:h-32 text-green-500 mx-auto"
+                    style={{ animation: "orderScanCheck 0.5s ease-out" }}
+                  />
+                  <p className="mt-4 text-lg font-semibold text-white">
+                    Order confirmed
+                  </p>
+                  <p className="mt-1 text-sm text-white/80">
+                    Closing in 2s…
+                  </p>
+                </div>
+              ) : (
               <div
                 className="w-full max-w-md bg-white border border-gray-200 rounded-md p-4"
                 onClick={(e) => e.stopPropagation()}
@@ -563,6 +608,7 @@ export function OrderScan() {
                   </button>
                 </div>
               </div>
+              )}
             </div>
           )}
 
