@@ -2,8 +2,13 @@
 
 import * as React from "react";
 import { Scanner } from "@yudiel/react-qr-scanner";
-import { BrowserWallet, CIP68_100, stringToHex } from "@meshsdk/core";
+import { ref100Unit } from "@/lib/cip68";
 import { CheckCircle, XCircle } from "lucide-react";
+import {
+  getWalletChangeAddress,
+  signTxWithEternl,
+  submitSignedTxHex,
+} from "@/lib/wallet";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -68,7 +73,7 @@ export function OrderScan() {
       const pid = (policyId || "").trim();
       const name = (assetName || "").trim();
       if (!pid || !name) return null as Record<string, unknown> | null;
-      const referenceUnit = pid + CIP68_100(stringToHex(name));
+      const referenceUnit = ref100Unit(pid, name);
       const res = await fetch(
         `${BACKEND_URL}/trace/${encodeURIComponent(referenceUnit)}`,
         { cache: "no-store" },
@@ -243,14 +248,7 @@ export function OrderScan() {
     }
     setConfirming(true);
     try {
-      const installed = await BrowserWallet.getInstalledWallets();
-      if (installed.length === 0) {
-        throw new Error("No browser wallet found");
-      }
-      const eternl = installed.find((w) => w.name.toLowerCase() === "eternl");
-      const walletInfo = eternl ?? installed[0];
-      const wallet = await BrowserWallet.enable(walletInfo.name);
-      const walletAddress = await wallet.getChangeAddress();
+      const walletAddress = await getWalletChangeAddress();
 
       const latestMeta = await fetchRef100Metadata(
         order.policyId,
@@ -310,19 +308,8 @@ export function OrderScan() {
         );
       }
 
-      const signed = await wallet.signTx(unsignedData.data, true);
-      const submitRes = await fetch(`${BACKEND_URL}/contract/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signedTx: signed }),
-      });
-      const submitData = await submitRes.json();
-      if (!submitRes.ok || !submitData?.result || !submitData?.data) {
-        throw new Error(
-          submitData?.message || "Failed to submit update transaction",
-        );
-      }
-      const updateTxHash = submitData.data as string;
+      const signed = await signTxWithEternl(unsignedData.data);
+      const updateTxHash = await submitSignedTxHex(signed);
 
       await fetch(
         `${BACKEND_URL}/assets/${encodeURIComponent(order.assetUnit)}/location`,

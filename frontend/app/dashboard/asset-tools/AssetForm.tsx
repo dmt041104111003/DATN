@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { BrowserWallet } from "@meshsdk/core";
+import {
+  getWalletChangeAddress,
+  signTxWithEternl,
+  submitSignedTxHex,
+} from "@/lib/wallet";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -459,16 +463,7 @@ export function AssetForm({
         throw new Error("Browser environment required");
       }
 
-      const installed = await BrowserWallet.getInstalledWallets();
-      if (installed.length === 0) {
-        throw new Error("No browser wallet found");
-      }
-
-      const eternl = installed.find((w) => w.name.toLowerCase() === "eternl");
-      const walletInfo = eternl ?? installed[0];
-
-      const wallet = await BrowserWallet.enable(walletInfo.name);
-      const walletAddress = await wallet.getChangeAddress();
+      const walletAddress = await getWalletChangeAddress();
       setMyWalletAddress(walletAddress);
 
       const ownerIdentity = identityAddress || walletAddress;
@@ -550,23 +545,10 @@ export function AssetForm({
 
       const unsigned = txData.data;
       console.log(`[AssetForm] Got unsigned tx, signing...`);
-      const signed = await wallet.signTx(unsigned, true);
+      const signed = await signTxWithEternl(unsigned);
 
-      console.log(`[AssetForm] Submitting signed tx to backend...`);
-      const submitRes = await fetch(`${BACKEND_URL}/contract/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signedTx: signed }),
-      });
-      const submitData = await submitRes.json();
-
-      console.log(`[AssetForm] Submit response:`, submitData);
-
-      if (!submitData.result || !submitData.data) {
-        throw new Error(submitData.message || "Failed to submit transaction");
-      }
-
-      const hash = submitData.data;
+      console.log(`[AssetForm] Submitting signed tx via wallet...`);
+      const hash = await submitSignedTxHex(signed);
       setTxHash(hash);
 
       const infoRes = await fetch(

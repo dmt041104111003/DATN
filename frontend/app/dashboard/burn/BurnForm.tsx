@@ -1,7 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { BrowserWallet, CIP68_100, stringToHex } from "@meshsdk/core";
+import { ref100Unit } from "@/lib/cip68";
+import {
+  getWalletChangeAddress,
+  signTxWithEternl,
+  submitSignedTxHex,
+} from "@/lib/wallet";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -95,22 +100,14 @@ export function BurnForm() {
         throw new Error("Browser environment required");
       }
 
-      const installed = await BrowserWallet.getInstalledWallets();
-      if (installed.length === 0) {
-        throw new Error("No browser wallet found");
-      }
-      const eternl = installed.find((w) => w.name.toLowerCase() === "eternl");
-      const walletInfo = eternl ?? installed[0];
-      const wallet = await BrowserWallet.enable(walletInfo.name);
-      const walletAddress = await wallet.getChangeAddress();
+      const walletAddress = await getWalletChangeAddress();
 
       if (!result.policyId || !result.assetName) {
         throw new Error(
           "Missing policyId or assetName to resolve reference token.",
         );
       }
-      const referenceUnit =
-        result.policyId + CIP68_100(stringToHex(result.assetName));
+      const referenceUnit = ref100Unit(result.policyId, result.assetName);
       const traceRes = await fetch(
         `${BACKEND_URL}/trace/${encodeURIComponent(referenceUnit)}`,
         { cache: "no-store" },
@@ -171,20 +168,8 @@ export function BurnForm() {
         );
       }
 
-      const signed = await wallet.signTx(unsignedData.data, true);
-      const submitRes = await fetch(`${BACKEND_URL}/contract/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signedTx: signed }),
-      });
-      const submitData = await submitRes.json();
-      if (!submitRes.ok || !submitData?.result || !submitData?.data) {
-        throw new Error(
-          submitData?.message || "Failed to submit transaction",
-        );
-      }
-
-      const hash = submitData.data as string;
+      const signed = await signTxWithEternl(unsignedData.data);
+      const hash = await submitSignedTxHex(signed);
       setBurnTxHash(hash);
 
       await fetch(`${BACKEND_URL}/burn/create`, {

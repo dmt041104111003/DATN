@@ -1,7 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { BrowserWallet } from "@meshsdk/core";
+import {
+  getWalletChangeAddress,
+  signTxWithEternl,
+  submitSignedTxHex,
+} from "@/lib/wallet";
 import QRCode from "qrcode";
 
 const BACKEND_URL =
@@ -146,15 +150,7 @@ export function OrderForm() {
         throw new Error("Browser environment required");
       }
 
-      const installed = await BrowserWallet.getInstalledWallets();
-      if (installed.length === 0) {
-        throw new Error("No browser wallet found");
-      }
-
-      const eternl = installed.find((w) => w.name.toLowerCase() === "eternl");
-      const walletInfo = eternl ?? installed[0];
-      const wallet = await BrowserWallet.enable(walletInfo.name);
-      const walletAddress = await wallet.getChangeAddress();
+      const walletAddress = await getWalletChangeAddress();
 
       const unsignedRes = await fetch(`${BACKEND_URL}/contract/transfer`, {
         method: "POST",
@@ -172,19 +168,9 @@ export function OrderForm() {
         throw new Error(unsignedData?.message || "Failed to build transfer transaction");
       }
 
-      const signed = await wallet.signTx(unsignedData.data, true);
+      const signed = await signTxWithEternl(unsignedData.data);
 
-      const submitRes = await fetch(`${BACKEND_URL}/contract/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signedTx: signed }),
-      });
-      const submitData = await submitRes.json();
-      if (!submitRes.ok || !submitData?.result || !submitData?.data) {
-        throw new Error(submitData?.message || "Failed to submit transaction");
-      }
-
-      const hash = submitData.data as string;
+      const hash = await submitSignedTxHex(signed);
       setSendTxHash(hash);
 
       const shipRes = await fetch(`${BACKEND_URL}/order/ship`, {

@@ -6,6 +6,7 @@ interface WalletAPI {
   getRewardAddresses?: () => Promise<string[]>;
   signData?: (address: string, payload: string) => Promise<{ signature: string; key: string }>;
   experimental?: any;
+  enable?: () => Promise<unknown>;
 }
 
 interface VerifyResponse {
@@ -28,7 +29,9 @@ export function useWalletAuth() {
   const router = useRouter();
 
   const stringToHex = (str: string): string => {
-    return Buffer.from(str, 'utf8').toString('hex');
+    return Array.from(str)
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("");
   };
 
   const loginWithEternl = async () => {
@@ -41,30 +44,16 @@ export function useWalletAuth() {
         throw new Error('No Cardano wallet found. Please install a Cardano wallet like Eternl, Nami, or Flint.');
       }
 
-      const availableWallets = Object.keys(cardano);
-      
-      let walletAPI = null;
-      let walletName = '';
-
-      const walletPriority = ['eternl', 'nami', 'flint', 'gero', 'lace'];
-      
-      for (const wallet of walletPriority) {
-        if (cardano[wallet]) {
-          walletName = wallet;
-          try {
-            walletAPI = await cardano[wallet].enable();
-            break;
-          } catch (err) {
-            continue;
-          }
-        }
+      if (typeof window === "undefined") {
+        throw new Error("Browser is not ready.");
       }
-
-      if (!walletAPI) {
-        throw new Error('No wallet could be enabled. Please make sure your wallet is unlocked and try again.');
+      const eternl = cardano.eternl as WalletAPI | undefined;
+      if (!eternl || typeof eternl.enable !== "function") {
+        throw new Error(
+          "Eternl wallet not found. Please install and enable the Eternl extension.",
+        );
       }
-
-      const api = walletAPI as WalletAPI;
+      const api = (await (cardano.eternl as any).enable()) as WalletAPI;
 
       const changeAddressRaw = await api.getChangeAddress();
       
