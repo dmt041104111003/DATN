@@ -161,10 +161,37 @@ export class TxBuilderHelper {
     }
 
     const collateral = collaterals[0];
+    const collateralId = `${collateral.input.txHash}#${collateral.input.outputIndex}`;
+    const feePayerUtxo =
+      utxos
+        .filter(
+          (u) => `${u.input.txHash}#${u.input.outputIndex}` !== collateralId,
+        )
+        .map((u) => {
+          const lovelace = u.output.amount.find((a) => a.unit === 'lovelace');
+          const qty = lovelace ? BigInt(lovelace.quantity) : BigInt(0);
+          return { u, qty };
+        })
+        .filter(({ qty }) => qty >= BigInt(2_000_000))
+        .sort((a, b) => (a.qty > b.qty ? -1 : a.qty < b.qty ? 1 : 0))[0]?.u ??
+      null;
+
+    if (!feePayerUtxo) {
+      throw new Error(
+        'Wallet needs an additional UTxO with enough ADA to pay fees for update transaction. Please send a bit more ADA to this wallet and try again.',
+      );
+    }
     const { policyId, contractAddress, spendScriptCbor } =
       this.plutusHelper.getScripts(owners);
 
     const unsignedTx = this.newTxBuilder();
+
+    unsignedTx.txIn(
+      feePayerUtxo.input.txHash,
+      feePayerUtxo.input.outputIndex,
+      feePayerUtxo.output.amount,
+      feePayerUtxo.output.address,
+    );
 
     for (const { assetName, metadata } of assets) {
       const referenceUnit = policyId + CIP68_100(stringToHex(assetName));
