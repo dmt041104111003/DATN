@@ -159,12 +159,16 @@ export class ContractService {
         throw new BadRequestException('signedTx is required.');
       }
       if (clean.length % 2 !== 0) {
-        throw new BadRequestException('signedTx must be a hex string (even length).');
+        throw new BadRequestException(
+          'signedTx must be a hex string (even length).',
+        );
       }
       if (!/^[0-9a-fA-F]+$/.test(clean)) {
         throw new BadRequestException('signedTx must be a hex string.');
       }
 
+      // Blockfrost submitTx in @meshsdk/core expects a CBOR tx hex string.
+      // Ensure we pass a clean hex string (without 0x) here.
       const txHash = await this.blockfrostProvider.submitTx(clean);
 
       return {
