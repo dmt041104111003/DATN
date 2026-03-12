@@ -18,16 +18,16 @@ export function AboutSection() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 md:text-white">
               About Traceability
             </h2>
-            <p className="text-sm md:text-base text-gray-700 leading-relaxed text-justify">
+            <p className="text-sm md:text-base text-gray-700 md:text-gray-100 leading-relaxed text-justify">
               Traceability gives your team a clear, verifiable story for every
               product—from production to warehouse, shipping, and final receipt.
               With QR scanning, anyone can quickly check what the item is, where
               it has been, and which party is responsible at each step.
             </p>
-            <p className="text-sm md:text-base text-gray-700 leading-relaxed text-justify">
+            <p className="text-sm md:text-base text-gray-700 md:text-gray-100 leading-relaxed text-justify">
               In operations, this reduces manual reconciliation and prevents
               missing handoffs. Warehouses can enforce capacity limits, orders
               can be confirmed by wallet signing, and every status change is

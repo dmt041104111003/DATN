@@ -153,7 +153,19 @@ export class ContractService {
 
   async submitTx(signedTx: string): Promise<ContractResponse<string | null>> {
     try {
-      const txHash = await this.blockfrostProvider.submitTx(signedTx);
+      const raw = (signedTx ?? '').trim();
+      const clean = raw.startsWith('0x') ? raw.slice(2) : raw;
+      if (!clean) {
+        throw new BadRequestException('signedTx is required.');
+      }
+      if (clean.length % 2 !== 0) {
+        throw new BadRequestException('signedTx must be a hex string (even length).');
+      }
+      if (!/^[0-9a-fA-F]+$/.test(clean)) {
+        throw new BadRequestException('signedTx must be a hex string.');
+      }
+
+      const txHash = await this.blockfrostProvider.submitTx(clean);
 
       return {
         result: true,
@@ -161,10 +173,15 @@ export class ContractService {
         message: 'Transaction submitted successfully',
       };
     } catch (error: any) {
+      const details =
+        (typeof error?.message === 'string' && error.message) ||
+        (typeof error === 'string' && error) ||
+        (typeof error?.toString === 'function' && error.toString()) ||
+        '';
       return {
         result: false,
         data: null,
-        message: error.message || 'Failed to submit transaction',
+        message: details || 'Failed to submit transaction',
       };
     }
   }

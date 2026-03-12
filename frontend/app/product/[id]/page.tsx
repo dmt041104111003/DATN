@@ -228,7 +228,10 @@ export default function ProductTraceabilityPage() {
   };
 
   return (
-    <main className="min-h-screen text-gray-900">
+    <main
+      className="min-h-screen text-gray-900 bg- bg-top bg-no-repeat"
+      style={{ backgroundSize: "100% 100%" }}
+    >
       <Head>
         <title>Traceability | {productMeta?.model || "Product Journey"}</title>
       </Head>

@@ -120,25 +120,8 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply text-foreground;
-    position: relative;
-    min-height: 100vh;
-    background-color: transparent;
+    @apply bg-background text-foreground;
   }
-}
-
-/* Subtle global background image (non-blurry) */
-html::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: url("/background.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.12;
 }
 
 /* Hide scrollbars but keep scrolling (hero, dashboard, etc.) */

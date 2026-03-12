@@ -4,7 +4,7 @@ import { User, Truck, Building2 } from "lucide-react";
 
 export function AudienceSection() {
   return (
-    <section className="w-full min-h-screen flex items-center">
+    <section className="w-full min-h-screen flex items-center bg-slate-50/80">
       <div className="max-w-6xl mx-auto px-4 pb-16 md:pb-20">
         <div className="max-w-3xl mx-auto text-center mb-8 md:mb-10">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">

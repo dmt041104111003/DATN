@@ -9,15 +9,17 @@ export function HeroNew() {
   const router = useRouter();
 
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-white">
-      <Image
-        src="/a.png"
-        alt="Traceability hero"
-        fill
-        priority
-        className="object-cover"
-      />
-
+    <section className="relative w-full h-screen overflow-hidden">
+      {/* Mobile background image */}
+      <div className="absolute inset-0 -z-10 md:hidden">
+        <Image
+          src="/a.png"
+          alt="Traceability hero"
+          fill
+          priority
+          className="object-cover"
+        />
+      </div>
       <div className="relative w-full max-w-5xl mx-auto px-4 min-h-[calc(100vh-5rem)] md:min-h-[calc(100vh-6rem)] flex items-start justify-center pt-28 md:pt-36 pb-10">
         <header className="text-center space-y-4">
           <p className="text-sm md:text-base font-medium text-gray-200 uppercase tracking-[0.18em]">

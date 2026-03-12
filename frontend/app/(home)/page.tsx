@@ -7,7 +7,7 @@ import { AudienceSection } from "@/components/AudienceSection";
 
 export default function Page() {
   return (
-    <main className="">
+    <main className="min-h-screen md:bg-[url('/a.png')] md:bg-contain md:bg-top md:bg-no-repeat">
       <HeroNew />
       <AboutSection />
       <FeatureSection />
