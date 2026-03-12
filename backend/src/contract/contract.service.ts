@@ -153,23 +153,7 @@ export class ContractService {
 
   async submitTx(signedTx: string): Promise<ContractResponse<string | null>> {
     try {
-      const raw = (signedTx ?? '').trim();
-      const clean = raw.startsWith('0x') ? raw.slice(2) : raw;
-      if (!clean) {
-        throw new BadRequestException('signedTx is required.');
-      }
-      if (clean.length % 2 !== 0) {
-        throw new BadRequestException(
-          'signedTx must be a hex string (even length).',
-        );
-      }
-      if (!/^[0-9a-fA-F]+$/.test(clean)) {
-        throw new BadRequestException('signedTx must be a hex string.');
-      }
-
-      // Blockfrost submitTx in @meshsdk/core expects a CBOR tx hex string.
-      // Ensure we pass a clean hex string (without 0x) here.
-      const txHash = await this.blockfrostProvider.submitTx(clean);
+      const txHash = await this.blockfrostProvider.submitTx(signedTx);
 
       return {
         result: true,
@@ -177,15 +161,10 @@ export class ContractService {
         message: 'Transaction submitted successfully',
       };
     } catch (error: any) {
-      const details =
-        (typeof error?.message === 'string' && error.message) ||
-        (typeof error === 'string' && error) ||
-        (typeof error?.toString === 'function' && error.toString()) ||
-        '';
       return {
         result: false,
         data: null,
-        message: details || 'Failed to submit transaction',
+        message: error.message || 'Failed to submit transaction',
       };
     }
   }
