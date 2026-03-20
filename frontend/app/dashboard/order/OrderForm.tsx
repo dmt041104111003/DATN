@@ -6,7 +6,6 @@ import {
   signTxWithEternl,
   submitSignedTxHex,
 } from "@/lib/wallet";
-import QRCode from "qrcode";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -17,6 +16,7 @@ type OrderCheckResult = {
   assetName?: string;
   unit?: string;
   walletHasNft?: boolean;
+  owners?: string[];
   message?: string;
 };
 
@@ -34,25 +34,19 @@ export function OrderForm() {
   const [result, setResult] = React.useState<OrderCheckResult | null>(null);
   const [receiver, setReceiver] = React.useState("");
   const [sendTxHash, setSendTxHash] = React.useState("");
-  const [orderId, setOrderId] = React.useState<string | null>(null);
-  const [qrUrl, setQrUrl] = React.useState<string | null>(null);
 
-  const getToken = () => {
-    if (typeof document === "undefined") return "";
-    const cookie = document.cookie
-      .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("auth_token="));
-    return cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-  };
+  const receiverOptions = React.useMemo(() => {
+    const owners = Array.isArray(result?.owners) ? result?.owners : [];
+    const me = (senderInfo?.walletAddress || "").trim();
+    if (!me) return owners;
+    return owners.filter((o) => o !== me);
+  }, [result?.owners, senderInfo?.walletAddress]);
 
   React.useEffect(() => {
     const loadMe = async () => {
-      const token = getToken();
-      if (!token) return;
       try {
         const res = await fetch(`${BACKEND_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
           cache: "no-store",
         });
         if (!res.ok) return;
@@ -91,17 +85,12 @@ export function OrderForm() {
     }
     setLoading(true);
     try {
-      const token = getToken();
-      if (!token) {
-        setError("Unauthorized. Please sign in again.");
-        return;
-      }
       const res = await fetch(`${BACKEND_URL}/order/check`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({ assetName: name }),
       });
       const data = (await res.json()) as OrderCheckResult;
@@ -109,7 +98,10 @@ export function OrderForm() {
         throw new Error((data as any)?.message ?? "Check failed");
       }
       setResult(data);
-      setReceiver("");
+      const owners = Array.isArray(data?.owners) ? data.owners : [];
+      const me = (senderInfo?.walletAddress || "").trim();
+      const filtered = me ? owners.filter((o) => o !== me) : owners;
+      setReceiver(filtered.length > 0 ? filtered[0] : "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Check failed");
     } finally {
@@ -122,13 +114,25 @@ export function OrderForm() {
     !!result?.walletHasNft &&
     !!result?.policyId &&
     !!result?.assetName &&
-    !!result?.unit;
+    !!result?.unit &&
+    Array.isArray(result?.owners) &&
+    (receiverOptions?.length ?? 0) > 0 &&
+    !!receiver.trim();
+
+  React.useEffect(() => {
+    if (!Array.isArray(result?.owners)) return;
+    if (receiverOptions.length === 0) {
+      if (receiver) setReceiver("");
+      return;
+    }
+    if (!receiverOptions.includes(receiver)) {
+      setReceiver(receiverOptions[0] ?? "");
+    }
+  }, [receiverOptions, receiver, result?.owners]);
 
   const handleSend = async () => {
     setError("");
     setSendTxHash("");
-    setOrderId(null);
-    setQrUrl(null);
     if (!canSend) {
       setError("Check must succeed and wallet must hold the NFT before sending.");
       return;
@@ -138,12 +142,14 @@ export function OrderForm() {
       setError("Enter receiver address.");
       return;
     }
-    const token = getToken();
-    if (!token) {
-      setError("Unauthorized. Please sign in again.");
+    if (senderInfo?.walletAddress && to === senderInfo.walletAddress) {
+      setError("Receiver cannot be your own wallet address.");
       return;
     }
-
+    if (!Array.isArray(result?.owners) || !result.owners.includes(to)) {
+      setError("Receiver must be selected from the dropdown.");
+      return;
+    }
     setSending(true);
     try {
       if (typeof window === "undefined") {
@@ -177,8 +183,8 @@ export function OrderForm() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           receiverWalletAddress: to,
           policyId: result!.policyId,
@@ -188,32 +194,7 @@ export function OrderForm() {
         }),
       });
 
-      if (shipRes.ok) {
-        const shipData = (await shipRes.json()) as {
-          success?: boolean;
-          order?: { id: string };
-        };
-        if (shipData?.success && shipData.order?.id) {
-          const id = shipData.order.id;
-          setOrderId(id);
-          if (typeof window !== "undefined") {
-            const url = `${window.location.origin}/dashboard/order?orderId=${encodeURIComponent(
-              id,
-            )}&tab=incoming`;
-            try {
-              const dataUrl = await QRCode.toDataURL(url, {
-                errorCorrectionLevel: "H",
-                width: 512,
-                margin: 4,
-                color: { dark: "#1f2933", light: "#ffffff" },
-              });
-              setQrUrl(dataUrl);
-            } catch {
-              // ignore QR generation errors
-            }
-          }
-        }
-      }
+      await shipRes.json().catch(() => null);
 
       setResult((prev) =>
         prev
@@ -338,14 +319,24 @@ export function OrderForm() {
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Receiver address
               </label>
-              <input
-                type="text"
+              <select
                 value={receiver}
                 onChange={(e) => setReceiver(e.target.value)}
-                disabled={sending || loading}
-                placeholder="addr_test1..."
+                disabled={
+                  sending ||
+                  loading ||
+                  !Array.isArray(result?.owners) ||
+                  receiverOptions.length === 0
+                }
                 className="w-full px-4 py-3 text-base border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41e3a]/30 focus:border-[#c41e3a] bg-white disabled:bg-gray-50"
-              />
+              >
+                <option value="">Select receiver...</option>
+                {receiverOptions.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
             </div>
             <button
               type="button"
@@ -362,30 +353,6 @@ export function OrderForm() {
               Tx hash: {sendTxHash}
             </p>
           )}
-          {orderId && qrUrl && (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs text-gray-600">
-                Download this QR and send it to the receiver. They can scan it in the dashboard scan tab to confirm receipt.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center gap-3">
-                <img
-                  src={qrUrl}
-                  alt="Order QR"
-                  className="w-32 h-32 border border-gray-200 rounded-md bg-white"
-                />
-                <a
-                  href={qrUrl}
-                  download={`ORDER_${orderId}.png`}
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-md bg-gray-800 text-white text-sm font-semibold hover:bg-black transition-colors"
-                >
-                  Download order QR
-                </a>
-              </div>
-            </div>
-          )}
-          <p className="text-xs text-gray-500">
-            This sends the NFT (CIP-68 user token 222) to the receiver. After submit, the asset will be detached from your warehouse (asset record remains).
-          </p>
         </div>
       )}
     </div>

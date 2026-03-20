@@ -4,8 +4,11 @@ import * as React from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Shield, LayoutDashboard, Boxes, Package, Archive, QrCode, Settings, LogOut, Image as ImageIcon } from "lucide-react";
+import { Shield, LayoutDashboard, Boxes, Package, QrCode, Settings, LogOut, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 function NavItem({
   href,
@@ -47,53 +50,58 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
 
   React.useEffect(() => {
-    if (typeof document === "undefined") return;
-    const cookie = document.cookie
-      .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("auth_token="));
-    const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-    if (!token) {
-      router.replace("/");
-      return;
-    }
-    const parts = token.split(".");
-    if (parts.length < 2) {
-      router.replace("/");
-      return;
-    }
-    try {
-      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const padded = base64.padEnd(
-        base64.length + ((4 - (base64.length % 4)) % 4),
-        "="
-      );
-      const json = atob(padded);
-      const payload = JSON.parse(json) as { profileId?: unknown; role?: unknown; roleCode?: unknown };
-      if (!payload.profileId) {
-        router.replace("/role-setup");
-        return;
+    const checkMe = async () => {
+      try {
+        const BACKEND_URL =
+          process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          if (res.status === 401) {
+            router.replace("/");
+            return;
+          }
+          router.replace("/");
+          return;
+        }
+        const data = (await res.json()) as {
+          user?: { profileId?: string | null; role?: string | null; roleCode?: string | null } | null;
+        };
+        const profileId = data?.user?.profileId;
+        if (!profileId) {
+          router.replace("/role-setup");
+          return;
+        }
+        const roleValue =
+          (typeof data?.user?.role === "string" && data.user.role) ||
+          (typeof (data?.user as any)?.roleCode === "string" &&
+            (data?.user as any).roleCode) ||
+          null;
+        if (roleValue) {
+          setRoleCode(roleValue);
+        }
+        setReady(true);
+      } catch {
+        router.replace("/");
       }
-      const roleValue =
-        (typeof payload.role === "string" && payload.role) ||
-        (typeof (payload as any).roleCode === "string" && (payload as any).roleCode) ||
-        null;
-      if (roleValue) {
-        setRoleCode(roleValue);
-      }
-      setReady(true);
-    } catch {
-      router.replace("/");
-    }
+    };
+    checkMe();
   }, [router]);
 
   if (!ready) {
     return null;
   }
-  const canUseAssetTools = roleCode === "ENTERPRISE";
-  const handleLogout = () => {
-    if (typeof document !== "undefined") {
-      document.cookie = "auth_token=; path=/; max-age=0";
+  const canUseAssetMint = roleCode === "ENTERPRISE";
+  const canUseEnterpriseAssetCatalog = roleCode === "ENTERPRISE";
+  const handleLogout = async () => {
+    try {
+      await fetch(`${BACKEND_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Ignore network errors; still clear local session state and redirect.
     }
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem("profile_setup");
@@ -118,17 +126,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <nav className="px-4 py-4 space-y-1">
             <NavItem href="/dashboard" icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" />
 
-            {canUseAssetTools && (
+            {canUseAssetMint && (
               <div className="mt-3">
                 <p className="px-3 text-sm font-semibold uppercase tracking-[0.16em] text-gray-500 mb-1">
                   Asset tools
                 </p>
                 <div className="space-y-1">
                   <NavItem href="/dashboard/asset-tools/mint" icon={<QrCode className="w-5 h-5" />} label="Assets" />
-                  <NavItem href="/dashboard/asset-tools/asset-images" icon={<ImageIcon className="w-5 h-5" />} label="Asset images" />
-                  <NavItem href="/dashboard/asset-tools/producers" icon={<QrCode className="w-5 h-5" />} label="Producers" />
-                  <NavItem href="/dashboard/asset-tools/product-types" icon={<QrCode className="w-5 h-5" />} label="Product types" />
-                  <NavItem href="/dashboard/asset-tools/certifications" icon={<QrCode className="w-5 h-5" />} label="Certifications" />
+                  {canUseEnterpriseAssetCatalog && (
+                    <>
+                      <NavItem href="/dashboard/asset-tools/asset-images" icon={<ImageIcon className="w-5 h-5" />} label="Asset images" />
+                      <NavItem href="/dashboard/asset-tools/producers" icon={<QrCode className="w-5 h-5" />} label="Producers" />
+                      <NavItem href="/dashboard/asset-tools/product-types" icon={<QrCode className="w-5 h-5" />} label="Product types" />
+                      <NavItem href="/dashboard/asset-tools/certifications" icon={<QrCode className="w-5 h-5" />} label="Certifications" />
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -140,7 +152,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <div className="space-y-1">
                 <NavItem href="/dashboard/warehouses" icon={<Boxes className="w-5 h-5" />} label="Warehouses" />
                 <NavItem href="/dashboard/order" icon={<Package className="w-5 h-5" />} label="Order" />
-                <NavItem href="/dashboard/burn" icon={<Archive className="w-5 h-5" />} label="Retire" />
               </div>
             </div>
 
@@ -218,17 +229,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <nav className="px-3 py-4 space-y-1 flex-1 overflow-y-auto">
               <NavItem href="/dashboard" icon={<LayoutDashboard className="w-5 h-5" />} label="Dashboard" />
 
-              {canUseAssetTools && (
+              {canUseAssetMint && (
                 <div className="mt-3">
                   <p className="px-3 text-sm font-semibold uppercase tracking-[0.16em] text-gray-500 mb-1">
                     Asset tools
                   </p>
                   <div className="space-y-1">
                     <NavItem href="/dashboard/asset-tools/mint" icon={<QrCode className="w-5 h-5" />} label="Assets" />
-                    <NavItem href="/dashboard/asset-tools/asset-images" icon={<ImageIcon className="w-5 h-5" />} label="Asset images" />
-                    <NavItem href="/dashboard/asset-tools/producers" icon={<QrCode className="w-5 h-5" />} label="Producers" />
-                    <NavItem href="/dashboard/asset-tools/product-types" icon={<QrCode className="w-5 h-5" />} label="Product types" />
-                    <NavItem href="/dashboard/asset-tools/certifications" icon={<QrCode className="w-5 h-5" />} label="Certifications" />
+                    {canUseEnterpriseAssetCatalog && (
+                      <>
+                        <NavItem href="/dashboard/asset-tools/asset-images" icon={<ImageIcon className="w-5 h-5" />} label="Asset images" />
+                        <NavItem href="/dashboard/asset-tools/producers" icon={<QrCode className="w-5 h-5" />} label="Producers" />
+                        <NavItem href="/dashboard/asset-tools/product-types" icon={<QrCode className="w-5 h-5" />} label="Product types" />
+                        <NavItem href="/dashboard/asset-tools/certifications" icon={<QrCode className="w-5 h-5" />} label="Certifications" />
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -240,7 +255,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <div className="space-y-1">
                   <NavItem href="/dashboard/warehouses" icon={<Boxes className="w-5 h-5" />} label="Warehouses" />
                   <NavItem href="/dashboard/order" icon={<Package className="w-5 h-5" />} label="Order" />
-                  <NavItem href="/dashboard/burn" icon={<Archive className="w-5 h-5" />} label="Retire" />
                 </div>
               </div>
 

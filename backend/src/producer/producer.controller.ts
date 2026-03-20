@@ -12,10 +12,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EnterpriseOnlyGuard } from '../auth/enterprise-only.guard';
 import { ProducerService } from './producer.service';
 
 @Controller('producers')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EnterpriseOnlyGuard)
 export class ProducerController {
   constructor(private readonly producerService: ProducerService) {}
 

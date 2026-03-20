@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
 import { deserializeDatum } from '../utils/deserialize-datum';
-import { CIP68_222, stringToHex } from '@meshsdk/core';
 
 export interface HistoryEntry {
   txHash: string;
@@ -34,24 +33,7 @@ export class TraceService {
     });
   }
 
-  async getProductTrace(unit: string): Promise<TraceResult> {
-    let burned = false;
-    try {
-      const assetInfo = await this.blockfrost.assetsById(unit);
-      burned = assetInfo.quantity === '0';
-    } catch {
-      burned = true;
-    }
-
-    if (burned) {
-      return {
-        metadata: {},
-        transaction_history: [],
-        burned: true,
-        message: 'This product has been burned and no longer exists on-chain.',
-      };
-    }
-
+  private async getProductTraceInternal(unit: string): Promise<TraceResult> {
     const assetTxRefs = await this.blockfrost.assetsTransactions(unit);
     const histories: HistoryEntry[] = [];
 
@@ -138,103 +120,20 @@ export class TraceService {
         metadata: (histories[0]?.metadata as Record<string, unknown>) || {},
         transaction_history: histories,
         burned: false,
-        message: 'Không tìm thấy Mint nào trong lịch sử.',
+        message: 'Mint not found in transaction history.',
       };
     }
 
     const latestMetadata = (histories[0]?.metadata as Record<string, unknown>) || {};
 
-    // FULL ON-CHAIN: Retire is burning CIP-68 user token (222) only, which won't show up in ref100 history.
-    // We derive the 222 unit from the ref100 unit and inspect its on-chain state.
-    try {
-      const policyId = unit.slice(0, 56);
-      const rest = unit.slice(56);
-      const REF_PREFIX = '000643b0'; // CIP-68 ref token prefix
-      let hexName = rest;
-      if (hexName.startsWith(REF_PREFIX)) {
-        hexName = hexName.slice(REF_PREFIX.length);
-      }
-      const assetName =
-        hexName && hexName.length % 2 === 0
-          ? Buffer.from(hexName, 'hex').toString('utf8')
-          : '';
-
-      if (policyId && assetName) {
-        const userUnit = policyId + CIP68_222(stringToHex(assetName));
-
-        let userBurned = false;
-        try {
-          const userInfo = await this.blockfrost.assetsById(userUnit);
-          userBurned = userInfo.quantity === '0';
-        } catch {
-          userBurned = true;
-        }
-
-        if (userBurned) {
-          const userTxRefs = await this.blockfrost.assetsTransactions(userUnit);
-          let burnTxHash = userTxRefs?.[0]?.tx_hash as string | undefined;
-          let burnTime = 0;
-          let burnFee = '';
-
-          // Try to locate the actual burn tx by inspecting I/O quantities of 222
-          for (const { tx_hash } of userTxRefs || []) {
-            try {
-              const txInfo = await this.blockfrost.txs(tx_hash);
-              const utxos = await this.blockfrost.txsUtxos(tx_hash);
-              let inputQty = 0;
-              let outputQty = 0;
-
-              const inputWithAsset = utxos.inputs.find((input: any) =>
-                input.amount?.some((a: any) => a.unit === userUnit),
-              );
-              if (inputWithAsset) {
-                const amt = inputWithAsset.amount.find((a: any) => a.unit === userUnit);
-                inputQty = Number(amt?.quantity || 0);
-              }
-
-              const outputWithAsset = utxos.outputs.find((output: any) =>
-                output.amount?.some((a: any) => a.unit === userUnit),
-              );
-              if (outputWithAsset) {
-                const amt = outputWithAsset.amount.find((a: any) => a.unit === userUnit);
-                outputQty = Number(amt?.quantity || 0);
-              }
-
-              if (inputQty > 0 && outputQty === 0) {
-                burnTxHash = tx_hash;
-                burnTime = txInfo.block_time || 0;
-                burnFee = txInfo.fees || '';
-                break;
-              }
-            } catch {
-              // ignore, fallback to first tx hash
-            }
-          }
-
-          filteredHistory.unshift({
-            txHash: burnTxHash || 'retired',
-            datetime: burnTime || histories[0]?.datetime || 0,
-            fee: burnFee || '',
-            status: 'Completed',
-            action: 'Burn',
-            metadata: {
-              location:
-                (latestMetadata?.location as string | undefined) ||
-                (histories[0]?.metadata as any)?.location ||
-                '',
-              status: 'Retired222',
-            },
-          });
-        }
-      }
-    } catch {
-      // ignore retire enrichment
-    }
-
     return {
       metadata: latestMetadata,
       transaction_history: filteredHistory,
-      burned: false,
+      burned: histories.length > 0 && histories[0].action === 'Burn',
     };
+  }
+
+  async getProductTrace(unit: string): Promise<TraceResult> {
+    return this.getProductTraceInternal(unit);
   }
 }

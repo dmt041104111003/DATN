@@ -18,19 +18,8 @@ export default function DashboardProfilePage() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const token = document.cookie
-          .split(";")
-          .map((c) => c.trim())
-          .find((c) => c.startsWith("auth_token="))
-          ?.split("=")[1];
-        if (!token) {
-          router.replace("/");
-          return;
-        }
         const res = await fetch(`${BACKEND_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include",
         });
         if (!res.ok) {
           router.replace("/");
@@ -62,21 +51,12 @@ export default function DashboardProfilePage() {
     }
     setSaving(true);
     try {
-      const token = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="))
-        ?.split("=")[1];
-      if (!token) {
-        router.replace("/");
-        return;
-      }
       const res = await fetch(`${BACKEND_URL}/profile`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           displayName: displayName.trim(),
           location: location.trim(),

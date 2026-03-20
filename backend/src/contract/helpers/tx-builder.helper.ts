@@ -80,18 +80,42 @@ export class TxBuilderHelper {
     const utxos = await this.getUtxosForAddress(walletAddress);
     const collaterals = await this.getCollateralForAddress(walletAddress);
 
-    if (utxos.length === 0) {
-      throw new Error('No UTXOs found for wallet address');
-    }
-    if (collaterals.length === 0) {
-      throw new Error('No collateral found for wallet address');
+    if (utxos.length === 0 || collaterals.length === 0) {
+      throw new Error('Insufficient UTXOs or collateral');
     }
 
     const collateral = collaterals[0];
+    const collateralId = `${collateral.input.txHash}#${collateral.input.outputIndex}`;
+    const spendableUtxos = utxos.filter(
+      (u) => `${u.input.txHash}#${u.input.outputIndex}` !== collateralId,
+    );
+    const feePayerUtxo =
+      spendableUtxos
+        .map((u) => {
+          const lovelace = u.output.amount.find((a) => a.unit === 'lovelace');
+          const qty = lovelace ? BigInt(lovelace.quantity) : BigInt(0);
+          return { u, qty };
+        })
+        .filter(({ qty }) => qty >= BigInt(2_000_000))
+        .sort((a, b) => (a.qty > b.qty ? -1 : a.qty < b.qty ? 1 : 0))[0]?.u ??
+      null;
+
+    if (!feePayerUtxo) {
+      throw new Error(
+        'Wallet needs an additional UTxO with enough ADA to pay fees for mint transaction. Please split/consolidate UTxOs and try again.',
+      );
+    }
+
     const { policyId, contractAddress, mintScriptCbor } =
       this.plutusHelper.getScripts(owners);
 
     const unsignedTx = this.newTxBuilder();
+    unsignedTx.txIn(
+      feePayerUtxo.input.txHash,
+      feePayerUtxo.input.outputIndex,
+      feePayerUtxo.output.amount,
+      feePayerUtxo.output.address,
+    );
 
     for (const { assetName, metadata, quantity = '1', receiver } of assets) {
       const existingUtxo = await this.getAddressUTXOAsset(
@@ -133,7 +157,7 @@ export class TxBuilderHelper {
     unsignedTx
       .requiredSignerHash(deserializeAddress(walletAddress).pubKeyHash)
       .changeAddress(walletAddress)
-      .selectUtxosFrom(utxos)
+      .selectUtxosFrom(spendableUtxos)
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
@@ -311,10 +335,10 @@ export class TxBuilderHelper {
   }
 
   /**
-   * Retire (burn) ONLY the CIP-68 user token (222) held by the wallet.
-   * This must NOT touch the reference token (100) stored at the script address.
+   * Burn only CIP-68 user token (222) without touching reference token (100).
+   * Used for "consumed" flow.
    */
-  async buildRetire222Tx(
+  async buildBurn222Tx(
     walletAddress: string,
     owners: string[],
     assets: Array<{ assetName: string }>,
@@ -328,19 +352,19 @@ export class TxBuilderHelper {
 
     const collateral = collaterals[0];
     const { policyId, mintScriptCbor } = this.plutusHelper.getScripts(owners);
-
     const unsignedTx = this.newTxBuilder();
 
     for (const { assetName } of assets) {
       const userUnit = policyId + CIP68_222(stringToHex(assetName));
       const userUtxos = await this.getAddressUTXOAssets(walletAddress, userUnit);
+
       const amount = userUtxos
         .flatMap((u) => u.output.amount)
         .filter((a) => a.unit === userUnit)
         .reduce((sum, a) => sum + Number(a.quantity), 0);
 
       if (!amount) {
-        throw new Error(`Wallet does not hold this NFT (222) for "${assetName}"`);
+        throw new Error(`Wallet does not hold NFT "${assetName}"`);
       }
 
       unsignedTx
@@ -385,9 +409,20 @@ export class TxBuilderHelper {
     }
 
     const userUnit = pid + CIP68_222(stringToHex(name));
-    const hasUtxos = await this.getAddressUTXOAssets(from, userUnit);
-    if (hasUtxos.length === 0) {
+    const userUtxos = await this.getAddressUTXOAssets(from, userUnit);
+    if (userUtxos.length === 0) {
       throw new Error('Wallet does not hold this NFT');
+    }
+    const requestedQty = Number(quantity || '1');
+    const availableQty = userUtxos
+      .flatMap((u) => u.output.amount)
+      .filter((a) => a.unit === userUnit)
+      .reduce((sum, a) => sum + Number(a.quantity), 0);
+    if (!Number.isFinite(requestedQty) || requestedQty <= 0) {
+      throw new Error('quantity must be a positive number');
+    }
+    if (availableQty < requestedQty) {
+      throw new Error('Wallet does not have enough NFT quantity to transfer');
     }
 
     const utxos = await this.getUtxosForAddress(from);
@@ -396,7 +431,14 @@ export class TxBuilderHelper {
     }
 
     const unsignedTx = this.newTxBuilder();
-    unsignedTx.txOut(to, [{ unit: userUnit, quantity }]);
+    const nftInput = userUtxos[0];
+    unsignedTx.txIn(
+      nftInput.input.txHash,
+      nftInput.input.outputIndex,
+      nftInput.output.amount,
+      nftInput.output.address,
+    );
+    unsignedTx.txOut(to, [{ unit: userUnit, quantity: String(requestedQty) }]);
 
     unsignedTx
       .requiredSignerHash(deserializeAddress(from).pubKeyHash)

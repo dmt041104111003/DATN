@@ -19,17 +19,8 @@ export default function AssetImagesPage() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const cookie =
-          typeof document !== "undefined"
-            ? document.cookie
-                .split(";")
-                .map((c) => c.trim())
-                .find((c) => c.startsWith("auth_token="))
-            : null;
-        const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-        if (!token) return;
         const res = await fetch(`${BACKEND_URL}/asset-images`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
         if (!res.ok) return;
         const data = (await res.json()) as {
@@ -57,6 +48,7 @@ export default function AssetImagesPage() {
         // ignore
       }
     };
+
     load();
   }, []);
 
@@ -65,22 +57,13 @@ export default function AssetImagesPage() {
     if (!value || saving) return;
     setSaving(true);
     try {
-      const cookie = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="));
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-      if (!token) {
-        throw new Error("Unauthorized. Please sign in again.");
-      }
-
       if (editingId != null) {
         await fetch(`${BACKEND_URL}/asset-images/${encodeURIComponent(editingId)}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             name: imageName.trim() || "Asset image",
             mimeType: imageType.trim() || "image/*",
@@ -113,9 +96,7 @@ export default function AssetImagesPage() {
 
         const uploadRes = await fetch(`${BACKEND_URL}/asset-images/upload`, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include",
           body: form,
         });
         const img = await uploadRes.json();
@@ -218,21 +199,11 @@ export default function AssetImagesPage() {
             }
             const doDelete = async () => {
               try {
-                const cookie = document.cookie
-                  .split(";")
-                  .map((c) => c.trim())
-                  .find((c) => c.startsWith("auth_token="));
-                const token = cookie
-                  ? decodeURIComponent(cookie.split("=")[1] ?? "")
-                  : "";
-                if (!token) {
-                  throw new Error("Unauthorized. Please sign in again.");
-                }
                 const res = await fetch(
                   `${BACKEND_URL}/asset-images/${encodeURIComponent(row.id)}`,
                   {
                     method: "DELETE",
-                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: "include",
                   },
                 );
                 if (!res.ok) {

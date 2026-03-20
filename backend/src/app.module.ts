@@ -18,8 +18,6 @@ import { WarehouseController } from './warehouse/warehouse.controller';
 import { WarehouseService } from './warehouse/warehouse.service';
 import { OrderController } from './order/order.controller';
 import { OrderService } from './order/order.service';
-import { BurnController } from './burn/burn.controller';
-import { BurnService } from './burn/burn.service';
 import { AssetImageController } from './asset-image/asset-image.controller';
 import { AssetImageService } from './asset-image/asset-image.service';
 import { ProducerController } from './producer/producer.controller';
@@ -41,7 +39,7 @@ import { HealthController } from './health/health.controller';
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [AuthController, ProfileController, AssetController, ContractController, TraceController, WarehouseController, OrderController, BurnController, AssetImageController, ProducerController, ProductTypeController, CertificationController, HealthController],
-  providers: [AuthService, PrismaService, ProfileService, JwtStrategy, AssetService, ContractService, TraceService, WarehouseService, OrderService, BurnService, AssetImageService, ProducerService, ProductTypeService, CertificationService],
+  controllers: [AuthController, ProfileController, AssetController, ContractController, TraceController, WarehouseController, OrderController, AssetImageController, ProducerController, ProductTypeController, CertificationController, HealthController],
+  providers: [AuthService, PrismaService, ProfileService, JwtStrategy, AssetService, ContractService, TraceService, WarehouseService, OrderService, AssetImageService, ProducerService, ProductTypeService, CertificationService],
 })
 export class AppModule {}

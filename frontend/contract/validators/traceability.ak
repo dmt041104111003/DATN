@@ -40,6 +40,27 @@ validator store(owners: List<Address>) {
     transaction: Transaction,
   ) {
     let Transaction { inputs, outputs, extra_signatories, .. } = transaction
+    let has_datum =
+      when datum_option is {
+        Some(_) -> True
+        None -> False
+      }
+    let consumed_input_exists =
+      list.any(
+        inputs,
+        fn(input) { input.output_reference == output_reference },
+      )
+    let continuing_output_same_address =
+      list.any(
+        inputs,
+        fn(input) {
+          if input.output_reference == output_reference {
+            list.any(outputs, fn(output) { output.address == input.output.address })
+          } else {
+            False
+          }
+        },
+      )
     let is_authorized =
       list.any(
         owners,
@@ -51,8 +72,8 @@ validator store(owners: List<Address>) {
         },
       )
     when redeemer is {
-      Update -> is_authorized
-      Remove -> is_authorized
+      Update -> is_authorized && has_datum && consumed_input_exists && continuing_output_same_address
+      Remove -> is_authorized && consumed_input_exists
     }
   }
 

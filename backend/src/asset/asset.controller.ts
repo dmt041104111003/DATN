@@ -20,6 +20,8 @@ export interface CreateAssetDto {
     mediaType?: string;
     roadmap?: string;
     location?: string;
+    quantity?: string;
+    unit?: string;
   };
 }
 
@@ -37,6 +39,8 @@ export interface UpdateAssetDto {
     mediaType?: string;
     roadmap?: string;
     location?: string;
+    quantity?: string;
+    unit?: string;
   };
 }
 
@@ -99,9 +103,28 @@ export class AssetController {
   }
 
   @Patch(':unit')
-  async updateByUnit(@Param('unit') unit: string, @Body() body: UpdateAssetDto) {
+  @UseGuards(JwtAuthGuard)
+  async updateByUnit(
+    @Req() req: any,
+    @Param('unit') unit: string,
+    @Body() body: UpdateAssetDto,
+  ) {
     try {
-      return await this.assetService.updateByUnit(unit, body);
+      const walletAddress =
+        req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+
+      if (!walletAddress) {
+        throw new HttpException(
+          'Unable to determine wallet address from token',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const result = await this.assetService.updateByUnit(unit, walletAddress, body);
+      if (!result?.success) {
+        throw new HttpException(result?.message || 'Not allowed', HttpStatus.BAD_REQUEST);
+      }
+      return result;
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'Failed to update asset',
@@ -141,10 +164,24 @@ export class AssetController {
   }
 
   @Delete(':unit')
-  async deleteByUnit(@Param('unit') unit: string) {
+  @UseGuards(JwtAuthGuard)
+  async deleteByUnit(@Req() req: any, @Param('unit') unit: string) {
     try {
-      await this.assetService.deleteByUnit(unit);
-      return { success: true };
+      const walletAddress =
+        req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+
+      if (!walletAddress) {
+        throw new HttpException(
+          'Unable to determine wallet address from token',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const result = await this.assetService.deleteByUnit(unit, walletAddress);
+      if (!result?.success) {
+        throw new HttpException(result?.message || 'Not allowed', HttpStatus.BAD_REQUEST);
+      }
+      return result;
     } catch (error) {
       throw new HttpException(
         error instanceof Error ? error.message : 'Failed to delete asset',

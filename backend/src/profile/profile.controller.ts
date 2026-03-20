@@ -1,4 +1,16 @@
-import { Controller, Post, Patch, Body, HttpException, HttpStatus, UseGuards, Req, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Patch,
+  Body,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+  Req,
+  Get,
+  Res,
+} from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProfileService } from './profile.service';
 
@@ -16,6 +28,22 @@ export interface UpdateProfileDto {
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+
+  private setAuthCookie(res: Response, token: string) {
+    const sameSite =
+      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
+    const secure =
+      (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
+        ? true
+        : process.env.NODE_ENV === 'production';
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
 
   @Get('list')
   @UseGuards(JwtAuthGuard)
@@ -44,10 +72,18 @@ export class ProfileController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async createProfile(@Body() body: CreateProfileDto, @Req() req: any) {
+  async createProfile(
+    @Body() body: CreateProfileDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const userId = req.user.sub;
-      return this.profileService.createProfile(userId, body);
+      const created = await this.profileService.createProfile(userId, body);
+      if (created?.token && typeof created.token === 'string') {
+        this.setAuthCookie(res, created.token);
+      }
+      return created;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

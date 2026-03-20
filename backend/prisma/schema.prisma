@@ -57,12 +57,20 @@ model Asset {
   mediaType          String?
   roadmap            String?
   location           String?
+  quantity           String   @default("")
+  quantityUnit       String   @default("")
   notes              String?
+  status             AssetStatus @default(ACTIVE)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   @@index([ownerWalletAddress])
   @@map("assets")
+}
+
+enum AssetStatus {
+  ACTIVE
+  CONSUMED
 }
 
 model Warehouse {
@@ -106,20 +114,6 @@ model Order {
   @@index([receiverWalletAddress])
   @@index([assetUnit])
   @@map("orders")
-}
-
-model BurnRecord {
-  id                  String   @id @default(cuid())
-  assetUnit           String
-  policyId            String
-  assetName           String
-  burnerWalletAddress String
-  txHash              String
-  createdAt           DateTime @default(now())
-
-  @@index([burnerWalletAddress])
-  @@index([assetUnit])
-  @@map("burn_records")
 }
 
 model AssetImage {

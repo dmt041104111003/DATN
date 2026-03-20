@@ -10,6 +10,7 @@ export interface OrderCheckResult {
   assetName?: string;
   unit?: string;
   walletHasNft?: boolean;
+  owners?: string[];
   message?: string;
 }
 
@@ -60,6 +61,10 @@ export class OrderService {
         assetName: asset.assetName,
         unit: asset.unit,
         walletHasNft: false,
+        owners: String((asset as any).owners || '')
+          .split('\n')
+          .map((s: string) => s.trim())
+          .filter(Boolean),
         message: `Asset found in warehouse but on-chain check failed: ${err instanceof Error ? err.message : 'Unknown error'}.`,
       };
     }
@@ -70,14 +75,22 @@ export class OrderService {
       assetName: asset.assetName,
       unit: asset.unit,
       walletHasNft,
+      owners: String((asset as any).owners || '')
+        .split('\n')
+        .map((s: string) => s.trim())
+        .filter(Boolean),
       message: walletHasNft
         ? 'Asset found in warehouse and wallet holds the NFT.'
         : 'Asset found in warehouse but wallet does not hold the NFT.',
     };
   }
 
-  async clearAssetFromWarehouse(walletAddress: string, unit: string) {
-    return this.assetService.clearWarehouseByUnit(unit, walletAddress);
+  async clearAssetFromWarehouse(
+    walletAddress: string,
+    unit: string,
+    options?: { status?: 'ACTIVE' | 'CONSUMED'; txHash?: string },
+  ) {
+    return this.assetService.clearWarehouseByUnit(unit, walletAddress, options);
   }
 
   async createShippedOrder(params: {
@@ -101,10 +114,7 @@ export class OrderService {
     });
   }
 
-  /**
-   * Mark an asset as shipped: detach from sender warehouse and transfer off-chain management to receiver.
-   * Creates an Order record with status SHIPPED.
-   */
+
   async ship(params: {
     senderWalletAddress: string;
     receiverWalletAddress: string;
@@ -137,7 +147,6 @@ export class OrderService {
       return { success: false, message: 'Asset not found in your warehouses' };
     }
 
-    // Detach from sender warehouse only (do NOT transfer asset ownership)
     await (this.prisma as any).asset.update({
       where: { unit },
       data: { warehouseId: null },
@@ -251,7 +260,10 @@ export class OrderService {
 
     await (this.prisma as any).asset.update({
       where: { unit: order.assetUnit },
-      data: { warehouseId: params.warehouseId },
+      data: {
+        warehouseId: params.warehouseId,
+        ownerWalletAddress: params.receiverWalletAddress,
+      },
     });
 
     const updated = await (this.prisma as any).order.update({

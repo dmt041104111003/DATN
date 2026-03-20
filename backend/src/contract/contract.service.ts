@@ -53,10 +53,39 @@ export class ContractService {
     }>,
   ): Promise<ContractResponse<string | null>> {
     try {
+      const signer = (walletAddress || '').trim();
+      const normalizedOwners = (owners || []).map((o) => (o || '').trim()).filter(Boolean);
+      if (!signer) {
+        throw new Error('walletAddress is required');
+      }
+      if (normalizedOwners.length === 0) {
+        throw new Error('At least one owner is required');
+      }
+      if (!normalizedOwners.includes(signer)) {
+        throw new Error('Your wallet is not in script owners list. Cannot mint.');
+      }
+      if (!Array.isArray(assets) || assets.length === 0) {
+        throw new Error('At least one asset is required');
+      }
+
+      const normalizedAssets = assets.map((a) => ({
+        assetName: (a.assetName || '').trim(),
+        quantity: '1',
+        metadata: a.metadata || {},
+        receiver: (a.receiver || '').trim() || undefined,
+      }));
+      if (normalizedAssets.some((a) => !a.assetName)) {
+        throw new Error('assetName is required for all assets');
+      }
+      const nameSet = new Set(normalizedAssets.map((a) => a.assetName));
+      if (nameSet.size !== normalizedAssets.length) {
+        throw new Error('Duplicate assetName in mint request');
+      }
+
       const unsignedTx = await this.txBuilderHelper.buildMintTx(
-        walletAddress,
-        owners,
-        assets,
+        signer,
+        normalizedOwners,
+        normalizedAssets,
       );
 
       return {
@@ -79,6 +108,21 @@ export class ContractService {
     assets: Array<{ assetName: string; metadata: Record<string, string> }>,
   ): Promise<ContractResponse<string | null>> {
     try {
+      if (!owners.includes(walletAddress)) {
+        throw new Error('Your wallet is not in script owners list. Cannot update.');
+      }
+
+      const { policyId } = this.plutusHelper.getScripts(owners);
+      for (const { assetName, metadata } of assets) {
+        if (typeof metadata?.location !== 'string' || metadata.location.trim().length === 0) {
+          throw new Error(`metadata.location is required for "${assetName}"`);
+        }
+        const hasNft = await this.checkWalletHasNft(walletAddress, policyId, assetName);
+        if (!hasNft) {
+          throw new Error(`Wallet does not hold NFT "${assetName}"`);
+        }
+      }
+
       const unsignedTx = await this.txBuilderHelper.buildUpdateTx(
         walletAddress,
         owners,
@@ -105,6 +149,22 @@ export class ContractService {
     assets: Array<{ assetName: string }>,
   ): Promise<ContractResponse<string | null>> {
     try {
+      if (!owners.includes(walletAddress)) {
+        throw new Error('Your wallet is not in script owners list. Cannot burn.');
+      }
+
+      const { policyId } = this.plutusHelper.getScripts(owners);
+      for (const { assetName } of assets) {
+        const hasNft = await this.checkWalletHasNft(
+          walletAddress,
+          policyId,
+          assetName,
+        );
+        if (!hasNft) {
+          throw new Error(`Wallet does not hold NFT "${assetName}"`);
+        }
+      }
+
       const unsignedTx = await this.txBuilderHelper.buildBurnTx(
         walletAddress,
         owners,
@@ -125,13 +185,29 @@ export class ContractService {
     }
   }
 
-  async createRetire222(
+  async createBurn222(
     walletAddress: string,
     owners: string[],
     assets: Array<{ assetName: string }>,
   ): Promise<ContractResponse<string | null>> {
     try {
-      const unsignedTx = await this.txBuilderHelper.buildRetire222Tx(
+      if (!owners.includes(walletAddress)) {
+        throw new Error('Your wallet is not in script owners list. Cannot burn token 222.');
+      }
+
+      const { policyId } = this.plutusHelper.getScripts(owners);
+      for (const { assetName } of assets) {
+        const hasNft = await this.checkWalletHasNft(
+          walletAddress,
+          policyId,
+          assetName,
+        );
+        if (!hasNft) {
+          throw new Error(`Wallet does not hold NFT "${assetName}"`);
+        }
+      }
+
+      const unsignedTx = await this.txBuilderHelper.buildBurn222Tx(
         walletAddress,
         owners,
         assets,
@@ -140,13 +216,13 @@ export class ContractService {
       return {
         result: true,
         data: unsignedTx,
-        message: 'Retire transaction created',
+        message: 'Burn token 222 transaction created',
       };
     } catch (error: any) {
       return {
         result: false,
         data: null,
-        message: error.message || 'Failed to create retire transaction',
+        message: error.message || 'Failed to create burn token 222 transaction',
       };
     }
   }
@@ -169,7 +245,6 @@ export class ContractService {
     }
   }
 
-  /** Check if wallet holds the NFT (222 token) for given policyId + assetName. */
   async checkWalletHasNft(
     walletAddress: string,
     policyId: string,

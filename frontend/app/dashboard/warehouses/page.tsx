@@ -31,17 +31,9 @@ export default function WarehousesPage() {
     setError("");
     setLoading(true);
     try {
-      const cookie = typeof document !== "undefined"
-        ? document.cookie
-            .split(";")
-            .map((c) => c.trim())
-            .find((c) => c.startsWith("auth_token="))
-        : null;
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-
       const res = await fetch(`${BACKEND_URL}/warehouses`, {
         cache: "no-store",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -68,22 +60,13 @@ export default function WarehousesPage() {
     setSaving(true);
     setError("");
     try {
-      const cookie = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="));
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-      if (!token) {
-        throw new Error("Unauthorized. Please sign in again.");
-      }
-
       if (editingId) {
         const res = await fetch(`${BACKEND_URL}/warehouses/${editingId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             name: name.trim(),
             maxAssets: maxAssets.trim() ? Number(maxAssets.trim()) : null,
@@ -111,8 +94,8 @@ export default function WarehousesPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             code: code.trim(),
             name: name.trim(),
@@ -141,20 +124,9 @@ export default function WarehousesPage() {
     setSaving(true);
     setError("");
     try {
-      const cookie = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="));
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-      if (!token) {
-        throw new Error("Unauthorized. Please sign in again.");
-      }
-
       const res = await fetch(`${BACKEND_URL}/warehouses/${row.id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {

@@ -113,8 +113,8 @@ export class AuthService {
         needProfile: true,
         roles: [
           { id: 1, code: "ENTERPRISE" },
-          { id: 2, code: "TRANSIT" },
           { id: 3, code: "AGENT" },
+          { id: 4, code: "TRANSIT" },
         ],
         token: setupToken,
       };

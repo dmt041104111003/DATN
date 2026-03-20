@@ -60,5 +60,24 @@ export class WarehouseController {
   async getAssets(@Req() req: any, @Param('id') id: string) {
     return this.warehouseService.getAssets(id, this.getWalletAddress(req));
   }
+
+  @Post(':id/burn-token222')
+  async burnToken222(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { unit?: string },
+  ) {
+    const roleCode = (req.user?.role ?? req.user?.roleCode ?? '').toString();
+    const unit = (body?.unit || '').trim();
+    if (!unit) {
+      throw new HttpException('unit is required', HttpStatus.BAD_REQUEST);
+    }
+    return this.warehouseService.buildBurnToken222InWarehouse({
+      warehouseId: id,
+      walletAddress: this.getWalletAddress(req),
+      roleCode,
+      unit,
+    });
+  }
 }
 

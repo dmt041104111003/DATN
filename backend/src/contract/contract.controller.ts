@@ -1,11 +1,21 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  UseGuards,
+  Req,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { MintDto } from './dto/mint.dto';
 import { BurnDto } from './dto/burn.dto';
 import { UpdateDto } from './dto/update.dto';
-import { RetireDto } from './dto/retire.dto';
 import { SubmitTxDto } from './dto/submit-tx.dto';
 import { TransferDto } from './dto/transfer.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('contract')
 export class ContractController {
@@ -44,22 +54,29 @@ export class ContractController {
   }
 
   @Post('burn')
-  async createBurn(@Body() dto: BurnDto) {
+  @UseGuards(JwtAuthGuard)
+  async createBurn(@Req() req: any, @Body() dto: BurnDto) {
+    const roleCode = (req.user?.role ?? req.user?.roleCode ?? '').toString();
+    if (roleCode !== 'ENTERPRISE') {
+      throw new HttpException(
+        'Only ENTERPRISE can burn both token 100 and 222',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress || walletAddress !== dto.walletAddress) {
+      throw new HttpException(
+        'walletAddress in request must match authenticated wallet',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     return this.contractService.createBurn(
       dto.walletAddress,
       dto.owners,
       dto.assets.map((a) => ({
         assetName: a.assetName,
       })),
-    );
-  }
-
-  @Post('retire')
-  async createRetire(@Body() dto: RetireDto) {
-    return this.contractService.createRetire222(
-      dto.walletAddress,
-      dto.owners,
-      dto.assets.map((a) => ({ assetName: a.assetName })),
     );
   }
 

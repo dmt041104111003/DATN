@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpException, HttpStatus, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, HttpException, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService, StakeAddressInput } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -16,6 +17,38 @@ export interface VerifySignatureDto {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  private setAuthCookie(res: Response, token: string) {
+    const sameSite =
+      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
+    const secure =
+      (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
+        ? true
+        : process.env.NODE_ENV === 'production';
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  private clearAuthCookie(res: Response) {
+    const sameSite =
+      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
+    const secure =
+      (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
+        ? true
+        : process.env.NODE_ENV === 'production';
+    res.cookie('auth_token', '', {
+      httpOnly: true,
+      secure,
+      sameSite,
+      path: '/',
+      maxAge: 0,
+    });
+  }
 
   @Post('nonce')
   async createNonce(@Body() body: CreateNonceDto) {
@@ -37,7 +70,10 @@ export class AuthController {
   }
 
   @Post('verify')
-  async verifySignature(@Body() body: VerifySignatureDto) {
+  async verifySignature(
+    @Body() body: VerifySignatureDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
       const addr = this.normalizeAddress(body.stakeAddress as StakeAddressInput);
       
@@ -45,18 +81,28 @@ export class AuthController {
         throw new HttpException('Missing authentication parameters', HttpStatus.BAD_REQUEST);
       }
 
-      return this.authService.verifyAndIssueToken({
+      const result = await this.authService.verifyAndIssueToken({
         stakeAddress: addr,
         nonce: body.nonce,
         signature: body.signature,
         key: body.key,
       });
+      if (result?.token && typeof result.token === 'string') {
+        this.setAuthCookie(res, result.token);
+      }
+      return result;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: Response) {
+    this.clearAuthCookie(res);
+    return { success: true };
   }
 
   @Get('me')

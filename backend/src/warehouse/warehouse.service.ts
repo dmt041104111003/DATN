@@ -5,10 +5,14 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContractService } from '../contract/contract.service';
 
 @Injectable()
 export class WarehouseService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly contractService: ContractService,
+  ) {}
 
   async list(ownerWalletAddress: string) {
     const warehouses = await (this.prisma as any).warehouse.findMany({
@@ -137,6 +141,8 @@ export class WarehouseService {
       mediaType: asset.mediaType,
       roadmap: asset.roadmap,
       location: asset.location,
+      quantity: asset.quantity,
+      quantityUnit: asset.quantityUnit,
       createdAt: asset.createdAt,
       updatedAt: asset.updatedAt,
     }));
@@ -145,7 +151,10 @@ export class WarehouseService {
   async findAssetByNameInWarehouses(
     ownerWalletAddress: string,
     assetName: string,
-  ): Promise<{ policyId: string; assetName: string; unit: string } | null> {
+  ): Promise<
+    | { policyId: string; assetName: string; unit: string; owners: string }
+    | null
+  > {
     const name = (assetName || '').trim();
     if (!name) return null;
 
@@ -161,9 +170,72 @@ export class WarehouseService {
         warehouseId: { in: warehouseIds },
         assetName: name,
       },
-      select: { policyId: true, assetName: true, unit: true },
+      select: { policyId: true, assetName: true, unit: true, owners: true },
     });
-    return asset ? { policyId: asset.policyId, assetName: asset.assetName, unit: asset.unit } : null;
+    return asset
+      ? {
+          policyId: asset.policyId,
+          assetName: asset.assetName,
+          unit: asset.unit,
+          owners: asset.owners,
+        }
+      : null;
+  }
+
+  async buildBurnToken222InWarehouse(params: {
+    warehouseId: string;
+    walletAddress: string;
+    roleCode: string;
+    unit: string;
+  }) {
+    const role = (params.roleCode || '').trim().toUpperCase();
+    if (role !== 'AGENT') {
+      throw new BadRequestException('Only AGENT can burn token 222 in warehouse flow');
+    }
+
+    const warehouse = await (this.prisma as any).warehouse.findUnique({
+      where: { id: params.warehouseId },
+      select: { id: true, ownerWalletAddress: true, isActive: true },
+    });
+    if (!warehouse || !warehouse.isActive) {
+      throw new NotFoundException('Warehouse not found');
+    }
+    if (warehouse.ownerWalletAddress !== params.walletAddress) {
+      throw new NotFoundException('Warehouse not found');
+    }
+
+    const asset = await (this.prisma as any).asset.findFirst({
+      where: { unit: params.unit, warehouseId: params.warehouseId },
+      select: { unit: true, assetName: true, owners: true },
+    });
+    if (!asset) {
+      throw new NotFoundException('Asset not found in warehouse');
+    }
+
+    const owners = String(asset.owners || '')
+      .split('\n')
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    if (owners.length === 0) {
+      throw new BadRequestException('Owners not found for this asset');
+    }
+    if (!owners.includes(params.walletAddress)) {
+      throw new BadRequestException('Wallet is not in script owners list');
+    }
+
+    const tx = await this.contractService.createBurn222(
+      params.walletAddress,
+      owners,
+      [{ assetName: asset.assetName }],
+    );
+    return {
+      ...tx,
+      burnType: 'CONSUMED',
+      token: '222',
+      warehouseId: params.warehouseId,
+      unit: asset.unit,
+      assetName: asset.assetName,
+    };
   }
 }
 

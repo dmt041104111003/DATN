@@ -12,10 +12,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EnterpriseOnlyGuard } from '../auth/enterprise-only.guard';
 import { ProductTypeService } from './product-type.service';
 
 @Controller('product-types')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EnterpriseOnlyGuard)
 export class ProductTypeController {
   constructor(private readonly productTypeService: ProductTypeService) {}
 

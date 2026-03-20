@@ -20,26 +20,19 @@ export default function ProductTypesPage() {
   React.useEffect(() => {
     const load = async () => {
       try {
-        const cookie =
-          typeof document !== "undefined"
-            ? document.cookie
-                .split(";")
-                .map((c) => c.trim())
-                .find((c) => c.startsWith("auth_token="))
-            : null;
-        const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-        if (!token) return;
         const res = await fetch(`${BACKEND_URL}/product-types`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
         if (!res.ok) return;
         const data = (await res.json()) as ProductTypeRow[];
         setRows(Array.isArray(data) ? data : []);
       } catch {
+        // ignore
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
@@ -49,14 +42,6 @@ export default function ProductTypesPage() {
     setSaving(true);
     setError("");
     try {
-      const cookie = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="));
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-      if (!token) {
-        throw new Error("Unauthorized. Please sign in again.");
-      }
       const payload = {
         name: name.trim(),
         code: code.trim() || null,
@@ -68,8 +53,8 @@ export default function ProductTypesPage() {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
             },
+            credentials: "include",
             body: JSON.stringify(payload),
           },
         );
@@ -91,8 +76,8 @@ export default function ProductTypesPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify(payload),
         });
         const data = await res.json();
@@ -129,19 +114,11 @@ export default function ProductTypesPage() {
     setSaving(true);
     setError("");
     try {
-      const cookie = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="));
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-      if (!token) {
-        throw new Error("Unauthorized. Please sign in again.");
-      }
       const res = await fetch(
         `${BACKEND_URL}/product-types/${encodeURIComponent(row.id)}`,
         {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         },
       );
       const data = await res.json().catch(() => null);

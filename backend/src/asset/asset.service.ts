@@ -1,9 +1,13 @@
 import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContractService } from '../contract/contract.service';
 
 @Injectable()
 export class AssetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly contractService: ContractService,
+  ) {}
 
   async create(data: {
     policyId: string;
@@ -25,6 +29,8 @@ export class AssetService {
       mediaType?: string;
       roadmap?: string;
       location?: string;
+      quantity?: string;
+      unit?: string;
     };
   }) {
     const warehouseId = (data.warehouseId || '').trim() || null;
@@ -60,6 +66,7 @@ export class AssetService {
         ownerWalletAddress: data.ownerWalletAddress,
         name: data.metadata.name,
         description: data.metadata.description,
+        status: 'ACTIVE',
         brand: data.metadata.brand,
         model: data.metadata.model,
         material: data.metadata.material,
@@ -69,6 +76,8 @@ export class AssetService {
         mediaType: data.metadata.mediaType,
         roadmap: data.metadata.roadmap,
         location: data.metadata.location,
+        quantity: data.metadata.quantity ?? "",
+        quantityUnit: data.metadata.unit ?? "",
       },
     });
 
@@ -111,28 +120,69 @@ export class AssetService {
       mediaType: asset.mediaType,
       roadmap: asset.roadmap,
       location: asset.location,
+      quantity: asset.quantity,
+      quantityUnit: asset.quantityUnit,
       createdAt: asset.createdAt,
       updatedAt: asset.updatedAt,
+      status: asset.status,
     }));
   }
 
-  async updateByUnit(unit: string, data: {
-    txHash: string;
-    owners?: string[];
-    metadata?: {
-      name?: string;
-      description?: string;
-      brand?: string;
-      model?: string;
-      material?: string;
-      notes?: string;
-      battery?: string;
-      image?: string;
-      mediaType?: string;
-      roadmap?: string;
-      location?: string;
-    };
-  }) {
+  async updateByUnit(
+    unit: string,
+    walletAddress: string,
+    data: {
+      txHash: string;
+      owners?: string[];
+      metadata?: {
+        name?: string;
+        description?: string;
+        brand?: string;
+        model?: string;
+        material?: string;
+        notes?: string;
+        battery?: string;
+        image?: string;
+        mediaType?: string;
+        roadmap?: string;
+        location?: string;
+        quantity?: string;
+        unit?: string;
+      };
+    },
+  ) {
+    const trimmedUnit = (unit || '').trim();
+    const trimmedWallet = (walletAddress || '').trim();
+
+    if (!trimmedUnit || !trimmedWallet) {
+      return { success: false, message: 'unit and walletAddress are required' };
+    }
+
+    const existing = await (this.prisma.asset as any).findUnique({
+      where: { unit: trimmedUnit },
+      select: {
+        unit: true,
+        ownerWalletAddress: true,
+        owners: true,
+      },
+    });
+
+    if (!existing) {
+      return { success: false, message: 'Asset not found' };
+    }
+
+    const owners = String(existing.owners || '')
+      .split('\n')
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+
+    const isOwner =
+      existing.ownerWalletAddress === trimmedWallet || owners.includes(trimmedWallet);
+
+    if (!isOwner) {
+      return { success: false, message: 'Not allowed' };
+    }
+
     const updateData: any = {
       txHash: data.txHash,
     };
@@ -153,12 +203,18 @@ export class AssetService {
       if (typeof data.metadata.mediaType !== 'undefined') updateData.mediaType = data.metadata.mediaType;
       if (typeof data.metadata.roadmap !== 'undefined') updateData.roadmap = data.metadata.roadmap;
       if (typeof data.metadata.location !== 'undefined') updateData.location = data.metadata.location;
+      if (typeof data.metadata.quantity !== 'undefined')
+        updateData.quantity = data.metadata.quantity ?? "";
+      if (typeof data.metadata.unit !== 'undefined')
+        updateData.quantityUnit = data.metadata.unit ?? "";
     }
 
-    return (this.prisma.asset as any).update({
-      where: { unit },
+    await (this.prisma.asset as any).update({
+      where: { unit: trimmedUnit },
       data: updateData,
     });
+
+    return { success: true, unit: trimmedUnit };
   }
 
   async updateLocationByUnit(params: {
@@ -178,7 +234,7 @@ export class AssetService {
 
     const asset = await (this.prisma.asset as any).findUnique({
       where: { unit },
-      select: { unit: true, owners: true },
+      select: { unit: true, owners: true, policyId: true, assetName: true },
     });
     if (!asset) {
       return { success: false, message: 'Asset not found' };
@@ -193,6 +249,15 @@ export class AssetService {
       return { success: false, message: 'Not allowed' };
     }
 
+    const walletHasNft = await this.contractService.checkWalletHasNft(
+      walletAddress,
+      asset.policyId,
+      asset.assetName,
+    );
+    if (!walletHasNft) {
+      return { success: false, message: 'Wallet does not hold the NFT' };
+    }
+
     await (this.prisma.asset as any).update({
       where: { unit },
       data: { location, txHash },
@@ -201,13 +266,51 @@ export class AssetService {
     return { success: true, unit, location };
   }
 
-  async deleteByUnit(unit: string) {
-    return this.prisma.asset.delete({
-      where: { unit },
+  async deleteByUnit(unit: string, walletAddress: string) {
+    const trimmedUnit = (unit || '').trim();
+    const trimmedWallet = (walletAddress || '').trim();
+
+    if (!trimmedUnit || !trimmedWallet) {
+      return { success: false, message: 'unit and walletAddress are required' };
+    }
+
+    const existing = await (this.prisma.asset as any).findUnique({
+      where: { unit: trimmedUnit },
+      select: {
+        unit: true,
+        ownerWalletAddress: true,
+        owners: true,
+      },
     });
+
+    if (!existing) {
+      return { success: false, message: 'Asset not found' };
+    }
+
+    const owners = String(existing.owners || '')
+      .split('\n')
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+
+    const isOwner =
+      existing.ownerWalletAddress === trimmedWallet || owners.includes(trimmedWallet);
+
+    if (!isOwner) {
+      return { success: false, message: 'Not allowed' };
+    }
+
+    await this.prisma.asset.delete({
+      where: { unit: trimmedUnit },
+    });
+
+    return { success: true, unit: trimmedUnit };
   }
 
-  async clearWarehouseByUnit(unit: string, ownerWalletAddress: string) {
+  async clearWarehouseByUnit(
+    unit: string,
+    ownerWalletAddress: string,
+    options?: { status?: 'ACTIVE' | 'CONSUMED'; txHash?: string },
+  ) {
     const existing = await (this.prisma.asset as any).findUnique({
       where: { unit },
       select: { unit: true, ownerWalletAddress: true, warehouseId: true },
@@ -219,9 +322,17 @@ export class AssetService {
       return { success: false, message: 'Asset not found' };
     }
 
+    const updateData: any = { warehouseId: null };
+    if (options?.status) {
+      updateData.status = options.status;
+    }
+    if (typeof options?.txHash === 'string' && options.txHash.trim()) {
+      updateData.txHash = options.txHash.trim();
+    }
+
     await (this.prisma.asset as any).update({
       where: { unit },
-      data: { warehouseId: null },
+      data: updateData,
     });
 
     return { success: true, unit, previousWarehouseId: existing.warehouseId ?? null };

@@ -12,10 +12,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EnterpriseOnlyGuard } from '../auth/enterprise-only.guard';
 import { CertificationService } from './certification.service';
 
 @Controller('certifications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EnterpriseOnlyGuard)
 export class CertificationController {
   constructor(private readonly certificationService: CertificationService) {}
 

@@ -3,12 +3,9 @@
 import * as React from "react";
 import { OrderForm } from "./OrderForm";
 import { OrderTables } from "./OrderTables";
-import { OrderScan } from "./OrderScan";
 
 export default function OrderPage() {
-  const [tab, setTab] = React.useState<
-    "send" | "sent" | "incoming" | "scan"
-  >("send");
+  const [tab, setTab] = React.useState<"send" | "sent" | "incoming">("send");
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -55,23 +52,11 @@ export default function OrderPage() {
         >
           Incoming orders
         </button>
-        <button
-          type="button"
-          onClick={() => setTab("scan")}
-          className={`px-4 py-3 -mb-px border-b-2 transition-colors ${
-            tab === "scan"
-              ? "border-[#c41e3a] text-[#c41e3a] font-semibold"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
-        >
-          Scan QR
-        </button>
       </div>
 
       {tab === "send" && <OrderForm />}
       {tab === "sent" && <OrderTables tab="sent" />}
       {tab === "incoming" && <OrderTables tab="incoming" />}
-      {tab === "scan" && <OrderScan />}
     </div>
   );
 }

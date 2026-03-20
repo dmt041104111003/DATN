@@ -72,30 +72,49 @@ export default function ProductTraceabilityPage() {
 
   const getStatusLabel = (tx: any) => tx?.action ?? "—";
 
+  const combinedHistory = React.useMemo(() => {
+    const selfHistory = Array.isArray(tracking?.transaction_history)
+      ? tracking.transaction_history.map((tx: any) => ({ ...tx, __chain: "current" }))
+      : [];
+    return selfHistory.sort(
+      (a: any, b: any) => Number(b?.datetime || 0) - Number(a?.datetime || 0),
+    );
+  }, [tracking]);
+
   const waypoints = React.useMemo(() => {
+    const fromHistory = combinedHistory
+      .slice()
+      .reverse()
+      .map((tx: any) => String(tx?.metadata?.location || "").trim())
+      .filter(Boolean);
+    const uniqueHistory = Array.from(new Set(fromHistory));
+    if (uniqueHistory.length > 0) return uniqueHistory;
     const roadmapStr = tracking?.metadata?.roadmap || "";
     return roadmapStr
       .replace(/[\[\]]/g, "")
       .split(",")
       .map((w: string) => w.trim())
       .filter(Boolean);
-  }, [tracking]);
+  }, [combinedHistory, tracking]);
 
   const [historyPage, setHistoryPage] = React.useState(0);
   const HISTORY_PAGE_SIZE = 3;
 
   const totalHistoryPages = React.useMemo(() => {
-    const total = tracking?.transaction_history?.length || 0;
+    const total = combinedHistory.length || 0;
     return total > 0 ? Math.ceil(total / HISTORY_PAGE_SIZE) : 1;
-  }, [tracking]);
+  }, [combinedHistory]);
 
   const paginatedHistory = React.useMemo(() => {
-    const list = tracking?.transaction_history || [];
+    const list = combinedHistory;
     const start = historyPage * HISTORY_PAGE_SIZE;
     return list.slice(start, start + HISTORY_PAGE_SIZE);
-  }, [tracking, historyPage]);
+  }, [combinedHistory, historyPage]);
 
-  const currentLocation = tracking?.metadata?.location || waypoints[0];
+  const currentLocation =
+    (combinedHistory[0] as any)?.metadata?.location ||
+    tracking?.metadata?.location ||
+    waypoints[0];
   const currentIndex = waypoints.findIndex(
     (loc: string) => normalize(loc) === normalize(currentLocation),
   );
@@ -103,31 +122,17 @@ export default function ProductTraceabilityPage() {
   const displayIndex = currentIndex;
   const progressIndex = currentIndex;
 
-  const isRetired = React.useMemo(() => {
-    const history = tracking?.transaction_history || [];
-    return history.some(
-      (t: any) =>
-        t?.action === "Burn" &&
-        String(t?.metadata?.status || "")
-          .toLowerCase()
-          .includes("retired"),
-    );
-  }, [tracking]);
+  const isRetired = false;
 
   React.useEffect(() => {
     if (displayIndex >= 0) setSelectedStep(displayIndex);
   }, [displayIndex]);
 
-  const selectedTx = tracking?.transaction_history.find(
+  const selectedTx = combinedHistory.find(
     (tx: any) => normalize(tx.metadata?.location) === normalize(waypoints[selectedStep]),
   );
 
-  const isRetireSelected =
-    !!selectedTx &&
-    selectedTx.action === "Burn" &&
-    String(selectedTx.metadata?.status || "")
-      .toLowerCase()
-      .includes("retired");
+  const isRetireSelected = false;
 
   const iconForLocation = () => {
     return <Package className="w-6 h-6" />;
@@ -412,7 +417,7 @@ export default function ProductTraceabilityPage() {
                 <div>
                   <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold">Action</p>
                   <p className="text-sm md:text-base font-semibold mt-1 text-gray-900">
-                    {isRetireSelected ? "Retire" : getStatusLabel(selectedTx)}
+                    {getStatusLabel(selectedTx)}
                   </p>
                 </div>
 
@@ -445,11 +450,7 @@ export default function ProductTraceabilityPage() {
 
             <div className="space-y-0.5 max-h-[280px] overflow-y-auto pr-1 scrollbar-visible">
               {paginatedHistory.map((tx: any) => {
-                const isRetireEvent =
-                  tx?.action === "Burn" &&
-                  String(tx?.metadata?.status || "")
-                    .toLowerCase()
-                    .includes("retired");
+                const isRetireEvent = false;
                 return (
                   <div
                     key={tx.txHash}
@@ -467,7 +468,7 @@ export default function ProductTraceabilityPage() {
                   >
                     <div className="flex justify-between items-baseline mb-2">
                       <span className="font-semibold text-gray-900">
-                        {isRetireEvent ? "Retire" : getStatusLabel(tx)}
+                        {getStatusLabel(tx)}
                       </span>
                       <span className="text-sm text-gray-500">
                         {new Intl.DateTimeFormat("en-US", {

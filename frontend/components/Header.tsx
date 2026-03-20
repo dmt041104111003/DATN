@@ -17,18 +17,22 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { loginWithEternl, isLoading, error } = useWalletAuth();
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-  
-  React.useEffect(() => {
-    const hasAuthToken = document.cookie.includes('auth_token=');
-    setIsAuthenticated(hasAuthToken);
-  }, []);
 
   React.useEffect(() => {
-    if (!isLoading) {
-      const hasAuthToken = document.cookie.includes('auth_token=');
-      setIsAuthenticated(hasAuthToken);
-    }
-  }, [isLoading]);
+    const checkAuth = async () => {
+      try {
+        const BACKEND_URL =
+          process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+        const res = await fetch(`${BACKEND_URL}/auth/me`, {
+          credentials: "include",
+        });
+        setIsAuthenticated(res.ok);
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   const handleLogin = () => {
     loginWithEternl();

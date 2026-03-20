@@ -2,8 +2,6 @@
 
 import * as React from "react";
 import { ref100Unit } from "@/lib/cip68";
-import { useSearchParams } from "next/navigation";
-import QRCode from "qrcode";
 import { TablePagination } from "@/components/TablePagination";
 import {
   getWalletChangeAddress,
@@ -58,9 +56,6 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
     null,
   );
   const [error, setError] = React.useState("");
-  const [autoConfirmOrderId, setAutoConfirmOrderId] = React.useState<
-    string | null
-  >(null);
   const [profileLocation, setProfileLocation] = React.useState<string | null>(
     null,
   );
@@ -68,37 +63,6 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
   const [incomingPage, setIncomingPage] = React.useState(1);
   const PAGE_SIZE = 10;
 
-  const getToken = () => {
-    if (typeof document === "undefined") return "";
-    const cookie = document.cookie
-      .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("auth_token="));
-    return cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-  };
-
-  const searchParams = useSearchParams();
-
-  React.useEffect(() => {
-    if (!searchParams) return;
-    const spOrderId = searchParams.get("orderId");
-    const spTab = searchParams.get("tab");
-    if (spOrderId && spTab === "incoming") {
-      setAutoConfirmOrderId(spOrderId);
-    } else {
-      setAutoConfirmOrderId(null);
-    }
-  }, [searchParams]);
-
-  const parseStops = React.useCallback((roadmapRaw: unknown) => {
-    const raw = typeof roadmapRaw === "string" ? roadmapRaw.trim() : "";
-    if (!raw) return [] as string[];
-    const inner = raw.replace(/^\s*\[\s*/, "").replace(/\s*\]\s*$/, "");
-    return inner
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }, []);
 
   const fetchRef100Metadata = React.useCallback(
     async (policyId: string, assetName: string) => {
@@ -137,50 +101,33 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
         const meta = (data?.metadata || {}) as Record<string, unknown>;
         setTraceMetaByOrderId((prev) => ({ ...prev, [order.id]: meta }));
 
-        const stops = parseStops(meta["roadmap"]);
-        let defaultLoc =
-          typeof meta["location"] === "string"
-            ? ((meta["location"] as string) || "").trim()
-            : (stops[0] ?? "").trim();
-
-        if (profileLocation) {
-          const match = stops.find(
-            (s) => s.trim().toLowerCase() === profileLocation.trim().toLowerCase(),
-          );
-          if (match) {
-            defaultLoc = match;
-          }
-        }
-
-        if (defaultLoc) {
+        if (profileLocation?.trim()) {
           setReceiveLocationByOrderId((prev) =>
-            prev[order.id] ? prev : { ...prev, [order.id]: defaultLoc },
+            prev[order.id] ? prev : { ...prev, [order.id]: profileLocation.trim() },
           );
         }
       } finally {
         setLoadingTrace((prev) => ({ ...prev, [order.id]: false }));
       }
     },
-    [traceMetaByOrderId, parseStops, profileLocation],
+    [traceMetaByOrderId, profileLocation],
   );
 
   const loadTables = React.useCallback(async () => {
-    const token = getToken();
-    if (!token) return;
     setLoadingTables(true);
     try {
       const [sentRes, incomingRes, whRes] = await Promise.all([
         fetch(`${BACKEND_URL}/order/sent`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         }),
         fetch(`${BACKEND_URL}/order/incoming`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         }),
         fetch(`${BACKEND_URL}/warehouses`, {
           cache: "no-store",
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         }),
       ]);
 
@@ -221,6 +168,20 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
     return incomingRows.slice(start, start + PAGE_SIZE);
   }, [incomingRows, incomingPage]);
 
+  const availableWarehouses = React.useMemo(() => {
+    return warehouses.filter((w) => {
+      const max =
+        typeof w.maxAssets === "number" && w.maxAssets > 0 ? w.maxAssets : null;
+      const count = w.assetCount ?? 0;
+      return max === null || count < max;
+    });
+  }, [warehouses]);
+
+  const defaultWarehouse = React.useMemo(() => {
+    if (availableWarehouses.length === 0) return null;
+    return availableWarehouses[0];
+  }, [availableWarehouses]);
+
   React.useEffect(() => {
     setSentPage(1);
   }, [sentRows.length]);
@@ -230,12 +191,10 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
   }, [incomingRows.length]);
 
   React.useEffect(() => {
-    const token = getToken();
-    if (!token) return;
     const loadMe = async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
           cache: "no-store",
         });
         if (!res.ok) return;
@@ -253,16 +212,41 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
     loadMe();
   }, []);
 
+  React.useEffect(() => {
+    if (!defaultWarehouse) return;
+    setReceiveWarehouseIdByOrderId((prev) => {
+      const next = { ...prev };
+      for (const row of incomingRows) {
+        if (row.status !== "SHIPPED") continue;
+        if (!next[row.id]) {
+          next[row.id] = defaultWarehouse.id;
+        }
+      }
+      return next;
+    });
+  }, [incomingRows, defaultWarehouse]);
+
+  React.useEffect(() => {
+    if (!profileLocation?.trim()) return;
+    setReceiveLocationByOrderId((prev) => {
+      const next = { ...prev };
+      for (const row of incomingRows) {
+        if (row.status !== "SHIPPED") continue;
+        next[row.id] = profileLocation.trim();
+      }
+      return next;
+    });
+  }, [incomingRows, profileLocation]);
+
   const handleConfirmReceive = async (order: OrderRow) => {
     setError("");
-    const token = getToken();
-    if (!token) {
-      setError("Unauthorized. Please sign in again.");
-      return;
-    }
-    const warehouseId = (receiveWarehouseIdByOrderId[order.id] || "").trim();
+    const warehouseId = (
+      receiveWarehouseIdByOrderId[order.id] ||
+      defaultWarehouse?.id ||
+      ""
+    ).trim();
     if (!warehouseId) {
-      setError("Select a warehouse before confirming receive.");
+      setError("No available warehouse to receive this order.");
       return;
     }
     const nextLocation = (receiveLocationByOrderId[order.id] || "").trim();
@@ -283,12 +267,13 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
           "Failed to load on-chain datum for reference token (ref100).",
         );
       }
+
       const ownersRes = await fetch(`${BACKEND_URL}/order/owners`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({ orderId: order.id }),
       });
       const ownersData = (await ownersRes.json()) as {
@@ -303,6 +288,7 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
       if (owners.length === 0) {
         throw new Error(ownersData?.message || "Owners not found for this order");
       }
+
       const signer = (walletAddress || "").trim();
       if (signer && !owners.includes(signer)) {
         throw new Error(
@@ -341,8 +327,8 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             location: nextLocation,
             txHash: updateTxHash,
@@ -354,8 +340,8 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({ orderId: order.id, warehouseId }),
       });
       const data = await res.json();
@@ -374,11 +360,6 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
 
   const handleDeleteOrder = async (order: OrderRow, kind: "sent" | "incoming") => {
     setError("");
-    const token = getToken();
-    if (!token) {
-      setError("Unauthorized. Please sign in again.");
-      return;
-    }
     if (
       typeof window !== "undefined" &&
       !window.confirm("Delete this order?")
@@ -395,8 +376,8 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({ orderId: order.id }),
         },
       );
@@ -417,15 +398,6 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
       setDeletingOrderId(null);
     }
   };
-
-  React.useEffect(() => {
-    if (!autoConfirmOrderId) return;
-    if (tab !== "incoming") return;
-    if (confirmingOrderId) return;
-    const target = incomingRows.find((o) => o.id === autoConfirmOrderId);
-    if (!target) return;
-    handleConfirmReceive(target);
-  }, [autoConfirmOrderId, tab, incomingRows, confirmingOrderId]);
 
   return (
     <div className="w-full space-y-2">
@@ -509,36 +481,6 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
                       </td>
                       <td className="px-4 py-3 text-gray-700">
                         <div className="flex flex-wrap gap-2 text-sm">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                if (typeof window === "undefined") return;
-                                const url = `${window.location.origin}/dashboard/order?orderId=${encodeURIComponent(
-                                  row.id,
-                                )}&tab=incoming`;
-                                const dataUrl = await QRCode.toDataURL(url, {
-                                  errorCorrectionLevel: "H",
-                                  width: 512,
-                                  margin: 4,
-                                  color: { dark: "#1f2933", light: "#ffffff" },
-                                });
-                                const a = document.createElement("a");
-                                a.href = dataUrl;
-                                a.download = `ORDER_${row.id}.png`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                              } catch {
-                                setError(
-                                  "Failed to generate QR for this order. Please try again.",
-                                );
-                              }
-                            }}
-                            className="text-sm font-semibold text-[#c41e3a] hover:text-red-700 hover:underline"
-                          >
-                            Download QR
-                          </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteOrder(row, "sent")}
@@ -630,82 +572,22 @@ export function OrderTables({ tab }: { tab: "sent" | "incoming" }) {
                       <td className="px-4 py-3 text-gray-700">
                         {row.status === "SHIPPED" ? (
                           <div className="flex flex-wrap items-center gap-2">
-                            <select
-                              value={receiveWarehouseIdByOrderId[row.id] ?? ""}
-                              onChange={(e) =>
-                                setReceiveWarehouseIdByOrderId((prev) => ({
-                                  ...prev,
-                                  [row.id]: e.target.value,
-                                }))
-                              }
-                              className="px-3 py-2 text-base border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41e3a]/30 focus:border-[#c41e3a] bg-white"
-                            >
-                              <option value="">Select warehouse…</option>
-                              {warehouses.map((w) => {
-                                const max = typeof w.maxAssets === "number" && w.maxAssets > 0 ? w.maxAssets : null;
-                                const count = w.assetCount ?? 0;
-                                const isFull = max !== null && count >= max;
-                                return (
-                                  <option
-                                    key={w.id}
-                                    value={w.id}
-                                    disabled={isFull}
-                                  >
-                                    {w.code} — {w.name}
-                                    {isFull ? " (Full)" : ""}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                            <select
-                              value={receiveLocationByOrderId[row.id] ?? ""}
-                              onChange={(e) =>
-                                setReceiveLocationByOrderId((prev) => ({
-                                  ...prev,
-                                  [row.id]: e.target.value,
-                                }))
-                              }
-                              className="px-3 py-2 text-base border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41e3a]/30 focus:border-[#c41e3a] bg-white"
-                              disabled={!!loadingTrace[row.id]}
-                            >
-                              <option value="">
-                                {loadingTrace[row.id]
-                                  ? "Loading locations…"
-                                  : "Select location…"}
-                              </option>
-                              {(() => {
-                                const meta = traceMetaByOrderId[row.id] || {};
-                                const stops = parseStops(meta["roadmap"]);
-                                return stops.map((loc) => (
-                                  <option key={loc} value={loc}>
-                                    {loc}
-                                  </option>
-                                ));
-                              })()}
-                            </select>
                             <button
                               type="button"
                               onClick={() => handleConfirmReceive(row)}
                               disabled={
                                 confirmingOrderId === row.id ||
-                                !(
-                                  (receiveWarehouseIdByOrderId[row.id] ?? "").trim()
-                                ) ||
+                                !defaultWarehouse ||
                                 !(
                                   (receiveLocationByOrderId[row.id] ?? "").trim()
                                 )
                               }
-                              className="px-4 py-2 rounded-md bg-[#c41e3a] text-white text-base font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="text-sm font-semibold text-[#c41e3a] hover:text-red-700 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               {confirmingOrderId === row.id
                                 ? "Confirming..."
-                                : "Confirm & put into warehouse"}
+                                : "Confirm"}
                             </button>
-                            {warehouses.length === 0 && (
-                              <span className="text-xs text-amber-700">
-                                You must create a warehouse before receiving.
-                              </span>
-                            )}
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-2 text-sm">

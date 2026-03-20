@@ -15,12 +15,13 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { EnterpriseOnlyGuard } from '../auth/enterprise-only.guard';
 import { AssetImageService } from './asset-image.service';
 import axios from 'axios';
 import FormData = require('form-data');
 
 @Controller('asset-images')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EnterpriseOnlyGuard)
 export class AssetImageController {
   constructor(private readonly assetImageService: AssetImageService) {}
 

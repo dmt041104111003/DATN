@@ -74,6 +74,7 @@ export function useWalletAuth() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ stakeAddress: walletAddress }),
       });
 
@@ -105,6 +106,7 @@ export function useWalletAuth() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           stakeAddress: walletAddress,
           nonce: nonce,
@@ -120,20 +122,13 @@ export function useWalletAuth() {
       const verifyData: VerifyResponse = await verifyResponse.json();
 
       if (verifyData.needProfile === true) {
-        if (verifyData.token) {
-          document.cookie = `auth_token=${verifyData.token}; path=/; max-age=604800`;
-        }
-
         sessionStorage.setItem('profile_setup', JSON.stringify({
           stakeAddress: walletAddress,
           roles: verifyData.roles || [],
         }));
         router.replace('/role-setup');
-      } else if (verifyData.token) {
-        document.cookie = `auth_token=${verifyData.token}; path=/; max-age=604800`;
-        router.replace('/dashboard');
       } else {
-        throw new Error('Invalid response from server');
+        router.replace('/dashboard');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';

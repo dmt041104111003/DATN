@@ -39,7 +39,7 @@ export class OrderController {
   @Post('clear-warehouse')
   async clearWarehouse(
     @Req() req: any,
-    @Body() body: { unit?: string },
+    @Body() body: { unit?: string; status?: 'ACTIVE' | 'CONSUMED'; txHash?: string },
   ) {
     const walletAddress =
       req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
@@ -56,7 +56,17 @@ export class OrderController {
       throw new HttpException('unit is required', HttpStatus.BAD_REQUEST);
     }
 
-    return this.orderService.clearAssetFromWarehouse(walletAddress, unit);
+    const status = body?.status;
+    const txHash = (body?.txHash || '').trim();
+    const roleCode = (req.user?.role ?? req.user?.roleCode ?? '').toString();
+    if (status === 'CONSUMED' && roleCode !== 'AGENT') {
+      throw new HttpException('Only AGENT can mark asset as CONSUMED', HttpStatus.FORBIDDEN);
+    }
+
+    return this.orderService.clearAssetFromWarehouse(walletAddress, unit, {
+      status,
+      txHash: txHash || undefined,
+    });
   }
 
   @Post('sent')

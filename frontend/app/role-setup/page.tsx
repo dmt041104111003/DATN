@@ -22,13 +22,23 @@ export default function RoleSetupPage() {
   const [submitting, setSubmitting] = React.useState(false);
 
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      document.cookie = "auth_token=; path=/; max-age=0";
-      window.sessionStorage.removeItem("profile_setup");
-      window.location.assign("/");
-      return;
-    }
-    router.replace("/");
+    const run = async () => {
+      try {
+        await fetch(`${BACKEND_URL}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch {
+        // Ignore network errors and still perform client-side cleanup.
+      }
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem("profile_setup");
+        window.location.assign("/");
+        return;
+      }
+      router.replace("/");
+    };
+    void run();
   };
 
   React.useEffect(() => {
@@ -53,8 +63,8 @@ export default function RoleSetupPage() {
           ? parsed.roles
           : ([
               { id: 1, code: "ENTERPRISE" },
-              { id: 2, code: "TRANSIT" },
               { id: 3, code: "AGENT" },
+              { id: 4, code: "TRANSIT" },
             ] satisfies Role[]);
       setRoles(rs);
       setDisplayName("");
@@ -77,10 +87,8 @@ export default function RoleSetupPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${
-            document.cookie.split("auth_token=")[1]?.split(";")[0]
-          }`,
         },
+        credentials: "include",
         body: JSON.stringify({
           roleCode: selectedRole.code,
           displayName: displayName.trim(),
@@ -92,9 +100,6 @@ export default function RoleSetupPage() {
         throw new Error(
           data?.message || data?.error || "Failed to create profile"
         );
-      }
-      if (data?.token) {
-        document.cookie = `auth_token=${data.token}; path=/; max-age=604800`;
       }
       if (typeof document !== "undefined") {
         window.sessionStorage.removeItem("profile_setup");

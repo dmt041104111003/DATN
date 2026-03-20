@@ -17,6 +17,8 @@ export type InitialAssetData = Partial<{
   owners: string[];
   name: string;
   description: string;
+  quantity: string;
+  quantityUnit: string;
   brand: string | null;
   model: string | null;
   material: string | null;
@@ -103,29 +105,24 @@ export function AssetForm({
   const [selectedCertificationId, setSelectedCertificationId] =
     React.useState<string>("");
   const [location, setLocation] = React.useState("Ha Noi");
+  const [quantity, setQuantity] = React.useState<string>("");
+  const [quantityUnit, setQuantityUnit] = React.useState<string>("kg");
 
   React.useEffect(() => {
     const loadLookups = async () => {
       try {
-        if (typeof document === "undefined") return;
-        const cookie = document.cookie
-          .split(";")
-          .map((c) => c.trim())
-          .find((c) => c.startsWith("auth_token="));
-        const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-        if (!token) return;
         const [imgRes, prodRes, typeRes, certRes] = await Promise.all([
           fetch(`${BACKEND_URL}/asset-images`, {
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
           }),
           fetch(`${BACKEND_URL}/producers`, {
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
           }),
           fetch(`${BACKEND_URL}/product-types`, {
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
           }),
           fetch(`${BACKEND_URL}/certifications`, {
-            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
           }),
         ]);
         if (imgRes.ok) {
@@ -294,16 +291,9 @@ export function AssetForm({
   React.useEffect(() => {
     const loadWarehouses = async () => {
       try {
-        if (typeof document === "undefined") return;
-        const cookie = document.cookie
-          .split(";")
-          .map((c) => c.trim())
-          .find((c) => c.startsWith("auth_token="));
-        const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-        if (!token) return;
         const res = await fetch(`${BACKEND_URL}/warehouses`, {
           cache: "no-store",
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
         if (!res.ok) return;
         const data = (await res.json()) as {
@@ -323,35 +313,33 @@ export function AssetForm({
   }, []);
 
   React.useEffect(() => {
-    if (typeof document === "undefined") return;
     if (identityAddress) return;
-    const cookie = document.cookie
-      .split(";")
-      .map((c) => c.trim())
-      .find((c) => c.startsWith("auth_token="));
-    const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-    if (!token) return;
-    const parts = token.split(".");
-    if (parts.length < 2) return;
-    try {
-      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const padded = base64.padEnd(
-        base64.length + ((4 - (base64.length % 4)) % 4),
-        "=",
-      );
-      const json = atob(padded);
-      const payload = JSON.parse(json) as {
-        paymentAddress?: unknown;
-        walletAddress?: unknown;
-        sub?: unknown;
-      };
-      const addr =
-        (typeof payload.paymentAddress === "string" && payload.paymentAddress) ||
-        (typeof payload.walletAddress === "string" && payload.walletAddress) ||
-        (typeof payload.sub === "string" && payload.sub) ||
-        "";
-      if (addr) setIdentityAddress(addr);
-    } catch {}
+    const loadIdentityFromProfile = async () => {
+      try {
+        const res = await fetch(
+          `${BACKEND_URL}/auth/me`,
+          { credentials: "include" },
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          user?: {
+            paymentAddress?: string | null;
+            walletAddress?: string | null;
+            sub?: string | null;
+          } | null;
+        };
+        const addr =
+          (data.user?.paymentAddress ?? "").trim() ||
+          (data.user?.walletAddress ?? "").trim() ||
+          (data.user?.sub ?? "").trim();
+        if (addr) {
+          setIdentityAddress(addr);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadIdentityFromProfile();
   }, [identityAddress]);
 
   React.useEffect(() => {
@@ -433,10 +421,17 @@ export function AssetForm({
     if (typeof initialAsset.image === "string") setImage(initialAsset.image);
     if (typeof initialAsset.mediaType === "string") setMediaType(initialAsset.mediaType);
     if (typeof initialAsset.location === "string") setLocation(initialAsset.location);
+    if (typeof (initialAsset as any).quantity === "string")
+      setQuantity((initialAsset as any).quantity);
+    if (typeof (initialAsset as any).quantityUnit === "string")
+      setQuantityUnit((initialAsset as any).quantityUnit);
   }, [initialAsset]);
 
   const disabled = loading || !!readOnly;
-  const mintDisabled = disabled || (mode === "mint" && !warehouseId.trim());
+  const mintDisabled =
+    disabled ||
+    (mode === "mint" && !warehouseId.trim()) ||
+    (mode === "burn" && !assetName.trim());
   const lockImmutable = readOnly || mode !== "mint";
   const ownersLocked = lockImmutable;
 
@@ -455,6 +450,12 @@ export function AssetForm({
       if (action !== "burn" && (!metaName.trim() || !description.trim())) {
         throw new Error("Name and description are required for mint/update.");
       }
+      if (action !== "burn") {
+        const q = quantity.trim();
+        if (!/^[1-9]\d*$/.test(q)) {
+          throw new Error("Quantity must be a positive integer.");
+        }
+      }
       if (action === "mint" && (!warehouseId || !warehouseId.trim())) {
         throw new Error("Warehouse is required.");
       }
@@ -468,15 +469,6 @@ export function AssetForm({
 
       const ownerIdentity = identityAddress || walletAddress;
 
-      const cookie = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("auth_token="));
-      const token = cookie ? decodeURIComponent(cookie.split("=")[1] ?? "") : "";
-      if (!token) {
-        throw new Error("Unauthorized. Please sign in again.");
-      }
-
       const baseOwners = Array.from(new Set(trimmedOwners));
       const currentOwners =
         action === "mint"
@@ -486,7 +478,7 @@ export function AssetForm({
         throw new Error("At least one owner address is required.");
       }
 
-      const metadata = {
+      const metadataBase = {
         name: metaName.trim(),
         description: description.trim(),
         brand: brand.trim(),
@@ -498,6 +490,8 @@ export function AssetForm({
         mediaType: mediaType.trim(),
         roadmap: roadmapString,
         location: location.trim(),
+        quantity: quantity.trim(),
+        unit: quantityUnit.trim(),
         owners: `[${currentOwners.join(", ")}]`,
       };
 
@@ -509,14 +503,21 @@ export function AssetForm({
         body = {
           walletAddress,
           owners: currentOwners,
-          assets: [{ assetName, metadata, quantity: "1" }],
+          assets: [{
+            assetName,
+            metadata: {
+              ...metadataBase,
+              assetName,
+            },
+            quantity: "1",
+          }],
         };
       } else if (action === "update") {
         endpoint = `${BACKEND_URL}/contract/update`;
         body = {
           walletAddress,
           owners: currentOwners,
-          assets: [{ assetName, metadata }],
+          assets: [{ assetName, metadata: metadataBase }],
         };
       } else {
         endpoint = `${BACKEND_URL}/contract/burn`;
@@ -556,27 +557,34 @@ export function AssetForm({
       );
       const infoData = await infoRes.json();
       const policyId = infoData.policyId || "";
+      const persistedNames = [assetName];
       const unit =
-        policyId + Buffer.from(assetName, "utf8").toString("hex");
+        policyId + Buffer.from((persistedNames[0] || assetName), "utf8").toString("hex");
 
       if (action === "mint") {
         try {
-          await fetch(`${BACKEND_URL}/assets`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              policyId,
-              assetName,
-              unit,
-              txHash: hash,
-              owners: currentOwners,
-              warehouseId: warehouseId || undefined,
-              metadata,
-            }),
-          });
+          for (const name of persistedNames) {
+            const eachUnit = policyId + Buffer.from(name, "utf8").toString("hex");
+            await fetch(`${BACKEND_URL}/assets`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                policyId,
+                assetName: name,
+                unit: eachUnit,
+                txHash: hash,
+                owners: currentOwners,
+                warehouseId: warehouseId || undefined,
+                metadata: {
+                  ...metadataBase,
+                  assetName: name,
+                },
+              }),
+            });
+          }
         } catch (e) {
           console.error("Failed to persist asset:", e);
         }
@@ -586,12 +594,12 @@ export function AssetForm({
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
             },
+            credentials: "include",
             body: JSON.stringify({
               txHash: hash,
               owners: currentOwners,
-              metadata,
+              metadata: metadataBase,
             }),
           });
         } catch (e) {
@@ -601,9 +609,7 @@ export function AssetForm({
         try {
           await fetch(`${BACKEND_URL}/assets/${unit}`, {
             method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            credentials: "include",
           });
         } catch (e) {
           console.error("Failed to delete asset:", e);
@@ -925,6 +931,45 @@ export function AssetForm({
                   From Roadmap stops
                 </p>
               </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Quantity (amount)
+                </label>
+                <input
+                  disabled={disabled}
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (raw === "") {
+                      setQuantity("");
+                      return;
+                    }
+                    if (/^[1-9]\d*$/.test(raw)) {
+                      setQuantity(raw);
+                    }
+                  }}
+                  className="w-full px-4 py-3 text-base border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41e3a]/30 focus:border-[#c41e3a] bg-white disabled:bg-gray-50 disabled:text-gray-400"
+                  placeholder="e.g. 1000"
+                  min={1}
+                  step={1}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Unit
+                </label>
+                <input
+                  disabled={disabled}
+                  type="text"
+                  value={quantityUnit}
+                  onChange={(e) => setQuantityUnit(e.target.value)}
+                  className="w-full px-4 py-3 text-base border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#c41e3a]/30 focus:border-[#c41e3a] bg-white disabled:bg-gray-50 disabled:text-gray-400"
+                  placeholder="kg"
+                />
+              </div>
+            </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
                   Notes
