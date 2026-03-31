@@ -1,4 +1,4 @@
-type Role = { id: number; code: string };
+type Role = { id: number; code: string; name?: string | null };
 
 export function RoleSelect({
   roles,
@@ -28,7 +28,7 @@ export function RoleSelect({
               disabled={disabled}
               aria-pressed={isActive}
             >
-              <span className="role-select-code">{role.code}</span>
+              <span className="role-select-code">{role.name?.trim?.() ? role.name : role.code}</span>
             </button>
           );
         })}

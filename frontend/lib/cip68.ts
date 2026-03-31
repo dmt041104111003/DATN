@@ -7,9 +7,9 @@ export function stringToHex(str: string): string {
 
 const CIP68_LABEL_100 = "000643b0";
 
-export function ref100Unit(policyId: string, assetName: string): string {
+export function ref100Unit(policyId: string, productName: string): string {
   const pid = (policyId || "").trim();
-  const name = (assetName || "").trim();
+  const name = (productName || "").trim();
   if (!pid || !name) return "";
   return pid + CIP68_LABEL_100 + stringToHex(name);
 }

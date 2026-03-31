@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { homePathForRole } from '@/lib/app-routes';
+
 interface WalletAPI {
   getChangeAddress: () => Promise<string | { address: string }>;
   getRewardAddresses?: () => Promise<string[]>;
@@ -15,9 +17,9 @@ interface VerifyResponse {
   token?: string;
   profile?: {
     id: string;
-    role: string;
+    role?: string;
+    roleCode?: string;
     displayName: string;
-    avatarUrl: string;
     location: string | null;
     coordinates: any;
   };
@@ -128,7 +130,11 @@ export function useWalletAuth() {
         }));
         router.replace('/role-setup');
       } else {
-        router.replace('/dashboard');
+        const role =
+          (typeof verifyData.profile?.roleCode === 'string' && verifyData.profile.roleCode) ||
+          (typeof verifyData.profile?.role === 'string' && verifyData.profile.role) ||
+          null;
+        router.replace(homePathForRole(role));
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';

@@ -3,11 +3,29 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { RoleSelect } from "../../components/RoleSelect";
+import { homePathForRole } from "@/lib/app-routes";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
-type Role = { id: number; code: string };
+type Role = { id: number; code: string; name?: string | null };
+
+function normalizeRolesFromSession(roles: Role[] | undefined): Role[] {
+  if (!Array.isArray(roles) || roles.length === 0) return [];
+  const seen = new Set<string>();
+  const out: Role[] = [];
+  for (const r of roles) {
+    const code = typeof r?.code === "string" ? r.code.trim().toUpperCase() : "";
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    out.push({
+      id: typeof r?.id === "number" ? r.id : out.length + 1,
+      code,
+      name: typeof (r as any)?.name === "string" ? String((r as any).name) : null,
+    });
+  }
+  return out;
+}
 
 export default function RoleSetupPage() {
   const router = useRouter();
@@ -58,15 +76,7 @@ export default function RoleSetupPage() {
         return;
       }
       setStakeAddress(parsed.stakeAddress);
-      const rs =
-        Array.isArray(parsed.roles) && parsed.roles.length > 0
-          ? parsed.roles
-          : ([
-              { id: 1, code: "ENTERPRISE" },
-              { id: 3, code: "AGENT" },
-              { id: 4, code: "TRANSIT" },
-            ] satisfies Role[]);
-      setRoles(rs);
+      setRoles(normalizeRolesFromSession(parsed.roles));
       setDisplayName("");
       setLocation("");
     } catch {
@@ -104,7 +114,7 @@ export default function RoleSetupPage() {
       if (typeof document !== "undefined") {
         window.sessionStorage.removeItem("profile_setup");
       }
-      router.replace("/dashboard");
+      router.replace(homePathForRole(selectedRole.code));
     } catch (err) {
       setError(
         err instanceof Error

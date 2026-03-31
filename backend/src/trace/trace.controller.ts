@@ -5,9 +5,9 @@ import { TraceService } from './trace.service';
 export class TraceController {
   constructor(private readonly traceService: TraceService) {}
 
-  @Get(':unit')
-  async getProductTrace(@Param('unit') unit: string) {
-    const decodedUnit = decodeURIComponent(unit);
-    return this.traceService.getProductTrace(decodedUnit);
+  @Get(':inventoryKey')
+  async getProductTrace(@Param('inventoryKey') inventoryKey: string) {
+    const decoded = decodeURIComponent(inventoryKey);
+    return this.traceService.getProductTrace(decoded);
   }
 }

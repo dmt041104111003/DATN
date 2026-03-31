@@ -5,55 +5,60 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ContractService } from '../contract/contract.service';
+import { ProductContractService } from '../product/product.contract.service';
+
+function normAddr(s: string): string {
+  return (s || '').trim().toLowerCase();
+}
 
 @Injectable()
 export class WarehouseService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly contractService: ContractService,
+    private readonly productContractService: ProductContractService,
   ) {}
 
-  async list(ownerWalletAddress: string) {
-    const warehouses = await (this.prisma as any).warehouse.findMany({
-      where: { isActive: true, ownerWalletAddress },
+  async list(siteCustodianAddress: string) {
+    const warehouses = await this.prisma.warehouse.findMany({
+      where: { isActive: true, siteCustodianAddress },
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { assets: true } } },
+      include: { _count: { select: { containers: true } } },
     });
-    return warehouses.map((w: any) => ({
+    return warehouses.map((w) => ({
       id: w.id,
       code: w.code,
       name: w.name,
-      ownerWalletAddress: w.ownerWalletAddress,
+      ownerWalletAddress: w.siteCustodianAddress,
+      siteCustodianAddress: w.siteCustodianAddress,
       isActive: w.isActive,
-      maxAssets: w.maxAssets,
+      maxProducts: w.maxProducts,
       createdAt: w.createdAt,
       updatedAt: w.updatedAt,
-      assetCount: w._count?.assets ?? 0,
+      productCount: (w as any)._count?.containers ?? 0,
     }));
   }
 
   async create(
-    data: { code: string; name: string; maxAssets?: number | null },
-    ownerWalletAddress: string,
+    data: { code: string; name: string; maxProducts?: number | null },
+    siteCustodianAddress: string,
   ) {
     const code = (data.code || '').trim();
     const name = (data.name || '').trim();
     if (!code || !name) {
-      throw new BadRequestException('Code and name are required');
+      throw new BadRequestException('Facility reference and site name are required.');
     }
-    if (!ownerWalletAddress) {
-      throw new BadRequestException('Owner wallet address is required');
+    if (!siteCustodianAddress) {
+      throw new BadRequestException('Operator account reference is required.');
     }
 
-    const maxAssets =
-      typeof data.maxAssets === 'number' && data.maxAssets > 0
-        ? Math.floor(data.maxAssets)
+    const maxProducts =
+      typeof data.maxProducts === 'number' && data.maxProducts > 0
+        ? Math.floor(data.maxProducts)
         : null;
 
     try {
-      return await (this.prisma as any).warehouse.create({
-        data: { code, name, ownerWalletAddress, maxAssets },
+      return await this.prisma.warehouse.create({
+        data: { code, name, siteCustodianAddress, maxProducts },
       });
     } catch (err: any) {
       if (err?.code === 'P2002') {
@@ -67,175 +72,253 @@ export class WarehouseService {
 
   async update(
     id: string,
-    ownerWalletAddress: string,
-    data: { name?: string; isActive?: boolean; maxAssets?: number | null },
+    siteCustodianAddress: string,
+    data: { name?: string; isActive?: boolean; maxProducts?: number | null },
   ) {
-    const existing = await (this.prisma as any).warehouse.findUnique({ where: { id } });
+    const existing = await this.prisma.warehouse.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException('Warehouse not found');
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
-    if (existing.ownerWalletAddress !== ownerWalletAddress) {
-      throw new NotFoundException('Warehouse not found');
+    if (existing.siteCustodianAddress !== siteCustodianAddress) {
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
 
-    const updateData: any = {};
+    const updateData: {
+      name?: string;
+      isActive?: boolean;
+      maxProducts?: number | null;
+    } = {};
     if (typeof data.name === 'string') updateData.name = data.name.trim();
     if (typeof data.isActive === 'boolean') updateData.isActive = data.isActive;
-    if (data.maxAssets !== undefined) {
-      updateData.maxAssets =
-        typeof data.maxAssets === 'number' && data.maxAssets > 0
-          ? Math.floor(data.maxAssets)
+    if (data.maxProducts !== undefined) {
+      updateData.maxProducts =
+        typeof data.maxProducts === 'number' && data.maxProducts > 0
+          ? Math.floor(data.maxProducts)
           : null;
     }
 
-    return (this.prisma as any).warehouse.update({
+    return this.prisma.warehouse.update({
       where: { id },
       data: updateData,
     });
   }
 
-  async remove(id: string, ownerWalletAddress: string) {
-    const existing = await (this.prisma as any).warehouse.findUnique({ where: { id } });
+  async remove(id: string, siteCustodianAddress: string) {
+    const existing = await this.prisma.warehouse.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException('Warehouse not found');
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
-    if (existing.ownerWalletAddress !== ownerWalletAddress) {
-      throw new NotFoundException('Warehouse not found');
+    if (existing.siteCustodianAddress !== siteCustodianAddress) {
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
 
-    await (this.prisma as any).warehouse.delete({ where: { id } });
+    const productsCount = await (this.prisma as any).container.count({
+      where: { warehouseId: id },
+    });
+    if (productsCount > 0) {
+      throw new BadRequestException(
+        'Cannot remove this warehouse because it still contains staged lots.',
+      );
+    }
+
+    await this.prisma.warehouse.delete({ where: { id } });
     return { success: true };
   }
 
-  async getAssets(warehouseId: string, ownerWalletAddress: string) {
-    const warehouse = await (this.prisma as any).warehouse.findUnique({
+  async getProducts(warehouseId: string, siteCustodianAddress: string) {
+    const warehouse = await this.prisma.warehouse.findUnique({
       where: { id: warehouseId },
     });
     if (!warehouse) {
-      throw new NotFoundException('Warehouse not found');
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
-    if (warehouse.ownerWalletAddress !== ownerWalletAddress) {
-      throw new NotFoundException('Warehouse not found');
+    if (warehouse.siteCustodianAddress !== siteCustodianAddress) {
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
 
-    const assets = await (this.prisma as any).asset.findMany({
+    const products = await (this.prisma as any).container.findMany({
       where: { warehouseId },
       orderBy: { createdAt: 'desc' },
     });
 
-    return assets.map((asset: any) => ({
-      id: asset.id,
-      policyId: asset.policyId,
-      assetName: asset.assetName,
-      unit: asset.unit,
-      txHash: asset.txHash,
-      owners: asset.owners ? asset.owners.split('\n').filter((o: string) => o.trim().length > 0) : [],
-      name: asset.name,
-      description: asset.description,
-      brand: asset.brand,
-      model: asset.model,
-      material: asset.material,
-      notes: asset.notes,
-      battery: asset.battery,
-      image: asset.image,
-      mediaType: asset.mediaType,
-      roadmap: asset.roadmap,
-      location: asset.location,
-      quantity: asset.quantity,
-      quantityUnit: asset.quantityUnit,
-      createdAt: asset.createdAt,
-      updatedAt: asset.updatedAt,
-    }));
+    const keys = products.map((p) => String(p.inventoryKey || '').trim()).filter(Boolean);
+    const pendingByKey: Record<string, boolean> = {};
+    if (keys.length > 0) {
+      try {
+        const pending = await (this.prisma as any).recordOperation.findMany({
+          where: { entityType: 'CONTAINER', entityKey: { in: keys }, verified: false },
+          select: { entityKey: true },
+        });
+        for (const row of Array.isArray(pending) ? pending : []) {
+          const k = String(row?.entityKey || '').trim();
+          if (k) pendingByKey[k] = true;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return products.map((product) => {
+      const key = String(product.inventoryKey || '').trim();
+      const pending = Boolean(pendingByKey[key]);
+      return {
+      id: product.id,
+      traceSchemeRef: product.traceSchemeRef,
+      lotReference: product.lotReference,
+      inventoryKey: product.inventoryKey,
+      confirmationRef: product.confirmationRef,
+      custodyParties: product.custodyRoster
+        ? product.custodyRoster.split('\n').filter((o: string) => o.trim().length > 0)
+        : [],
+      name: product.tradeTitle,
+      description: product.lotStory,
+      roadmap: product.roadmap,
+      location: product.location,
+      containerType: (product as any).containerType ?? null,
+      maxWeightValue: (product as any).maxWeightValue ?? null,
+      maxWeightUnit: (product as any).maxWeightUnit ?? null,
+      maxVolumeValue: (product as any).maxVolumeValue ?? null,
+      maxVolumeUnit: (product as any).maxVolumeUnit ?? null,
+      verified: !pending,
+      hasPending: pending,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      status: product.status,
+      };
+    });
   }
 
-  async findAssetByNameInWarehouses(
-    ownerWalletAddress: string,
-    assetName: string,
+  async findProductByNameInWarehouses(
+    siteCustodianAddress: string,
+    lotReference: string,
   ): Promise<
-    | { policyId: string; assetName: string; unit: string; owners: string }
+    | { traceSchemeRef: string; lotReference: string; inventoryKey: string; custodyRoster: string }
     | null
   > {
-    const name = (assetName || '').trim();
+    const name = (lotReference || '').trim();
     if (!name) return null;
 
-    const warehouses = await (this.prisma as any).warehouse.findMany({
-      where: { isActive: true, ownerWalletAddress },
+    const warehouses = await this.prisma.warehouse.findMany({
+      where: { isActive: true, siteCustodianAddress },
       select: { id: true },
     });
-    const warehouseIds = warehouses.map((w: any) => w.id);
+    const warehouseIds = warehouses.map((w) => w.id);
     if (warehouseIds.length === 0) return null;
 
-    const asset = await (this.prisma as any).asset.findFirst({
+    const product = await (this.prisma as any).container.findFirst({
       where: {
         warehouseId: { in: warehouseIds },
-        assetName: name,
+        lotReference: name,
       },
-      select: { policyId: true, assetName: true, unit: true, owners: true },
+      select: {
+        traceSchemeRef: true,
+        lotReference: true,
+        inventoryKey: true,
+        custodyRoster: true,
+      },
     });
-    return asset
+    return product
       ? {
-          policyId: asset.policyId,
-          assetName: asset.assetName,
-          unit: asset.unit,
-          owners: asset.owners,
+          traceSchemeRef: product.traceSchemeRef,
+          lotReference: product.lotReference,
+          inventoryKey: product.inventoryKey,
+          custodyRoster: product.custodyRoster,
         }
       : null;
   }
 
-  async buildBurnToken222InWarehouse(params: {
+  async finalizeOutboundHandoffInWarehouse(params: {
     warehouseId: string;
     walletAddress: string;
     roleCode: string;
     unit: string;
   }) {
     const role = (params.roleCode || '').trim().toUpperCase();
-    if (role !== 'AGENT') {
-      throw new BadRequestException('Only AGENT can burn token 222 in warehouse flow');
+    if (role !== 'AGENT' && role !== 'TRANSIT') {
+      throw new BadRequestException(
+        'Only field logistics or transit roles may finalize an outbound handoff from the warehouse.',
+      );
     }
 
-    const warehouse = await (this.prisma as any).warehouse.findUnique({
+    const warehouse = await this.prisma.warehouse.findUnique({
       where: { id: params.warehouseId },
-      select: { id: true, ownerWalletAddress: true, isActive: true },
+      select: { id: true, siteCustodianAddress: true, isActive: true },
     });
     if (!warehouse || !warehouse.isActive) {
-      throw new NotFoundException('Warehouse not found');
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
-    if (warehouse.ownerWalletAddress !== params.walletAddress) {
-      throw new NotFoundException('Warehouse not found');
+    if (warehouse.siteCustodianAddress !== params.walletAddress) {
+      throw new NotFoundException('Storage warehouse not found or access denied.');
     }
 
-    const asset = await (this.prisma as any).asset.findFirst({
-      where: { unit: params.unit, warehouseId: params.warehouseId },
-      select: { unit: true, assetName: true, owners: true },
+    const product = await (this.prisma as any).container.findFirst({
+      where: { inventoryKey: params.unit, warehouseId: params.warehouseId },
+      select: {
+        inventoryKey: true,
+        lotReference: true,
+        custodyRoster: true,
+        status: true,
+      },
     });
-    if (!asset) {
-      throw new NotFoundException('Asset not found in warehouse');
+    if (!product) {
+      throw new NotFoundException(
+        'No agri traceability lot with this unit is on hand at this warehouse.',
+      );
     }
 
-    const owners = String(asset.owners || '')
+    const pending = await (this.prisma as any).recordOperation.findFirst({
+      where: { entityType: 'CONTAINER', entityKey: params.unit, verified: false },
+      select: { id: true },
+    });
+    if (pending) {
+      throw new BadRequestException(
+        'Public record check is still pending. Please wait for verification before dispatch.',
+      );
+    }
+
+    if (String(product.status) === 'OUTBOUND_DISPATCH') {
+      throw new BadRequestException(
+        'This lot was already recorded as dispatched from warehouse; consumption is not allowed.',
+      );
+    }
+    if (product.status === 'CONSUMED') {
+      throw new BadRequestException(
+        'This lot is already marked fully consumed.',
+      );
+    }
+
+    const roster = String(product.custodyRoster || '')
       .split('\n')
       .map((s: string) => s.trim())
       .filter(Boolean);
-    if (owners.length === 0) {
-      throw new BadRequestException('Owners not found for this asset');
+    if (roster.length === 0) {
+      throw new BadRequestException('Joint custody roster missing for this lot.');
     }
-    if (!owners.includes(params.walletAddress)) {
-      throw new BadRequestException('Wallet is not in script owners list');
+    const walletNorm = normAddr(params.walletAddress);
+    const rosterNorm = roster.map(normAddr);
+    if (!rosterNorm.includes(walletNorm)) {
+      throw new BadRequestException(
+        'This account is not on the joint custody roster for this lot.',
+      );
+    }
+    const lastOwner = rosterNorm[rosterNorm.length - 1] || '';
+    if (!lastOwner || lastOwner !== walletNorm) {
+      throw new BadRequestException(
+        'Only the last custody address may finalize consumption for this lot.',
+      );
     }
 
-    const tx = await this.contractService.createBurn222(
-      params.walletAddress,
-      owners,
-      [{ assetName: asset.assetName }],
-    );
+    const tx = await this.productContractService.createUnsignedDeleteTx({
+      custodianAddress: params.walletAddress,
+      owners: roster,
+      lotReference: product.lotReference,
+    } as any);
     return {
       ...tx,
-      burnType: 'CONSUMED',
-      token: '222',
+      handoffOutcome: 'CONSUMED',
       warehouseId: params.warehouseId,
-      unit: asset.unit,
-      assetName: asset.assetName,
+      inventoryKey: product.inventoryKey,
+      lotReference: product.lotReference,
     };
   }
 }
-

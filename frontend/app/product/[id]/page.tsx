@@ -1,165 +1,504 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import Head from "next/head";
-import { CheckCircle, MapPin, Calendar, Loader2, AlertCircle, Package, StickyNote } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  AlertCircle,
+  ArrowLeft,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+
 import { getProductTrace } from "@/actions/trace";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ProductCheckpoints } from "./ProductCheckpoints";
+import { ProductTracePublicHeaderCard } from "./ProductTracePublicHeaderCard";
+import { ProductTracePublicImageCard } from "./ProductTracePublicImageCard";
+import { ProductTracePublicSelectedCheckpointCard } from "./ProductTracePublicSelectedCheckpointCard";
+import { ProductTracePublicMovementHistoryCard } from "./ProductTracePublicMovementHistoryCard";
+import { shortUnit } from "@/lib/short-unit";
+
+const CIP68_100 = "000643b0";
+const TX_EXPLORER_BASE = (
+  process.env.NEXT_PUBLIC_CARDANO_EXPLORER_TX_PREFIX ??
+  "https://preprod.cexplorer.io/tx/"
+).replace(/\/?$/, "/");
+const IPFS_GATEWAY =
+  (process.env.NEXT_PUBLIC_PINATA_GATEWAY || "").trim() ||
+  (process.env.NEXT_PUBLIC_IPFS_GATEWAY || "").trim();
+
+const FMT_LONG = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "long",
+  timeStyle: "short",
+});
+const FMT_DATE = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
+const FMT_VI_DT = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+const MILESTONE_READABLE: Record<string, string> = {
+  "Lot first registered": "Initial lot registration filed",
+  "Lot closed in circulation": "Consignment closed — trace completed",
+  "Custody handoff": "Custody transferred to next logistics party",
+  "Passport refreshed": "Lot master data amended",
+  "Handling event recorded": "Handling or inspection event recorded",
+};
+
+type UnknownRecord = Record<string, unknown>;
+
+function asRecord(v: unknown): UnknownRecord | null {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  return v as UnknownRecord;
+}
+
+function readableMilestone(raw: string | undefined) {
+  if (!raw) return "—";
+  return MILESTONE_READABLE[raw] ?? raw;
+}
+
+function isConsumedStatus(status: unknown): boolean {
+  return String(status ?? "").trim().toUpperCase() === "CONSUMED";
+}
+
+function readableOpsEventFromStatus(status: unknown): string | null {
+  const s = String(status ?? "").trim().toUpperCase();
+  if (!s) return null;
+  if (s === "CONSUMED") return "Consumed";
+  if (s === "OUTBOUND_DISPATCH") return "Outbound dispatch";
+  if (s === "INBOUND_CHECKIN") return "Inbound check-in";
+  if (s === "UPDATED") return "Data updated";
+  if (s === "INITIAL") return "Initial record created";
+  return null;
+}
+
+function explorerTxUrl(txHash: string) {
+  return `${TX_EXPLORER_BASE}${txHash}`;
+}
+
+function parseRoadmap(raw: unknown): string[] {
+  if (raw == null) return [];
+  if (Array.isArray(raw)) return raw.map((x) => String(x).trim()).filter(Boolean);
+  const s = String(raw).trim();
+  if (!s) return [];
+  try {
+    const j = JSON.parse(s);
+    if (Array.isArray(j)) return j.map((x) => String(x).trim()).filter(Boolean);
+  } catch {
+    // ignore malformed JSON and fall through
+  }
+  // Fallback: treat as a single waypoint string (legacy minimal support).
+  return [s];
+}
+
+function normalizeLoc(s: string) {
+  return s?.toLowerCase().trim() || "";
+}
+
+function inventoryKeyFromDecoded(decodedId: string) {
+  if (!decodedId || decodedId.length <= 56) return decodedId;
+  const policy = decodedId.slice(0, 56);
+  const rest = decodedId.slice(56);
+  if (/^[0-9a-fA-F]+$/.test(rest) && rest.length % 2 === 0) return decodedId;
+  const hexName = Array.from(new TextEncoder().encode(rest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return policy + CIP68_100 + hexName;
+}
+
+function decodeAssetName(decodedId: string) {
+  if (!decodedId || decodedId.length <= 56) return "";
+  const rest = decodedId.slice(56);
+  if (!/^[0-9a-fA-F]+$/.test(rest) || rest.length % 2 !== 0) return rest;
+  let hexName = rest.startsWith(CIP68_100) ? rest.slice(CIP68_100.length) : rest;
+  if (!hexName || hexName.length % 2 !== 0) return "";
+  try {
+    return new TextDecoder().decode(
+      new Uint8Array(
+        hexName.match(/.{1,2}/g)?.map((b) => parseInt(b, 16)) || [],
+      ),
+    );
+  } catch {
+    return "";
+  }
+}
+
+function txRefOf(entry: any) {
+  return String(entry?.confirmationRef ?? entry?.txHash ?? "");
+}
+
+
+function ipfsToHttp(uri: string): string {
+  const raw = String(uri || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  const looksLikeCid =
+    (raw.startsWith("Qm") && raw.length >= 46) ||
+    raw.startsWith("bafy") ||
+    raw.startsWith("bafk") ||
+    raw.startsWith("bagy");
+  if (looksLikeCid) {
+    const hash = raw;
+    if (IPFS_GATEWAY) return `https://${IPFS_GATEWAY.replace(/^https?:\/\//, "")}/ipfs/${hash}`;
+    return `https://ipfs.io/ipfs/${hash}`;
+  }
+
+  if (raw.startsWith("ipfs://")) {
+    const hash = raw.replace(/^ipfs:\/\//, "").replace(/^ipfs\//, "");
+    if (IPFS_GATEWAY) return `https://${IPFS_GATEWAY.replace(/^https?:\/\//, "")}/ipfs/${hash}`;
+    return `https://ipfs.io/ipfs/${hash}`;
+  }
+  return raw;
+}
+
+function pickFirstString(obj: UnknownRecord | null, keys: string[]): string {
+  if (!obj) return "";
+  for (const k of keys) {
+    const v = String(obj[k] ?? "").trim();
+    if (v) return v;
+  }
+  return "";
+}
 
 export default function ProductTraceabilityPage() {
   const params = useParams();
-  const rawId = params.id as string;
-  const decodedId = decodeURIComponent(rawId);
+  const decodedId = decodeURIComponent(params.id as string);
+  const inventoryKey = React.useMemo(
+    () => inventoryKeyFromDecoded(decodedId),
+    [decodedId],
+  );
+  const decodedAssetName = React.useMemo(() => decodeAssetName(decodedId), [decodedId]);
 
-  const unit = React.useMemo(() => {
-    if (!decodedId || decodedId.length <= 56) return decodedId;
-
-    const policyId = decodedId.slice(0, 56);
-    const rest = decodedId.slice(56);
-
-    const isHex = /^[0-9a-fA-F]+$/.test(rest) && rest.length % 2 === 0;
-    if (isHex) {
-      return decodedId;
-    }
-
-    const hexName = Array.from(new TextEncoder().encode(rest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    const CIP68_REF_PREFIX = "000643b0";
-    return policyId + CIP68_REF_PREFIX + hexName;
-  }, [decodedId]);
-
-  const { data: tracking, isLoading, isError, error } = useQuery({
-    queryKey: ["product-trace", unit],
-    queryFn: () => getProductTrace({ unit }),
-    enabled: !!unit,
+  const { data: tracking, isLoading, isError } = useQuery({
+    queryKey: ["product-trace", inventoryKey],
+    queryFn: () => getProductTrace({ inventoryKey }),
+    enabled: !!inventoryKey,
   });
 
   const [selectedStep, setSelectedStep] = React.useState(0);
+  const [historyTxRef, setHistoryTxRef] = React.useState<string | null>(null);
 
-  const decodedAssetName = React.useMemo(() => {
-    if (!decodedId || decodedId.length <= 56) return "";
+  const [linkedMode, setLinkedMode] = React.useState<"product" | "plan" | "area">("product");
+  const [linkedTrace, setLinkedTrace] = React.useState<any | null>(null);
 
-    const rest = decodedId.slice(56);
-    const CIP68_REF_PREFIX = "000643b0";
+  React.useEffect(() => {
+    setHistoryTxRef(null);
+    setSelectedStep(0);
+    setLinkedMode("product");
+    setLinkedTrace(null);
+  }, [inventoryKey]);
 
-    const isHex = /^[0-9a-fA-F]+$/.test(rest) && rest.length % 2 === 0;
-    if (isHex) {
-      let hexName = rest;
-      if (hexName.startsWith(CIP68_REF_PREFIX)) {
-        hexName = hexName.slice(CIP68_REF_PREFIX.length);
-      }
-      if (!hexName || hexName.length % 2 !== 0) return "";
-      try {
-        const bytes = new Uint8Array(
-          hexName.match(/.{1,2}/g)?.map((b) => parseInt(b, 16)) || [],
-        );
-        return new TextDecoder().decode(bytes);
-      } catch {
-        return "";
-      }
+  const planHistory = React.useMemo(() => {
+    if (linkedMode !== "plan") return [];
+    const log = Array.isArray(linkedTrace?.handlingLog) ? linkedTrace.handlingLog : [];
+    return [...log].sort((a, b) => Number(b?.recordedAt || 0) - Number(a?.recordedAt || 0));
+  }, [linkedMode, linkedTrace]);
+
+  const [planSelectedIdx, setPlanSelectedIdx] = React.useState(0);
+  React.useEffect(() => {
+    setPlanSelectedIdx(0);
+  }, [linkedMode, linkedTrace]);
+
+  const planEvents = React.useMemo(() => {
+    if (linkedMode !== "plan")
+      return [] as Array<{ entry: any; action: "Created" | "Harvested" | "Packaging" | "Updated" }>;
+    // Plan filings often merge metadata; classify by time order instead.
+    const sorted = [...planHistory].sort((a, b) => Number(b?.recordedAt || 0) - Number(a?.recordedAt || 0));
+    return sorted.map((entry, idx) => {
+      const lastIdx = Math.max(0, sorted.length - 1);
+      let action: "Created" | "Harvested" | "Packaging" | "Updated" = "Updated";
+      if (idx === 0) action = "Packaging";
+      else if (idx === 1) action = "Harvested";
+      else if (idx === lastIdx) action = "Created";
+      return { entry, action };
+    });
+  }, [linkedMode, planHistory]);
+
+  const planSelected = linkedMode === "plan" ? planEvents[planSelectedIdx]?.entry : undefined;
+  const planSelectedAction = linkedMode === "plan" ? planEvents[planSelectedIdx]?.action : undefined;
+  const planSelectedHash = planSelected ? txRefOf(planSelected) : "";
+
+  const planMetaAt = React.useMemo(() => {
+    if (linkedMode !== "plan") return null;
+    return asRecord(planSelected?.lotPassport) || asRecord(linkedTrace?.lotPassport) || asRecord(linkedTrace);
+  }, [linkedMode, planSelected, linkedTrace]);
+
+  const planCheckpointTimes = React.useMemo(() => {
+    if (linkedMode !== "plan") return {};
+    const byAction: Record<string, number> = {};
+    for (const ev of planEvents) {
+      const act = ev.action;
+      const t = Number(ev?.entry?.recordedAt || 0);
+      if (!t) continue;
+      byAction[act] = Math.max(byAction[act] || 0, t);
     }
+    const out: Record<string, string> = {};
+    for (const k of ["Created", "Harvested", "Packaging", "Updated"] as const) {
+      const sec = byAction[k] || 0;
+      if (!sec) continue; // only include checkpoints that really exist
+      out[k] = FMT_VI_DT.format(new Date(sec * 1000));
+    }
+    return out;
+  }, [linkedMode, planEvents]);
 
-    return rest;
-  }, [decodedId]);
+  const planCheckpointTimesSec = React.useMemo(() => {
+    if (linkedMode !== "plan") return {};
+    const byAction: Record<string, number> = {};
+    for (const ev of planEvents) {
+      const act = ev.action;
+      const t = Number(ev?.entry?.recordedAt || 0);
+      if (!t) continue;
+      byAction[act] = Math.max(byAction[act] || 0, t);
+    }
+    return byAction;
+  }, [linkedMode, planEvents]);
 
-  const normalize = (s: string) => s?.toLowerCase().trim() || "";
+  const planCheckpointLabels = React.useMemo(() => {
+    if (linkedMode !== "plan") return ["Created", "Harvested", "Packaging"];
+    const ordered = ["Created", "Harvested", "Packaging", "Updated"] as const;
+    return ordered.filter((k) => String(planCheckpointTimes[k] || "").trim());
+  }, [linkedMode, planCheckpointTimes]);
 
-  const getStatusLabel = (tx: any) => tx?.action ?? "—";
+  const planImageUrl = React.useMemo(() => {
+    if (linkedMode !== "plan") return "";
+    const entry = planSelected;
+    const lp = asRecord(entry?.lotPassport);
+    const action = planSelectedAction || "Created";
+    let raw = "";
+    if (action === "Packaging") {
+      raw =
+        pickFirstString(lp, ["packaging_image", "packagingImageIpfs", "packagingImage", "packaging_image_ipfs"]) ||
+        "";
+    } else if (action === "Harvested") {
+      raw =
+        pickFirstString(lp, ["harvest_image", "harvestImageIpfs", "harvestImage", "harvest_image_ipfs"]) ||
+        "";
+    } else if (action === "Updated") {
+      raw =
+        pickFirstString(lp, ["packaging_image", "packagingImageIpfs", "packagingImage", "packaging_image_ipfs"]) ||
+        pickFirstString(lp, ["harvest_image", "harvestImageIpfs", "harvestImage", "harvest_image_ipfs"]) ||
+        pickFirstString(lp, ["image", "imageIpfs", "image_ipfs"]) ||
+        "";
+    } else {
+      raw = pickFirstString(lp, ["image", "imageIpfs", "image_ipfs"]) || "";
+    }
+    return ipfsToHttp(raw);
+  }, [linkedMode, planSelected, planSelectedAction]);
 
-  const combinedHistory = React.useMemo(() => {
-    const selfHistory = Array.isArray(tracking?.transaction_history)
-      ? tracking.transaction_history.map((tx: any) => ({ ...tx, __chain: "current" }))
-      : [];
-    return selfHistory.sort(
-      (a: any, b: any) => Number(b?.datetime || 0) - Number(a?.datetime || 0),
+  const areaImageUrl = React.useMemo(() => {
+    if (linkedMode !== "area") return "";
+    const lp = asRecord(linkedTrace?.lotPassport) || asRecord(linkedTrace);
+    const raw =
+      pickFirstString(lp, ["image", "imageIpfs", "image_ipfs"]) ||
+      pickFirstString(lp, ["areaImage", "areaImageIpfs", "area_image", "area_image_ipfs"]) ||
+      "";
+    return ipfsToHttp(raw);
+  }, [linkedMode, linkedTrace]);
+
+  const areaHistory = React.useMemo(() => {
+    if (linkedMode !== "area") return [];
+    const log = Array.isArray(linkedTrace?.handlingLog) ? linkedTrace.handlingLog : [];
+    return [...log].sort((a, b) => Number(b?.recordedAt || 0) - Number(a?.recordedAt || 0));
+  }, [linkedMode, linkedTrace]);
+
+  const areaSelected = React.useMemo(() => {
+    if (linkedMode !== "area") return undefined;
+    return areaHistory[0];
+  }, [linkedMode, areaHistory]);
+
+  const areaMetaAt = React.useMemo(() => {
+    if (linkedMode !== "area") return null;
+    return asRecord(areaSelected?.lotPassport) || asRecord(linkedTrace?.lotPassport) || asRecord(linkedTrace);
+  }, [linkedMode, areaSelected, linkedTrace]);
+
+  const areaSelectedImageUrl = React.useMemo(() => {
+    if (linkedMode !== "area") return "";
+    const lp = areaMetaAt;
+    const raw =
+      pickFirstString(lp, ["image", "imageIpfs", "image_ipfs"]) ||
+      pickFirstString(lp, ["areaImage", "areaImageIpfs", "area_image", "area_image_ipfs"]) ||
+      "";
+    return ipfsToHttp(raw);
+  }, [linkedMode, areaMetaAt]);
+
+  const history = React.useMemo(() => {
+    const log = Array.isArray(tracking?.handlingLog) ? tracking.handlingLog : [];
+    return [...log].sort(
+      (a, b) => Number(b?.recordedAt || 0) - Number(a?.recordedAt || 0),
     );
   }, [tracking]);
 
-  const waypoints = React.useMemo(() => {
-    const fromHistory = combinedHistory
+  const roadmapParsed = React.useMemo(
+    () => parseRoadmap((tracking?.lotPassport as Record<string, unknown>)?.roadmap),
+    [tracking],
+  );
+
+  const fallbackWaypoints = React.useMemo(() => {
+    const locs = history
       .slice()
       .reverse()
-      .map((tx: any) => String(tx?.metadata?.location || "").trim())
+      .map((e) => String(e?.lotPassport?.location || "").trim())
       .filter(Boolean);
-    const uniqueHistory = Array.from(new Set(fromHistory));
-    if (uniqueHistory.length > 0) return uniqueHistory;
-    const roadmapStr = tracking?.metadata?.roadmap || "";
-    return roadmapStr
-      .replace(/[\[\]]/g, "")
-      .split(",")
-      .map((w: string) => w.trim())
-      .filter(Boolean);
-  }, [combinedHistory, tracking]);
+    return [...new Set(locs)];
+  }, [history]);
 
-  const [historyPage, setHistoryPage] = React.useState(0);
-  const HISTORY_PAGE_SIZE = 3;
+  const waypoints = roadmapParsed.length > 0 ? roadmapParsed : fallbackWaypoints;
+  const usingRoadmap = roadmapParsed.length > 0;
 
-  const totalHistoryPages = React.useMemo(() => {
-    const total = combinedHistory.length || 0;
-    return total > 0 ? Math.ceil(total / HISTORY_PAGE_SIZE) : 1;
-  }, [combinedHistory]);
+  const progressIndex = React.useMemo(() => {
+    if (waypoints.length === 0) return -1;
+    let max = -1;
+    const latest0 = normalizeLoc(String(history[0]?.lotPassport?.location || ""));
+    const topLoc = normalizeLoc(
+      String(
+        history[0]?.lotPassport?.location ||
+          pickFirstString(asRecord(tracking?.lotPassport), ["location"]) ||
+          waypoints[0] ||
+          "",
+      ),
+    );
+    for (const e of history) {
+      const loc = normalizeLoc(String(e?.lotPassport?.location || ""));
+      if (!loc) continue;
+      waypoints.forEach((w, i) => {
+        if (normalizeLoc(w) === loc) max = Math.max(max, i);
+      });
+    }
+    if (topLoc) {
+      const j = waypoints.findIndex((w) => normalizeLoc(w) === topLoc);
+      if (j >= 0) max = Math.max(max, j);
+    }
+    if (latest0) {
+      const j = waypoints.findIndex((w) => normalizeLoc(w) === latest0);
+      if (j >= 0) max = Math.max(max, j);
+    }
+    return max;
+  }, [waypoints, history, tracking?.lotPassport]);
 
-  const paginatedHistory = React.useMemo(() => {
-    const list = combinedHistory;
-    const start = historyPage * HISTORY_PAGE_SIZE;
-    return list.slice(start, start + HISTORY_PAGE_SIZE);
-  }, [combinedHistory, historyPage]);
-
-  const currentLocation =
-    (combinedHistory[0] as any)?.metadata?.location ||
-    tracking?.metadata?.location ||
-    waypoints[0];
-  const currentIndex = waypoints.findIndex(
-    (loc: string) => normalize(loc) === normalize(currentLocation),
-  );
-
-  const displayIndex = currentIndex;
-  const progressIndex = currentIndex;
-
-  const isRetired = false;
+  const journeyComplete = tracking?.tracingEnded === true;
 
   React.useEffect(() => {
-    if (displayIndex >= 0) setSelectedStep(displayIndex);
-  }, [displayIndex]);
+    if (waypoints.length === 0 || historyTxRef != null) return;
+    const idx = progressIndex >= 0 ? progressIndex : 0;
+    setSelectedStep(Math.min(idx, waypoints.length - 1));
+  }, [progressIndex, waypoints.length, historyTxRef]);
 
-  const selectedTx = combinedHistory.find(
-    (tx: any) => normalize(tx.metadata?.location) === normalize(waypoints[selectedStep]),
-  );
+  React.useEffect(() => {
+    const lp = tracking?.lotPassport as Record<string, unknown> | undefined;
+    const t = (lp?.model as string) || (lp?.name as string) || "Product journey";
+    document.title = `${t} | Public lot trace`;
+  }, [tracking]);
 
-  const isRetireSelected = false;
+  const selectedTx = React.useMemo(() => {
+    if (historyTxRef) {
+      const hit = history.find((e) => txRefOf(e) === historyTxRef);
+      if (hit) return hit;
+    }
+    const loc = waypoints[selectedStep];
+    if (loc == null) return undefined;
+    return history.find(
+      (e) =>
+        normalizeLoc(String(e?.lotPassport?.location || "")) ===
+        normalizeLoc(String(loc)),
+    );
+  }, [historyTxRef, history, selectedStep, waypoints]);
 
-  const iconForLocation = () => {
-    return <Package className="w-6 h-6" />;
-  };
+  const selectedHash = selectedTx ? txRefOf(selectedTx) : "";
+
+  const headerLotPassport = React.useMemo(() => {
+    if (linkedMode !== "product") return tracking?.lotPassport as any;
+    return (selectedTx?.lotPassport ?? tracking?.lotPassport) as any;
+  }, [linkedMode, selectedTx, tracking?.lotPassport]);
+
+  const imageUrl = React.useMemo(() => {
+    const lpSelected = asRecord(selectedTx?.lotPassport);
+    const lpBase = asRecord(tracking?.lotPassport);
+    if (!lpSelected && !lpBase) return "";
+
+    const statusUpper = String((lpSelected?.status ?? lpBase?.status ?? "") as unknown)
+      .trim()
+      .toUpperCase();
+
+    let raw = "";
+    if (statusUpper === "INBOUND_CHECKIN") {
+      raw = pickFirstString(lpSelected, [
+        "checkinImage",
+        "checkinImageIpfs",
+        "checkin_image",
+        "checkin_image_ipfs",
+      ]);
+      if (!raw) {
+        raw = pickFirstString(lpBase, [
+          "checkinImage",
+          "checkinImageIpfs",
+          "checkin_image",
+          "checkin_image_ipfs",
+        ]);
+      }
+    } else if (statusUpper === "OUTBOUND_DISPATCH") {
+      raw = pickFirstString(lpSelected, [
+        "dispatchImage",
+        "dispatchImageIpfs",
+        "dispatch_image",
+        "dispatch_image_ipfs",
+      ]);
+      if (!raw) {
+        raw = pickFirstString(lpBase, [
+          "dispatchImage",
+          "dispatchImageIpfs",
+          "dispatch_image",
+          "dispatch_image_ipfs",
+        ]);
+      }
+    } else if (statusUpper === "CONSUMED") {
+      raw = pickFirstString(lpSelected, [
+        "consumeImage",
+        "consumeImageIpfs",
+        "consume_image",
+        "consume_image_ipfs",
+      ]);
+      if (!raw) {
+        raw = pickFirstString(lpBase, [
+          "consumeImage",
+          "consumeImageIpfs",
+          "consume_image",
+          "consume_image_ipfs",
+        ]);
+      }
+    }
+
+    if (!raw) raw = pickFirstString(lpSelected, ["image", "imageIpfs", "image_ipfs"]);
+    if (!raw) raw = pickFirstString(lpBase, ["image", "imageIpfs", "image_ipfs"]);
+
+    return ipfsToHttp(raw);
+  }, [tracking?.lotPassport, history, selectedTx]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-         
-          <div className="flex items-center justify-center gap-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full bg-[#c41e3a] animate-bounce"
-              style={{ animationDelay: "0ms" }}
-            />
-            <span
-              className="w-2.5 h-2.5 rounded-full bg-[#c41e3a] animate-bounce"
-              style={{ animationDelay: "150ms" }}
-            />
-            <span
-              className="w-2.5 h-2.5 rounded-full bg-[#c41e3a] animate-bounce"
-              style={{ animationDelay: "300ms" }}
-            />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-red-50/90 via-white to-red-50/50 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
+        <div className="space-y-2 text-center">
+          <div className="flex justify-center gap-1.5">
+            {[0, 150, 300].map((d) => (
+              <span
+                key={d}
+                className="bg-primary h-2 w-2 animate-bounce rounded-full"
+                style={{ animationDelay: `${d}ms` }}
+              />
+            ))}
           </div>
-          <p className="text-gray-700 text-sm md:text-base font-medium">
-            Scanning QR and loading traceability data…
-          </p>
+          <p className="text-foreground/80 text-base">Loading this container’s journey…</p>
         </div>
       </div>
     );
@@ -167,401 +506,134 @@ export default function ProductTraceabilityPage() {
 
   if (isError || !tracking) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="bg-white border border-red-200 rounded-lg p-8 md:p-10 text-center max-w-md w-full">
-          <AlertCircle className="w-14 h-14 text-red-500 mx-auto mb-5" />
-          <h2 className="text-xl md:text-2xl font-bold mb-3 text-gray-900">Traceability data unavailable</h2>
-          <p className="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">
-            We could not retrieve the traceability information for this product. Please check the QR code or try
-            again later.
-          </p>
-          <Link
-            href="/scan"
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium bg-[#c41e3a] text-white hover:bg-red-700 transition-colors"
-          >
-            Return to scan
-          </Link>
-        </div>
+      <div className="bg-background flex min-h-screen items-center justify-center px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom,0px))] sm:p-6">
+        <Card className="w-full max-w-md gap-3 rounded-none py-5">
+          <CardContent className="space-y-3">
+            <Alert variant="destructive" className="rounded-none">
+              <AlertCircle />
+              <AlertTitle>We couldn’t open this page</AlertTitle>
+              <AlertDescription>Try scanning the code again, or check back later.</AlertDescription>
+            </Alert>
+            <Button
+              className="min-h-11 w-full touch-manipulation rounded-none sm:min-h-10"
+              asChild
+            >
+              <Link href="/scan">Back to scanner</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (tracking?.burned) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="bg-white border border-red-300 rounded-lg p-8 md:p-10 text-center max-w-md w-full">
-          <AlertCircle className="w-14 h-14 text-red-500 mx-auto mb-5" />
-          <h2 className="text-xl md:text-2xl font-bold mb-3 text-gray-900">Product has been destroyed</h2>
-          <p className="text-gray-600 mb-6 text-sm md:text-base leading-relaxed">
-            The NFT for this product was burned on the Cardano blockchain. This product is no longer tracked and its traceability data has been removed.
-          </p>
-          <Link
-            href="/scan"
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-md text-sm font-medium bg-[#c41e3a] text-white hover:bg-red-700 transition-colors"
-          >
-            Return to scan
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const productMeta = tracking?.metadata;
-
-  const assetName =
+  const lp = (asRecord(tracking.lotPassport) || {}) as UnknownRecord;
+  const title =
+    pickFirstString(lp, ["name", "productName", "assetName"]) ||
     decodedAssetName ||
-    (productMeta as any)?.assetName ||
-    (productMeta as any)?.name;
-
-  const rawImage = (productMeta as any)?.image as string | undefined;
-  const imageUrl = rawImage?.startsWith("ipfs://")
-    ? rawImage.replace("ipfs://", "https://ipfs.io/ipfs/")
-    : rawImage;
-
-  const formatBatchExpiry = (value: any) => {
-    const v = typeof value === "string" ? value.trim() : "";
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) {
-      const d = new Date(v);
-      if (!Number.isNaN(d.getTime())) {
-        return new Intl.DateTimeFormat("en-US", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }).format(d);
-      }
-    }
-    return v || "—";
-  };
+    "Container journey";
+  const sub = title;
 
   return (
-    <main
-      className="min-h-screen text-gray-900 bg- bg-top bg-no-repeat"
-      style={{ backgroundSize: "100% 100%" }}
-    >
-      <Head>
-        <title>Traceability | {productMeta?.model || "Product Journey"}</title>
-      </Head>
-
-      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-5 py-2.5 md:py-3 space-y-1.5 md:space-y-2">
-        <Link
-          href="/scan"
-          className="inline-block text-xs md:text-sm font-medium text-[#c41e3a] hover:text-red-700 hover:underline mb-2"
+    <main className="bg-background text-foreground min-h-screen pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
+      <div className="mx-auto max-w-5xl space-y-2 px-3 pt-3 pb-6 sm:space-y-3 sm:px-4 sm:pt-4 lg:px-6 lg:pt-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-primary touch-manipulation -ml-1 min-h-11 rounded-none px-3 sm:-ml-2 sm:min-h-9"
+          asChild
         >
-          ← Back to scan
-        </Link>
+          <Link href="/scan">
+            <ArrowLeft className="size-4 shrink-0" />
+            <span className="text-base sm:text-sm">Back to scanner</span>
+          </Link>
+        </Button>
 
-        {/* Header */}
-        <header className="text-center space-y-0.5">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-[0.18em]">
-            Verified on Cardano
-          </p>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            {assetName || "Transparent product journey"}
-          </h1>
-          <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
-            {productMeta?.model || assetName || "Product"} — tracked end‑to‑end from farm to final sale.
-          </p>
-        </header>
+        <ProductTracePublicHeaderCard
+          title={title}
+          sub={sub}
+          journeyComplete={journeyComplete}
+          trackingMessage={tracking.message}
+          lotPassport={headerLotPassport}
+          onLinkedTraceChange={(mode, trace) => {
+            setHistoryTxRef(null);
+            setLinkedMode(mode);
+            setLinkedTrace(trace);
+          }}
+          planMetaOverride={linkedMode === "plan" ? planMetaAt : null}
+          areaMetaOverride={linkedMode === "area" ? areaMetaAt : null}
+        />
 
-        {/* Timeline */}
-        <section className="bg-white border border-gray-200 rounded-lg p-2 md:p-2.5">
-          <h2 className="text-sm md:text-base font-semibold mb-1 text-gray-800">
-            Supply chain checkpoints
-          </h2>
-
-          {/* Mobile: vertical timeline. Desktop: horizontal */}
-          <div className="relative z-0 flex flex-col md:flex-row md:items-center md:justify-between pt-0.5 pb-1.5">
-            {/* Track line - vertical on mobile */}
-            <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-200 rounded-full overflow-hidden -z-10 md:hidden">
-              <div
-                className="w-full bg-emerald-500 transition-all duration-500 ease-out"
-                style={{
-                  height:
-                    progressIndex >= 0 && waypoints.length > 1
-                      ? `${((progressIndex + 1) / waypoints.length) * 100}%`
-                      : "0%",
+        {linkedMode !== "area" ? (
+          <Card className="gap-2 rounded-none py-2.5 sm:gap-3 sm:py-3">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-lg sm:text-lg">Distribution checkpoints</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 px-4 sm:px-6">
+              <ProductCheckpoints
+                waypoints={linkedMode === "plan" ? planCheckpointLabels : waypoints}
+                history={linkedMode === "plan" ? [] : history}
+                progressIndex={linkedMode === "plan" ? Math.max(0, planCheckpointLabels.length - 1) : progressIndex}
+                journeyComplete={journeyComplete}
+                usingRoadmap={linkedMode === "plan" ? true : usingRoadmap}
+                setHistoryTxRef={setHistoryTxRef}
+                setSelectedStep={setSelectedStep}
+                mode={linkedMode}
+                planTimes={linkedMode === "plan" ? planCheckpointTimes : undefined}
+                planTimesSec={linkedMode === "plan" ? planCheckpointTimesSec : undefined}
+                onPlanSelect={(label) => {
+                  if (linkedMode !== "plan") return;
+                  const idx = planEvents.findIndex((e) => e.action === label);
+                  if (idx >= 0) setPlanSelectedIdx(idx);
                 }}
               />
-            </div>
-            {/* Track line - horizontal on desktop */}
-            <div
-              className="hidden md:block absolute top-9 h-[2px] bg-gray-200 rounded-full overflow-hidden -z-10"
-              style={{
-                left: `${waypoints.length > 0 ? 50 / waypoints.length : 6}%`,
-                right: `${waypoints.length > 0 ? 50 / waypoints.length : 6}%`,
-              }}
-            >
-              <div
-                className="h-full bg-emerald-500 transition-all duration-500 ease-out"
-                style={{
-                  width:
-                    progressIndex >= 0 && waypoints.length > 1
-                      ? `${(progressIndex / (waypoints.length - 1)) * 100}%`
-                      : "0%",
-                }}
-              />
-            </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
-            {waypoints.map((loc: string, index: number) => {
-              const isPast = index < (progressIndex >= 0 ? progressIndex : 0);
-              const isCurrent = index === displayIndex;
-              const isCompletedCurrent = false;
-              const isClickable = index <= (progressIndex >= 0 ? progressIndex : 0);
-
-              return (
-                <div
-                  key={loc}
-                  className={cn(
-                    "relative z-10 flex flex-col md:flex-col items-center flex-1 group",
-                    "flex-row items-center justify-start gap-3 py-2 md:py-0 pl-8 md:pl-0 md:mt-3"
-                  )}
-                >
-                  {isCurrent && (
-                    <span
-                      className={cn(
-                        "absolute -top-3 text-xs md:text-sm leading-none hidden md:block",
-                        isRetired ? "text-green-500" : "text-[#c41e3a]"
-                      )}
-                      aria-label="Current location"
-                      title="Current location"
-                    >
-                      ▼
-                    </span>
-                  )}
-                  <button
-                    onClick={() => isClickable && setSelectedStep(index)}
-                    disabled={!isClickable}
-                    className={cn(
-                      "relative flex items-center justify-center focus:outline-none cursor-pointer flex-shrink-0"
-                    )}
-                  >
-                    <span className="flex items-center justify-center rounded-full bg-white w-9 h-9 md:w-10 md:h-10">
-                      {isPast || isCompletedCurrent || (isCurrent && isRetired) ? (
-                        <CheckCircle className="w-8 h-8 md:w-9 md:h-9 text-green-500 flex-shrink-0" />
-                      ) : (
-                      <span
-                        className={cn(
-                          "flex items-center justify-center rounded-full w-7 h-7 md:w-8 md:h-8 border-2 text-xs md:text-sm",
-                          isCurrent
-                            ? "bg-[#c41e3a] text-white border-[#c41e3a]"
-                            : "bg-emerald-400 text-white border-emerald-400",
-                        )}
-                      >
-                        {iconForLocation()}
-                      </span>
-                      )}
-                    </span>
-                  </button>
-
-                  <span className="mt-0 md:mt-3 text-xs md:text-sm font-medium text-gray-700 text-center md:leading-tight leading-tight text-left md:text-center max-w-[110px]">
-                    {loc}
-                    {isCurrent && (
-                      <span className="block text-[10px] font-semibold mt-0.5">
-                        {isRetired ? (
-                          <span className="text-red-600">Retire</span>
-                        ) : (
-                          <span className="text-gray-500">Here</span>
-                        )}
-                      </span>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <div className="grid lg:grid-cols-3 gap-1.5 md:gap-2">
-          {/* Product Visual */}
-          <div className="bg-white border border-gray-200 rounded-lg p-2 flex flex-col items-center justify-center">
-            {imageUrl ? (
-              <div className="w-full flex flex-col items-center gap-2">
-                <div className="w-full aspect-square max-w-[260px] mx-auto overflow-hidden flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl}
-                    alt={assetName || productMeta?.model || "Product image"}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "/logo.png";
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 text-center break-words px-1">
-                  {assetName || productMeta?.model || "Product"}
-                </p>
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm text-center italic px-2">
-                No product image available.
-              </p>
-            )}
-          </div>
-
-          {/* Current Milestone */}
-          <div className="bg-white border border-gray-200 rounded-lg p-2 space-y-1.5">
-            <h3 className="text-base md:text-lg font-semibold flex items-center gap-2 text-gray-800">
-              <MapPin className="w-5 h-5 text-[#c41e3a]" />
-              Current checkpoint
-            </h3>
-
-            {selectedTx ? (
-              <div className="space-y-3 text-sm md:text-base">
-                <div className="flex items-center gap-3 text-gray-700 text-sm">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  {new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeStyle: "short" }).format(
-                    new Date(selectedTx.datetime * 1000)
-                  )}
-                </div>
-
-                <div>
-                  <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold">Action</p>
-                  <p className="text-sm md:text-base font-semibold mt-1 text-gray-900">
-                    {getStatusLabel(selectedTx)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold">Status</p>
-                  <span className="inline-flex px-3 py-1 mt-1.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
-                    Completed
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold">Transaction</p>
-                  <Link
-                    href={`https://preprod.cexplorer.io/tx/${selectedTx.txHash}`}
-                    target="_blank"
-                    className="text-xs md:text-sm font-mono text-[#c41e3a] hover:text-red-700 break-all hover:underline mt-1 block"
-                  >
-                    {selectedTx.txHash}
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-600 text-sm italic">No transaction recorded for this stage yet.</p>
-            )}
-          </div>
-
-          {/* History */}
-          <div className="bg-white border border-gray-200 rounded-lg p-2">
-            <h3 className="text-base md:text-lg font-semibold mb-1 text-gray-800">Trace history</h3>
-
-            <div className="space-y-0.5 max-h-[280px] overflow-y-auto pr-1 scrollbar-visible">
-              {paginatedHistory.map((tx: any) => {
-                const isRetireEvent = false;
-                return (
-                  <div
-                    key={tx.txHash}
-                    onClick={() => {
-                      const idx = waypoints.findIndex((loc: any) =>
-                        normalize(loc) === normalize(tx.metadata?.location || ""),
-                      );
-                      if (idx >= 0) setSelectedStep(idx);
-                    }}
-                    className={cn(
-                      "p-4 border border-gray-200 rounded-md cursor-pointer bg-white",
-                      normalize(tx.metadata?.location) === normalize(waypoints[selectedStep]) &&
-                        "bg-red-50/60",
-                    )}
-                  >
-                    <div className="flex justify-between items-baseline mb-2">
-                      <span className="font-semibold text-gray-900">
-                        {getStatusLabel(tx)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {new Intl.DateTimeFormat("en-US", {
-                          dateStyle: "medium",
-                        }).format(new Date(tx.datetime * 1000))}
-                      </span>
-                    </div>
-                    <p className="text-gray-700">
-                      {tx.metadata?.location || "—"}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {totalHistoryPages > 1 && (
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-                  disabled={historyPage === 0}
-                  className="text-xs px-2 py-1 rounded border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Prev
-                </button>
-                <span className="text-xs text-gray-500">
-                  Page {historyPage + 1} / {totalHistoryPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages - 1, p + 1))}
-                  disabled={historyPage >= totalHistoryPages - 1}
-                  className="text-xs px-2 py-1 rounded border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
+        <div
+          className={`grid grid-cols-1 gap-2 sm:gap-3 lg:h-[min(48vh,18rem)] lg:min-h-[7.5rem] lg:items-stretch ${
+            linkedMode === "plan" || linkedMode === "area" ? "lg:grid-cols-2" : "lg:grid-cols-3"
+          }`}
+        >
+          <ProductTracePublicImageCard
+            imageUrl={
+              linkedMode === "plan"
+                ? planImageUrl
+                : linkedMode === "area"
+                  ? (areaSelectedImageUrl || areaImageUrl)
+                  : imageUrl
+            }
+            title={linkedMode === "plan" ? "Plan evidence" : linkedMode === "area" ? "Growing area image" : title}
+          />
+          <ProductTracePublicSelectedCheckpointCard
+            selectedTx={linkedMode === "plan" ? planSelected : linkedMode === "area" ? areaSelected : selectedTx}
+            selectedHash={linkedMode === "plan" ? planSelectedHash : linkedMode === "area" ? (areaSelected ? txRefOf(areaSelected) : "") : selectedHash}
+            explorerTxUrl={explorerTxUrl}
+            FMT_LONG={linkedMode === "plan" || linkedMode === "area" ? FMT_VI_DT : FMT_LONG}
+            readableOpsEventFromStatus={readableOpsEventFromStatus}
+            readableMilestone={readableMilestone}
+            isConsumedStatus={isConsumedStatus}
+            mode={linkedMode}
+            planAction={linkedMode === "plan" ? planSelectedAction : undefined}
+          />
+          {linkedMode !== "plan" && linkedMode !== "area" ? (
+            <ProductTracePublicMovementHistoryCard
+              pageSlice={history}
+              historyTxRef={historyTxRef}
+              normalizeLoc={normalizeLoc}
+              waypoints={waypoints}
+              selectedStep={selectedStep}
+              setHistoryTxRef={setHistoryTxRef}
+              setSelectedStep={setSelectedStep}
+              FMT_DATE={FMT_DATE}
+              readableOpsEventFromStatus={readableOpsEventFromStatus}
+              readableMilestone={readableMilestone}
+              isConsumedStatus={isConsumedStatus}
+              txRefOf={txRefOf}
+              mode={linkedMode}
+            />
+          ) : null}
         </div>
-
-        {/* Product Details */}
-        {productMeta && (
-          <section className="bg-white border border-gray-200 rounded-lg p-3.5 md:p-4 space-y-3.5 md:space-y-4">
-            <h2 className="text-base md:text-lg font-semibold text-gray-800">Product details</h2>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-3">
-              {[
-                { label: "Producer", value: productMeta.brand },
-                { label: "Product type", value: productMeta.model },
-                { label: "Certification", value: productMeta.material },
-                { label: "Batch / Expiry", value: formatBatchExpiry(productMeta.battery) },
-              ].map((item, i) => (
-                <div key={i} className="space-y-1.5">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold">
-                    {item.label}
-                  </p>
-                  <p className="text-sm md:text-base font-semibold text-gray-900">{item.value || "—"}</p>
-                </div>
-              ))}
-            </div>
-
-            {productMeta.description && (
-              <div className="pt-5 border-t border-gray-200">
-                <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold mb-2">
-                  Description
-                </p>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                  {productMeta.description}
-                </p>
-              </div>
-            )}
-
-            {((productMeta as any)?.notes || productMeta.material) && (
-              <div className="pt-5 border-t border-gray-200">
-                {productMeta.material && (
-                  <p className="text-sm md:text-base font-semibold text-gray-900 mb-2">
-                    {productMeta.material}
-                  </p>
-                )}
-                <div className="flex items-center gap-2 mb-2">
-                  <StickyNote className="w-4 h-4 text-[#c41e3a]" />
-                  <p className="text-[11px] text-gray-500 uppercase tracking-[0.16em] font-semibold">
-                    Notes
-                  </p>
-                </div>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed whitespace-pre-line">
-                  {(productMeta as any)?.notes || "—"}
-                </p>
-              </div>
-            )}
-          </section>
-        )}
       </div>
     </main>
   );

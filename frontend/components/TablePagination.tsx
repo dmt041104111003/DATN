@@ -1,6 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from "@/components/ui/pagination";
 
 type TablePaginationProps = {
   page: number;
@@ -28,46 +36,53 @@ export function TablePagination({
   };
 
   return (
-    <div className="flex items-center justify-between px-2 py-2 text-sm text-gray-700">
-      <span className="text-xs md:text-sm">
+    <Pagination className="mx-0 w-full justify-between px-2 py-2">
+      <p className="text-muted-foreground text-sm">
         Showing{" "}
-        <span className="font-semibold">
+        <span className="text-foreground font-medium">
           {start}-{end}
         </span>{" "}
         of{" "}
-        <span className="font-semibold">
-          {total}
-        </span>
-      </span>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => goTo(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="px-3 py-1.5 rounded-md border border-gray-200 text-xs md:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Prev
-        </button>
-        <span className="text-xs md:text-sm text-gray-600">
-          Page{" "}
-          <span className="font-semibold">
-            {currentPage}
-          </span>{" "}
-          of{" "}
-          <span className="font-semibold">
-            {totalPages}
+        <span className="text-foreground font-medium">{total}</span>
+      </p>
+      <PaginationContent className="gap-2">
+        <PaginationItem>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-8"
+            onClick={() => goTo(currentPage - 1)}
+            disabled={currentPage === 1}
+            aria-label="Previous page"
+            title="Previous page"
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+        </PaginationItem>
+        <PaginationItem>
+          <span className="text-muted-foreground px-1 text-sm">
+            Page{" "}
+            <span className="text-foreground font-medium">{currentPage}</span>{" "}
+            of{" "}
+            <span className="text-foreground font-medium">{totalPages}</span>
           </span>
-        </span>
-        <button
-          type="button"
-          onClick={() => goTo(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1.5 rounded-md bg-[#c41e3a] text-white text-xs md:text-sm font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Next
-        </button>
-      </div>
-    </div>
+        </PaginationItem>
+        <PaginationItem>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-8"
+            onClick={() => goTo(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            aria-label="Next page"
+            title="Next page"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   );
 }
-

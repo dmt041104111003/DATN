@@ -9,7 +9,8 @@
     "dev": "ts-node-dev --transpile-only src/main.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "seed:roles": "node prisma/seed.roles.js"
   },
   "dependencies": {
     "@blockfrost/blockfrost-js": "^6.1.1",
@@ -21,6 +22,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.3.0",
+    "@nestjs/schedule": "^6.1.1",
     "@noble/ed25519": "^2.0.0",
     "@prisma/client": "^5.12.0",
     "bech32": "^2.0.0",

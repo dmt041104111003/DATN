@@ -1,7 +1,7 @@
-import { update } from "@/contract/scripts";
+// import { update } from "@/contract/scripts";
 
-async function main() {
-  await update();
-}
+// async function main() {
+//   await update();
+// }
 
-void main();
+// void main();

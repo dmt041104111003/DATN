@@ -98,7 +98,7 @@ async function getEternlApi(): Promise<any> {
   };
 
   if (!anyWindow.cardano || !anyWindow.cardano.eternl) {
-    throw new Error("Eternl wallet not found. Please install and enable it.");
+    throw new Error("Required browser signer extension was not found or enabled.");
   }
   return await anyWindow.cardano.eternl.enable();
 }
@@ -128,27 +128,44 @@ function normalizeWalletAddress(raw: string, networkId: number | null): string {
   return encodeBech32(hrp, hexToBytes(raw));
 }
 
-export async function getWalletChangeAddress(): Promise<string> {
+export async function getCustodianSettlementAddress(): Promise<string> {
+  const networkId = await getWalletNetworkId();
   const wallet = await getMeshWallet();
-  if (wallet && typeof (wallet as any).getChangeAddress === "function") {
-    const raw = await wallet.getChangeAddress();
-    if (raw && typeof raw === "string") {
-      const networkId = await getWalletNetworkId();
-      return normalizeWalletAddress(raw, networkId);
+  if (wallet) {
+    const anyWallet = wallet as any;
+    if (typeof anyWallet.getAddress === "function") {
+      const raw = await anyWallet.getAddress();
+      if (raw && typeof raw === "string") return normalizeWalletAddress(raw, networkId);
+    }
+    if (typeof anyWallet.getPaymentAddress === "function") {
+      const raw = await anyWallet.getPaymentAddress();
+      if (raw && typeof raw === "string") return normalizeWalletAddress(raw, networkId);
+    }
+    if (typeof anyWallet.getChangeAddress === "function") {
+      const raw = await anyWallet.getChangeAddress();
+      if (raw && typeof raw === "string") return normalizeWalletAddress(raw, networkId);
     }
   }
 
   const api = await getEternlApi();
-  if (typeof (api as any).getChangeAddress !== "function") {
-    throw new Error("Wallet does not support getChangeAddress.");
+  const anyApi = api as any;
+  if (typeof anyApi.getAddress === "function") {
+    const raw: string = await anyApi.getAddress();
+    return normalizeWalletAddress(raw, networkId);
   }
-  const raw: string = await (api as any).getChangeAddress();
-  const networkId = await getWalletNetworkId();
+  if (typeof anyApi.getPaymentAddress === "function") {
+    const raw: string = await anyApi.getPaymentAddress();
+    return normalizeWalletAddress(raw, networkId);
+  }
+  if (typeof anyApi.getChangeAddress !== "function") {
+    throw new Error("Connected signer does not expose a settlement address.");
+  }
+  const raw: string = await anyApi.getChangeAddress();
   return normalizeWalletAddress(raw, networkId);
 }
 
 function extractSignedTxHex(rawSigned: unknown): string {
-  if (!rawSigned) throw new Error("Wallet failed to sign transaction.");
+  if (!rawSigned) throw new Error("Signing failed for this record.");
   if (typeof rawSigned === "string") return rawSigned;
   if (Array.isArray(rawSigned)) {
     let hex = "";
@@ -165,11 +182,11 @@ function extractSignedTxHex(rawSigned: unknown): string {
       (rawSigned as any).tx ??
       (rawSigned as any).cbor;
     if (typeof v !== "string") {
-      throw new Error("Wallet returned unexpected sign format.");
+      throw new Error("Unexpected format returned from signer.");
     }
     return v;
   }
-  throw new Error("Wallet returned unexpected sign format.");
+  throw new Error("Unexpected format returned from signer.");
 }
 
 async function isLikelyFullTxHex(hex: string): Promise<boolean> {
@@ -188,7 +205,7 @@ async function isLikelyFullTxHex(hex: string): Promise<boolean> {
   }
 }
 
-export async function signTxWithEternl(
+export async function signOutgoingAttestation(
   unsignedTx: string,
   opts?: { partialSign?: boolean },
 ): Promise<string> {
@@ -206,7 +223,7 @@ export async function signTxWithEternl(
 
   const api = await getEternlApi();
   if (typeof (api as any).signTx !== "function") {
-    throw new Error("Wallet does not support signTx.");
+    throw new Error("Connected signer does not support record signing.");
   }
   const rawSigned = await (api as any).signTx(unsignedClean, partialSign);
   const signedHex = extractSignedTxHex(rawSigned).trim().replace(/^0x/, "");
@@ -222,21 +239,19 @@ export async function signTxWithEternl(
     if (merged && typeof merged === "string") {
       const mergedHex = merged.trim().replace(/^0x/, "");
       if (await isLikelyFullTxHex(mergedHex)) return mergedHex;
-      throw new Error("Merged signed tx is not a valid Shelley Tx.");
+      throw new Error("Merged attestation is not valid for publication.");
     }
-    throw new Error("Failed to merge witnesses into unsigned tx.");
+    throw new Error("Could not merge signer proofs into the draft record.");
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(
-      `Wallet returned witnesses/invalid tx. Merge failed: ${msg}`,
-    );
+    throw new Error(`Signer proof merge failed: ${msg}`);
   }
 }
 
-export async function submitSignedTxHex(signedTxHex: string): Promise<string> {
-  const clean = signedTxHex.trim().replace(/^0x/, "");
+export async function publishAttestedRecord(signedPayloadHex: string): Promise<string> {
+  const clean = signedPayloadHex.trim().replace(/^0x/, "");
   if (!clean) {
-    throw new Error("No signed transaction hex provided.");
+    throw new Error("No signed record payload was provided.");
   }
 
   const wallet = await getMeshWallet();
@@ -255,6 +270,11 @@ export async function submitSignedTxHex(signedTxHex: string): Promise<string> {
     }
   }
 
-  throw new Error("Wallet does not support submitTx. Cannot submit transaction.");
+  throw new Error("Connected signer cannot publish this record.");
 }
+
+export const getWalletChangeAddress = getCustodianSettlementAddress;
+/** @deprecated Use signOutgoingAttestation */
+export const signTxWithEternl = signOutgoingAttestation;
+export const submitSignedTxHex = publishAttestedRecord;
 

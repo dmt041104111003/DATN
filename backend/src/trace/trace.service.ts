@@ -1,20 +1,72 @@
 import { Injectable } from '@nestjs/common';
-import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
+import { BlockFrostAPI, BlockfrostServerError } from '@blockfrost/blockfrost-js';
+// Prisma client is generated at build time; keep this as a string for type stability.
+type ContainerStatus = string;
+import { PrismaService } from '../prisma/prisma.service';
 import { deserializeDatum } from '../utils/deserialize-datum';
 
-export interface HistoryEntry {
-  txHash: string;
-  datetime: number;
-  status: 'Completed';
-  action: 'Mint' | 'Burn' | 'Transfer' | 'Update' | 'Unknown';
-  metadata: Record<string, unknown>;
-  fee: string;
+const POLICY_ID_HEX_LEN = 56;
+const CIP68_100_PREFIX = '000643b0';
+const CIP68_222_PREFIX = '000de140';
+
+function buildNativeAssetUnitCandidates(inventoryKey: string): string[] {
+  const raw = (inventoryKey || '').trim();
+  if (!raw) {
+    return [];
+  }
+  const k = raw.toLowerCase();
+  const candidates: string[] = [];
+  const push = (u: string) => {
+    const t = u.trim().toLowerCase();
+    if (t && !candidates.includes(t)) {
+      candidates.push(t);
+    }
+  };
+  push(k);
+  if (/^[0-9a-f]+$/.test(k) && k.length > POLICY_ID_HEX_LEN) {
+    const policy = k.slice(0, POLICY_ID_HEX_LEN);
+    const rest = k.slice(POLICY_ID_HEX_LEN);
+    if (
+      rest.length > 0 &&
+      rest.length % 2 === 0 &&
+      !rest.startsWith(CIP68_100_PREFIX) &&
+      !rest.startsWith(CIP68_222_PREFIX)
+    ) {
+      push(`${policy}${CIP68_100_PREFIX}${rest}`);
+      push(`${policy}${CIP68_222_PREFIX}${rest}`);
+    }
+  }
+  return candidates;
+}
+
+function isAssetNotFoundError(err: unknown): boolean {
+  if (err instanceof BlockfrostServerError) {
+    return err.status_code === 404;
+  }
+  return false;
+}
+
+export type HandlingMilestone =
+  | 'Lot first registered'
+  | 'Lot closed in circulation'
+  | 'Custody handoff'
+  | 'Passport refreshed'
+  | 'Handling event recorded';
+
+export interface HandlingLogEntry {
+  confirmationRef: string;
+  recordedAt: number;
+  outcome: 'Completed';
+  milestone: HandlingMilestone;
+  lotPassport: Record<string, unknown>;
+  recordKeepingCharge: string;
 }
 
 export interface TraceResult {
-  metadata: Record<string, unknown>;
-  transaction_history: HistoryEntry[];
-  burned: boolean;
+  lotPassport: Record<string, unknown>;
+  handlingLog: HandlingLogEntry[];
+  tracingEnded: boolean;
+  lifecycleStatus?: ContainerStatus | null;
   message?: string;
 }
 
@@ -22,20 +74,100 @@ export interface TraceResult {
 export class TraceService {
   private blockfrost: BlockFrostAPI;
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     const projectId = process.env.BLOCKFROST_API_KEY || '';
     if (!projectId) {
       throw new Error('BLOCKFROST_API_KEY is not set');
     }
+    const network =
+      (process.env.APP_NETWORK || process.env.BLOCKFROST_NETWORK || 'preprod')
+        .toLowerCase() === 'mainnet'
+        ? 'mainnet'
+        : 'preprod';
     this.blockfrost = new BlockFrostAPI({
       projectId,
-      network: 'preprod',
+      network,
     });
   }
 
-  private async getProductTraceInternal(unit: string): Promise<TraceResult> {
-    const assetTxRefs = await this.blockfrost.assetsTransactions(unit);
-    const histories: HistoryEntry[] = [];
+  private milestoneForFlow(
+    inputQty: number,
+    outputQty: number,
+    inputAddress?: string,
+    outputAddress?: string,
+  ): HandlingMilestone {
+    if (inputQty === 0 && outputQty > 0) {
+      return 'Lot first registered';
+    }
+    if (outputQty === 0 && inputQty > 0) {
+      return 'Lot closed in circulation';
+    }
+    if (inputQty > 0 && outputQty > 0) {
+      const quantityChange = outputQty - inputQty;
+      // When the asset stays on the same script address, this is usually a
+      // passport refresh (datum update). When it moves to a different address,
+      // we treat it as a custody handoff.
+      if (inputAddress && outputAddress) {
+        return inputAddress === outputAddress
+          ? 'Passport refreshed'
+          : 'Custody handoff';
+      }
+
+      // Fallback: if we cannot read addresses, use quantity delta.
+      // (This is less accurate but better than returning the same label.)
+      return quantityChange === 0 ? 'Passport refreshed' : 'Custody handoff';
+    }
+    return 'Handling event recorded';
+  }
+
+  private async resolveBlockfrostAssetUnit(
+    inventoryKey: string,
+  ): Promise<{ unit: string } | { error: TraceResult }> {
+    const candidates = buildNativeAssetUnitCandidates(inventoryKey);
+    if (candidates.length === 0) {
+      return {
+        error: {
+          lotPassport: {},
+          handlingLog: [],
+          tracingEnded: false,
+          message: 'Invalid inventory key for chain lookup.',
+        },
+      };
+    }
+    let lastErr: unknown;
+    for (const unit of candidates) {
+      try {
+        await this.blockfrost.assetsTransactions(unit, { count: 1, page: 1 });
+        return { unit };
+      } catch (e) {
+        lastErr = e;
+        if (!isAssetNotFoundError(e)) {
+          throw e;
+        }
+      }
+    }
+    return {
+      error: {
+        lotPassport: {},
+        handlingLog: [],
+        tracingEnded: false,
+        message:
+          lastErr instanceof Error
+            ? `Blockfrost could not find this asset (tried CIP-68 unit variants). ${lastErr.message}`
+            : 'Blockfrost could not find this asset for the given inventory key.',
+      },
+    };
+  }
+
+  private async getProductTraceInternal(inventoryKey: string): Promise<TraceResult> {
+    const resolved = await this.resolveBlockfrostAssetUnit(inventoryKey);
+    if ('error' in resolved) {
+      return resolved.error;
+    }
+    const chainUnit = resolved.unit;
+
+    const assetTxRefs = await this.blockfrost.assetsTransactions(chainUnit);
+    const histories: HandlingLogEntry[] = [];
 
     for (const { tx_hash } of assetTxRefs) {
       try {
@@ -46,30 +178,29 @@ export class TraceService {
         let outputQty = 0;
 
         const inputWithAsset = utxos.inputs.find((input: { amount: { unit: string; quantity: string }[] }) =>
-          input.amount.some((a) => a.unit === unit),
+          input.amount.some((a) => a.unit === chainUnit),
         );
         if (inputWithAsset) {
-          const amt = inputWithAsset.amount.find((a) => a.unit === unit);
+          const amt = inputWithAsset.amount.find((a) => a.unit === chainUnit);
           inputQty = Number(amt?.quantity || 0);
         }
 
         const outputWithAsset = utxos.outputs.find((output: { amount: { unit: string; quantity: string }[] }) =>
-          output.amount.some((a) => a.unit === unit),
+          output.amount.some((a) => a.unit === chainUnit),
         );
         if (outputWithAsset) {
-          const amt = outputWithAsset.amount.find((a) => a.unit === unit);
+          const amt = outputWithAsset.amount.find((a) => a.unit === chainUnit);
           outputQty = Number(amt?.quantity || 0);
         }
 
-        let action: HistoryEntry['action'] = 'Unknown';
-        if (inputQty === 0 && outputQty > 0) {
-          action = 'Mint';
-        } else if (outputQty === 0 && inputQty > 0) {
-          action = 'Burn';
-        } else if (inputQty > 0 && outputQty > 0) {
-          const quantityChange = outputQty - inputQty;
-          action = quantityChange === 0 ? 'Transfer' : 'Update';
-        }
+        const inputAddress = (inputWithAsset as any)?.address;
+        const outputAddress = (outputWithAsset as any)?.address;
+        let milestone = this.milestoneForFlow(
+          inputQty,
+          outputQty,
+          inputAddress,
+          outputAddress,
+        );
 
         let rawDatum: string | undefined;
         const outWithDatum = outputWithAsset as { inline_datum?: string } | undefined;
@@ -80,60 +211,69 @@ export class TraceService {
           rawDatum = inWithDatum.inline_datum;
         }
 
-        let metadata: Record<string, unknown> = {};
+        let lotPassport: Record<string, unknown> = {};
         if (rawDatum) {
           try {
-            metadata = await deserializeDatum(rawDatum);
+            lotPassport = (await deserializeDatum(rawDatum)) as Record<string, unknown>;
           } catch (err) {
-            console.error(`Deserialize datum failed for tx ${tx_hash}:`, err);
+            console.error(`Passport decode failed for record ${tx_hash}:`, err);
           }
         }
 
         histories.push({
-          txHash: tx_hash,
-          datetime: txInfo.block_time,
-          fee: txInfo.fees,
-          status: 'Completed',
-          action,
-          metadata,
+          confirmationRef: tx_hash,
+          recordedAt: txInfo.block_time,
+          recordKeepingCharge: txInfo.fees,
+          outcome: 'Completed',
+          milestone,
+          lotPassport,
         });
       } catch (err) {
-        console.error(`Error processing tx ${tx_hash}:`, err);
+        console.error(`Error processing record ${tx_hash}:`, err);
       }
     }
 
-    histories.sort((a, b) => b.datetime - a.datetime);
+    histories.sort((a, b) => b.recordedAt - a.recordedAt);
 
-    const filteredHistory: HistoryEntry[] = [];
+    const filteredLog: HandlingLogEntry[] = [];
     for (const entry of histories) {
-      filteredHistory.push(entry);
-      if (entry.action === 'Mint') {
+      filteredLog.push(entry);
+      if (entry.milestone === 'Lot first registered') {
         break;
       }
     }
 
     if (
-      filteredHistory.length === 0 ||
-      !filteredHistory.some((e) => e.action === 'Mint')
+      filteredLog.length === 0 ||
+      !filteredLog.some((e) => e.milestone === 'Lot first registered')
     ) {
       return {
-        metadata: (histories[0]?.metadata as Record<string, unknown>) || {},
-        transaction_history: histories,
-        burned: false,
-        message: 'Mint not found in transaction history.',
+        lotPassport: (histories[0]?.lotPassport as Record<string, unknown>) || {},
+        handlingLog: histories,
+        tracingEnded: false,
+        message: 'No first registration event found for this inventory key.',
       };
     }
 
-    const latestMetadata = (histories[0]?.metadata as Record<string, unknown>) || {};
+    const latestPassport = (histories[0]?.lotPassport as Record<string, unknown>) || {};
 
     return {
-      metadata: latestMetadata,
-      transaction_history: filteredHistory,
-      burned: histories.length > 0 && histories[0].action === 'Burn',
+      lotPassport: latestPassport,
+      handlingLog: filteredLog,
+      tracingEnded:
+        histories.length > 0 && histories[0].milestone === 'Lot closed in circulation',
     };
   }
 
-  async getProductTrace(unit: string): Promise<TraceResult> {
-    return this.getProductTraceInternal(unit);
+  async getProductTrace(inventoryKey: string): Promise<TraceResult> {
+    const base = await this.getProductTraceInternal(inventoryKey);
+    const row = await (this.prisma as any).container.findUnique({
+      where: { inventoryKey },
+      select: { status: true },
+    });
+    return {
+      ...base,
+      lifecycleStatus: row?.status ?? null,
+    };
   }
 }

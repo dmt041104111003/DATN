@@ -59,13 +59,16 @@ export class AuthController {
         throw new HttpException('Missing stakeAddress', HttpStatus.BAD_REQUEST);
       }
 
-      const nonce = this.authService.generateNonce(addr);
+      const nonce = await this.authService.generateNonce(addr);
       return { nonce };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -108,25 +111,25 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {
-    const profile = req.user && req.user.profileId
-      ? await this.authService['prisma'].profile.findUnique({
-          where: { id: req.user.profileId },
-        })
-      : null;
+    const account =
+      req.user && req.user.sub
+        ? await (this.authService as any)['prisma'].custodianAccount.findUnique({
+            where: { address: String(req.user.sub || '').trim() },
+          })
+        : null;
 
     return {
       user: req.user,
-      profile: profile && {
-        id: profile.id,
-        walletAddress: profile.walletAddress,
-        roleCode: profile.roleCode,
-        displayName: profile.displayName,
-        avatarUrl: profile.avatarUrl,
-        location: profile.location,
-        isActive: profile.isActive,
-        createdAt: profile.createdAt,
-        updatedAt: profile.updatedAt,
-      },
+      profile: account && account.roleCode ? {
+        id: account.id,
+        walletAddress: account.address,
+        roleCode: account.roleCode,
+        displayName: account.displayName,
+        location: account.location,
+        isActive: account.isActive,
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
+      } : null,
     };
   }
 

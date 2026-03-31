@@ -10,43 +10,47 @@ export class ProfileService {
     private readonly config: ConfigService,
   ) {}
 
-  async createProfile(walletAddress: string, data: {
+  async createProfile(custodianAddress: string, data: {
     roleCode: string;
     displayName: string;
     location?: string;
   }) {
-    const addr = (walletAddress || '').trim();
+    const addr = (custodianAddress || '').trim();
     const isPayment =
       /^addr1[0-9a-z]+$/.test(addr) || /^addr_test1[0-9a-z]+$/.test(addr);
     if (!isPayment) {
       throw new BadRequestException(
-        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${walletAddress}`,
+        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${custodianAddress}`,
       );
     }
 
-    const existingProfile = await this.prisma.profile.findFirst({
-      where: {
-        walletAddress: addr,
-        roleCode: data.roleCode,
-      },
-    });
-
-    if (existingProfile) {
-      throw new BadRequestException('Profile already exists for this role');
-    }
+    const roleCode = (data.roleCode || '').trim().toUpperCase();
+    if (!roleCode) throw new BadRequestException('Role is required.');
+    const role = await (this.prisma as any).role.findUnique({ where: { code: roleCode } });
+    if (!role) throw new BadRequestException('Invalid role.');
 
     const location = (data.location || '').trim();
     if (!location) {
       throw new BadRequestException('Location is required.');
     }
-
-    const profile = await this.prisma.profile.create({
+    const account = await (this.prisma as any).custodianAccount.update({
+      where: { address: addr },
       data: {
-        walletAddress: addr,
-        roleCode: data.roleCode,
+        roleCode,
         displayName: data.displayName,
         location,
-      },
+        isActive: true,
+      } as any,
+      select: {
+        id: true,
+        address: true,
+        roleCode: true,
+        displayName: true,
+        location: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      } as any,
     });
 
     const secret = this.config.get<string>('JWT_SECRET');
@@ -57,11 +61,10 @@ export class ProfileService {
     const payload = {
       sub: addr,
       stakeAddress: addr,
-      profileId: profile.id,
-      role: profile.roleCode,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-      location: profile.location,
+      profileId: account.id,
+      role: account.roleCode,
+      displayName: account.displayName,
+      location: account.location,
     };
 
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
@@ -69,16 +72,15 @@ export class ProfileService {
     return {
       token,
       profile: {
-        id: profile.id,
-        role: profile.roleCode,
-        displayName: profile.displayName,
-        avatarUrl: profile.avatarUrl,
-        location: profile.location,
+        id: account.id,
+        role: account.roleCode,
+        displayName: account.displayName,
+        location: account.location,
       },
     };
   }
 
-  async updateProfile(profileId: string, data: {
+  async updateProfile(accountId: string, data: {
     displayName?: string;
     location?: string;
   }) {
@@ -91,70 +93,89 @@ export class ProfileService {
       throw new BadRequestException('Location is required.');
     }
 
-    const profile = await this.prisma.profile.update({
-      where: { id: profileId },
+    const account = await (this.prisma as any).custodianAccount.update({
+      where: { id: accountId },
       data: {
         displayName,
         location,
-      },
+      } as any,
+      select: {
+        id: true,
+        roleCode: true,
+        displayName: true,
+        location: true,
+      } as any,
     });
 
     return {
-      id: profile.id,
-      role: profile.roleCode,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-      location: profile.location,
+      id: account.id,
+      role: account.roleCode,
+      displayName: account.displayName,
+      location: account.location,
     };
   }
 
-  async listProfiles(walletAddress: string) {
-    const addr = (walletAddress || '').trim();
+  async listProfiles(custodianAddress: string) {
+    const addr = (custodianAddress || '').trim();
     if (!addr) {
-      throw new BadRequestException('Wallet address is required');
+      throw new BadRequestException('Account reference is required.');
     }
 
-    const profiles = await this.prisma.profile.findMany({
-      where: {
-        isActive: true,
-        walletAddress: addr,
-      },
-      orderBy: { createdAt: 'desc' },
+    const account = await (this.prisma as any).custodianAccount.findUnique({
+      where: { address: addr },
       select: {
         id: true,
-        walletAddress: true,
+        address: true,
         roleCode: true,
         displayName: true,
         location: true,
         isActive: true,
-      },
+      } as any,
     });
-
-    return profiles;
+    if (!account || !account.roleCode) return [];
+    return [
+      {
+        id: account.id,
+        walletAddress: account.address,
+        roleCode: account.roleCode,
+        displayName: account.displayName,
+        location: account.location,
+        isActive: account.isActive,
+      },
+    ];
   }
 
-  async getPublicProfile(walletAddress: string) {
-    const addr = (walletAddress || '').trim();
+  async getPublicProfile(custodianAddress: string) {
+    const addr = (custodianAddress || '').trim();
     const isPayment =
       /^addr1[0-9a-z]+$/.test(addr) || /^addr_test1[0-9a-z]+$/.test(addr);
     if (!isPayment) {
       throw new BadRequestException(
-        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${walletAddress}`,
+        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${custodianAddress}`,
       );
     }
 
-    const profile = await this.prisma.profile.findFirst({
-      where: { walletAddress: addr, isActive: true },
-      orderBy: { createdAt: 'desc' },
+    const account = await (this.prisma as any).custodianAccount.findUnique({
+      where: { address: addr },
       select: {
-        walletAddress: true,
+        address: true,
         roleCode: true,
         displayName: true,
         location: true,
         isActive: true,
-      },
+      } as any,
     });
 
-    return { profile: profile || null };
+    return {
+      profile: account && account.isActive && account.roleCode
+        ? {
+            walletAddress: account.address,
+            roleCode: account.roleCode,
+            displayName: account.displayName,
+            location: account.location,
+            isActive: account.isActive,
+          }
+        : null,
+    };
   }
 }

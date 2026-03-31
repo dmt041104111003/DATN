@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { useWalletAuth } from "../hooks/useWalletAuth";
+import { homePathForRole } from "@/lib/app-routes";
 
 const MENU = [
   { id: "home", label: "Home", href: "/" },
@@ -38,8 +39,28 @@ export function Header() {
     loginWithEternl();
   };
 
-  const handleDashboardClick = () => {
-    window.location.href = '/dashboard';
+  const handleDashboardClick = async () => {
+    try {
+      const BACKEND_URL =
+        process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+      const res = await fetch(`${BACKEND_URL}/auth/me`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        window.location.href = "/";
+        return;
+      }
+      const data = (await res.json()) as {
+        user?: { role?: string | null; roleCode?: string | null } | null;
+      };
+      const role =
+        (typeof data?.user?.roleCode === "string" && data.user.roleCode) ||
+        (typeof data?.user?.role === "string" && data.user.role) ||
+        null;
+      window.location.href = homePathForRole(role);
+    } catch {
+      window.location.href = "/";
+    }
   };
 
   const activeId =
@@ -49,7 +70,9 @@ export function Header() {
       ? "create"
       : pathname.startsWith("/scan")
       ? "scan"
-      : pathname.startsWith("/dashboard")
+      : pathname.startsWith("/agent") ||
+          pathname.startsWith("/transit") ||
+          pathname.startsWith("/enterprise")
       ? "dashboard"
       : null;
 
@@ -119,7 +142,9 @@ export function Header() {
             >
               <span
                 className={`${
-                  pathname.startsWith("/dashboard")
+                  pathname.startsWith("/agent") ||
+                  pathname.startsWith("/transit") ||
+                  pathname.startsWith("/enterprise")
                     ? "underline underline-offset-4 text-red-400"
                     : "text-gray-800"
                 } hover:underline hover:underline-offset-4 ${isLoading ? "opacity-50" : ""}`}
@@ -193,11 +218,23 @@ export function Header() {
                   setMobileMenuOpen(false);
                 }}
                 className={`flex items-center justify-between w-full px-4 py-3 text-left rounded-lg transition-colors text-gray-800 hover:bg-gray-100 ${
-                  pathname.startsWith("/dashboard") ? "bg-gray-100" : ""
+                  pathname.startsWith("/agent") ||
+                  pathname.startsWith("/transit") ||
+                  pathname.startsWith("/enterprise")
+                    ? "bg-gray-100"
+                    : ""
                 } ${isLoading ? "opacity-50" : ""}`}
                 disabled={isLoading}
               >
-                <span className={`font-medium ${pathname.startsWith("/dashboard") ? "text-red-400 underline underline-offset-4" : ""}`}>
+                <span
+                  className={`font-medium ${
+                    pathname.startsWith("/agent") ||
+                    pathname.startsWith("/transit") ||
+                    pathname.startsWith("/enterprise")
+                      ? "text-red-400 underline underline-offset-4"
+                      : ""
+                  }`}
+                >
                   {isLoading ? '...' : (isAuthenticated ? 'Dashboard' : 'Login')}
                 </span>
                 <span className="material-icons text-lg text-gray-500">

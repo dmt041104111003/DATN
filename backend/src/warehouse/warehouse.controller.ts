@@ -12,7 +12,7 @@ export class WarehouseController {
       req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
     if (!walletAddress) {
       throw new HttpException(
-        'Unable to determine wallet address from token',
+        'Unable to determine account identity from session.',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -31,7 +31,7 @@ export class WarehouseController {
     body: {
       code: string;
       name: string;
-      maxAssets?: number | null;
+      maxProducts?: number | null;
     },
   ) {
     return this.warehouseService.create(body, this.getWalletAddress(req));
@@ -45,7 +45,7 @@ export class WarehouseController {
     body: {
       name?: string;
       isActive?: boolean;
-      maxAssets?: number | null;
+      maxProducts?: number | null;
     },
   ) {
     return this.warehouseService.update(id, this.getWalletAddress(req), body);
@@ -56,28 +56,27 @@ export class WarehouseController {
     return this.warehouseService.remove(id, this.getWalletAddress(req));
   }
 
-  @Get(':id/assets')
-  async getAssets(@Req() req: any, @Param('id') id: string) {
-    return this.warehouseService.getAssets(id, this.getWalletAddress(req));
+  @Get(':id/products')
+  async getProducts(@Req() req: any, @Param('id') id: string) {
+    return this.warehouseService.getProducts(id, this.getWalletAddress(req));
   }
 
-  @Post(':id/burn-token222')
-  async burnToken222(
+  @Post(':id/finalize-outbound-handoff')
+  async finalizeOutboundHandoff(
     @Req() req: any,
     @Param('id') id: string,
-    @Body() body: { unit?: string },
+    @Body() body: { inventoryKey?: string },
   ) {
     const roleCode = (req.user?.role ?? req.user?.roleCode ?? '').toString();
-    const unit = (body?.unit || '').trim();
-    if (!unit) {
-      throw new HttpException('unit is required', HttpStatus.BAD_REQUEST);
+    const inventoryKey = (body?.inventoryKey || '').trim();
+    if (!inventoryKey) {
+      throw new HttpException('inventoryKey is required', HttpStatus.BAD_REQUEST);
     }
-    return this.warehouseService.buildBurnToken222InWarehouse({
+    return this.warehouseService.finalizeOutboundHandoffInWarehouse({
       warehouseId: id,
       walletAddress: this.getWalletAddress(req),
       roleCode,
-      unit,
+      unit: inventoryKey,
     });
   }
 }
-

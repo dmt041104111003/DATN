@@ -1,7 +1,7 @@
-import { mint } from "@/contract/scripts";
+// import { mint } from "@/contract/scripts";
 
-async function main() {
-  await mint();
-}
+// async function main() {
+//   await mint();
+// }
 
-void main();
+// void main();

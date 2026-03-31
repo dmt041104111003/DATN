@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,163 +7,234 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Wallet {
+model CustodianAccount {
+  id        String    @id @default(cuid())
+  address   String    @unique
+  lastLogin DateTime?
+  roleCode  String?
+  role      Role?     @relation(fields: [roleCode], references: [code], onDelete: Restrict)
+  displayName String?
+  location  String?
+  isActive  Boolean   @default(true)
+  containers Container[]
+  growingAreas GrowingArea[]
+  plans     Plan[]
+  media     Media[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([roleCode])
+}
+
+model WalletNonce {
   id        String   @id @default(cuid())
-  address   String   @unique
-  lastLogin DateTime
-  profiles  Profile[]
+  address   String
+  nonce     String
+  expiresAt DateTime
+  usedAt    DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("wallets")
+  @@unique([address])
+  @@index([address])
+  @@index([expiresAt])
+  @@index([usedAt])
 }
 
-model Profile {
-  id          String   @id @default(cuid())
-  wallet      Wallet   @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
-  walletAddress String
-  roleCode    String
-  displayName String
-  location    String?
-  avatarUrl   String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Role {
+  code      String   @id
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([walletAddress, roleCode])
-  @@map("profiles")
+  accounts  CustodianAccount[]
 }
 
-model Asset {
-  id                 String   @id @default(cuid())
-  policyId           String
-  assetName          String
-  unit               String   @unique
-  txHash             String
-  owners             String
-  ownerWalletAddress String
-  warehouse          Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
-  warehouseId        String?
-  name               String
-  description        String
-  brand              String?
-  model              String?
-  material           String?
-  battery            String?
-  image              String?
-  mediaType          String?
-  roadmap            String?
-  location           String?
-  quantity           String   @default("")
-  quantityUnit       String   @default("")
-  notes              String?
-  status             AssetStatus @default(ACTIVE)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model Container {
+  id                          String        @id @default(cuid())
+  traceSchemeRef              String
+  lotReference                String
+  inventoryKey                String        @unique
+  confirmationRef             String
+  custodyRoster               String
+  registeringCustodianAddress String
+  registeringCustodian        CustodianAccount? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  planInventoryKey            String?
+  plan                        Plan?         @relation(fields: [planInventoryKey], references: [inventoryKey], onDelete: SetNull)
+  warehouse                   Warehouse?    @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  warehouseId                 String?
+  tradeTitle                  String
+  lotStory                    String
+  roadmap                     String?
+  location                    String?
+  containerType               String?
+  maxWeightValue              String?
+  maxWeightUnit               String?
+  maxVolumeValue              String?
+  maxVolumeUnit               String?
+  status                      ContainerStatus @default(INITIAL)
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
 
-  @@index([ownerWalletAddress])
-  @@map("assets")
+  @@index([registeringCustodianAddress])
+  @@index([planInventoryKey])
+
+  recordOperations RecordOperation[] @relation("ContainerRecordOperations")
 }
 
-enum AssetStatus {
-  ACTIVE
+enum ContainerStatus {
+  INITIAL
+  UPDATED
+  OUTBOUND_DISPATCH
+  INBOUND_CHECKIN
   CONSUMED
 }
 
 model Warehouse {
-  id                 String   @id @default(cuid())
-  code               String
-  name               String
-  ownerWalletAddress String
-  isActive           Boolean  @default(true)
-  maxAssets          Int?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  code                 String
+  name                 String
+  siteCustodianAddress String
+  isActive             Boolean  @default(true)
+  maxProducts          Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  assets    Asset[]
+  containers Container[]
 
-  @@unique([ownerWalletAddress, code])
-  @@index([ownerWalletAddress])
-  @@map("warehouses")
+  @@unique([siteCustodianAddress, code])
+  @@index([siteCustodianAddress])
 }
 
-enum OrderStatus {
-  PENDING
-  SHIPPED
-  RECEIVED
-  CANCELLED
+model GrowingArea {
+  id                          String   @id @default(cuid())
+  traceSchemeRef              String
+  inventoryKey                String   @unique
+  custodyRoster               String
+  registeringCustodianAddress String
+  registeringCustodian        CustodianAccount? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  name                        String
+  location                    String
+  areaSize                    String?
+  soilType                    String?
+  createdAt                   DateTime @default(now())
+
+  plans                       Plan[]
+
+  @@index([registeringCustodianAddress])
+
+  recordOperations RecordOperation[] @relation("GrowingAreaRecordOperations")
 }
 
-model Order {
-  id                   String      @id @default(cuid())
-  assetUnit             String
-  policyId              String
-  assetName             String
-  senderWalletAddress   String
-  receiverWalletAddress String
-  txHash                String?
-  status                OrderStatus @default(PENDING)
-  receiverWarehouseId   String?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+model Plan {
+  id                 String     @id @default(cuid())
+  traceSchemeRef      String
+  inventoryKey        String     @unique
+  growingAreaInventoryKey String
+  growingArea        GrowingArea @relation(fields: [growingAreaInventoryKey], references: [inventoryKey], onDelete: Restrict)
+  growingAreaSnapshot Json
+  containers         Container[]
+  nurseryBatch        String
+  plantingBatch       String
+  cropType            String
+  nurseryArea         String
+  plantingArea        String
+  seedQuantityValue   String
+  seedQuantityUnit    String
+  plantQuantityValue  String
+  plantQuantityUnit   String
 
-  @@index([senderWalletAddress])
-  @@index([receiverWalletAddress])
-  @@index([assetUnit])
-  @@map("orders")
+  createdBy           String
+  creator             CustodianAccount? @relation(fields: [createdBy], references: [address], onDelete: Restrict)
+  plannedSeedingDate  DateTime
+  plannedPlantingDate DateTime
+
+  plannedHarvestDate         DateTime?
+  expectedHarvestYield       String?
+  plannedProcessingDate      DateTime?
+  expectedProcessingYield    String?
+  plannedPackagingDate       DateTime?
+  expectedPackagingQuantity  String?
+  expiryDate                 DateTime?
+  packagingSpec              String?
+
+  stage              PlanStage @default(PLANNED)
+  harvestedAt         DateTime?
+  packagedAt          DateTime?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([createdBy])
+  @@index([growingAreaInventoryKey])
+
+  recordOperations RecordOperation[] @relation("PlanRecordOperations")
 }
 
-model AssetImage {
-  id        String   @id @default(cuid())
-  ownerWalletAddress String
-  name      String
-  mimeType  String
-  ipfsHash  String
-  url       String
-  createdAt DateTime @default(now())
-
-  @@index([ownerWalletAddress])
-  @@map("asset_images")
+enum PlanStage {
+  PLANNED
+  HARVESTED
+  PACKAGED
 }
 
-model Producer {
-  id                 String   @id @default(cuid())
-  ownerWalletAddress String
-  name               String
-  code               String?
-  location           String?
-  notes              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model RecordOperation {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityKey   String
+  opType      String
+  txHash      String
+  verified    Boolean  @default(false)
+  verifiedAt  DateTime?
+  payload     Json?
+  attempts    Int      @default(0)
+  lastCheckedAt DateTime?
+  lastError   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@index([ownerWalletAddress])
-  @@map("producers")
+  // Optional FKs for clean ERD + enforced integrity
+  containerInventoryKey String?
+  container             Container? @relation("ContainerRecordOperations", fields: [containerInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  planInventoryKey    String?
+  plan                Plan?    @relation("PlanRecordOperations", fields: [planInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  growingAreaInventoryKey String?
+  growingArea         GrowingArea? @relation("GrowingAreaRecordOperations", fields: [growingAreaInventoryKey], references: [inventoryKey], onDelete: Cascade)
+
+  @@index([entityType, entityKey])
+  @@index([verified, createdAt])
+  @@index([entityType, entityKey, createdAt])
+  @@index([containerInventoryKey])
+  @@index([planInventoryKey])
+  @@index([growingAreaInventoryKey])
 }
 
-model ProductType {
-  id                 String   @id @default(cuid())
-  ownerWalletAddress String
-  name               String
-  code               String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model Media {
+  id              String   @id @default(cuid())
+  ipfsUri         String   @unique
+  ipfsHash        String?
+  url             String?
+  name            String?
+  mimeType        String?
+  sizeBytes       Int?
+  createdByAddress String?
+  createdBy       CustodianAccount? @relation(fields: [createdByAddress], references: [address], onDelete: SetNull)
+  createdAt       DateTime @default(now())
 
-  @@index([ownerWalletAddress])
-  @@map("product_types")
+  links           EntityMedia[]
 }
 
-model Certification {
-  id                 String   @id @default(cuid())
-  ownerWalletAddress String
-  name               String
-  issuer             String?
-  certCode           String?
-  validFrom          DateTime?
-  validTo            DateTime?
-  notes              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model EntityMedia {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityKey   String
+  role        String
 
-  @@index([ownerWalletAddress])
-  @@map("certifications")
+  mediaId     String
+  media       Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityKey])
+  @@index([role])
+  @@unique([entityType, entityKey, role])
 }

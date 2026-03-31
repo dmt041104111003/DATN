@@ -19,25 +19,24 @@ export function AboutSection() {
 
           <div className="space-y-4">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 md:text-white">
-              About Traceability
+              Agri-food traceability
             </h2>
             <p className="text-sm md:text-base text-gray-700 md:text-gray-100 leading-relaxed text-justify">
-              Traceability gives your team a clear, verifiable story for every
-              product—from production to warehouse, shipping, and final receipt.
-              With QR scanning, anyone can quickly check what the item is, where
-              it has been, and which party is responsible at each step.
+              End-to-end traceability gives every stakeholder a verifiable story for
+              each lot—from farm or packing house through logistics hubs to the final
+              buyer. QR scanning surfaces what the product is, where it moved, and
+              who was responsible at each leg of the journey.
             </p>
             <p className="text-sm md:text-base text-gray-700 md:text-gray-100 leading-relaxed text-justify">
-              In operations, this reduces manual reconciliation and prevents
-              missing handoffs. Warehouses can enforce capacity limits, orders
-              can be confirmed by wallet signing, and every status change is
-              reflected consistently across the dashboard.
+              For operations teams, that cuts manual reconciliation and handoff errors.
+              Warehouses and transit actors align on capacity and dispatch; updates carry
+              cryptographically attested approvals so the provenance trail matches
+              inventory in the field.
             </p>
             <p className="text-sm md:text-base text-gray-700 leading-relaxed text-justify">
-              On the customer side, the same QR provides a trusted view into
-              origin and movement history. Combined with immutable on-chain
-              records, your supply chain data stays tamper-resistant while
-              remaining easy to access and audit.
+              For consumers and auditors, the same QR opens a trusted view of origin,
+              quality claims and movement history. Shared ledger records keep the
+              agri supply chain tamper-evident while staying practical to review.
             </p>
           </div>
         </div>
@@ -45,4 +44,3 @@ export function AboutSection() {
     </section>
   );
 }
-

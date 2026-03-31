@@ -9,7 +9,8 @@ import { Header } from "@/components/Header";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-const CIP68_REF_PREFIX = "000643b0";
+/** Internal scan-key segment; not shown in the UI. */
+const PASSPORT_REF_HEX = "000643b0";
 
 
 interface FormState {
@@ -129,16 +130,16 @@ export default function Create() {
     isFetching,
     error: queryError,
   } = useQuery({
-    queryKey: ["contract-info", trimmedIssuers],
+    queryKey: ["trace-scheme-info", trimmedIssuers],
     queryFn: async () => {
-      const ownersParam = trimmedIssuers.join(",");
+      const partiesParam = trimmedIssuers.join(",");
       const res = await fetch(
-        `${BACKEND_URL}/contract/info?owners=${encodeURIComponent(ownersParam)}`,
+        `${BACKEND_URL}/contract/info?custodyParties=${encodeURIComponent(partiesParam)}`,
         { cache: "no-store" }
       );
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || err.message || "Failed to fetch contract info");
+        throw new Error(err.error || err.message || "Could not resolve trace scheme for these custody parties.");
       }
       return res.json();
     },
@@ -148,20 +149,20 @@ export default function Create() {
   });
 
   useEffect(() => {
-    if (!contractInfo?.policyId || !submitted || !trimmedProductName) return;
+    if (!contractInfo?.schemeReference || !submitted || !trimmedProductName) return;
 
-    const policyId = contractInfo.policyId as string;
+    const schemeRef = contractInfo.schemeReference as string;
     const hexName = Array.from(new TextEncoder().encode(trimmedProductName))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-    const unit = policyId + CIP68_REF_PREFIX + hexName;
-    const productUrl = `${window.location.origin}/product/${encodeURIComponent(unit)}`;
+    const scanKey = schemeRef + PASSPORT_REF_HEX + hexName;
+    const productUrl = `${window.location.origin}/product/${encodeURIComponent(scanKey)}`;
 
     generateQRCode(productUrl).then((qrUrl) => {
       setQRResult({
         qrCodeUrl: qrUrl,
         productUrl,
-        productId: unit,
+        productId: scanKey,
         error: qrUrl ? null : "Failed to generate QR code",
       });
     });
@@ -209,7 +210,7 @@ export default function Create() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Issuer(s) <span className="text-red-500">*</span>
+                  Joint custody roster <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -218,7 +219,7 @@ export default function Create() {
                     value={issuerInput}
                     onChange={(e) => setIssuerInput(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-4 focus:ring-[#c41e3a]/10 focus:border-[#c41e3a] transition-colors"
-                    placeholder="Example: addr_test1q..., addr1q..."
+                    placeholder="Add each custodian identifier in agreed order"
                   />
                   <button
                     type="button"
@@ -229,7 +230,7 @@ export default function Create() {
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
-                  Add each issuer address separately.
+                  List everyone who shares custody of this trace scheme, in the order your program requires.
                 </p>
                 {trimmedIssuers.length > 0 && (
                   <div className="mt-3 space-y-2 items-start">
@@ -280,7 +281,7 @@ export default function Create() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Product Name <span className="text-red-500">*</span>
+                  Registered lot reference <span className="text-red-500">*</span>
                 </label>
                 <input
                   name="productName"
@@ -289,7 +290,7 @@ export default function Create() {
                   value={form.productName}
                   onChange={handleChange}
                   className="w-full px-4 py-3.5 bg-white border border-gray-200 rounded-md focus:ring-4 focus:ring-[#c41e3a]/10 focus:border-[#c41e3a] transition-all"
-                  placeholder="Example: Huawei Watch GT 4 Pro"
+                  placeholder="Example: LOT-ORG-2026-001"
                 />
               </div>
 
@@ -350,7 +351,7 @@ export default function Create() {
                       className="inline-flex items-center justify-center gap-3 px-6 py-3 bg-[#c41e3a] text-white font-semibold rounded-md hover:bg-red-700 transition-colors"
                     >
                       <ExternalLink className="w-5 h-5" />
-                      View Product Page
+                      View traceability page
                     </a>
                   )}
                 </div>
@@ -359,15 +360,15 @@ export default function Create() {
               <div className="text-center max-w-md mx-auto">
                 <QrCode className="w-20 h-20 mx-auto mb-5 text-[#c41e3a]" />
                 <p className="text-base font-medium text-gray-700">
-                  Enter issuer address(es) and product name, then click Generate
+                  Enter the joint custody roster and registered lot reference, then generate the code.
                 </p>
                 <p className="text-gray-500 text-sm mt-3">
-                  The QR code will link directly to the product page
+                  The QR code opens the public traceability page for that lot.
                 </p>
 
                 {queryError && (
                   <p className="mt-5 text-red-700 font-medium text-sm">
-                    Failed to fetch product data - please check the issuer addresses and product name, and ensure the product exists on the blockchain.
+                    Could not resolve the trace scheme — check custody identifiers and lot reference, then try again.
                   </p>
                 )}
               </div>

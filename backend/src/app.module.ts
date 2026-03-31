@@ -8,38 +8,75 @@ import { ProfileService } from './profile/profile.service';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { AssetController } from './asset/asset.controller';
-import { AssetService } from './asset/asset.service';
-import { ContractController } from './contract/contract.controller';
-import { ContractService } from './contract/contract.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ProductController } from './product/product.controller';
+import { ProductService } from './product/product.service';
+import { ProductContractController } from './product/product.contract.controller';
+import { ProductContractService } from './product/product.contract.service';
+import { ProductRetireController } from './product/product.retire.controller';
 import { TraceController } from './trace/trace.controller';
 import { TraceService } from './trace/trace.service';
 import { WarehouseController } from './warehouse/warehouse.controller';
 import { WarehouseService } from './warehouse/warehouse.service';
-import { OrderController } from './order/order.controller';
-import { OrderService } from './order/order.service';
-import { AssetImageController } from './asset-image/asset-image.controller';
-import { AssetImageService } from './asset-image/asset-image.service';
-import { ProducerController } from './producer/producer.controller';
-import { ProducerService } from './producer/producer.service';
-import { ProductTypeController } from './product-type/product-type.controller';
-import { ProductTypeService } from './product-type/product-type.service';
-import { CertificationController } from './certification/certification.controller';
-import { CertificationService } from './certification/certification.service';
+import { MediaController } from './media/media.controller';
 import { HealthController } from './health/health.controller';
+import { GrowingAreaController } from './growing-area/growing-area.controller';
+import { GrowingAreaService } from './growing-area/growing-area.service';
+import { GrowingAreaContractController } from './growing-area/growing-area.contract.controller';
+import { GrowingAreaContractService } from './growing-area/growing-area.contract.service';
+import { GrowingAreaRetireController } from './growing-area/growing-area.retire.controller';
+import { RecordOperationController } from './record-operation/record-operation.controller';
+import { RecordOperationVerifierService } from './record-operation/record-operation.verifier.service';
+import { PlanController } from './plan/plan.controller';
+import { PlanService } from './plan/plan.service';
+import { PlanContractController } from './plan/plan.contract.controller';
+import { PlanContractService } from './plan/plan.contract.service';
+import { PlanRetireController } from './plan/plan.retire.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  controllers: [AuthController, ProfileController, AssetController, ContractController, TraceController, WarehouseController, OrderController, AssetImageController, ProducerController, ProductTypeController, CertificationController, HealthController],
-  providers: [AuthService, PrismaService, ProfileService, JwtStrategy, AssetService, ContractService, TraceService, WarehouseService, OrderService, AssetImageService, ProducerService, ProductTypeService, CertificationService],
+  controllers: [
+    AuthController,
+    ProfileController,
+    ProductController,
+    ProductContractController,
+    TraceController,
+    WarehouseController,
+    MediaController,
+    ProductRetireController,
+    RecordOperationController,
+    GrowingAreaController,
+    GrowingAreaContractController,
+    GrowingAreaRetireController,
+    PlanController,
+    PlanContractController,
+    PlanRetireController,
+    HealthController,
+  ],
+  providers: [
+    AuthService,
+    PrismaService,
+    ProfileService,
+    JwtStrategy,
+    ProductService,
+    ProductContractService,
+    TraceService,
+    WarehouseService,
+    GrowingAreaService,
+    GrowingAreaContractService,
+    RecordOperationVerifierService,
+    PlanService,
+    PlanContractService,
+  ],
 })
 export class AppModule {}

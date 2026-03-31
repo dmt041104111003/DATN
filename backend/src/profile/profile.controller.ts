@@ -65,7 +65,10 @@ export class ProfileController {
   async getPublicProfile(@Req() req: any) {
     const walletAddress = (req?.params?.walletAddress || '').trim();
     if (!walletAddress) {
-      throw new HttpException('walletAddress is required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Public profile lookup requires an account reference.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     return this.profileService.getPublicProfile(walletAddress);
   }

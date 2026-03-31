@@ -7,7 +7,10 @@ import { Footer } from "@/components/Footer";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isDashboard = pathname?.startsWith("/dashboard");
+  const isDashboard =
+    pathname?.startsWith("/agent") ||
+    pathname?.startsWith("/transit") ||
+    pathname?.startsWith("/enterprise");
   const isProduct = pathname?.startsWith("/product");
   const isRoleSetup = pathname === "/role-setup";
   const isScan = pathname === "/scan";

@@ -3,8 +3,8 @@
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
-export const getProductTrace = async ({ unit }: { unit: string }) => {
-  const encoded = encodeURIComponent(unit);
+export const getProductTrace = async ({ inventoryKey }: { inventoryKey: string }) => {
+  const encoded = encodeURIComponent(inventoryKey);
   const res = await fetch(`${BACKEND_URL}/trace/${encoded}`, {
     method: "GET",
     cache: "no-store",

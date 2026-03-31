@@ -12,7 +12,6 @@ export interface StakeAddressInput {
 
 @Injectable()
 export class AuthService {
-  private readonly nonceStore = new Map<string, { nonce: string; expMs: number }>();
   private readonly blockfrost: BlockFrostAPI;
 
   constructor(
@@ -30,7 +29,7 @@ export class AuthService {
     }
   }
 
-  generateNonce(stakeAddress: string): string {
+  async generateNonce(stakeAddress: string): Promise<string> {
     const network = this.config.get<string>('APP_NETWORK') === 'mainnet' ? 'mainnet' : 'preprod';
     const input = this.normalizeStakeAddress(stakeAddress, network);
 
@@ -41,9 +40,20 @@ export class AuthService {
     }
 
     const nonce = randomBytes(32).toString('hex');
-    this.nonceStore.set(input, {
-      nonce,
-      expMs: Date.now() + 5 * 60 * 1000,
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await (this.prisma as any).walletNonce.upsert({
+      where: { address: input },
+      create: {
+        address: input,
+        nonce,
+        expiresAt,
+        usedAt: null,
+      } as any,
+      update: {
+        nonce,
+        expiresAt,
+        usedAt: null,
+      } as any,
     });
 
     return nonce;
@@ -64,12 +74,19 @@ export class AuthService {
       );
     }
 
-    const storedNonce = this.nonceStore.get(input);
-    if (!storedNonce || storedNonce.nonce !== data.nonce || storedNonce.expMs < Date.now()) {
+    const stored = await (this.prisma as any).walletNonce.findUnique({
+      where: { address: input },
+      select: { nonce: true, expiresAt: true, usedAt: true },
+    });
+    const expMs = stored?.expiresAt ? new Date(stored.expiresAt).getTime() : 0;
+    if (!stored || stored.usedAt || String(stored.nonce || '') !== String(data.nonce || '') || expMs < Date.now()) {
       throw new UnauthorizedException('Invalid or expired nonce.');
     }
 
-    this.nonceStore.delete(input);
+    await (this.prisma as any).walletNonce.update({
+      where: { address: input },
+      data: { usedAt: new Date() } as any,
+    });
 
     if (!data.signature || !data.key) {
       throw new UnauthorizedException('Missing signature or public key.');
@@ -82,17 +99,27 @@ export class AuthService {
       );
     }
 
-    await this.prisma.wallet.upsert({
+    await this.prisma.custodianAccount.upsert({
       where: { address: paymentAddr },
       update: { lastLogin: new Date() },
-      create: { 
-        address: paymentAddr, 
-        lastLogin: new Date() 
+      create: {
+        address: paymentAddr,
+        lastLogin: new Date(),
       },
     });
 
-    const profile = await this.prisma.profile.findFirst({
-      where: { walletAddress: paymentAddr },
+    const account = await (this.prisma as any).custodianAccount.findUnique({
+      where: { address: paymentAddr },
+      select: {
+        id: true,
+        address: true,
+        roleCode: true,
+        displayName: true,
+        location: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      } as any,
     });
 
     const secret = this.config.get<string>('JWT_SECRET');
@@ -100,7 +127,11 @@ export class AuthService {
       throw new UnauthorizedException('JWT secret not configured');
     }
 
-    if (!profile) {
+    if (!account?.roleCode) {
+      const roles = await (this.prisma as any).role.findMany({
+        orderBy: { code: 'asc' },
+        select: { code: true, name: true },
+      });
       const setupPayload = {
         sub: paymentAddr,
         stakeAddress: input,
@@ -111,11 +142,11 @@ export class AuthService {
 
       return {
         needProfile: true,
-        roles: [
-          { id: 1, code: "ENTERPRISE" },
-          { id: 3, code: "AGENT" },
-          { id: 4, code: "TRANSIT" },
-        ],
+        roles: (Array.isArray(roles) ? roles : []).map((r, idx) => ({
+          id: idx + 1,
+          code: r.code,
+          name: r.name ?? null,
+        })),
         token: setupToken,
       };
     }
@@ -124,15 +155,14 @@ export class AuthService {
       sub: paymentAddr,
       stakeAddress: input,
       paymentAddress: paymentAddr,
-      profileId: profile.id,
-      role: profile.roleCode,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-      walletAddress: profile.walletAddress,
-      location: profile.location,
-      isActive: profile.isActive,
-      createdAt: profile.createdAt,
-      updatedAt: profile.updatedAt,
+      profileId: account.id,
+      role: account.roleCode,
+      displayName: account.displayName,
+      walletAddress: account.address,
+      location: account.location,
+      isActive: account.isActive,
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt,
     };
 
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
@@ -140,15 +170,14 @@ export class AuthService {
     return {
       token,
       profile: {
-        id: profile.id,
-        walletAddress: profile.walletAddress,
-        roleCode: profile.roleCode,
-        displayName: profile.displayName,
-        avatarUrl: profile.avatarUrl,
-        location: profile.location,
-        isActive: profile.isActive,
-        createdAt: profile.createdAt,
-        updatedAt: profile.updatedAt,
+        id: account.id,
+        walletAddress: account.address,
+        roleCode: account.roleCode,
+        displayName: account.displayName,
+        location: account.location,
+        isActive: account.isActive,
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
       },
     };
   }
