@@ -123,12 +123,6 @@ export function useWalletAuth() {
 
       const verifyData: VerifyResponse = await verifyResponse.json();
 
-      try {
-        window.dispatchEvent(new Event("auth-changed"));
-      } catch {
-        // ignore
-      }
-
       if (verifyData.needProfile === true) {
         sessionStorage.setItem('profile_setup', JSON.stringify({
           stakeAddress: walletAddress,

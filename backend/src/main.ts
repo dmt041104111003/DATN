@@ -1,13 +1,10 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  // Render / reverse proxies need this for secure cookies.
-  (app as any).set('trust proxy', 1);
+  const app = await NestFactory.create(AppModule);
 
   // Enable CORS
   app.enableCors({

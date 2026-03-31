@@ -33,12 +33,6 @@ export function Header() {
       }
     };
     checkAuth();
-
-    const onAuthChanged = () => void checkAuth();
-    window.addEventListener("auth-changed", onAuthChanged);
-    return () => {
-      window.removeEventListener("auth-changed", onAuthChanged);
-    };
   }, []);
 
   const handleLogin = () => {
@@ -47,8 +41,23 @@ export function Header() {
 
   const handleDashboardClick = async () => {
     try {
-      // Force middleware to route by cookie, avoids flaky client-side /auth/me timing.
-      window.location.href = "/dashboard";
+      const BACKEND_URL =
+        process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+      const res = await fetch(`${BACKEND_URL}/auth/me`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        window.location.href = "/";
+        return;
+      }
+      const data = (await res.json()) as {
+        user?: { role?: string | null; roleCode?: string | null } | null;
+      };
+      const role =
+        (typeof data?.user?.roleCode === "string" && data.user.roleCode) ||
+        (typeof data?.user?.role === "string" && data.user.role) ||
+        null;
+      window.location.href = homePathForRole(role);
     } catch {
       window.location.href = "/";
     }

@@ -19,19 +19,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   private setAuthCookie(res: Response, token: string) {
-    const frontend = String(process.env.FRONTEND_URL || '').trim();
-    const isProd = String(process.env.NODE_ENV || '').trim() === 'production';
+    const sameSite =
+      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
     const secure =
       (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
         ? true
-        : isProd;
-    const sameSiteEnv = String(process.env.COOKIE_SAMESITE || '').trim().toLowerCase();
-    const sameSite =
-      (sameSiteEnv === 'none' || sameSiteEnv === 'strict' || sameSiteEnv === 'lax'
-        ? (sameSiteEnv as 'lax' | 'strict' | 'none')
-        : undefined) ??
-      // Cross-site cookie (Vercel frontend -> Render backend) needs SameSite=None
-      (isProd && frontend.startsWith('https://') ? 'none' : ('lax' as const));
+        : process.env.NODE_ENV === 'production';
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure,
@@ -42,18 +35,12 @@ export class AuthController {
   }
 
   private clearAuthCookie(res: Response) {
-    const frontend = String(process.env.FRONTEND_URL || '').trim();
-    const isProd = String(process.env.NODE_ENV || '').trim() === 'production';
+    const sameSite =
+      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
     const secure =
       (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
         ? true
-        : isProd;
-    const sameSiteEnv = String(process.env.COOKIE_SAMESITE || '').trim().toLowerCase();
-    const sameSite =
-      (sameSiteEnv === 'none' || sameSiteEnv === 'strict' || sameSiteEnv === 'lax'
-        ? (sameSiteEnv as 'lax' | 'strict' | 'none')
-        : undefined) ??
-      (isProd && frontend.startsWith('https://') ? 'none' : ('lax' as const));
+        : process.env.NODE_ENV === 'production';
     res.cookie('auth_token', '', {
       httpOnly: true,
       secure,
