@@ -30,12 +30,6 @@ export function useWalletAuth() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const stringToHex = (str: string): string => {
-    return Array.from(str)
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-      .join("");
-  };
-
   const loginWithEternl = async () => {
     setIsLoading(true);
     setError(null);
@@ -87,7 +81,10 @@ export function useWalletAuth() {
 
       const { nonce } = await nonceResponse.json();
 
-      const payloadHex = stringToHex(nonce);
+      const payloadHex = String(nonce || "").trim();
+      if (!payloadHex) {
+        throw new Error("Server returned empty nonce.");
+      }
       
       const signer = api.signData || api.experimental?.signData;
       if (!signer) {

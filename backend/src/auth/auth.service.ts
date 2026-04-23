@@ -5,6 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
 import * as CSL from '@emurgo/cardano-serialization-lib-nodejs';
+import { checkSignature } from '@meshsdk/core';
 
 export interface StakeAddressInput {
   address?: string;
@@ -83,14 +84,19 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired nonce.');
     }
 
+    if (!data.signature || !data.key) {
+      throw new UnauthorizedException('Missing signature or public key.');
+    }
+
+    const signatureValid = this.verifyWalletSignature(String(stored.nonce || ''), data.signature, data.key);
+    if (!signatureValid) {
+      throw new UnauthorizedException('Invalid wallet signature.');
+    }
+
     await (this.prisma as any).walletNonce.update({
       where: { address: input },
       data: { usedAt: new Date() } as any,
     });
-
-    if (!data.signature || !data.key) {
-      throw new UnauthorizedException('Missing signature or public key.');
-    }
 
     const paymentAddr = await this.resolvePaymentAddress(input, network);
     if (!this.isPaymentAddress(paymentAddr)) {
@@ -235,5 +241,16 @@ export class AuthService {
     }
 
     return addr;
+  }
+
+  private verifyWalletSignature(nonce: string, signature: string, key: string): boolean {
+    try {
+      if (checkSignature(nonce, { signature, key } as any)) return true;
+      const nonceHex = Buffer.from(nonce, 'utf8').toString('hex');
+      if (checkSignature(nonceHex, { signature, key } as any)) return true;
+      return false;
+    } catch {
+      return false;
+    }
   }
 }

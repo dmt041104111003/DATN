@@ -3,12 +3,14 @@ import type { Response } from 'express';
 import { AuthService, StakeAddressInput } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
+type StakeAddressDtoInput = StakeAddressInput | string | null | undefined;
+
 export interface CreateNonceDto {
-  stakeAddress: StakeAddressInput;
+  stakeAddress: StakeAddressDtoInput;
 }
 
 export interface VerifySignatureDto {
-  stakeAddress: StakeAddressInput;
+  stakeAddress: StakeAddressDtoInput;
   nonce: string;
   signature: string;
   key: string;
@@ -53,7 +55,7 @@ export class AuthController {
   @Post('nonce')
   async createNonce(@Body() body: CreateNonceDto) {
     try {
-      const addr = this.normalizeAddress(body.stakeAddress as StakeAddressInput);
+      const addr = this.normalizeAddress(body.stakeAddress);
       
       if (!addr) {
         throw new HttpException('Missing stakeAddress', HttpStatus.BAD_REQUEST);
@@ -78,7 +80,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     try {
-      const addr = this.normalizeAddress(body.stakeAddress as StakeAddressInput);
+      const addr = this.normalizeAddress(body.stakeAddress);
       
       if (!addr || !body.nonce || !body.signature || !body.key) {
         throw new HttpException('Missing authentication parameters', HttpStatus.BAD_REQUEST);
@@ -134,12 +136,14 @@ export class AuthController {
   }
 
   // Helper function to normalize address input
-  private normalizeAddress(input: StakeAddressInput): string | null {
+  private normalizeAddress(input: StakeAddressDtoInput): string | null {
     if (typeof input === 'string') {
-      return input;
+      const trimmed = input.trim();
+      return trimmed || null;
     }
     if (input && typeof input === 'object' && input.address) {
-      return input.address;
+      const trimmed = String(input.address).trim();
+      return trimmed || null;
     }
     return null;
   }
