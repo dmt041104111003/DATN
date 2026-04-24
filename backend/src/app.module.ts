@@ -32,6 +32,10 @@ import { PlanService } from './plan/plan.service';
 import { PlanContractController } from './plan/plan.contract.controller';
 import { PlanContractService } from './plan/plan.contract.service';
 import { PlanRetireController } from './plan/plan.retire.controller';
+import { ProductionController } from './production/production.controller';
+import { ProductionService } from './production/production.service';
+import { ProductionContractController } from './production/production.contract.controller';
+import { ProductionContractService } from './production/production.contract.service';
 
 @Module({
   imports: [
@@ -61,6 +65,8 @@ import { PlanRetireController } from './plan/plan.retire.controller';
     PlanController,
     PlanContractController,
     PlanRetireController,
+    ProductionController,
+    ProductionContractController,
     HealthController,
   ],
   providers: [
@@ -77,6 +83,8 @@ import { PlanRetireController } from './plan/plan.retire.controller';
     RecordOperationVerifierService,
     PlanService,
     PlanContractService,
+    ProductionService,
+    ProductionContractService,
   ],
 })
 export class AppModule {}

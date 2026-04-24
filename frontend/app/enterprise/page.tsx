@@ -1,5 +1,5 @@
-import { EnterpriseHomePage } from "@/app/enterprise/pages/Home";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <EnterpriseHomePage />;
+  redirect("/enterprise/admin");
 }

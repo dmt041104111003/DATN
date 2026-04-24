@@ -116,7 +116,7 @@ export function middleware(req: NextRequest) {
     );
   }
 
-  // Legacy enterprise URLs → /enterprise/pages/*
+  // Legacy enterprise URLs → /enterprise/admin/*
   if (
     pathname === "/enterprise/order" ||
     pathname.startsWith("/enterprise/order/") ||
@@ -128,7 +128,7 @@ export function middleware(req: NextRequest) {
   if (pathname.startsWith("/enterprise/profile")) {
     return NextResponse.redirect(
       new URL(
-        pathname.replace(/^\/enterprise\/profile/, "/enterprise/pages/profile"),
+        pathname.replace(/^\/enterprise\/profile/, "/enterprise/admin/profile"),
         req.url,
       ),
     );
@@ -139,10 +139,7 @@ export function middleware(req: NextRequest) {
   ) {
     return NextResponse.redirect(
       new URL(
-        pathname.replace(
-          /^\/enterprise\/warehouses/,
-          "/enterprise/pages/warehouses",
-        ),
+        pathname.replace(/^\/enterprise\/warehouses/, "/enterprise/admin/warehouses"),
         req.url,
       ),
     );
@@ -155,11 +152,29 @@ export function middleware(req: NextRequest) {
       new URL(
         pathname.replace(
           /^\/enterprise\/pages\/collections/,
-          "/enterprise/pages/warehouses",
+          "/enterprise/admin/warehouses",
         ),
         req.url,
       ),
     );
+  }
+  if (pathname === "/enterprise/pages/warehouses") {
+    return NextResponse.redirect(new URL("/enterprise/admin/warehouses", req.url));
+  }
+  if (pathname === "/enterprise/pages/profile") {
+    return NextResponse.redirect(new URL("/enterprise/admin/profile", req.url));
+  }
+  if (pathname === "/enterprise/pages/product-tools/products") {
+    return NextResponse.redirect(new URL("/enterprise/admin/products", req.url));
+  }
+  if (pathname === "/enterprise/pages/product-tools/areas") {
+    return NextResponse.redirect(new URL("/enterprise/admin/areas", req.url));
+  }
+  if (pathname === "/enterprise/pages/product-tools/plans") {
+    return NextResponse.redirect(new URL("/enterprise/admin/plans", req.url));
+  }
+  if (pathname === "/enterprise/pages/product-tools") {
+    return NextResponse.redirect(new URL("/enterprise/admin", req.url));
   }
 
   // Legacy asset-tools URLs → product-tools
@@ -172,8 +187,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(
       new URL(
         pathname
-          .replace(/^\/enterprise\/asset-tools/, "/enterprise/pages/product-tools")
-          .replace(/^\/enterprise\/pages\/asset-tools/, "/enterprise/pages/product-tools"),
+          .replace(/^\/enterprise\/asset-tools/, "/enterprise/admin")
+          .replace(/^\/enterprise\/pages\/asset-tools/, "/enterprise/admin"),
         req.url,
       ),
     );
@@ -206,10 +221,14 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(homePathForRole(role), req.url));
   }
 
-  // /enterprise/pages/product-tools — ENTERPRISE only
+  // /enterprise/admin resources — ENTERPRISE only
   const isEnterpriseProductTools =
-    pathname === "/enterprise/pages/product-tools" ||
-    pathname.startsWith("/enterprise/pages/product-tools/");
+    pathname === "/enterprise/admin/products" ||
+    pathname.startsWith("/enterprise/admin/products/") ||
+    pathname === "/enterprise/admin/areas" ||
+    pathname.startsWith("/enterprise/admin/areas/") ||
+    pathname === "/enterprise/admin/plans" ||
+    pathname.startsWith("/enterprise/admin/plans/");
   if (isEnterpriseProductTools) {
     if (!token) {
       return NextResponse.redirect(new URL("/", req.url));
@@ -240,42 +259,42 @@ export function middleware(req: NextRequest) {
     }
 
     const r = getRoleFromJwt(token);
-    // ENTERPRISE không dùng nhánh /agent — mirror sang /enterprise/pages/*
+    // ENTERPRISE không dùng nhánh /agent — mirror sang /enterprise/admin/*
     if (r === "ENTERPRISE" && isAgentWorkspace) {
       let target: string;
       if (pathname.startsWith("/agent/pages")) {
         target =
-          pathname.replace(/^\/agent\/pages/, "/enterprise/pages") ||
-          "/enterprise";
+          pathname.replace(/^\/agent\/pages/, "/enterprise/admin") ||
+          "/enterprise/admin";
       } else {
         const rest = pathname.slice("/agent".length) || "";
-        target = `/enterprise${rest}` || "/enterprise";
+        target = `/enterprise/admin${rest}` || "/enterprise/admin";
       }
       return NextResponse.redirect(new URL(target, req.url));
     }
-    // ENTERPRISE không dùng nhánh /transit — mirror sang /enterprise/pages/*
+    // ENTERPRISE không dùng nhánh /transit — mirror sang /enterprise/admin/*
     if (r === "ENTERPRISE" && isTransitWorkspace) {
       let target: string;
       if (pathname.startsWith("/transit/pages")) {
         target =
-          pathname.replace(/^\/transit\/pages/, "/enterprise/pages") ||
-          "/enterprise";
+          pathname.replace(/^\/transit\/pages/, "/enterprise/admin") ||
+          "/enterprise/admin";
       } else {
         const rest = pathname.slice("/transit".length) || "";
-        target = `/enterprise${rest}` || "/enterprise";
+        target = `/enterprise/admin${rest}` || "/enterprise/admin";
       }
       return NextResponse.redirect(new URL(target, req.url));
     }
     // AGENT không dùng nhánh /enterprise (trừ product-tools đã xử lý ở trên)
     if (r === "AGENT" && isEnterpriseWorkspace) {
       if (
-        pathname === "/enterprise/pages/profile" ||
-        pathname.startsWith("/enterprise/pages/profile/") ||
-        pathname === "/enterprise/pages/warehouses" ||
-        pathname.startsWith("/enterprise/pages/warehouses/")
+        pathname === "/enterprise/admin/profile" ||
+        pathname.startsWith("/enterprise/admin/profile/") ||
+        pathname === "/enterprise/admin/warehouses" ||
+        pathname.startsWith("/enterprise/admin/warehouses/")
       ) {
         const target =
-          pathname.replace(/^\/enterprise\/pages/, "/agent/pages") ||
+          pathname.replace(/^\/enterprise\/admin/, "/agent/pages") ||
           "/agent/pages";
         return NextResponse.redirect(new URL(target, req.url));
       }
@@ -310,13 +329,13 @@ export function middleware(req: NextRequest) {
     // TRANSIT không dùng nhánh /enterprise (giống AGENT)
     if (r === "TRANSIT" && isEnterpriseWorkspace) {
       if (
-        pathname === "/enterprise/pages/profile" ||
-        pathname.startsWith("/enterprise/pages/profile/") ||
-        pathname === "/enterprise/pages/warehouses" ||
-        pathname.startsWith("/enterprise/pages/warehouses/")
+        pathname === "/enterprise/admin/profile" ||
+        pathname.startsWith("/enterprise/admin/profile/") ||
+        pathname === "/enterprise/admin/warehouses" ||
+        pathname.startsWith("/enterprise/admin/warehouses/")
       ) {
         const target =
-          pathname.replace(/^\/enterprise\/pages/, "/transit/pages") ||
+          pathname.replace(/^\/enterprise\/admin/, "/transit/pages") ||
           "/transit/pages";
         return NextResponse.redirect(new URL(target, req.url));
       }

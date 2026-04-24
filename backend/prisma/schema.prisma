@@ -19,6 +19,7 @@ model CustodianAccount {
   containers Container[]
   growingAreas GrowingArea[]
   plans     Plan[]
+  productions Production[]
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -171,6 +172,44 @@ model Plan {
   recordOperations RecordOperation[] @relation("PlanRecordOperations")
 }
 
+model Production {
+  id                          String   @id @default(cuid())
+  traceSchemeRef              String
+  inventoryKey                String   @unique
+  code                        String   @unique
+  registeringCustodianAddress String
+  registeringCustodian        CustodianAccount? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+
+  facilityId                  String
+  provinceId                  String
+  districtId                  String
+  wardId                      String
+  farmingMethod               String
+  cropType                    String
+  varietyId                   String?
+  customVariety               String?
+  seedingDate                 DateTime
+  harvestDate                 DateTime?
+  expectedYieldKg             String?
+  actualYieldKg               String?
+  status                      ProductionStage @default(ACTIVE)
+
+  certifications              String?
+  customCertificationName     String?
+  note                        String?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  recordOperations RecordOperation[] @relation("ProductionRecordOperations")
+
+  @@index([registeringCustodianAddress])
+}
+
+enum ProductionStage {
+  ACTIVE
+  CLOSED
+}
+
 enum PlanStage {
   PLANNED
   HARVESTED
@@ -199,6 +238,8 @@ model RecordOperation {
   plan                Plan?    @relation("PlanRecordOperations", fields: [planInventoryKey], references: [inventoryKey], onDelete: Cascade)
   growingAreaInventoryKey String?
   growingArea         GrowingArea? @relation("GrowingAreaRecordOperations", fields: [growingAreaInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  productionInventoryKey String?
+  production         Production? @relation("ProductionRecordOperations", fields: [productionInventoryKey], references: [inventoryKey], onDelete: Cascade)
 
   @@index([entityType, entityKey])
   @@index([verified, createdAt])
@@ -206,6 +247,7 @@ model RecordOperation {
   @@index([containerInventoryKey])
   @@index([planInventoryKey])
   @@index([growingAreaInventoryKey])
+  @@index([productionInventoryKey])
 }
 
 model Media {
