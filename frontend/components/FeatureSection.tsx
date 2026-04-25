@@ -8,11 +8,11 @@ export function FeatureSection() {
       <div className="max-w-6xl mx-auto px-4 py-12 md:py-16">
         <div className="max-w-3xl mx-auto text-center space-y-3 md:space-y-4">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Features
+            Tính năng nổi bật
           </h2>
           <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-            Explore the key capabilities of the Traceability platform, from QR
-            verification to end‑to‑end supply chain visibility.
+            Khám phá các năng lực cốt lõi của nền tảng truy xuất nguồn gốc, từ
+            xác thực QR đến khả năng theo dõi toàn bộ chuỗi cung ứng đầu-cuối.
           </p>
         </div>
 
@@ -21,7 +21,7 @@ export function FeatureSection() {
             <div className="relative w-full h-64 md:h-96">
               <Image
                 src="/feature.png"
-                alt="Traceability features"
+                alt="Tính năng truy xuất nguồn gốc"
                 fill
                 className="object-contain"
                 priority

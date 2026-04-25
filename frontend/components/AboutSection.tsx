@@ -10,7 +10,7 @@ export function AboutSection() {
           <div className="relative w-full min-h-[380px] md:min-h-[520px]">
             <Image
               src="/b.png"
-              alt="About"
+              alt="Giới thiệu"
               fill
               className="object-contain"
               priority
@@ -19,24 +19,25 @@ export function AboutSection() {
 
           <div className="space-y-4">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 md:text-white">
-              Agri-food traceability
+              Truy xuất nguồn gốc nông sản thực phẩm
             </h2>
             <p className="text-sm md:text-base text-gray-700 md:text-gray-100 leading-relaxed text-justify">
-              End-to-end traceability gives every stakeholder a verifiable story for
-              each lot—from farm or packing house through logistics hubs to the final
-              buyer. QR scanning surfaces what the product is, where it moved, and
-              who was responsible at each leg of the journey.
+              Truy xuất nguồn gốc đầu-cuối giúp mọi bên liên quan kiểm chứng được
+              toàn bộ hành trình của từng lô hàng, từ nông trại hoặc cơ sở đóng gói,
+              qua các điểm logistics đến người mua cuối cùng. Quét QR cho biết sản
+              phẩm là gì, đã đi qua đâu và ai chịu trách nhiệm ở từng chặng.
             </p>
             <p className="text-sm md:text-base text-gray-700 md:text-gray-100 leading-relaxed text-justify">
-              For operations teams, that cuts manual reconciliation and handoff errors.
-              Warehouses and transit actors align on capacity and dispatch; updates carry
-              cryptographically attested approvals so the provenance trail matches
-              inventory in the field.
+              Với đội vận hành, cách làm này giảm đối soát thủ công và lỗi bàn giao.
+              Kho và đơn vị trung chuyển đồng bộ công suất, lịch điều phối; mỗi cập
+              nhật đều có xác thực mật mã để chuỗi truy xuất luôn khớp với tồn kho
+              thực tế tại hiện trường.
             </p>
             <p className="text-sm md:text-base text-gray-700 leading-relaxed text-justify">
-              For consumers and auditors, the same QR opens a trusted view of origin,
-              quality claims and movement history. Shared ledger records keep the
-              agri supply chain tamper-evident while staying practical to review.
+              Với người tiêu dùng và đơn vị kiểm toán, cùng một mã QR mở ra góc nhìn
+              đáng tin cậy về xuất xứ, cam kết chất lượng và lịch sử luân chuyển.
+              Dữ liệu sổ cái dùng chung giúp chuỗi cung ứng nông sản minh bạch,
+              chống sửa đổi nhưng vẫn dễ kiểm tra.
             </p>
           </div>
         </div>

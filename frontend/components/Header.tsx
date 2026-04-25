@@ -7,7 +7,7 @@ import * as React from "react";
 import { useWalletAuth } from "../hooks/useWalletAuth";
 
 const MENU = [
-  { id: "home", label: "Home", href: "/" },
+  { id: "home", label: "Trang chủ", href: "/" },
 ];
 
 export function Header() {
@@ -88,7 +88,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <Image src="/logo.png" alt="Logo" width={56} height={56} className="w-12 h-12 object-contain" priority />
             <span className="hidden sm:inline text-base md:text-lg font-semibold text-gray-900">
-              Traceability
+              Truy xuất nguồn gốc
             </span>
           </Link>
 
@@ -96,7 +96,7 @@ export function Header() {
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             className="md:hidden flex-shrink-0 p-2 rounded-full hover:bg-black/10"
-            aria-label="Menu"
+            aria-label="Mở menu"
           >
             <span className="material-icons text-2xl text-gray-800">
               menu
@@ -138,7 +138,7 @@ export function Header() {
                     : "text-gray-800"
                 } hover:underline hover:underline-offset-4 ${isLoading ? "opacity-50" : ""}`}
               >
-                {isLoading ? '...' : (isAuthenticated ? 'Dashboard' : 'Login')}
+                {isLoading ? '...' : (isAuthenticated ? 'Quản trị' : 'Đăng nhập')}
               </span>
             </button>
           </div>
@@ -161,14 +161,14 @@ export function Header() {
               >
                 <Image src="/logo.png" alt="Logo" width={48} height={48} className="w-12 h-12 object-contain" />
                 <span className="text-base font-semibold text-gray-900">
-                  Traceability
+                  Truy xuất nguồn gốc
                 </span>
               </Link>
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-100"
-                aria-label="Close"
+                aria-label="Đóng"
               >
                 <span className="material-icons text-xl">
                   close
@@ -220,7 +220,7 @@ export function Header() {
                       : ""
                   }`}
                 >
-                  {isLoading ? '...' : (isAuthenticated ? 'Dashboard' : 'Login')}
+                  {isLoading ? '...' : (isAuthenticated ? 'Quản trị' : 'Đăng nhập')}
                 </span>
                 <span className="material-icons text-lg text-gray-500">
                   chevron_right

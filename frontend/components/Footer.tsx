@@ -8,7 +8,7 @@ export function Footer() {
       <div className="absolute inset-0 z-0">
         <Image
           src="/footer.png"
-          alt="Footer background"
+          alt="Nền chân trang"
           fill
           className="object-cover"
           quality={90}
@@ -25,7 +25,7 @@ export function Footer() {
             </div>
             <div className="flex items-start gap-3">
               <span className="material-icons text-lg mt-0.5">phone</span>
-              <p className="text-sm md:text-base flex-1">Hotline: (84) 24 xxxx xxxx</p>
+              <p className="text-sm md:text-base flex-1">Đường dây nóng: (84) 24 xxxx xxxx</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="material-icons text-lg mt-0.5">email</span>
@@ -34,7 +34,7 @@ export function Footer() {
           </div>
 
           <div className="space-y-4">
-            <h4 className="text-lg md:text-xl font-bold">Connect with us</h4>
+            <h4 className="text-lg md:text-xl font-bold">Kết nối với chúng tôi</h4>
             <div className="flex gap-4">
               <a href="#" className="w-8 h-8 flex items-center justify-center hover:opacity-80 transition-opacity" aria-label="Facebook">
                 <svg className="w-full h-full" fill="currentColor" viewBox="0 0 24 24">
@@ -55,13 +55,13 @@ export function Footer() {
           </div>
 
           <div className="space-y-4">
-            <h4 className="text-lg md:text-xl font-bold">Download our app</h4>
+            <h4 className="text-lg md:text-xl font-bold">Tải ứng dụng</h4>
             <div className="space-y-3">
               <a href="#" className="flex items-center gap-3 border border-white/30 px-4 py-3 rounded-lg hover:opacity-80 transition-opacity">
                 <svg className="w-8 h-8 flex-shrink-0" viewBox="0 0 24 24" fill="white">
                   <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                 </svg>
-                <span className="text-sm md:text-base font-semibold text-white">Download on App Store</span>
+                <span className="text-sm md:text-base font-semibold text-white">Tải trên App Store</span>
               </a>
               <a href="#" className="flex items-center gap-3 border border-white/30 px-4 py-3 rounded-lg hover:opacity-80 transition-opacity">
                 <svg className="w-8 h-8 flex-shrink-0" viewBox="0 0 24 24">
@@ -79,7 +79,7 @@ export function Footer() {
                     </linearGradient>
                   </defs>
                 </svg>
-                <span className="text-sm md:text-base font-semibold text-white">Download on Google Play</span>
+                <span className="text-sm md:text-base font-semibold text-white">Tải trên Google Play</span>
               </a>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function Footer() {
 
         <div className="border-t border-white/20 mt-6 pt-3 pb-2">
           <p className="text-center text-xs md:text-sm text-white/80">
-            © {new Date().getFullYear()} Traceability
+            © {new Date().getFullYear()} Truy xuất nguồn gốc
           </p>
         </div>
       </div>

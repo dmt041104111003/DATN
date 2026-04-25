@@ -14,7 +14,7 @@ export function HeroNew() {
       <div className="absolute inset-0 -z-10 md:hidden">
         <Image
           src="/a.png"
-          alt="Traceability hero"
+          alt="Banner truy xuất nguồn gốc"
           fill
           priority
           className="object-cover"
@@ -23,13 +23,13 @@ export function HeroNew() {
       <div className="relative w-full max-w-5xl mx-auto px-4 min-h-[calc(100vh-5rem)] md:min-h-[calc(100vh-6rem)] flex items-start justify-center pt-28 md:pt-36 pb-10">
         <header className="text-center space-y-4">
           <p className="text-sm md:text-base font-medium text-gray-200 uppercase tracking-[0.18em]">
-            Verified on Cardano
+            Xác thực trên Cardano
           </p>
           <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-            Product Traceability System
+            Hệ thống truy xuất nguồn gốc sản phẩm
           </h1>
           <p className="text-base md:text-lg text-gray-100 max-w-2xl mx-auto leading-relaxed">
-            Scan a QR to verify origin, or generate a traceability QR for a product.
+            Quét QR để kiểm tra xuất xứ, hoặc tạo mã QR truy xuất cho sản phẩm.
           </p>
           <div className="mt-6 flex flex-col md:flex-row justify-center gap-3 md:gap-4 w-full max-w-md mx-auto">
             <button
@@ -37,14 +37,14 @@ export function HeroNew() {
               onClick={() => setShowFlow(true)}
               className="w-full md:w-auto px-10 py-3 md:px-12 md:py-3.5 text-sm md:text-lg font-semibold text-white bg-[#c41e3a] hover:bg-red-700 rounded-full shadow-sm transition-colors"
             >
-              Get started
+              Bắt đầu ngay
             </button>
             <button
               type="button"
               onClick={() => router.push("/scan")}
               className="w-full md:w-auto px-10 py-3 md:px-12 md:py-3.5 text-sm md:text-lg font-semibold text-[#c41e3a] bg-white/90 hover:bg-white rounded-full shadow-sm border border-[#c41e3a]/70 transition-colors"
             >
-              Scan QR
+              Quét QR
             </button>
           </div>
         </header>
@@ -63,7 +63,7 @@ export function HeroNew() {
             <div className="bg-white rounded-lg overflow-hidden w-full h-full flex items-center justify-center">
               <Image
                 src="/flow.png"
-                alt="Traceability flow"
+                alt="Quy trình truy xuất nguồn gốc"
                 width={1200}
                 height={800}
                 className="max-w-full max-h-full object-contain"
