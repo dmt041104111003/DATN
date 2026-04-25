@@ -10,7 +10,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
-type EntityType = 'PLAN' | 'GROWING_AREA' | 'CONTAINER';
+type EntityType = 'PRODUCTION';
 
 @Controller('record-operations')
 @UseGuards(JwtAuthGuard)
@@ -40,38 +40,20 @@ export class RecordOperationController {
 
     if (
       !entityType ||
-      (entityType !== 'PLAN' && entityType !== 'GROWING_AREA' && entityType !== 'CONTAINER')
+      entityType !== 'PRODUCTION'
     ) {
       throw new HttpException('entityType is required.', HttpStatus.BAD_REQUEST);
     }
     if (!entityKey) throw new HttpException('entityKey is required.', HttpStatus.BAD_REQUEST);
 
-    if (entityType === 'PLAN') {
-      const plan = await (this.prisma as any).plan.findUnique({
-        where: { inventoryKey: entityKey },
-        select: { createdBy: true },
-      });
-      if (!plan || String(plan.createdBy || '').trim() !== custodian) {
-        throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
-      }
-    }
-    if (entityType === 'GROWING_AREA') {
-      const area = await (this.prisma as any).growingArea.findUnique({
-        where: { inventoryKey: entityKey },
-        select: { registeringCustodianAddress: true },
-      });
-      if (!area || String(area.registeringCustodianAddress || '').trim() !== custodian) {
-        throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
-      }
-    }
-    if (entityType === 'CONTAINER') {
-      const container = await (this.prisma as any).container.findUnique({
+    if (entityType === 'PRODUCTION') {
+      const production = await (this.prisma as any).production.findUnique({
         where: { inventoryKey: entityKey },
         select: { registeringCustodianAddress: true },
       });
       if (
-        !container ||
-        String(container.registeringCustodianAddress || '').trim() !== custodian
+        !production ||
+        String(production.registeringCustodianAddress || '').trim() !== custodian
       ) {
         throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
       }

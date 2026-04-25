@@ -13,10 +13,6 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 const resourceToEndpoint: Record<string, string> = {
-  warehouses: "warehouses",
-  products: "products",
-  areas: "growing-areas",
-  plans: "plans",
   production: "productions",
   units: "units",
   profile: "profile",
@@ -48,10 +44,6 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 );
 
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
-  "warehouses",
-  "areas",
-  "plans",
-  "products",
   "production",
 ]);
 
@@ -102,21 +94,6 @@ function attachMediaUrls(resource: string, row: any) {
       })
       .filter(Boolean);
   };
-  if (resource === "areas") {
-    return { ...row, nftImageUrl: resolveMediaUrl(row.nftImageIpfs) };
-  }
-  if (resource === "products") {
-    return { ...row, imageUrl: resolveMediaUrl(row.imageIpfs ?? row?.passport?.image) };
-  }
-  if (resource === "plans") {
-    return {
-      ...row,
-      seedInvoiceUrl: resolveMediaUrl(row.seedInvoiceIpfs),
-      seedCertificateUrl: resolveMediaUrl(row.seedCertificateIpfs),
-      harvestImageUrl: resolveMediaUrl(row.harvestImageIpfs),
-      packagingImageUrl: resolveMediaUrl(row.packagingImageIpfs),
-    };
-  }
   if (resource === "production") {
     return {
       ...row,
@@ -125,20 +102,6 @@ function attachMediaUrls(resource: string, row: any) {
     };
   }
   return row;
-}
-
-function pickRawFile(input: any): File | null {
-  if (!input) return null;
-  if (input instanceof File) return input;
-  if (Array.isArray(input)) {
-    const first = input[0];
-    if (!first) return null;
-    if (first instanceof File) return first;
-    if (first.rawFile instanceof File) return first.rawFile;
-    return null;
-  }
-  if (input.rawFile instanceof File) return input.rawFile;
-  return null;
 }
 
 function pickRawFiles(input: any): File[] {
@@ -358,197 +321,6 @@ export const enterpriseAdminDataProvider: DataProvider = {
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
-    if (resource === "areas") {
-      const meRes = await httpClient(`${BACKEND_URL}/auth/me`, { method: "GET" });
-      const me = meRes.json as any;
-      const owner =
-        String(me?.user?.paymentAddress || "").trim() ||
-        String(me?.user?.walletAddress || "").trim() ||
-        String(me?.user?.sub || "").trim();
-      const location = String(params.data?.location || me?.profile?.location || "").trim();
-      const custodianAddress = await getCustodianSettlementAddress();
-      const nftFile = pickRawFile((params.data as any).nftImage);
-      const nftImageIpfs = nftFile ? await uploadEvidence(nftFile) : null;
-
-      const areaSize = `${String(params.data?.areaSizeValue ?? "").trim()} ${String(params.data?.areaSizeUnit ?? "").trim()}`.trim();
-      const contractRes = await httpClient(`${BACKEND_URL}/growing-areas/contract/create`, {
-        method: "POST",
-        body: JSON.stringify({
-          custodianAddress,
-          owners: [owner || custodianAddress],
-          name: String(params.data?.name || "").trim(),
-          location,
-          areaSize: areaSize || null,
-          soilType: String(params.data?.soilType || "").trim() || null,
-          nftImageIpfs,
-        }),
-      });
-      const unsigned = contractRes.json as any;
-      if (!unsigned?.result || !unsigned?.data) {
-        throw new Error(unsigned?.message || "Failed to prepare area on-chain transaction.");
-      }
-      const signed = await signOutgoingAttestation(String(unsigned.data));
-      const txHash = await publishAttestedRecord(signed);
-
-      const dbRes = await httpClient(`${BACKEND_URL}/growing-areas`, {
-        method: "POST",
-        body: JSON.stringify({
-          traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
-          inventoryKey: String(unsigned.inventoryKey || "").trim(),
-          txHash,
-          custodyParties: [owner || custodianAddress],
-          name: String(params.data?.name || "").trim(),
-          location,
-          areaSize: areaSize || null,
-          soilType: String(params.data?.soilType || "").trim() || null,
-          nftImageIpfs,
-        }),
-      });
-      const row = dbRes.json as any;
-      return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
-    }
-
-    if (resource === "plans") {
-      const meRes = await httpClient(`${BACKEND_URL}/auth/me`, { method: "GET" });
-      const me = meRes.json as any;
-      const owner =
-        String(me?.user?.paymentAddress || "").trim() ||
-        String(me?.user?.walletAddress || "").trim() ||
-        String(me?.user?.sub || "").trim();
-      const custodianAddress = await getCustodianSettlementAddress();
-      const invoiceFile = pickRawFile((params.data as any).seedInvoiceFile);
-      const certFile = pickRawFile((params.data as any).seedCertificateFile);
-      const seedInvoiceIpfs = invoiceFile ? await uploadEvidence(invoiceFile) : null;
-      const seedCertificateIpfs = certFile ? await uploadEvidence(certFile) : null;
-
-      const contractRes = await httpClient(`${BACKEND_URL}/plans/contract/create`, {
-        method: "POST",
-        body: JSON.stringify({
-          custodianAddress,
-          owners: [owner || custodianAddress],
-          cropType: String(params.data?.cropType || "").trim(),
-          growingAreaInventoryKey: String(params.data?.growingAreaInventoryKey || "").trim(),
-          seedCertificateIpfs,
-          seedInvoiceIpfs,
-          plannedTimeline: {
-            plannedSeedingDate: params.data?.plannedSeedingDate || null,
-            plannedPlantingDate: params.data?.plannedPlantingDate || null,
-            nurseryBatch: String(params.data?.nurseryBatch || "").trim(),
-            plantingBatch: String(params.data?.plantingBatch || "").trim(),
-            nurseryArea: String(params.data?.nurseryArea || "").trim(),
-            plantingArea: String(params.data?.plantingArea || "").trim(),
-          },
-          quantities: {
-            seedQuantityValue: String(params.data?.seedQuantityValue || "").trim(),
-            seedQuantityUnit: String(params.data?.seedQuantityUnit || "").trim(),
-            plantQuantityValue: String(params.data?.plantQuantityValue || "").trim(),
-            plantQuantityUnit: String(params.data?.plantQuantityUnit || "").trim(),
-          },
-        }),
-      });
-      const unsigned = contractRes.json as any;
-      if (!unsigned?.result || !unsigned?.data) {
-        throw new Error(unsigned?.message || "Failed to prepare plan on-chain transaction.");
-      }
-      const signed = await signOutgoingAttestation(String(unsigned.data));
-      const txHash = await publishAttestedRecord(signed);
-
-      const dbRes = await httpClient(`${BACKEND_URL}/plans`, {
-        method: "POST",
-        body: JSON.stringify({
-          traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
-          inventoryKey: String(unsigned.inventoryKey || "").trim(),
-          growingAreaInventoryKey: String(params.data?.growingAreaInventoryKey || "").trim(),
-          cropType: String(params.data?.cropType || "").trim(),
-          nurseryBatch: String(params.data?.nurseryBatch || "").trim(),
-          plantingBatch: String(params.data?.plantingBatch || "").trim(),
-          nurseryArea: String(params.data?.nurseryArea || "").trim(),
-          plantingArea: String(params.data?.plantingArea || "").trim(),
-          seedQuantityValue: String(params.data?.seedQuantityValue || "").trim(),
-          seedQuantityUnit: String(params.data?.seedQuantityUnit || "").trim(),
-          plantQuantityValue: String(params.data?.plantQuantityValue || "").trim(),
-          plantQuantityUnit: String(params.data?.plantQuantityUnit || "").trim(),
-          plannedSeedingDate: params.data?.plannedSeedingDate || null,
-          plannedPlantingDate: params.data?.plannedPlantingDate || null,
-          txHash,
-          seedCertificateIpfs,
-          seedInvoiceIpfs,
-        }),
-      });
-      const row = dbRes.json as any;
-      return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
-    }
-
-    if (resource === "products") {
-      const meRes = await httpClient(`${BACKEND_URL}/auth/me`, { method: "GET" });
-      const me = meRes.json as any;
-      const owner =
-        String(me?.user?.paymentAddress || "").trim() ||
-        String(me?.user?.walletAddress || "").trim() ||
-        String(me?.user?.sub || "").trim();
-      const location = String(params.data?.location || me?.profile?.location || "").trim();
-      const custodianAddress = await getCustodianSettlementAddress();
-      const owners = Array.isArray(params.data?.owners) && params.data.owners.length
-        ? params.data.owners.map((x: any) => String(x || "").trim()).filter(Boolean)
-        : [owner || custodianAddress];
-      const imageFile = pickRawFile((params.data as any).imageFile ?? (params.data as any).image);
-      const imageIpfs = imageFile ? await uploadEvidence(imageFile) : "";
-
-      const passport = {
-        name: String(params.data?.tradeTitle || "").trim(),
-        description: String(params.data?.lotStory || "").trim(),
-        owners: `[${owners.join(", ")}]`,
-        plan_inventory_key: String(params.data?.planInventoryKey || "").trim(),
-        roadmap: String(params.data?.roadmap || "").trim(),
-        location,
-        image: imageIpfs,
-        containerType: String(params.data?.containerType || "").trim(),
-        capacities: JSON.stringify({
-          maxWeightValue: String(params.data?.maxWeightValue || "").trim(),
-          maxWeightUnit: String(params.data?.maxWeightUnit || "").trim(),
-          maxVolumeValue: String(params.data?.maxVolumeValue || "").trim(),
-          maxVolumeUnit: String(params.data?.maxVolumeUnit || "").trim(),
-        }),
-      };
-
-      const contractRes = await httpClient(`${BACKEND_URL}/products/contract/create`, {
-        method: "POST",
-        body: JSON.stringify({
-          custodianAddress,
-          owners,
-          passport,
-        }),
-      });
-      const unsigned = contractRes.json as any;
-      if (!unsigned?.result || !unsigned?.data) {
-        throw new Error(unsigned?.message || "Failed to prepare product on-chain transaction.");
-      }
-      const signed = await signOutgoingAttestation(String(unsigned.data));
-      const txHash = await publishAttestedRecord(signed);
-
-      const dbRes = await httpClient(`${BACKEND_URL}/products`, {
-        method: "POST",
-        body: JSON.stringify({
-          traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
-          lotReference: String(unsigned.lotReference || "").trim(),
-          inventoryKey: String(unsigned.inventoryKey || "").trim(),
-          confirmationRef: txHash,
-          txHash,
-          custodyParties: owners,
-          warehouseId: String(params.data?.warehouseId || "").trim() || null,
-          planInventoryKey: String(params.data?.planInventoryKey || "").trim() || null,
-          passport: {
-            ...passport,
-            maxWeightValue: String(params.data?.maxWeightValue || "").trim(),
-            maxWeightUnit: String(params.data?.maxWeightUnit || "").trim(),
-            maxVolumeValue: String(params.data?.maxVolumeValue || "").trim(),
-            maxVolumeUnit: String(params.data?.maxVolumeUnit || "").trim(),
-          },
-        }),
-      });
-      const row = dbRes.json as any;
-      return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
-    }
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);

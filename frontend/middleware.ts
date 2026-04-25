@@ -133,45 +133,8 @@ export function middleware(req: NextRequest) {
       ),
     );
   }
-  if (
-    pathname === "/enterprise/warehouses" ||
-    pathname.startsWith("/enterprise/warehouses/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(/^\/enterprise\/warehouses/, "/enterprise/admin/warehouses"),
-        req.url,
-      ),
-    );
-  }
-  if (
-    pathname === "/enterprise/pages/collections" ||
-    pathname.startsWith("/enterprise/pages/collections/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(
-          /^\/enterprise\/pages\/collections/,
-          "/enterprise/admin/warehouses",
-        ),
-        req.url,
-      ),
-    );
-  }
-  if (pathname === "/enterprise/pages/warehouses") {
-    return NextResponse.redirect(new URL("/enterprise/admin/warehouses", req.url));
-  }
   if (pathname === "/enterprise/pages/profile") {
     return NextResponse.redirect(new URL("/enterprise/admin/profile", req.url));
-  }
-  if (pathname === "/enterprise/pages/product-tools/products") {
-    return NextResponse.redirect(new URL("/enterprise/admin/products", req.url));
-  }
-  if (pathname === "/enterprise/pages/product-tools/areas") {
-    return NextResponse.redirect(new URL("/enterprise/admin/areas", req.url));
-  }
-  if (pathname === "/enterprise/pages/product-tools/plans") {
-    return NextResponse.redirect(new URL("/enterprise/admin/plans", req.url));
   }
   if (pathname === "/enterprise/pages/product-tools") {
     return NextResponse.redirect(new URL("/enterprise/admin", req.url));
@@ -223,12 +186,12 @@ export function middleware(req: NextRequest) {
 
   // /enterprise/admin resources — ENTERPRISE only
   const isEnterpriseProductTools =
-    pathname === "/enterprise/admin/products" ||
-    pathname.startsWith("/enterprise/admin/products/") ||
-    pathname === "/enterprise/admin/areas" ||
-    pathname.startsWith("/enterprise/admin/areas/") ||
-    pathname === "/enterprise/admin/plans" ||
-    pathname.startsWith("/enterprise/admin/plans/");
+    pathname === "/enterprise/admin/profile" ||
+    pathname.startsWith("/enterprise/admin/profile/") ||
+    pathname === "/enterprise/admin/production" ||
+    pathname.startsWith("/enterprise/admin/production/") ||
+    pathname === "/enterprise/admin/units" ||
+    pathname.startsWith("/enterprise/admin/units/");
   if (isEnterpriseProductTools) {
     if (!token) {
       return NextResponse.redirect(new URL("/", req.url));
@@ -289,9 +252,7 @@ export function middleware(req: NextRequest) {
     if (r === "AGENT" && isEnterpriseWorkspace) {
       if (
         pathname === "/enterprise/admin/profile" ||
-        pathname.startsWith("/enterprise/admin/profile/") ||
-        pathname === "/enterprise/admin/warehouses" ||
-        pathname.startsWith("/enterprise/admin/warehouses/")
+        pathname.startsWith("/enterprise/admin/profile/")
       ) {
         const target =
           pathname.replace(/^\/enterprise\/admin/, "/agent/pages") ||
@@ -330,9 +291,7 @@ export function middleware(req: NextRequest) {
     if (r === "TRANSIT" && isEnterpriseWorkspace) {
       if (
         pathname === "/enterprise/admin/profile" ||
-        pathname.startsWith("/enterprise/admin/profile/") ||
-        pathname === "/enterprise/admin/warehouses" ||
-        pathname.startsWith("/enterprise/admin/warehouses/")
+        pathname.startsWith("/enterprise/admin/profile/")
       ) {
         const target =
           pathname.replace(/^\/enterprise\/admin/, "/transit/pages") ||

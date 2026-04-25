@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BlockFrostAPI, BlockfrostServerError } from '@blockfrost/blockfrost-js';
 // Prisma client is generated at build time; keep this as a string for type stability.
-type ContainerStatus = string;
+type LifecycleStatus = string;
 import { PrismaService } from '../prisma/prisma.service';
 import { deserializeDatum } from '../utils/deserialize-datum';
 
@@ -66,7 +66,7 @@ export interface TraceResult {
   lotPassport: Record<string, unknown>;
   handlingLog: HandlingLogEntry[];
   tracingEnded: boolean;
-  lifecycleStatus?: ContainerStatus | null;
+  lifecycleStatus?: LifecycleStatus | null;
   message?: string;
 }
 
@@ -267,13 +267,9 @@ export class TraceService {
 
   async getProductTrace(inventoryKey: string): Promise<TraceResult> {
     const base = await this.getProductTraceInternal(inventoryKey);
-    const row = await (this.prisma as any).container.findUnique({
-      where: { inventoryKey },
-      select: { status: true },
-    });
     return {
       ...base,
-      lifecycleStatus: row?.status ?? null,
+      lifecycleStatus: null,
     };
   }
 }

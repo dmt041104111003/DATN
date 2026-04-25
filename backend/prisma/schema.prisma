@@ -16,9 +16,6 @@ model CustodianAccount {
   displayName String?
   location  String?
   isActive  Boolean   @default(true)
-  containers Container[]
-  growingAreas GrowingArea[]
-  plans     Plan[]
   productions Production[]
   media     Media[]
   createdAt DateTime  @default(now())
@@ -73,127 +70,6 @@ model Role {
   accounts  CustodianAccount[]
 }
 
-model Container {
-  id                          String        @id @default(cuid())
-  traceSchemeRef              String
-  lotReference                String
-  inventoryKey                String        @unique
-  confirmationRef             String
-  custodyRoster               String
-  registeringCustodianAddress String
-  registeringCustodian        CustodianAccount? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
-  planInventoryKey            String?
-  plan                        Plan?         @relation(fields: [planInventoryKey], references: [inventoryKey], onDelete: SetNull)
-  warehouse                   Warehouse?    @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
-  warehouseId                 String?
-  tradeTitle                  String
-  lotStory                    String
-  roadmap                     String?
-  location                    String?
-  containerType               String?
-  maxWeightValue              String?
-  maxWeightUnit               String?
-  maxVolumeValue              String?
-  maxVolumeUnit               String?
-  status                      ContainerStatus @default(INITIAL)
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
-
-  @@index([registeringCustodianAddress])
-  @@index([planInventoryKey])
-
-  recordOperations RecordOperation[] @relation("ContainerRecordOperations")
-}
-
-enum ContainerStatus {
-  INITIAL
-  UPDATED
-  OUTBOUND_DISPATCH
-  INBOUND_CHECKIN
-  CONSUMED
-}
-
-model Warehouse {
-  id                   String   @id @default(cuid())
-  code                 String
-  name                 String
-  siteCustodianAddress String
-  isActive             Boolean  @default(true)
-  maxProducts          Int?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  containers Container[]
-
-  @@unique([siteCustodianAddress, code])
-  @@index([siteCustodianAddress])
-}
-
-model GrowingArea {
-  id                          String   @id @default(cuid())
-  traceSchemeRef              String
-  inventoryKey                String   @unique
-  custodyRoster               String
-  registeringCustodianAddress String
-  registeringCustodian        CustodianAccount? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
-  name                        String
-  location                    String
-  areaSize                    String?
-  soilType                    String?
-  createdAt                   DateTime @default(now())
-
-  plans                       Plan[]
-
-  @@index([registeringCustodianAddress])
-
-  recordOperations RecordOperation[] @relation("GrowingAreaRecordOperations")
-}
-
-model Plan {
-  id                 String     @id @default(cuid())
-  traceSchemeRef      String
-  inventoryKey        String     @unique
-  growingAreaInventoryKey String
-  growingArea        GrowingArea @relation(fields: [growingAreaInventoryKey], references: [inventoryKey], onDelete: Restrict)
-  growingAreaSnapshot Json
-  containers         Container[]
-  nurseryBatch        String
-  plantingBatch       String
-  cropType            String
-  nurseryArea         String
-  plantingArea        String
-  seedQuantityValue   String
-  seedQuantityUnit    String
-  plantQuantityValue  String
-  plantQuantityUnit   String
-
-  createdBy           String
-  creator             CustodianAccount? @relation(fields: [createdBy], references: [address], onDelete: Restrict)
-  plannedSeedingDate  DateTime
-  plannedPlantingDate DateTime
-
-  plannedHarvestDate         DateTime?
-  expectedHarvestYield       String?
-  plannedProcessingDate      DateTime?
-  expectedProcessingYield    String?
-  plannedPackagingDate       DateTime?
-  expectedPackagingQuantity  String?
-  expiryDate                 DateTime?
-  packagingSpec              String?
-
-  stage              PlanStage @default(PLANNED)
-  harvestedAt         DateTime?
-  packagedAt          DateTime?
-
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  @@index([createdBy])
-  @@index([growingAreaInventoryKey])
-
-  recordOperations RecordOperation[] @relation("PlanRecordOperations")
-}
-
 model Production {
   id                          String   @id @default(cuid())
   traceSchemeRef              String
@@ -232,12 +108,6 @@ enum ProductionStage {
   CLOSED
 }
 
-enum PlanStage {
-  PLANNED
-  HARVESTED
-  PACKAGED
-}
-
 model RecordOperation {
   id          String   @id @default(cuid())
   entityType  String
@@ -253,22 +123,12 @@ model RecordOperation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Optional FKs for clean ERD + enforced integrity
-  containerInventoryKey String?
-  container             Container? @relation("ContainerRecordOperations", fields: [containerInventoryKey], references: [inventoryKey], onDelete: Cascade)
-  planInventoryKey    String?
-  plan                Plan?    @relation("PlanRecordOperations", fields: [planInventoryKey], references: [inventoryKey], onDelete: Cascade)
-  growingAreaInventoryKey String?
-  growingArea         GrowingArea? @relation("GrowingAreaRecordOperations", fields: [growingAreaInventoryKey], references: [inventoryKey], onDelete: Cascade)
   productionInventoryKey String?
   production         Production? @relation("ProductionRecordOperations", fields: [productionInventoryKey], references: [inventoryKey], onDelete: Cascade)
 
   @@index([entityType, entityKey])
   @@index([verified, createdAt])
   @@index([entityType, entityKey, createdAt])
-  @@index([containerInventoryKey])
-  @@index([planInventoryKey])
-  @@index([growingAreaInventoryKey])
   @@index([productionInventoryKey])
 }
 
