@@ -6,8 +6,6 @@ export const ROLE_CHOICES = [
   { id: "AGENT", name: "Đại lý" },
 ];
 
-export type AreaRow = { code: number; name: string };
-
 export function roleLabel(code: unknown) {
   const value = String(code || "").toUpperCase();
   const hit = ROLE_CHOICES.find((r) => r.id === value);

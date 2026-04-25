@@ -1,5 +1,6 @@
 export type ProductionStatus = "DRAFT" | "ACTIVE" | "CLOSED";
-export type Option = { id: string; name: string };
+import type { Option } from "@/features/resources/shared/location";
+export type { Option } from "@/features/resources/shared/location";
 
 export const CERTIFICATIONS: Option[] = [
   { id: "vietgap", name: "VietGAP" },

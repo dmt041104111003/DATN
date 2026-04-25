@@ -17,26 +17,27 @@ import {
 } from "react-admin";
 import { Typography } from "@mui/material";
 import { useFormContext, useWatch } from "react-hook-form";
-import { AreaRow, ROLE_CHOICES, roleLabel } from "./constants";
+import { ROLE_CHOICES, roleLabel } from "./constants";
 import * as React from "react";
+import {
+  getDistrictOptions,
+  getProvinceOptions,
+  getWardOptions,
+  type Option,
+} from "@/features/resources/shared/location";
 
 function ProfileAreaInputs() {
   const { setValue } = useFormContext();
   const provinceId = useWatch({ name: "provinceId" }) as string | undefined;
   const districtId = useWatch({ name: "districtId" }) as string | undefined;
-  const [provinces, setProvinces] = useState<Array<{ id: string; name: string }>>([]);
-  const [districts, setDistricts] = useState<Array<{ id: string; name: string }>>([]);
-  const [wards, setWards] = useState<Array<{ id: string; name: string }>>([]);
+  const [provinces, setProvinces] = useState<Option[]>([]);
+  const [districts, setDistricts] = useState<Option[]>([]);
+  const [wards, setWards] = useState<Option[]>([]);
   const prevProvinceRef = React.useRef<string>("");
   const prevDistrictRef = React.useRef<string>("");
 
   useEffect(() => {
-    fetch("https://provinces.open-api.vn/api/p/")
-      .then((r) => r.json())
-      .then((rows: AreaRow[]) =>
-        setProvinces((Array.isArray(rows) ? rows : []).map((r) => ({ id: String(r.code), name: r.name }))),
-      )
-      .catch(() => setProvinces([]));
+    getProvinceOptions().then(setProvinces).catch(() => setProvinces([]));
   }, []);
 
   useEffect(() => {
@@ -45,17 +46,7 @@ function ProfileAreaInputs() {
       setWards([]);
       return;
     }
-    fetch(`https://provinces.open-api.vn/api/p/${provinceId}?depth=2`)
-      .then((r) => r.json())
-      .then((json: { districts?: AreaRow[] }) =>
-        setDistricts(
-          (Array.isArray(json?.districts) ? json.districts : []).map((r) => ({
-            id: String(r.code),
-            name: r.name,
-          })),
-        ),
-      )
-      .catch(() => setDistricts([]));
+    getDistrictOptions(provinceId).then(setDistricts).catch(() => setDistricts([]));
   }, [provinceId, setValue]);
 
   useEffect(() => {
@@ -63,17 +54,7 @@ function ProfileAreaInputs() {
       setWards([]);
       return;
     }
-    fetch(`https://provinces.open-api.vn/api/d/${districtId}?depth=2`)
-      .then((r) => r.json())
-      .then((json: { wards?: AreaRow[] }) =>
-        setWards(
-          (Array.isArray(json?.wards) ? json.wards : []).map((r) => ({
-            id: String(r.code),
-            name: r.name,
-          })),
-        ),
-      )
-      .catch(() => setWards([]));
+    getWardOptions(districtId).then(setWards).catch(() => setWards([]));
   }, [districtId, setValue]);
 
   useEffect(() => {

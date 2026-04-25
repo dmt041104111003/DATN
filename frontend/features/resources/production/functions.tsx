@@ -28,27 +28,11 @@ import {
   type Option,
   type ProductionStatus,
 } from "./constants";
-
-const VIETNAM_PROVINCES_API = "https://provinces.open-api.vn/api";
-const provinceCache: Option[] = [];
-const districtCache = new Map<string, Option[]>();
-const wardCache = new Map<string, Option[]>();
-
-type ProvinceApiRow = { code: number; name: string };
-type DistrictApiResponse = { districts?: ProvinceApiRow[] };
-type WardApiResponse = { wards?: ProvinceApiRow[] };
-
-async function fetchVietnamOptions(path: string): Promise<any> {
-  const res = await fetch(`${VIETNAM_PROVINCES_API}${path}`);
-  if (!res.ok) return null;
-  return res.json();
-}
-
-function mapRowsToOptions(rows: ProvinceApiRow[] | undefined): Option[] {
-  return Array.isArray(rows)
-    ? rows.map((row) => ({ id: String(row.code), name: String(row.name) }))
-    : [];
-}
+import {
+  getDistrictOptions,
+  getProvinceOptions,
+  getWardOptions,
+} from "@/features/resources/shared/location";
 
 function makeProductionCode() {
   const now = new Date();
@@ -77,7 +61,7 @@ function ProductionFormSections() {
   const isDraft = status === "DRAFT";
   const fullyLocked = status === "CLOSED";
   const lockedCore = !isDraft;
-  const [provinceOptions, setProvinceOptions] = React.useState<Option[]>(provinceCache);
+  const [provinceOptions, setProvinceOptions] = React.useState<Option[]>([]);
   const [districtOptions, setDistrictOptions] = React.useState<Option[]>([]);
   const [wardOptions, setWardOptions] = React.useState<Option[]>([]);
   const prevProvinceRef = React.useRef<string>("");
@@ -86,13 +70,7 @@ function ProductionFormSections() {
   React.useEffect(() => {
     let mounted = true;
     (async () => {
-      if (provinceCache.length > 0) {
-        setProvinceOptions([...provinceCache]);
-        return;
-      }
-      const json = (await fetchVietnamOptions("/p/")) as ProvinceApiRow[] | null;
-      const rows = mapRowsToOptions(json ?? undefined);
-      provinceCache.splice(0, provinceCache.length, ...rows);
+      const rows = await getProvinceOptions();
       if (mounted) setProvinceOptions(rows);
     })();
     return () => {
@@ -107,15 +85,7 @@ function ProductionFormSections() {
         setDistrictOptions([]);
         return;
       }
-      if (districtCache.has(provinceId)) {
-        setDistrictOptions([...(districtCache.get(provinceId) || [])]);
-        return;
-      }
-      const json = (await fetchVietnamOptions(`/p/${provinceId}?depth=2`)) as
-        | DistrictApiResponse
-        | null;
-      const rows = mapRowsToOptions(json?.districts);
-      districtCache.set(provinceId, rows);
+      const rows = await getDistrictOptions(provinceId);
       if (mounted) setDistrictOptions(rows);
     })();
     return () => {
@@ -130,13 +100,7 @@ function ProductionFormSections() {
         setWardOptions([]);
         return;
       }
-      if (wardCache.has(districtId)) {
-        setWardOptions([...(wardCache.get(districtId) || [])]);
-        return;
-      }
-      const json = (await fetchVietnamOptions(`/d/${districtId}?depth=2`)) as WardApiResponse | null;
-      const rows = mapRowsToOptions(json?.wards);
-      wardCache.set(districtId, rows);
+      const rows = await getWardOptions(districtId);
       if (mounted) setWardOptions(rows);
     })();
     return () => {
