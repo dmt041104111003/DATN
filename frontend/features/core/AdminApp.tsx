@@ -7,7 +7,7 @@ import { enterpriseAdminResources } from "./resources";
 import {
   AdminWelcome,
   EnterpriseAdminLayout,
-} from "@/features/enterprise-admin/ui/layout/AdminLayout";
+} from "@/features/ui/layout/AdminLayout";
 
 export function AdminApp() {
   return (

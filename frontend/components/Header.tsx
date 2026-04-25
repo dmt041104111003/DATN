@@ -54,7 +54,7 @@ export function Header() {
         window.location.href = "/";
         return;
       }
-      window.location.href = "/enterprise/admin";
+      window.location.href = "/admin";
     } catch {
       window.location.href = "/";
     }
@@ -63,7 +63,7 @@ export function Header() {
   const activeId =
     pathname === "/"
       ? "home"
-      : pathname.startsWith("/enterprise")
+      : pathname.startsWith("/admin")
       ? "dashboard"
       : null;
 
@@ -133,7 +133,7 @@ export function Header() {
             >
               <span
                 className={`${
-                  pathname.startsWith("/enterprise")
+                  pathname.startsWith("/admin")
                     ? "underline underline-offset-4 text-red-400"
                     : "text-gray-800"
                 } hover:underline hover:underline-offset-4 ${isLoading ? "opacity-50" : ""}`}
@@ -207,7 +207,7 @@ export function Header() {
                   setMobileMenuOpen(false);
                 }}
                 className={`flex items-center justify-between w-full px-4 py-3 text-left rounded-lg transition-colors text-gray-800 hover:bg-gray-100 ${
-                  pathname.startsWith("/enterprise")
+                  pathname.startsWith("/admin")
                     ? "bg-gray-100"
                     : ""
                 } ${isLoading ? "opacity-50" : ""}`}
@@ -215,7 +215,7 @@ export function Header() {
               >
                 <span
                   className={`font-medium ${
-                    pathname.startsWith("/enterprise")
+                    pathname.startsWith("/admin")
                       ? "text-red-400 underline underline-offset-4"
                       : ""
                   }`}

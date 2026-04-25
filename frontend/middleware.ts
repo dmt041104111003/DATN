@@ -62,7 +62,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
 
-  const isEnterpriseAdmin = pathname.startsWith("/enterprise/admin");
+  const isEnterpriseAdmin = pathname.startsWith("/admin");
   if (isEnterpriseAdmin) {
     if (!token) {
       return NextResponse.redirect(new URL("/", req.url));
@@ -87,5 +87,7 @@ export const config = {
     "/scan/:path*",
     "/enterprise",
     "/enterprise/:path*",
+    "/admin",
+    "/admin/:path*",
   ],
 };

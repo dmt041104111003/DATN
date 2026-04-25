@@ -118,7 +118,7 @@ export function useWalletAuth() {
 
       const verifyData: VerifyResponse = await verifyResponse.json();
 
-      router.replace('/enterprise/admin');
+      router.replace('/admin');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);

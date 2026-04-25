@@ -5,16 +5,16 @@ import {
   ProductionResourceCreate,
   ProductionResourceEdit,
   ProductionResourceList,
-} from "@/features/enterprise-admin/resources/production";
+} from "@/features/resources/production";
 import {
   ProfileResourceEdit,
   ProfileResourceList,
-} from "@/features/enterprise-admin/resources/profile";
+} from "@/features/resources/profile";
 import {
   UnitsResourceCreate,
   UnitsResourceEdit,
   UnitsResourceList,
-} from "@/features/enterprise-admin/resources/units";
+} from "@/features/resources/units";
 
 export function EnterpriseAdminResources() {
   return null;
