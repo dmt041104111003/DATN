@@ -12,6 +12,7 @@ import MapIcon from "@mui/icons-material/Map";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import PersonIcon from "@mui/icons-material/Person";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 
 export function AdminMenu() {
   const { permissions } = usePermissions<string>();
@@ -35,8 +36,14 @@ export function AdminMenu() {
           <MenuItemLink
             key="production"
             to="/production"
-            primaryText="Production"
+            primaryText="Quản lý vụ mùa"
             leftIcon={<PrecisionManufacturingIcon />}
+          />,
+          <MenuItemLink
+            key="units"
+            to="/units"
+            primaryText="Quản lý đơn vị"
+            leftIcon={<LocalShippingIcon />}
           />,
           <MenuItemLink key="areas" to="/areas" primaryText="Areas" leftIcon={<MapIcon />} />,
           <MenuItemLink key="plans" to="/plans" primaryText="Plans" leftIcon={<EventNoteIcon />} />,

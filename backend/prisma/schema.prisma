@@ -27,6 +27,30 @@ model CustodianAccount {
   @@index([roleCode])
 }
 
+model Unit {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  name            String
+  unitType        UnitType
+  walletAddress   String   @unique
+  provinceId      String
+  districtId      String
+  wardId          String
+  detailAddress   String?
+  contactName     String?
+  phoneNumber     String?
+  createdByAddress String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([createdByAddress])
+}
+
+enum UnitType {
+  TRANSIT
+  AGENT
+}
+
 model WalletNonce {
   id        String   @id @default(cuid())
   address   String

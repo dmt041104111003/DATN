@@ -18,6 +18,7 @@ const resourceToEndpoint: Record<string, string> = {
   areas: "growing-areas",
   plans: "plans",
   production: "productions",
+  units: "units",
   profile: "profile",
 };
 

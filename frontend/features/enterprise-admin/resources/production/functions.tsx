@@ -19,6 +19,7 @@ import {
   TextField,
   TextInput,
   Toolbar,
+  useSaveContext,
   required,
 } from "react-admin";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -325,8 +326,10 @@ function ProductionCreateToolbar() {
 function ProductionEditToolbar() {
   const {
     setValue,
+    getValues,
     formState: { dirtyFields },
   } = useFormContext();
+  const { save } = useSaveContext();
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "DRAFT";
   const verified = Boolean(useWatch({ name: "verified" }));
   const seedingDate = String(useWatch({ name: "seedingDate" }) ?? "");
@@ -335,7 +338,7 @@ function ProductionEditToolbar() {
   const [actualYieldInput, setActualYieldInput] = React.useState("");
   const [harvestError, setHarvestError] = React.useState("");
 
-  if (status !== "ACTIVE") return <Toolbar />;
+  if (status !== "ACTIVE") return null;
   const dirtyMap = (dirtyFields || {}) as Record<string, unknown>;
   const dirtyKeys = Object.keys(dirtyMap);
   const excludedDirtyKeys = new Set([
@@ -405,8 +408,9 @@ function ProductionEditToolbar() {
               <button type="button" className="rounded border px-3 py-1.5" onClick={() => setHarvestModalOpen(false)}>
                 Hủy
               </button>
-              <SaveButton
-                label="Xác nhận"
+              <Button
+                variant="contained"
+                disableElevation
                 type="button"
                 onClick={(e) => {
                   const harvest = harvestInput ? new Date(harvestInput) : null;
@@ -438,12 +442,24 @@ function ProductionEditToolbar() {
                     setHarvestError("Ngày thu hoạch không được lớn hơn ngày hiện tại.");
                     return;
                   }
-                  setValue("harvestDate", harvestInput);
-                  setValue("actualYieldKg", String(actualYieldInput).trim());
-                  setValue("status", "CLOSED");
+                  const nextValues = {
+                    ...getValues(),
+                    harvestDate: harvestInput,
+                    actualYieldKg: String(actualYieldInput).trim(),
+                    status: "CLOSED",
+                  };
+                  setValue("harvestDate", harvestInput, { shouldDirty: true, shouldValidate: true });
+                  setValue("actualYieldKg", String(actualYieldInput).trim(), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue("status", "CLOSED", { shouldDirty: true, shouldValidate: true });
                   setHarvestModalOpen(false);
+                  save?.(nextValues);
                 }}
-              />
+              >
+                Xác nhận
+              </Button>
             </div>
           </div>
         </div>

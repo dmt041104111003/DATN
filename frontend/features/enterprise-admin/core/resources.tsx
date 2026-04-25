@@ -30,6 +30,11 @@ import {
   WarehouseEdit,
   WarehouseList,
 } from "@/features/enterprise-admin/resources/warehouses";
+import {
+  UnitsResourceCreate,
+  UnitsResourceEdit,
+  UnitsResourceList,
+} from "@/features/enterprise-admin/resources/units";
 
 export function EnterpriseAdminResources() {
   return null;
@@ -42,6 +47,12 @@ export const enterpriseAdminResources = (
       list={WarehouseList}
       create={WarehouseCreate}
       edit={WarehouseEdit}
+    />
+    <Resource
+      name="units"
+      list={UnitsResourceList}
+      create={UnitsResourceCreate}
+      edit={UnitsResourceEdit}
     />
     <Resource
       name="products"
