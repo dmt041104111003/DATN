@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { homePathForRole } from "@/lib/app-routes";
+import { APP_ENTERPRISE } from "@/lib/app-routes";
 
 function base64UrlDecodeToString(input: string): string {
   const b64 = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -37,141 +37,25 @@ function getProfileIdFromJwt(token: string): string | null {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  // Legacy agent URLs → /agent/pages/*
-  if (
-    pathname === "/agent/order" ||
-    pathname.startsWith("/agent/order/") ||
-    pathname === "/agent/pages/order" ||
-    pathname.startsWith("/agent/pages/order/")
-  ) {
-    return NextResponse.redirect(new URL("/agent", req.url));
+  const deprecatedRoots =
+    pathname.startsWith("/agent") ||
+    pathname.startsWith("/transit") ||
+    pathname.startsWith("/create") ||
+    pathname.startsWith("/scan");
+  if (deprecatedRoots) {
+    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
-  if (pathname.startsWith("/agent/profile")) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(/^\/agent\/profile/, "/agent/pages/profile"),
-        req.url,
-      ),
-    );
-  }
-  if (
-    pathname === "/agent/warehouses" ||
-    pathname.startsWith("/agent/warehouses/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(/^\/agent\/warehouses/, "/agent/pages/warehouses"),
-        req.url,
-      ),
-    );
-  }
-  if (
-    pathname === "/agent/pages/collections" ||
-    pathname.startsWith("/agent/pages/collections/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(
-          /^\/agent\/pages\/collections/,
-          "/agent/pages/warehouses",
-        ),
-        req.url,
-      ),
-    );
-  }
-
-  // Legacy transit URLs → /transit/pages/*
-  if (pathname.startsWith("/transit/profile")) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(/^\/transit\/profile/, "/transit/pages/profile"),
-        req.url,
-      ),
-    );
-  }
-  if (
-    pathname === "/transit/warehouses" ||
-    pathname.startsWith("/transit/warehouses/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(/^\/transit\/warehouses/, "/transit/pages/warehouses"),
-        req.url,
-      ),
-    );
-  }
-  if (
-    pathname === "/transit/pages/collections" ||
-    pathname.startsWith("/transit/pages/collections/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(
-          /^\/transit\/pages\/collections/,
-          "/transit/pages/warehouses",
-        ),
-        req.url,
-      ),
-    );
-  }
-
-  // Legacy enterprise URLs → /enterprise/admin/*
-  if (
-    pathname === "/enterprise/order" ||
-    pathname.startsWith("/enterprise/order/") ||
-    pathname === "/enterprise/pages/order" ||
-    pathname.startsWith("/enterprise/pages/order/")
-  ) {
-    return NextResponse.redirect(new URL("/enterprise", req.url));
-  }
-  if (pathname.startsWith("/enterprise/profile")) {
-    return NextResponse.redirect(
-      new URL(
-        pathname.replace(/^\/enterprise\/profile/, "/enterprise/admin/profile"),
-        req.url,
-      ),
-    );
-  }
-  if (pathname === "/enterprise/pages/profile") {
-    return NextResponse.redirect(new URL("/enterprise/admin/profile", req.url));
-  }
-  if (pathname === "/enterprise/pages/product-tools") {
-    return NextResponse.redirect(new URL("/enterprise/admin", req.url));
-  }
-
-  // Legacy asset-tools URLs → product-tools
-  if (
-    pathname === "/enterprise/asset-tools" ||
-    pathname.startsWith("/enterprise/asset-tools/") ||
-    pathname === "/enterprise/pages/asset-tools" ||
-    pathname.startsWith("/enterprise/pages/asset-tools/")
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        pathname
-          .replace(/^\/enterprise\/asset-tools/, "/enterprise/admin")
-          .replace(/^\/enterprise\/pages\/asset-tools/, "/enterprise/admin"),
-        req.url,
-      ),
-    );
-  }
-
-  // Legacy /dashboard → workspace theo role
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    const token = req.cookies.get("auth_token")?.value;
-    const role = token ? getRoleFromJwt(token) : null;
-    const dest = homePathForRole(role);
-    return NextResponse.redirect(new URL(dest, req.url));
+    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
 
   const token = req.cookies.get("auth_token")?.value ?? null;
   const role = token ? getRoleFromJwt(token) : null;
   const profileId = token ? getProfileIdFromJwt(token) : null;
 
-  // Đã login + đã có profile: vào trang chủ marketing → đưa về đúng workspace (create/scan vẫn mở được)
+  // Logged in: always land on enterprise admin.
   if (token && profileId && pathname === "/") {
-    return NextResponse.redirect(new URL(homePathForRole(role), req.url));
+    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
 
   // Đã login nhưng chưa profile → chỉ cho role-setup (trừ API routes)
@@ -179,129 +63,27 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/role-setup", req.url));
   }
 
-  // Đã có profile mà vào role-setup → về dashboard đúng role
+  // Profile done: no reason to stay role-setup.
   if (pathname === "/role-setup" && token && profileId) {
-    return NextResponse.redirect(new URL(homePathForRole(role), req.url));
+    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
 
-  // /enterprise/admin resources — ENTERPRISE only
-  const isEnterpriseProductTools =
-    pathname === "/enterprise/admin/profile" ||
-    pathname.startsWith("/enterprise/admin/profile/") ||
-    pathname === "/enterprise/admin/production" ||
-    pathname.startsWith("/enterprise/admin/production/") ||
-    pathname === "/enterprise/admin/units" ||
-    pathname.startsWith("/enterprise/admin/units/");
-  if (isEnterpriseProductTools) {
+  if (pathname === "/enterprise" || pathname === "/enterprise/") {
+    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
+  }
+
+  const isEnterpriseAdmin = pathname.startsWith("/enterprise/admin");
+  if (isEnterpriseAdmin) {
     if (!token) {
       return NextResponse.redirect(new URL("/", req.url));
     }
     if (!profileId) {
       return NextResponse.redirect(new URL("/role-setup", req.url));
     }
-    const productToolsRole = getRoleFromJwt(token);
-    if (productToolsRole !== "ENTERPRISE") {
-      return NextResponse.redirect(new URL(homePathForRole(productToolsRole), req.url));
+    if (role !== "ENTERPRISE") {
+      return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
-  }
-
-  // Bọc auth cho toàn bộ /agent, /transit và /enterprise
-  const isAgentWorkspace = pathname === "/agent" || pathname.startsWith("/agent/");
-  const isTransitWorkspace =
-    pathname === "/transit" || pathname.startsWith("/transit/");
-  const isEnterpriseWorkspace =
-    pathname === "/enterprise" || pathname.startsWith("/enterprise/");
-
-  if (isAgentWorkspace || isTransitWorkspace || isEnterpriseWorkspace) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-    if (!profileId) {
-      return NextResponse.redirect(new URL("/role-setup", req.url));
-    }
-
-    const r = getRoleFromJwt(token);
-    // ENTERPRISE không dùng nhánh /agent — mirror sang /enterprise/admin/*
-    if (r === "ENTERPRISE" && isAgentWorkspace) {
-      let target: string;
-      if (pathname.startsWith("/agent/pages")) {
-        target =
-          pathname.replace(/^\/agent\/pages/, "/enterprise/admin") ||
-          "/enterprise/admin";
-      } else {
-        const rest = pathname.slice("/agent".length) || "";
-        target = `/enterprise/admin${rest}` || "/enterprise/admin";
-      }
-      return NextResponse.redirect(new URL(target, req.url));
-    }
-    // ENTERPRISE không dùng nhánh /transit — mirror sang /enterprise/admin/*
-    if (r === "ENTERPRISE" && isTransitWorkspace) {
-      let target: string;
-      if (pathname.startsWith("/transit/pages")) {
-        target =
-          pathname.replace(/^\/transit\/pages/, "/enterprise/admin") ||
-          "/enterprise/admin";
-      } else {
-        const rest = pathname.slice("/transit".length) || "";
-        target = `/enterprise/admin${rest}` || "/enterprise/admin";
-      }
-      return NextResponse.redirect(new URL(target, req.url));
-    }
-    // AGENT không dùng nhánh /enterprise (trừ product-tools đã xử lý ở trên)
-    if (r === "AGENT" && isEnterpriseWorkspace) {
-      if (
-        pathname === "/enterprise/admin/profile" ||
-        pathname.startsWith("/enterprise/admin/profile/")
-      ) {
-        const target =
-          pathname.replace(/^\/enterprise\/admin/, "/agent/pages") ||
-          "/agent/pages";
-        return NextResponse.redirect(new URL(target, req.url));
-      }
-      const rest = pathname.slice("/enterprise".length) || "";
-      const target = `/agent${rest}` || "/agent";
-      return NextResponse.redirect(new URL(target, req.url));
-    }
-    // AGENT không dùng nhánh /transit
-    if (r === "AGENT" && isTransitWorkspace) {
-      if (pathname.startsWith("/transit/pages")) {
-        const target =
-          pathname.replace(/^\/transit\/pages/, "/agent/pages") ||
-          "/agent/pages";
-        return NextResponse.redirect(new URL(target, req.url));
-      }
-      const rest = pathname.slice("/transit".length) || "";
-      const target = `/agent${rest}` || "/agent";
-      return NextResponse.redirect(new URL(target, req.url));
-    }
-    // TRANSIT không dùng nhánh /agent
-    if (r === "TRANSIT" && isAgentWorkspace) {
-      if (pathname.startsWith("/agent/pages")) {
-        const target =
-          pathname.replace(/^\/agent\/pages/, "/transit/pages") ||
-          "/transit/pages";
-        return NextResponse.redirect(new URL(target, req.url));
-      }
-      const rest = pathname.slice("/agent".length) || "";
-      const target = `/transit${rest}` || "/transit";
-      return NextResponse.redirect(new URL(target, req.url));
-    }
-    // TRANSIT không dùng nhánh /enterprise (giống AGENT)
-    if (r === "TRANSIT" && isEnterpriseWorkspace) {
-      if (
-        pathname === "/enterprise/admin/profile" ||
-        pathname.startsWith("/enterprise/admin/profile/")
-      ) {
-        const target =
-          pathname.replace(/^\/enterprise\/admin/, "/transit/pages") ||
-          "/transit/pages";
-        return NextResponse.redirect(new URL(target, req.url));
-      }
-      const rest = pathname.slice("/enterprise".length) || "";
-      const target = `/transit${rest}` || "/transit";
-      return NextResponse.redirect(new URL(target, req.url));
-    }
   }
 
   return NextResponse.next();
@@ -313,10 +95,10 @@ export const config = {
     "/role-setup",
     "/dashboard",
     "/dashboard/:path*",
-    "/agent",
-    "/agent/:path*",
-    "/transit",
-    "/transit/:path*",
+    "/create",
+    "/create/:path*",
+    "/scan",
+    "/scan/:path*",
     "/enterprise",
     "/enterprise/:path*",
   ],

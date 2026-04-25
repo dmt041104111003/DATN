@@ -5,12 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { useWalletAuth } from "../hooks/useWalletAuth";
-import { homePathForRole } from "@/lib/app-routes";
 
 const MENU = [
   { id: "home", label: "Home", href: "/" },
-  { id: "create", label: "Create", href: "/create" },
-  { id: "scan", label: "Scan", href: "/scan" },
 ];
 
 export function Header() {
@@ -53,11 +50,11 @@ export function Header() {
       const data = (await res.json()) as {
         user?: { role?: string | null; roleCode?: string | null } | null;
       };
-      const role =
-        (typeof data?.user?.roleCode === "string" && data.user.roleCode) ||
-        (typeof data?.user?.role === "string" && data.user.role) ||
-        null;
-      window.location.href = homePathForRole(role);
+      if (!data?.user) {
+        window.location.href = "/";
+        return;
+      }
+      window.location.href = "/enterprise/admin";
     } catch {
       window.location.href = "/";
     }
@@ -66,13 +63,7 @@ export function Header() {
   const activeId =
     pathname === "/"
       ? "home"
-      : pathname.startsWith("/create")
-      ? "create"
-      : pathname.startsWith("/scan")
-      ? "scan"
-      : pathname.startsWith("/agent") ||
-          pathname.startsWith("/transit") ||
-          pathname.startsWith("/enterprise")
+      : pathname.startsWith("/enterprise")
       ? "dashboard"
       : null;
 
@@ -142,8 +133,6 @@ export function Header() {
             >
               <span
                 className={`${
-                  pathname.startsWith("/agent") ||
-                  pathname.startsWith("/transit") ||
                   pathname.startsWith("/enterprise")
                     ? "underline underline-offset-4 text-red-400"
                     : "text-gray-800"
@@ -218,8 +207,6 @@ export function Header() {
                   setMobileMenuOpen(false);
                 }}
                 className={`flex items-center justify-between w-full px-4 py-3 text-left rounded-lg transition-colors text-gray-800 hover:bg-gray-100 ${
-                  pathname.startsWith("/agent") ||
-                  pathname.startsWith("/transit") ||
                   pathname.startsWith("/enterprise")
                     ? "bg-gray-100"
                     : ""
@@ -228,8 +215,6 @@ export function Header() {
               >
                 <span
                   className={`font-medium ${
-                    pathname.startsWith("/agent") ||
-                    pathname.startsWith("/transit") ||
                     pathname.startsWith("/enterprise")
                       ? "text-red-400 underline underline-offset-4"
                       : ""

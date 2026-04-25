@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { homePathForRole } from '@/lib/app-routes';
-
 interface WalletAPI {
   getChangeAddress: () => Promise<string | { address: string }>;
   getRewardAddresses?: () => Promise<string[]>;
@@ -127,11 +125,7 @@ export function useWalletAuth() {
         }));
         router.replace('/role-setup');
       } else {
-        const role =
-          (typeof verifyData.profile?.roleCode === 'string' && verifyData.profile.roleCode) ||
-          (typeof verifyData.profile?.role === 'string' && verifyData.profile.role) ||
-          null;
-        router.replace(homePathForRole(role));
+        router.replace('/enterprise/admin');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
