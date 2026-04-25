@@ -10,11 +10,6 @@ import {
   ProfileResourceEdit,
   ProfileResourceList,
 } from "@/features/resources/profile";
-import {
-  UnitsResourceCreate,
-  UnitsResourceEdit,
-  UnitsResourceList,
-} from "@/features/resources/units";
 
 export function AdminResources() {
   return null;
@@ -22,12 +17,6 @@ export function AdminResources() {
 
 export const adminResources = (
   <>
-    <Resource
-      name="units"
-      list={UnitsResourceList}
-      create={UnitsResourceCreate}
-      edit={UnitsResourceEdit}
-    />
     <Resource
       name="production"
       list={ProductionResourceList}

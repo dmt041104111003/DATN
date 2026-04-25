@@ -14,7 +14,6 @@ const BACKEND_URL =
 
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
-  units: "units",
   profile: "profile",
 };
 
