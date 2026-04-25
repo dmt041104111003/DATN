@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { APP_ENTERPRISE } from "@/lib/app-routes";
+import { APP_ADMIN_SETUP, homePathForRole } from "@/lib/app-routes";
 
 function base64UrlDecodeToString(input: string): string {
   const b64 = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -38,37 +38,43 @@ function getProfileIdFromJwt(token: string): string | null {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const deprecatedRoots =
-    pathname.startsWith("/agent") ||
-    pathname.startsWith("/transit") ||
     pathname.startsWith("/create") ||
     pathname.startsWith("/scan");
   if (deprecatedRoots) {
-    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
+    return NextResponse.redirect(new URL(APP_ADMIN_SETUP, req.url));
   }
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
-    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
+    return NextResponse.redirect(new URL(APP_ADMIN_SETUP, req.url));
   }
 
   const token = req.cookies.get("auth_token")?.value ?? null;
   const role = token ? getRoleFromJwt(token) : null;
   const profileId = token ? getProfileIdFromJwt(token) : null;
 
-  // Logged in: always land on enterprise admin.
   if (token && profileId && pathname === "/") {
-    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
+    return NextResponse.redirect(new URL(homePathForRole(role), req.url));
   }
 
-  if (pathname === "/enterprise" || pathname === "/enterprise/") {
-    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
-  }
+  const roleHome = homePathForRole(role);
+  const isSetupPath = pathname.startsWith("/admin");
+  const isRolePath =
+    pathname.startsWith("/enterprise") ||
+    pathname.startsWith("/transit") ||
+    pathname.startsWith("/agent");
 
-  const isEnterpriseAdmin = pathname.startsWith("/admin");
-  if (isEnterpriseAdmin) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/", req.url));
+  if (isSetupPath) {
+    if (!token) return NextResponse.redirect(new URL("/", req.url));
+    if (profileId) {
+      return NextResponse.redirect(new URL(roleHome, req.url));
     }
-    if (role !== "ENTERPRISE") {
-      return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.next();
+  }
+
+  if (isRolePath) {
+    if (!token) return NextResponse.redirect(new URL("/", req.url));
+    if (!profileId) return NextResponse.redirect(new URL(APP_ADMIN_SETUP, req.url));
+    if (!pathname.startsWith(roleHome)) {
+      return NextResponse.redirect(new URL(roleHome, req.url));
     }
     return NextResponse.next();
   }
@@ -85,6 +91,10 @@ export const config = {
     "/create/:path*",
     "/scan",
     "/scan/:path*",
+    "/agent",
+    "/agent/:path*",
+    "/transit",
+    "/transit/:path*",
     "/enterprise",
     "/enterprise/:path*",
     "/admin",

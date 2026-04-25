@@ -17,12 +17,18 @@ import { ProfileService } from './profile.service';
 export interface CreateProfileDto {
   roleCode: string;
   displayName: string;
-  location?: string;
+  phoneNumber?: string;
+  provinceId: string;
+  districtId: string;
+  wardId: string;
 }
 
 export interface UpdateProfileDto {
   displayName?: string;
-  location?: string;
+  phoneNumber?: string;
+  provinceId?: string;
+  districtId?: string;
+  wardId?: string;
 }
 
 @Controller('profile')
@@ -71,6 +77,12 @@ export class ProfileController {
       );
     }
     return this.profileService.getPublicProfile(walletAddress);
+  }
+
+  @Get('roles')
+  @UseGuards(JwtAuthGuard)
+  async getRoles() {
+    return this.profileService.getRoles();
   }
 
   @Post()

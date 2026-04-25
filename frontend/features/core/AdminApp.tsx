@@ -4,6 +4,7 @@ import { Admin } from "react-admin";
 import { adminAuthProvider } from "./authProvider";
 import { adminDataProvider } from "./dataProvider";
 import { adminResources } from "./resources";
+import { AdminLoginPage } from "@/features/resources/profile/LoginPage";
 import {
   AdminWelcome,
   AdminLayout,
@@ -16,6 +17,7 @@ export function AdminApp() {
       dataProvider={adminDataProvider}
       dashboard={AdminWelcome}
       layout={AdminLayout}
+      loginPage={AdminLoginPage}
       requireAuth
     >
       {adminResources}

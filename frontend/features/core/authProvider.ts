@@ -10,6 +10,13 @@ type MeResponse = {
     profileId?: string | null;
     role?: string | null;
     roleCode?: string | null;
+    displayName?: string | null;
+    walletAddress?: string | null;
+  } | null;
+  profile?: {
+    displayName?: string | null;
+    walletAddress?: string | null;
+    roleCode?: string | null;
   } | null;
 };
 
@@ -27,9 +34,6 @@ async function getMe(): Promise<MeResponse> {
 
 export const adminAuthProvider: AuthProvider = {
   async login() {
-    if (typeof window !== "undefined") {
-      window.location.assign("/admin");
-    }
     return Promise.resolve();
   },
   async logout() {
@@ -44,7 +48,16 @@ export const adminAuthProvider: AuthProvider = {
   },
   async checkAuth() {
     const data = await getMe();
-    if (!data?.user?.profileId) {
+    const hasProfile = Boolean(data?.user?.profileId);
+    const onSetupPage =
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/admin") ||
+        window.location.pathname.startsWith("/enterprise") ||
+        window.location.pathname.startsWith("/transit") ||
+        window.location.pathname.startsWith("/agent")) &&
+      window.location.hash.includes("/login");
+
+    if (!hasProfile && !onSetupPage) {
       throw new Error("Missing profile");
     }
     return Promise.resolve();
@@ -54,9 +67,12 @@ export const adminAuthProvider: AuthProvider = {
   },
   async getIdentity() {
     const data = await getMe();
+    const fullName =
+      String(data?.profile?.displayName || data?.user?.displayName || "").trim() ||
+      String(data?.profile?.walletAddress || data?.user?.walletAddress || "Người dùng");
     return {
       id: String(data?.user?.profileId ?? "unknown"),
-      fullName: "Admin user",
+      fullName,
     };
   },
   async getPermissions() {

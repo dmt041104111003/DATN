@@ -13,7 +13,7 @@ export function AdminMenu() {
   const { permissions } = usePermissions<string>();
   const isAdminRole = permissions === "ENTERPRISE";
   const items = [
-    <MenuItemLink key="overview" to="/" primaryText="Overview" leftIcon={<DashboardIcon />} />,
+    <MenuItemLink key="overview" to="/" primaryText="Tổng quan" leftIcon={<DashboardIcon />} />,
     ...(isAdminRole
       ? [
           <MenuItemLink
@@ -24,7 +24,7 @@ export function AdminMenu() {
           />,
         ]
       : []),
-    <MenuItemLink key="profile" to="/profile" primaryText="Profile" leftIcon={<PersonIcon />} />,
+    <MenuItemLink key="profile" to="/profile" primaryText="Hồ sơ" leftIcon={<PersonIcon />} />,
   ];
 
   return (

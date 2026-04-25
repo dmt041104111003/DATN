@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { homePathForRole } from '@/lib/app-routes';
+const SETUP_PROFILE_KEY = 'pending_profile_setup';
 
 interface WalletAPI {
   getChangeAddress: () => Promise<string | { address: string }>;
@@ -11,22 +12,50 @@ interface WalletAPI {
 
 interface VerifyResponse {
   needProfile?: boolean;
-  roles?: Array<{ id: number; code: string }>;
+  roles?: Array<{ id: number; code: string; name?: string | null }>;
   token?: string;
   profile?: {
     id: string;
     role?: string;
     roleCode?: string;
     displayName: string;
-    location: string | null;
+    provinceId?: string | null;
+    districtId?: string | null;
+    wardId?: string | null;
     coordinates: any;
   };
+}
+
+type SetupProfileState = {
+  walletAddress: string;
+  roles: Array<{ id: number; code: string; name?: string | null }>;
+} | null;
+
+function saveSetupProfileState(state: SetupProfileState) {
+  if (typeof window === 'undefined') return;
+  if (!state) {
+    window.sessionStorage.removeItem(SETUP_PROFILE_KEY);
+    return;
+  }
+  window.sessionStorage.setItem(SETUP_PROFILE_KEY, JSON.stringify(state));
+}
+
+export function readSetupProfileState(): SetupProfileState {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(SETUP_PROFILE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SetupProfileState;
+    if (!parsed?.walletAddress) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export function useWalletAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   const loginWithEternl = async () => {
     setIsLoading(true);
@@ -38,9 +67,6 @@ export function useWalletAuth() {
         throw new Error('No Cardano wallet found. Please install a Cardano wallet like Eternl, Nami, or Flint.');
       }
 
-      if (typeof window === "undefined") {
-        throw new Error("Browser is not ready.");
-      }
       const eternl = cardano.eternl as WalletAPI | undefined;
       if (!eternl || typeof eternl.enable !== "function") {
         throw new Error(
@@ -92,7 +118,7 @@ export function useWalletAuth() {
       let rewardAddresses: string[] = [];
       try {
         rewardAddresses = await api.getRewardAddresses?.() || [];
-      } catch (e) {
+      } catch {
       }
 
       const signAddress = rewardAddresses[0] ?? walletAddress;
@@ -117,8 +143,18 @@ export function useWalletAuth() {
       }
 
       const verifyData: VerifyResponse = await verifyResponse.json();
-
-      router.replace('/admin');
+      if (verifyData.needProfile) {
+        const pending = {
+          walletAddress,
+          roles: Array.isArray(verifyData.roles) ? verifyData.roles : [],
+        };
+        saveSetupProfileState(pending);
+        window.location.assign('/admin#/login');
+      } else {
+        saveSetupProfileState(null);
+        const roleCode = verifyData?.profile?.roleCode || verifyData?.profile?.role;
+        window.location.assign(homePathForRole(roleCode));
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);

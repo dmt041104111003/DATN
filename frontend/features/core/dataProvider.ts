@@ -320,6 +320,15 @@ export const adminDataProvider: DataProvider = {
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
+    if (resource === "profile") {
+      const { json } = await httpClient(`${BACKEND_URL}/profile`, {
+        method: "POST",
+        body: JSON.stringify(params.data),
+      });
+      const row = (json as any)?.profile ?? json ?? params.data;
+      return { data: { ...row, id: normalizeId(row, "me") } };
+    }
+
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);

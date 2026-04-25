@@ -13,7 +13,10 @@ export class ProfileService {
   async createProfile(custodianAddress: string, data: {
     roleCode: string;
     displayName: string;
-    location?: string;
+    phoneNumber?: string;
+    provinceId: string;
+    districtId: string;
+    wardId: string;
   }) {
     const addr = (custodianAddress || '').trim();
     const isPayment =
@@ -28,17 +31,31 @@ export class ProfileService {
     if (!roleCode) throw new BadRequestException('Role is required.');
     const role = await (this.prisma as any).role.findUnique({ where: { code: roleCode } });
     if (!role) throw new BadRequestException('Invalid role.');
-
-    const location = (data.location || '').trim();
-    if (!location) {
-      throw new BadRequestException('Location is required.');
+    const displayName = (data.displayName || '').trim();
+    if (!displayName) throw new BadRequestException('Display name is required.');
+    const provinceId = String(data.provinceId || '').trim();
+    const districtId = String(data.districtId || '').trim();
+    const wardId = String(data.wardId || '').trim();
+    if (!provinceId || !districtId || !wardId) {
+      throw new BadRequestException('Province, district and ward are required.');
+    }
+    const phoneNumber = (data.phoneNumber || '').trim() || null;
+    const existing = await (this.prisma as any).custodianAccount.findUnique({
+      where: { address: addr },
+      select: { roleCode: true },
+    });
+    if (existing?.roleCode && existing.roleCode !== roleCode) {
+      throw new BadRequestException('Role cannot be changed after profile creation.');
     }
     const account = await (this.prisma as any).custodianAccount.update({
       where: { address: addr },
       data: {
-        roleCode,
-        displayName: data.displayName,
-        location,
+        roleCode: existing?.roleCode || roleCode,
+        displayName,
+        phoneNumber,
+        provinceId,
+        districtId,
+        wardId,
         isActive: true,
       } as any,
       select: {
@@ -46,7 +63,10 @@ export class ProfileService {
         address: true,
         roleCode: true,
         displayName: true,
-        location: true,
+        phoneNumber: true,
+        provinceId: true,
+        districtId: true,
+        wardId: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -64,7 +84,10 @@ export class ProfileService {
       profileId: account.id,
       role: account.roleCode,
       displayName: account.displayName,
-      location: account.location,
+      phoneNumber: account.phoneNumber,
+      provinceId: account.provinceId,
+      districtId: account.districtId,
+      wardId: account.wardId,
     };
 
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
@@ -75,35 +98,48 @@ export class ProfileService {
         id: account.id,
         role: account.roleCode,
         displayName: account.displayName,
-        location: account.location,
+        phoneNumber: account.phoneNumber,
+        provinceId: account.provinceId,
+        districtId: account.districtId,
+        wardId: account.wardId,
       },
     };
   }
 
   async updateProfile(accountId: string, data: {
     displayName?: string;
-    location?: string;
+    phoneNumber?: string;
+    provinceId?: string;
+    districtId?: string;
+    wardId?: string;
   }) {
     const displayName = typeof data.displayName === 'string' ? data.displayName.trim() : '';
-    const location = typeof data.location === 'string' ? data.location.trim() : '';
+    const phoneNumber =
+      typeof data.phoneNumber === 'string' ? data.phoneNumber.trim() || null : undefined;
+    const provinceId = typeof data.provinceId === 'string' ? data.provinceId.trim() : undefined;
+    const districtId = typeof data.districtId === 'string' ? data.districtId.trim() : undefined;
+    const wardId = typeof data.wardId === 'string' ? data.wardId.trim() : undefined;
     if (!displayName) {
       throw new BadRequestException('Display name is required.');
-    }
-    if (!location) {
-      throw new BadRequestException('Location is required.');
     }
 
     const account = await (this.prisma as any).custodianAccount.update({
       where: { id: accountId },
       data: {
         displayName,
-        location,
+        ...(phoneNumber !== undefined ? { phoneNumber } : {}),
+        ...(provinceId !== undefined ? { provinceId: provinceId || null } : {}),
+        ...(districtId !== undefined ? { districtId: districtId || null } : {}),
+        ...(wardId !== undefined ? { wardId: wardId || null } : {}),
       } as any,
       select: {
         id: true,
         roleCode: true,
         displayName: true,
-        location: true,
+        phoneNumber: true,
+        provinceId: true,
+        districtId: true,
+        wardId: true,
       } as any,
     });
 
@@ -111,8 +147,23 @@ export class ProfileService {
       id: account.id,
       role: account.roleCode,
       displayName: account.displayName,
-      location: account.location,
+      phoneNumber: account.phoneNumber,
+      provinceId: account.provinceId,
+      districtId: account.districtId,
+      wardId: account.wardId,
     };
+  }
+
+  async getRoles() {
+    const roles = await (this.prisma as any).role.findMany({
+      orderBy: { code: 'asc' },
+      select: { code: true, name: true },
+    });
+    return (Array.isArray(roles) ? roles : []).map((r: any, idx: number) => ({
+      id: idx + 1,
+      code: r.code,
+      name: r.name ?? null,
+    }));
   }
 
   async listProfiles(custodianAddress: string) {
@@ -128,7 +179,10 @@ export class ProfileService {
         address: true,
         roleCode: true,
         displayName: true,
-        location: true,
+        phoneNumber: true,
+        provinceId: true,
+        districtId: true,
+        wardId: true,
         isActive: true,
       } as any,
     });
@@ -139,7 +193,10 @@ export class ProfileService {
         walletAddress: account.address,
         roleCode: account.roleCode,
         displayName: account.displayName,
-        location: account.location,
+        phoneNumber: account.phoneNumber,
+        provinceId: account.provinceId,
+        districtId: account.districtId,
+        wardId: account.wardId,
         isActive: account.isActive,
       },
     ];
@@ -161,7 +218,10 @@ export class ProfileService {
         address: true,
         roleCode: true,
         displayName: true,
-        location: true,
+        phoneNumber: true,
+        provinceId: true,
+        districtId: true,
+        wardId: true,
         isActive: true,
       } as any,
     });
@@ -172,7 +232,10 @@ export class ProfileService {
             walletAddress: account.address,
             roleCode: account.roleCode,
             displayName: account.displayName,
-            location: account.location,
+            phoneNumber: account.phoneNumber,
+            provinceId: account.provinceId,
+            districtId: account.districtId,
+            wardId: account.wardId,
             isActive: account.isActive,
           }
         : null,

@@ -14,7 +14,10 @@ model CustodianAccount {
   roleCode  String?
   role      Role?     @relation(fields: [roleCode], references: [code], onDelete: Restrict)
   displayName String?
-  location  String?
+  phoneNumber String?
+  provinceId String?
+  districtId String?
+  wardId   String?
   isActive  Boolean   @default(true)
   productions Production[]
   media     Media[]

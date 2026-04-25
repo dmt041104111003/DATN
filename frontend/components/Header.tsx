@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { useWalletAuth } from "../hooks/useWalletAuth";
+import { homePathForRole } from "@/lib/app-routes";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 const MENU = [
   { id: "home", label: "Trang chủ", href: "/" },
@@ -15,22 +18,35 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { loginWithEternl, isLoading, error } = useWalletAuth();
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [hasRole, setHasRole] = React.useState(false);
+
+  const fetchMe = React.useCallback(async () => {
+    const res = await fetch(`${BACKEND_URL}/auth/me`, { credentials: "include" });
+    if (!res.ok) return null;
+    return (await res.json()) as {
+      user?: { role?: string | null; roleCode?: string | null } | null;
+      profile?: { roleCode?: string | null; displayName?: string | null } | null;
+    };
+  }, []);
 
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
-        const BACKEND_URL =
-          process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-        const res = await fetch(`${BACKEND_URL}/auth/me`, {
-          credentials: "include",
-        });
-        setIsAuthenticated(res.ok);
+        const data = await fetchMe();
+        if (!data?.user) {
+          setIsAuthenticated(false);
+          setHasRole(false);
+          return;
+        }
+        setIsAuthenticated(true);
+        setHasRole(Boolean(data?.profile?.roleCode || data?.user?.roleCode || data?.user?.role));
       } catch {
         setIsAuthenticated(false);
+        setHasRole(false);
       }
     };
     checkAuth();
-  }, []);
+  }, [fetchMe]);
 
   const handleLogin = () => {
     loginWithEternl();
@@ -38,23 +54,14 @@ export function Header() {
 
   const handleDashboardClick = async () => {
     try {
-      const BACKEND_URL =
-        process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-      const res = await fetch(`${BACKEND_URL}/auth/me`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        window.location.href = "/";
-        return;
-      }
-      const data = (await res.json()) as {
-        user?: { role?: string | null; roleCode?: string | null } | null;
-      };
+      const data = await fetchMe();
       if (!data?.user) {
         window.location.href = "/";
         return;
       }
-      window.location.href = "/admin";
+      const roleCode = data?.profile?.roleCode || data?.user?.roleCode || data?.user?.role;
+      const target = roleCode ? homePathForRole(roleCode) : "/admin#/login";
+      window.location.href = target;
     } catch {
       window.location.href = "/";
     }
@@ -63,7 +70,10 @@ export function Header() {
   const activeId =
     pathname === "/"
       ? "home"
-      : pathname.startsWith("/admin")
+      : pathname.startsWith("/admin") ||
+        pathname.startsWith("/enterprise") ||
+        pathname.startsWith("/transit") ||
+        pathname.startsWith("/agent")
       ? "dashboard"
       : null;
 
@@ -133,12 +143,15 @@ export function Header() {
             >
               <span
                 className={`${
-                  pathname.startsWith("/admin")
+                  pathname.startsWith("/admin") ||
+                  pathname.startsWith("/enterprise") ||
+                  pathname.startsWith("/transit") ||
+                  pathname.startsWith("/agent")
                     ? "underline underline-offset-4 text-red-400"
                     : "text-gray-800"
                 } hover:underline hover:underline-offset-4 ${isLoading ? "opacity-50" : ""}`}
               >
-                {isLoading ? '...' : (isAuthenticated ? 'Quản trị' : 'Đăng nhập')}
+                {isLoading ? '...' : (isAuthenticated ? (hasRole ? 'Quản trị' : 'Hoàn tất hồ sơ') : 'Đăng nhập')}
               </span>
             </button>
           </div>
@@ -207,7 +220,10 @@ export function Header() {
                   setMobileMenuOpen(false);
                 }}
                 className={`flex items-center justify-between w-full px-4 py-3 text-left rounded-lg transition-colors text-gray-800 hover:bg-gray-100 ${
-                  pathname.startsWith("/admin")
+                  pathname.startsWith("/admin") ||
+                  pathname.startsWith("/enterprise") ||
+                  pathname.startsWith("/transit") ||
+                  pathname.startsWith("/agent")
                     ? "bg-gray-100"
                     : ""
                 } ${isLoading ? "opacity-50" : ""}`}
@@ -215,12 +231,15 @@ export function Header() {
               >
                 <span
                   className={`font-medium ${
-                    pathname.startsWith("/admin")
+                    pathname.startsWith("/admin") ||
+                    pathname.startsWith("/enterprise") ||
+                    pathname.startsWith("/transit") ||
+                    pathname.startsWith("/agent")
                       ? "text-red-400 underline underline-offset-4"
                       : ""
                   }`}
                 >
-                  {isLoading ? '...' : (isAuthenticated ? 'Quản trị' : 'Đăng nhập')}
+                  {isLoading ? '...' : (isAuthenticated ? (hasRole ? 'Quản trị' : 'Hoàn tất hồ sơ') : 'Đăng nhập')}
                 </span>
                 <span className="material-icons text-lg text-gray-500">
                   chevron_right
