@@ -35,7 +35,6 @@ export const enterpriseAdminAuthProvider: AuthProvider = {
       credentials: "include",
     }).catch(() => undefined);
     if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem("profile_setup");
       window.location.assign("/");
     }
     return false;

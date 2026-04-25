@@ -58,16 +58,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
 
-  // Đã login nhưng chưa profile → chỉ cho role-setup (trừ API routes)
-  if (token && !profileId && pathname !== "/role-setup") {
-    return NextResponse.redirect(new URL("/role-setup", req.url));
-  }
-
-  // Profile done: no reason to stay role-setup.
-  if (pathname === "/role-setup" && token && profileId) {
-    return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
-  }
-
   if (pathname === "/enterprise" || pathname === "/enterprise/") {
     return NextResponse.redirect(new URL(APP_ENTERPRISE, req.url));
   }
@@ -76,9 +66,6 @@ export function middleware(req: NextRequest) {
   if (isEnterpriseAdmin) {
     if (!token) {
       return NextResponse.redirect(new URL("/", req.url));
-    }
-    if (!profileId) {
-      return NextResponse.redirect(new URL("/role-setup", req.url));
     }
     if (role !== "ENTERPRISE") {
       return NextResponse.redirect(new URL("/", req.url));
@@ -92,7 +79,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/",
-    "/role-setup",
     "/dashboard",
     "/dashboard/:path*",
     "/create",

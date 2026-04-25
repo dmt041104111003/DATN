@@ -118,15 +118,7 @@ export function useWalletAuth() {
 
       const verifyData: VerifyResponse = await verifyResponse.json();
 
-      if (verifyData.needProfile === true) {
-        sessionStorage.setItem('profile_setup', JSON.stringify({
-          stakeAddress: walletAddress,
-          roles: verifyData.roles || [],
-        }));
-        router.replace('/role-setup');
-      } else {
-        router.replace('/enterprise/admin');
-      }
+      router.replace('/enterprise/admin');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
