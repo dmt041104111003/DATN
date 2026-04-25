@@ -36,8 +36,6 @@ model Unit {
   provinceId      String
   districtId      String
   wardId          String
-  detailAddress   String?
-  contactName     String?
   phoneNumber     String?
   createdByAddress String
   createdAt       DateTime @default(now())

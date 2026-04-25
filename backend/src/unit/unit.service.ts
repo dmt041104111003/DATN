@@ -70,8 +70,6 @@ export class UnitService {
           provinceId,
           districtId,
           wardId,
-          detailAddress: clean(data?.detailAddress) || null,
-          contactName: clean(data?.contactName) || null,
           phoneNumber: clean(data?.phoneNumber) || null,
           createdByAddress: owner,
         },
@@ -101,8 +99,6 @@ export class UnitService {
     if (data?.provinceId !== undefined) patch.provinceId = clean(data.provinceId) || null;
     if (data?.districtId !== undefined) patch.districtId = clean(data.districtId) || null;
     if (data?.wardId !== undefined) patch.wardId = clean(data.wardId) || null;
-    if (data?.detailAddress !== undefined) patch.detailAddress = clean(data.detailAddress) || null;
-    if (data?.contactName !== undefined) patch.contactName = clean(data.contactName) || null;
     if (data?.phoneNumber !== undefined) patch.phoneNumber = clean(data.phoneNumber) || null;
     // walletAddress + code are intentionally immutable after create
     if (patch.provinceId === null || patch.districtId === null || patch.wardId === null) {
