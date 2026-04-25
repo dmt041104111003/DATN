@@ -12,10 +12,10 @@ import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 
 export function AdminMenu() {
   const { permissions } = usePermissions<string>();
-  const isEnterprise = permissions === "ENTERPRISE";
+  const isAdminRole = permissions === "ENTERPRISE";
   const items = [
     <MenuItemLink key="overview" to="/" primaryText="Overview" leftIcon={<DashboardIcon />} />,
-    ...(isEnterprise
+    ...(isAdminRole
       ? [
           <MenuItemLink
             key="production"

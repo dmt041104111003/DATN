@@ -1,24 +1,24 @@
 "use client";
 
 import { Admin } from "react-admin";
-import { enterpriseAdminAuthProvider } from "./authProvider";
-import { enterpriseAdminDataProvider } from "./dataProvider";
-import { enterpriseAdminResources } from "./resources";
+import { adminAuthProvider } from "./authProvider";
+import { adminDataProvider } from "./dataProvider";
+import { adminResources } from "./resources";
 import {
   AdminWelcome,
-  EnterpriseAdminLayout,
+  AdminLayout,
 } from "@/features/ui/layout/AdminLayout";
 
 export function AdminApp() {
   return (
     <Admin
-      authProvider={enterpriseAdminAuthProvider}
-      dataProvider={enterpriseAdminDataProvider}
+      authProvider={adminAuthProvider}
+      dataProvider={adminDataProvider}
       dashboard={AdminWelcome}
-      layout={EnterpriseAdminLayout}
+      layout={AdminLayout}
       requireAuth
     >
-      {enterpriseAdminResources}
+      {adminResources}
     </Admin>
   );
 }

@@ -16,11 +16,11 @@ import {
   UnitsResourceList,
 } from "@/features/resources/units";
 
-export function EnterpriseAdminResources() {
+export function AdminResources() {
   return null;
 }
 
-export const enterpriseAdminResources = (
+export const adminResources = (
   <>
     <Resource
       name="units"

@@ -215,7 +215,7 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
   };
 }
 
-export const enterpriseAdminDataProvider: DataProvider = {
+export const adminDataProvider: DataProvider = {
   ...baseProvider,
   async getList(resource, params) {
     if (resource === "profile") {

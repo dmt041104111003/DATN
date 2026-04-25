@@ -25,8 +25,11 @@ async function getMe(): Promise<MeResponse> {
   return (await res.json()) as MeResponse;
 }
 
-export const enterpriseAdminAuthProvider: AuthProvider = {
+export const adminAuthProvider: AuthProvider = {
   async login() {
+    if (typeof window !== "undefined") {
+      window.location.assign("/admin");
+    }
     return Promise.resolve();
   },
   async logout() {
@@ -53,7 +56,7 @@ export const enterpriseAdminAuthProvider: AuthProvider = {
     const data = await getMe();
     return {
       id: String(data?.user?.profileId ?? "unknown"),
-      fullName: "Enterprise user",
+      fullName: "Admin user",
     };
   },
   async getPermissions() {

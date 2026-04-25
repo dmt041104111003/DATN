@@ -8,6 +8,6 @@ const AdminApp = dynamic(
   { ssr: false },
 );
 
-export default function EnterpriseAdminCatchAllPage() {
+export default function AdminCatchAllPage() {
   return <AdminApp />;
 }
