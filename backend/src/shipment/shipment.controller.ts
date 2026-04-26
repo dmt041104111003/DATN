@@ -86,6 +86,27 @@ export class ShipmentController {
     }
   }
 
+  @Patch(':shipmentInventoryKey')
+  async update(
+    @Req() req: any,
+    @Param('shipmentInventoryKey') shipmentInventoryKey: string,
+    @Body() body: any,
+  ) {
+    try {
+      return await this.shipmentService.updateEditable(
+        this.getCustodian(req),
+        this.getRole(req),
+        shipmentInventoryKey,
+        body,
+      );
+    } catch (e) {
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Failed to update shipment.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Delete(':shipmentInventoryKey')
   async remove(
     @Req() req: any,

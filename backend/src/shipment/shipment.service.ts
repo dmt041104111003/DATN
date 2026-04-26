@@ -127,7 +127,12 @@ export class ShipmentService {
     for (const row of updaterProfiles || []) {
       profileMap.set(clean(row?.address), row);
     }
-    const roadmap = [initialLocation, ...updaterAddresses.map((addr) => this.locationFromProfile(profileMap.get(addr), addr))];
+    const roadmap = [
+      initialLocation,
+      ...updaterAddresses
+        .filter((addr) => addr !== holder)
+        .map((addr) => this.locationFromProfile(profileMap.get(addr), addr)),
+    ];
 
     const packages = await (this.prisma as any).package.findMany({
       where: { inventoryKey: { in: uniquePackageKeys }, holderAddress: holder },
@@ -262,6 +267,68 @@ export class ShipmentService {
         entityType: 'SHIPMENT',
         entityKey: shipmentInventoryKey,
         opType: 'UPDATE_STATUS',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
+    });
+    return {
+      ...updated,
+      packageInventoryKeys: Array.isArray(updated?.packages)
+        ? updated.packages.map((x: any) => clean(x?.packageInventoryKey)).filter(Boolean)
+        : [],
+      packageCodes: Array.isArray(updated?.packages)
+        ? updated.packages.map((x: any) => clean(x?.package?.code)).filter(Boolean)
+        : [],
+    };
+  }
+
+  async updateEditable(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
+    this.assertEnterprise(roleRaw);
+    const holder = clean(holderAddressRaw);
+    const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
+    const txHash = clean(data?.txHash);
+    if (!holder) throw new BadRequestException('Operator account reference is required.');
+    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
+    if (!txHash) throw new BadRequestException('txHash is required.');
+
+    const row = await (this.prisma as any).shipment.findUnique({
+      where: { inventoryKey: shipmentInventoryKey },
+      include: {
+        packages: {
+          select: {
+            packageInventoryKey: true,
+            package: { select: { code: true } },
+          },
+        },
+      },
+    });
+    if (!row) throw new NotFoundException('Shipment not found.');
+    if (clean(row?.holderAddress) !== holder) {
+      throw new BadRequestException('You can only edit shipment(s) that you still hold.');
+    }
+    if (clean(row?.status).toUpperCase() !== 'CREATED') {
+      throw new BadRequestException('Only CREATED shipments can be edited.');
+    }
+
+    const note = clean(data?.note) || null;
+    const updated = await (this.prisma as any).shipment.update({
+      where: { inventoryKey: shipmentInventoryKey },
+      data: { note } as any,
+      include: {
+        packages: {
+          select: {
+            packageInventoryKey: true,
+            package: { select: { code: true } },
+          },
+        },
+      },
+    });
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: 'SHIPMENT',
+        entityKey: shipmentInventoryKey,
+        opType: 'UPDATE',
         txHash,
         verified: false,
         verifiedAt: null,

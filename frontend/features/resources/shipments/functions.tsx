@@ -179,36 +179,27 @@ function ShipmentCreateSections() {
     filter: {},
   });
   const profile = profileRows[0] ?? {};
-  const [provinceOptions, setProvinceOptions] = React.useState<Option[]>([]);
-  const [districtOptions, setDistrictOptions] = React.useState<Option[]>([]);
-  const [wardOptions, setWardOptions] = React.useState<Option[]>([]);
   const [updaterLocationRows, setUpdaterLocationRows] = React.useState<UpdaterLocationRow[]>([]);
+  const [baseLocation, setBaseLocation] = React.useState<string>("—");
   const provinceId = cleanString(profile?.provinceId);
   const districtId = cleanString(profile?.districtId);
   const wardId = cleanString(profile?.wardId);
 
   React.useEffect(() => {
-    getProvinceOptions().then(setProvinceOptions).catch(() => setProvinceOptions([]));
-  }, []);
-  React.useEffect(() => {
-    if (!provinceId) {
-      setDistrictOptions([]);
-      return;
-    }
-    getDistrictOptions(provinceId).then(setDistrictOptions).catch(() => setDistrictOptions([]));
-  }, [provinceId]);
-  React.useEffect(() => {
-    if (!districtId) {
-      setWardOptions([]);
-      return;
-    }
-    getWardOptions(districtId).then(setWardOptions).catch(() => setWardOptions([]));
-  }, [districtId]);
-
-  const baseLocation = React.useMemo(
-    () => makeLocationLabel(provinceId, districtId, wardId, provinceOptions, districtOptions, wardOptions),
-    [districtId, districtOptions, provinceId, provinceOptions, wardId, wardOptions],
-  );
+    let mounted = true;
+    (async () => {
+      const [p, d, w] = await Promise.all([
+        getProvinceNameById(provinceId),
+        getDistrictNameById(districtId),
+        getWardNameById(wardId),
+      ]);
+      if (!mounted) return;
+      setBaseLocation([p || provinceId, d || districtId, w || wardId].filter(Boolean).join("/") || "—");
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [provinceId, districtId, wardId]);
   const updaterAddresses = React.useMemo(() => normalizeAddresses(updaterAddressesRaw), [updaterAddressesRaw]);
   const [updaterLocationMap, setUpdaterLocationMap] = React.useState<Record<string, string>>({});
 
@@ -453,8 +444,7 @@ function ShipmentEditSections() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextInput source="code" label="Mã lô" disabled fullWidth />
           <TextInput source="traceSchemeRef" label="Mã chính sách" disabled fullWidth />
-          <SelectInput source="status" label="Trạng thái" choices={SHIPMENT_STATUS_CHOICES} disabled fullWidth />
-          <TextInput source="location" label="Vị trí hiện tại" disabled={!canEditShipment} fullWidth />
+          <MuiTextField label="Vị trí hiện tại" value={locationDisplay} disabled fullWidth />
           <TextInput source="note" label="Ghi chú" multiline disabled={!canEditShipment} fullWidth />
         </div>
       </div>
@@ -468,7 +458,6 @@ function ShipmentEditSections() {
         <h3 className="mb-4 font-semibold">[3] Quyền cập nhật vị trí</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {renderReadonlyAddressRows(updaters, "Địa chỉ được phép")}
-          <MuiTextField label="Vị trí đã resolve" value={locationDisplay} disabled fullWidth />
           {renderReadonlyAddressRows(roadmapDisplay, "Roadmap hiện tại")}
         </div>
       </div>
@@ -610,7 +599,8 @@ export function ShipmentsResourceList() {
           label="Xóa"
           render={(record: any) => {
             const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
-            if (!isEnterprise || !isHolder) return "—";
+            const status = cleanString(record?.status).toUpperCase();
+            if (!isEnterprise || !isHolder || status === "IN_TRANSIT") return "—";
             return (
               <button
                 type="button"

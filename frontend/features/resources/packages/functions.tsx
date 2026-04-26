@@ -366,7 +366,8 @@ export function PackagesResourceList() {
           label="Xóa"
           render={(record: any) => {
             const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
-            if (!isEnterprise || !isHolder) return "—";
+            const lockedByShipment = Boolean(record?.lockedByShipment);
+            if (!isEnterprise || !isHolder || lockedByShipment) return "—";
             return (
               <button
                 type="button"

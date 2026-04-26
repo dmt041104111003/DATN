@@ -37,10 +37,11 @@ function makeMetadata(base: any, shipment: { code: string; inventoryKey: string;
 
 function decodeAssetNameFromUnit(unit: unknown) {
   const value = clean(unit);
-  if (!value) return '';
-  const dot = value.indexOf('.');
-  const hex = dot >= 0 ? value.slice(dot + 1) : value;
-  if (!hex) return '';
+  if (!value || value.length <= 56) return '';
+  const rest = value.slice(56);
+  const label = CIP68_100('');
+  const hex = rest.startsWith(label) ? rest.slice(label.length) : rest;
+  if (!hex || hex.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(hex)) return '';
   try {
     return Buffer.from(hex, 'hex').toString('utf8');
   } catch {
@@ -139,17 +140,15 @@ export class ShipmentContractService {
     };
   }
 
-  private async loadOnchainMetadata(walletAddress: string, shipmentInventoryKey: string) {
-    const own = await this.blockfrostProvider.fetchAddressUTxOs(walletAddress);
-    const utxo = (own || []).find((item: any) =>
-      Array.isArray(item?.output?.amount) &&
-      item.output.amount.some((amt: any) => clean(amt?.unit) === shipmentInventoryKey),
-    );
-    if (!utxo) throw new BadRequestException('Cannot find shipment token UTxO in wallet.');
-    const token = (utxo.output.amount || []).find((amt: any) => clean(amt?.unit) === shipmentInventoryKey);
-    const asset = await this.blockfrostProvider.fetchAssetAddresses(shipmentInventoryKey);
-    const metadata = (asset as any)?.onchain_metadata || {};
-    const assetName = decodeAssetNameFromUnit(token?.unit || shipmentInventoryKey);
+  private async loadOnchainMetadata(owners: string[], shipmentInventoryKey: string) {
+    const { policyId, contractAddress } = this.plutusHelper.getScripts(owners);
+    const assetName = decodeAssetNameFromUnit(shipmentInventoryKey);
+    if (!assetName) return null;
+    const referenceUnit = policyId + CIP68_100(stringToHex(assetName));
+    const utxos = await this.blockfrostProvider.fetchAddressUTxOs(contractAddress, referenceUnit);
+    const ref = utxos.length > 0 ? (utxos[utxos.length - 1] as any) : null;
+    if (!ref) return null;
+    const metadata = (await this.blockfrostProvider.fetchAssetAddresses(shipmentInventoryKey) as any)?.onchain_metadata || {};
     return { assetName, metadata };
   }
 
@@ -170,7 +169,10 @@ export class ShipmentContractService {
     if (clean(shipment?.holderAddress) !== walletAddress) {
       throw new BadRequestException('You can only update shipment(s) that you still hold.');
     }
-    const { assetName, metadata } = await this.loadOnchainMetadata(walletAddress, inventoryKey);
+    const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
+    if (!onchain) throw new BadRequestException('Shipment on-chain metadata was not found.');
+    const { assetName, metadata } = onchain;
+    if (!assetName) throw new BadRequestException('Unable to decode asset name from inventoryKey.');
     const mergedMetadata: Record<string, string> = {};
     for (const [key, value] of Object.entries(metadata || {})) {
       mergedMetadata[String(key)] = stringifyMetadataValue(value);
