@@ -27,6 +27,8 @@ import { ShipmentController } from './shipment/shipment.controller';
 import { ShipmentService } from './shipment/shipment.service';
 import { ShipmentContractController } from './shipment/shipment.contract.controller';
 import { ShipmentContractService } from './shipment/shipment.contract.service';
+import { ShipmentScanController } from './shipment-scan/shipment-scan.controller';
+import { ShipmentScanService } from './shipment-scan/shipment-scan.service';
 
 @Module({
   imports: [
@@ -52,6 +54,7 @@ import { ShipmentContractService } from './shipment/shipment.contract.service';
     PackageContractController,
     ShipmentController,
     ShipmentContractController,
+    ShipmentScanController,
     HealthController,
   ],
   providers: [
@@ -67,6 +70,7 @@ import { ShipmentContractService } from './shipment/shipment.contract.service';
     PackageContractService,
     ShipmentService,
     ShipmentContractService,
+    ShipmentScanService,
   ],
 })
 export class AppModule {}

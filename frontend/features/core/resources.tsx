@@ -20,6 +20,7 @@ import {
   ShipmentsResourceEdit,
   ShipmentsResourceList,
 } from "@/features/resources/shipments";
+import { ShipmentScanResourceList } from "@/features/resources/shipment-scan";
 
 export function AdminResources() {
   return null;
@@ -45,6 +46,7 @@ export const adminResources = (
       create={ShipmentsResourceCreate}
       edit={ShipmentsResourceEdit}
     />
+    <Resource name="shipment-scan" list={ShipmentScanResourceList} />
     <Resource name="profile" list={ProfileResourceList} edit={ProfileResourceEdit} />
   </>
 );
