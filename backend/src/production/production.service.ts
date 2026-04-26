@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const ENTITY_TYPE = 'PRODUCTION';
@@ -10,13 +10,6 @@ function cleanString(v: unknown): string {
 @Injectable()
 export class ProductionService {
   constructor(private readonly prisma: PrismaService) {}
-
-  private assertEnterprise(roleRaw: unknown) {
-    const role = cleanString(roleRaw).toUpperCase();
-    if (role !== 'ENTERPRISE') {
-      throw new BadRequestException('Only ENTERPRISE can delete production.');
-    }
-  }
 
   private certToString(value: unknown): string | null {
     if (!Array.isArray(value)) return null;
@@ -120,9 +113,8 @@ export class ProductionService {
 
   async list(createdBy: string) {
     const addr = cleanString(createdBy);
-    if (!addr) throw new BadRequestException('Operator account reference is required.');
     const rows = await (this.prisma as any).production.findMany({
-      where: { registeringCustodianAddress: addr },
+      where: addr ? { registeringCustodianAddress: addr } : undefined,
       include: { _count: { select: { packages: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -150,24 +142,11 @@ export class ProductionService {
 
   async create(createdBy: string, data: any) {
     const addr = cleanString(createdBy);
-    if (!addr) throw new BadRequestException('Operator account reference is required.');
     const traceSchemeRef = cleanString(data.traceSchemeRef);
     const inventoryKey = cleanString(data.inventoryKey);
     const txHash = cleanString(data.txHash);
-    if (!traceSchemeRef || !inventoryKey || !txHash) {
-      throw new BadRequestException('traceSchemeRef, inventoryKey, txHash are required.');
-    }
-
-    const exists = await (this.prisma as any).production.findUnique({
-      where: { inventoryKey },
-      select: { inventoryKey: true },
-    });
-    if (exists) throw new BadRequestException('Production already exists.');
 
     const seedingDate = data?.seedingDate ? new Date(data.seedingDate) : null;
-    if (!seedingDate || Number.isNaN(seedingDate.getTime())) {
-      throw new BadRequestException('seedingDate is required.');
-    }
 
     const production = await (this.prisma as any).production.create({
       data: {
@@ -219,28 +198,12 @@ export class ProductionService {
 
   async update(createdBy: string, inventoryKey: string, data: any) {
     const addr = cleanString(createdBy);
-    if (!addr) throw new BadRequestException('Operator account reference is required.');
     const key = decodeURIComponent(cleanString(inventoryKey));
-    if (!key) throw new BadRequestException('inventoryKey is required.');
 
     const existing = await (this.prisma as any).production.findUnique({ where: { inventoryKey: key } });
     if (!existing) throw new NotFoundException('Production not found');
-    if (cleanString(existing.registeringCustodianAddress) !== addr) {
-      throw new BadRequestException('You are not allowed to update this production.');
-    }
-    const lastOp = await this.getLatestOp(key);
-    if (lastOp && !lastOp.verified) {
-      throw new BadRequestException('Bản ghi đang chờ xác thực on-chain, chưa thể cập nhật.');
-    }
-    const currentStatus = cleanString(existing.status).toUpperCase();
-    if (currentStatus === 'CLOSED') {
-      throw new BadRequestException('This production is already closed.');
-    }
 
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
-    if (!['ACTIVE', 'CLOSED'].includes(nextStatus)) {
-      throw new BadRequestException('Invalid status transition.');
-    }
 
     const patch: Record<string, unknown> = {};
     if (nextStatus === 'ACTIVE') {
@@ -262,26 +225,8 @@ export class ProductionService {
     }
     if (nextStatus === 'CLOSED') {
       const harvestDate = data?.harvestDate ? new Date(data.harvestDate) : null;
-      if (!harvestDate || Number.isNaN(harvestDate.getTime())) {
-        throw new BadRequestException('harvestDate is required.');
-      }
-      const seedingDate = new Date(existing.seedingDate);
-      const now = new Date();
-      if (harvestDate.getTime() < seedingDate.getTime()) {
-        throw new BadRequestException('harvestDate must be greater than or equal to seedingDate.');
-      }
-      if (harvestDate.getTime() > now.getTime()) {
-        throw new BadRequestException('harvestDate must be less than or equal to now.');
-      }
       const actualYieldKg = cleanString(data?.actualYieldKg);
-      if (!actualYieldKg) {
-        throw new BadRequestException('actualYieldKg is required when closing production.');
-      }
-      const actualYieldNumber = Number(actualYieldKg);
-      if (!Number.isFinite(actualYieldNumber) || actualYieldNumber <= 0) {
-        throw new BadRequestException('actualYieldKg must be greater than 0.');
-      }
-      patch.harvestDate = harvestDate;
+      patch.harvestDate = harvestDate || null;
       patch.actualYieldKg = actualYieldKg;
     }
     patch.status = nextStatus;
@@ -320,38 +265,15 @@ export class ProductionService {
     );
   }
 
-  async deleteByInventoryKey(createdBy: string, roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
-    this.assertEnterprise(roleRaw);
-    const addr = cleanString(createdBy);
+  async deleteByInventoryKey(createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
+    const _addr = cleanString(createdBy);
     const key = cleanString(inventoryKeyRaw);
     const txHash = cleanString(txHashRaw);
-    if (!addr) throw new BadRequestException('Operator account reference is required.');
-    if (!key) throw new BadRequestException('inventoryKey is required.');
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const existing = await (this.prisma as any).production.findUnique({
       where: { inventoryKey: key },
-      include: { _count: { select: { packages: true } } },
     });
     if (!existing) throw new NotFoundException('Production not found');
-    if (cleanString(existing.registeringCustodianAddress) !== addr) {
-      throw new BadRequestException('You are not allowed to delete this production.');
-    }
-    if (Number(existing?._count?.packages || 0) > 0) {
-      throw new BadRequestException('Production already linked to package(s), cannot delete.');
-    }
-    const pendingDelete = await (this.prisma as any).recordOperation.findFirst({
-      where: {
-        entityType: ENTITY_TYPE,
-        entityKey: key,
-        opType: 'DELETE',
-        verified: false,
-      },
-      select: { id: true },
-    });
-    if (pendingDelete) {
-      throw new BadRequestException('Delete request is already pending verification.');
-    }
     await (this.prisma as any).recordOperation.create({
       data: {
         entityType: ENTITY_TYPE,

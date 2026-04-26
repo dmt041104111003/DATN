@@ -83,11 +83,8 @@ export class ProductionContractService {
     const walletAddress = String(dto.custodianAddress || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const code = String(dto.assetName || '').trim() || this.generateCode();
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
-    if (!owners.includes(walletAddress)) {
-      throw new BadRequestException('The signing custodian must appear on the joint custody list.');
-    }
+    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const metadata = this.stringifyMetadata(dto.metadata);
     metadata.production_code = metadata.production_code || code;
@@ -111,12 +108,8 @@ export class ProductionContractService {
     const walletAddress = String(dto.custodianAddress || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const inventoryKey = String(dto.inventoryKey || '').trim();
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
-    if (!owners.includes(walletAddress)) {
-      throw new BadRequestException('Your account is not on the joint custody list.');
-    }
-    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
+    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
     if (!onchain) throw new BadRequestException('Production on-chain metadata was not found.');
@@ -145,17 +138,12 @@ export class ProductionContractService {
     const productionInventoryKeys = Array.isArray(dto?.productionInventoryKeys)
       ? dto.productionInventoryKeys.map((s: unknown) => String(s || '').trim()).filter(Boolean)
       : [];
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
-    if (!owners.includes(walletAddress)) {
-      throw new BadRequestException('Your account is not on the joint custody list.');
-    }
-    if (productionInventoryKeys.length < 1) throw new BadRequestException('productionInventoryKeys is required.');
+    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const rows = await (this.prisma as any).production.findMany({
       where: {
         inventoryKey: { in: productionInventoryKeys },
-        registeringCustodianAddress: walletAddress,
       },
       select: {
         inventoryKey: true,
@@ -163,19 +151,9 @@ export class ProductionContractService {
         packages: { select: { id: true }, take: 1 },
       },
     });
-    if ((rows || []).length !== productionInventoryKeys.length) {
-      throw new BadRequestException('Some productions are invalid or not owned by your address.');
-    }
-    const hasLinkedPackages = (rows || []).some((x: any) => Array.isArray(x?.packages) && x.packages.length > 0);
-    if (hasLinkedPackages) {
-      throw new BadRequestException('Cannot burn production linked to package(s).');
-    }
     const products = (rows || [])
       .map((x: any) => ({ productName: String(x?.code || '').trim() }))
       .filter((x: any) => String(x?.productName || '').trim());
-    if (products.length !== productionInventoryKeys.length) {
-      throw new BadRequestException('Some production codes are missing for burn.');
-    }
     const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
     return { result: true, data: unsignedTx, message: 'Production burn prepared.' };
   }

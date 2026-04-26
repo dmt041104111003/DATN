@@ -149,7 +149,6 @@ export class PackageService {
     if (!production) throw new NotFoundException('Production not found.');
     const weightValue = Number(data?.weightValue);
     const weightUnit = clean(data?.weightUnit).toLowerCase();
-    const quantity = Number(data?.quantity);
 
     const packagingType = clean(data?.packagingType);
     const packagingDate = data?.packagingDate ? new Date(data.packagingDate) : null;
