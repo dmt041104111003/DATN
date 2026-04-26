@@ -3,8 +3,11 @@
 import * as React from "react";
 import {
   ArrayInput,
+  BooleanField,
   Create,
   Datagrid,
+  DateField,
+  DeleteButton,
   Edit,
   List,
   SaveButton,
@@ -21,7 +24,6 @@ import {
 import MuiTextField from "@mui/material/TextField";
 import { useFormContext, useWatch } from "react-hook-form";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
-import type { ContainerStatus } from "./constants";
 import {
   getDistrictNameById,
   getProvinceNameById,
@@ -39,6 +41,22 @@ function makeContainerCode() {
   return `THUNG_${y}${m}${d}_${seq}`;
 }
 
+async function fetchCapacitySummary(
+  productionInventoryKey: string,
+  excludeContainerInventoryKey?: string,
+): Promise<{ totalCapacityKg: number; usedCapacityKg: number; remainingCapacityKg: number }> {
+  const key = String(productionInventoryKey || "").trim();
+  if (!key) return { totalCapacityKg: 0, usedCapacityKg: 0, remainingCapacityKg: 0 };
+  const query = new URLSearchParams({ productionInventoryKey: key });
+  if (excludeContainerInventoryKey) query.set("excludeContainerInventoryKey", String(excludeContainerInventoryKey).trim());
+  const res = await fetch(`${BACKEND_URL}/containers/capacity/summary?${query.toString()}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return (await res.json()) as { totalCapacityKg: number; usedCapacityKg: number; remainingCapacityKg: number };
+}
+
 const positiveNumber = (value: unknown) => {
   if (value === null || value === undefined || String(value).trim() === "") return undefined;
   const n = Number(value);
@@ -47,12 +65,19 @@ const positiveNumber = (value: unknown) => {
 };
 
 function ContainerFormSections() {
+  const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
+  const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
   const currentWalletAddress = String(useWatch({ name: "currentWalletAddress" }) ?? "");
   const linkedWalletAddressRows = (useWatch({ name: "linkedWalletAddressesExtra" }) as any[] | undefined) ?? [];
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
   const [locationRows, setLocationRows] = React.useState<any[]>([]);
   const [loadingLocations, setLoadingLocations] = React.useState(false);
   const { setValue, getValues } = useFormContext();
+  const [capacitySummary, setCapacitySummary] = React.useState<{
+    totalCapacityKg: number;
+    usedCapacityKg: number;
+    remainingCapacityKg: number;
+  } | null>(null);
   const roadmapPreview = React.useMemo(() => {
     if (loadingLocations) return "Đang tải địa điểm...";
     if (!locationRows.length) return "Chưa có dữ liệu";
@@ -86,15 +111,42 @@ function ContainerFormSections() {
     [capacityKg],
   );
 
+  React.useEffect(() => {
+    const key = String(productionInventoryKey || "").trim();
+    if (!key) {
+      setCapacitySummary(null);
+      return;
+    }
+    let mounted = true;
+    fetchCapacitySummary(key)
+      .then((x) => {
+        if (!mounted) return;
+        setCapacitySummary({
+          totalCapacityKg: Number(x?.totalCapacityKg || 0),
+          usedCapacityKg: Number(x?.usedCapacityKg || 0),
+          remainingCapacityKg: Number(x?.remainingCapacityKg || 0),
+        });
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setCapacitySummary(null);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [productionInventoryKey, currentInventoryKey]);
+
   const { data: productionRows = [] } = useGetList("production", {
     pagination: { page: 1, perPage: 1000 },
     sort: { field: "createdAt", order: "DESC" },
   });
 
-  const productionChoices = (productionRows || []).map((row: any) => ({
-    id: String(row?.inventoryKey || row?.id || ""),
-    name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
-  }));
+  const productionChoices = (productionRows || [])
+    .filter((row: any) => String(row?.status || "").toUpperCase() === "CLOSED")
+    .map((row: any) => ({
+      id: String(row?.inventoryKey || row?.id || ""),
+      name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
+    }));
 
   React.useEffect(() => {
     let mounted = true;
@@ -213,15 +265,21 @@ function ContainerFormSections() {
             validate={[required()]}
             fullWidth
           />
-          <TextInput source="capacityKg" label="Dung lượng chứa tối đa (kg)" type="number" validate={[positiveNumber]} fullWidth />
+          <TextInput
+            source="capacityKg"
+            label="Dung lượng chứa tối đa (kg)"
+            type="number"
+            validate={[required(), positiveNumber]}
+            fullWidth
+          />
           <TextInput
             source="actualCapacityKg"
             label="Dung lượng thực tế (kg)"
             type="number"
-            validate={[positiveNumber, actualCapacityValidator]}
+            validate={[required(), positiveNumber, actualCapacityValidator]}
             fullWidth
           />
-          <TextInput source="productName" label="Tên sản phẩm" fullWidth />
+          <TextInput source="productName" label="Tên sản phẩm" validate={[required()]} fullWidth />
           <SelectInput
             source="productionInventoryKey"
             label="Liên kết vụ mùa"
@@ -229,6 +287,11 @@ function ContainerFormSections() {
             validate={[required()]}
             fullWidth
           />
+          <div className="md:col-span-2 text-sm text-slate-700">
+            {capacitySummary
+              ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
+              : "Đã tạo: 0 kg | Còn lại: 0 kg"}
+          </div>
           <TextInput source="currentLocationLabel" label="Địa điểm hiện tại" disabled fullWidth />
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
         </div>
@@ -264,26 +327,15 @@ function ContainerCreateToolbar() {
 
 function ContainerEditToolbar() {
   const { setValue } = useFormContext();
-  const status = (useWatch({ name: "status" }) as ContainerStatus | undefined) ?? "CREATE";
-  const isConsumed = status === "CONSUMED";
   return (
     <Toolbar>
-      {!isConsumed ? (
-        <SaveButton
-          label="Cập nhật"
-          onClick={() => {
-            setValue("status", "UPDATE");
-          }}
-        />
-      ) : null}
-      {!isConsumed ? (
-        <SaveButton
-          label="Xác nhận tiêu thụ"
-          onClick={() => {
-            setValue("status", "CONSUMED");
-          }}
-        />
-      ) : null}
+      <SaveButton
+        label="Cập nhật"
+        onClick={() => {
+          setValue("status", "UPDATE");
+        }}
+      />
+      <DeleteButton label="DELETE" mutationMode="pessimistic" redirect="list" color="error" />
     </Toolbar>
   );
 }
@@ -294,22 +346,16 @@ export function ContainerResourceList() {
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã thùng" />
         <TextField source="containerType" label="Loại thùng" />
-        <TextField source="capacityKg" label="Dung lượng chứa tối đa (kg)" />
-        <TextField source="actualCapacityKg" label="Dung lượng thực tế (kg)" />
-        <TextField source="productName" label="Tên sản phẩm" />
-        <TextField source="productionInventoryKey" label="InventoryKey vụ mùa" />
         <SelectField
           source="status"
           label="Trạng thái"
           choices={[
             { id: "CREATE", name: "Đã tạo" },
             { id: "UPDATE", name: "Đã cập nhật" },
-            { id: "CONSUMED", name: "Đã tiêu thụ" },
           ]}
         />
-        <TextField source="currentProvinceId" label="Tỉnh hiện tại" />
-        <TextField source="currentDistrictId" label="Huyện hiện tại" />
-        <TextField source="currentWardId" label="Xã hiện tại" />
+        <BooleanField source="verified" label="Đã xác thực" />
+        <DateField source="verifiedAt" label="Thời gian xác thực" showTime />
       </Datagrid>
     </List>
   );
@@ -325,7 +371,11 @@ export function ContainerResourceCreate() {
         if (Number.isFinite(max) && Number.isFinite(actual) && actual >= max) {
           throw new Error("Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.");
         }
-        return {
+        return fetchCapacitySummary(String(data?.productionInventoryKey || "").trim()).then((summary) => {
+          if (actual > Number(summary?.remainingCapacityKg || 0)) {
+            throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
+          }
+          return {
           ...data,
           code,
         currentLocationLabel: undefined,
@@ -340,6 +390,7 @@ export function ContainerResourceCreate() {
           .filter(Boolean),
         routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
       };
+        });
       }}
       sx={CREATE_PAGE_SX}
     >
@@ -370,7 +421,14 @@ export function ContainerResourceEdit() {
         if (Number.isFinite(max) && Number.isFinite(actual) && actual >= max) {
           throw new Error("Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.");
         }
-        return {
+        return fetchCapacitySummary(
+          String(data?.productionInventoryKey || "").trim(),
+          String(data?.inventoryKey || "").trim(),
+        ).then((summary) => {
+          if (actual > Number(summary?.remainingCapacityKg || 0)) {
+            throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
+          }
+          return {
           ...data,
           currentLocationLabel: undefined,
           currentWalletAddress: undefined,
@@ -383,6 +441,7 @@ export function ContainerResourceEdit() {
             .filter(Boolean),
           routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
         };
+        });
       }}
     >
       <SimpleForm

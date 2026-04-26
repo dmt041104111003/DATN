@@ -11,6 +11,53 @@ function cleanString(v: unknown): string {
 export class ContainerService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private parseKg(value: unknown): number {
+    const n = Number(cleanString(value).replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  async getCapacitySummary(productionInventoryKeyRaw: unknown, excludeContainerInventoryKeyRaw?: unknown) {
+    const productionInventoryKey = cleanString(productionInventoryKeyRaw);
+    const excludeContainerInventoryKey = cleanString(excludeContainerInventoryKeyRaw);
+    if (!productionInventoryKey) throw new NotFoundException('Production not found');
+
+    const production = await (this.prisma as any).production.findUnique({
+      where: { inventoryKey: productionInventoryKey },
+      select: { actualYieldKg: true },
+    });
+    if (!production) throw new NotFoundException('Production not found');
+
+    const totalCapacityKg = this.parseKg(production?.actualYieldKg);
+    const rows = await (this.prisma as any).container.findMany({
+      where: {
+        productionInventoryKey,
+        ...(excludeContainerInventoryKey ? { inventoryKey: { not: excludeContainerInventoryKey } } : {}),
+      },
+      select: { actualCapacityKg: true },
+    });
+    const usedCapacityKg = (rows || []).reduce(
+      (sum: number, row: any) => sum + this.parseKg(row?.actualCapacityKg),
+      0,
+    );
+    const remainingCapacityKg = Math.max(totalCapacityKg - usedCapacityKg, 0);
+    return { productionInventoryKey, totalCapacityKg, usedCapacityKg, remainingCapacityKg };
+  }
+
+  private async assertCapacityWithinRemaining(
+    productionInventoryKeyRaw: unknown,
+    actualCapacityKgRaw: unknown,
+    excludeContainerInventoryKeyRaw?: unknown,
+  ) {
+    const actualCapacityKg = this.parseKg(actualCapacityKgRaw);
+    if (!actualCapacityKg) return;
+    const summary = await this.getCapacitySummary(productionInventoryKeyRaw, excludeContainerInventoryKeyRaw);
+    if (actualCapacityKg > summary.remainingCapacityKg) {
+      throw new Error(
+        `Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary.remainingCapacityKg} kg.`,
+      );
+    }
+  }
+
   private splitPipe(value: unknown): string[] {
     const packed = cleanString(value);
     return packed ? packed.split('|').map((x) => cleanString(x)).filter(Boolean) : [];
@@ -76,6 +123,7 @@ export class ContainerService {
       where: { address: addr },
       select: { provinceId: true, districtId: true, wardId: true },
     });
+    await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
 
     const row = await (this.prisma as any).container.create({
       data: {
@@ -116,6 +164,9 @@ export class ContainerService {
     const key = decodeURIComponent(cleanString(inventoryKey));
     const existing = await (this.prisma as any).container.findUnique({ where: { inventoryKey: key } });
     if (!existing) throw new NotFoundException('Container not found');
+    const nextProductionInventoryKey = cleanString(data?.productionInventoryKey || existing.productionInventoryKey);
+    const nextActualCapacityKg = cleanString(data?.actualCapacityKg || existing.actualCapacityKg);
+    await this.assertCapacityWithinRemaining(nextProductionInventoryKey, nextActualCapacityKg, key);
 
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
     const patch: Record<string, unknown> = {
@@ -146,7 +197,7 @@ export class ContainerService {
           entityType: ENTITY_TYPE,
           entityKey: key,
           containerInventoryKey: key,
-          opType: nextStatus === 'CONSUMED' ? 'CONSUMED' : 'UPDATE',
+          opType: 'UPDATE',
           txHash,
           verified: false,
           verifiedAt: null,

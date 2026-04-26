@@ -254,8 +254,7 @@ function ProductionFormSections() {
         </div>
       </div>
 
-      {!isDraft ? (
-        <div id="production-evidence-section" className="py-1">
+      <div id="production-evidence-section" className="py-1">
         <h3 className="mb-4 font-semibold">[3] Thông tin chứng nhận & minh chứng</h3>
         <div className="grid grid-cols-1 gap-4">
           <div id="production-cert-section">
@@ -283,7 +282,6 @@ function ProductionFormSections() {
           <TextInput source="note" label="Ghi chú" multiline disabled={fullyLocked} fullWidth />
         </div>
       </div>
-      ) : null}
     </>
   );
 }
@@ -365,14 +363,14 @@ function ProductionEditToolbar() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-md rounded bg-white p-4">
             <h4 className="mb-3 text-base font-semibold">Xác nhận thu hoạch</h4>
-            <label className="mb-2 block text-sm">Ngày thu hoạch</label>
+            <label className="mb-2 block text-sm">Ngày thu hoạch *</label>
             <input
               type="date"
               className="w-full rounded border px-3 py-2"
               value={harvestInput}
               onChange={(e) => setHarvestInput(e.target.value)}
             />
-            <label className="mb-2 mt-3 block text-sm">Sản lượng thực tế (kg)</label>
+            <label className="mb-2 mt-3 block text-sm">Sản lượng thực tế (kg) *</label>
             <input
               type="number"
               min="0"
@@ -406,6 +404,16 @@ function ProductionEditToolbar() {
                   if (harvest.getTime() <= seed.getTime()) {
                     e.preventDefault();
                     setHarvestError("Ngày thu hoạch phải lớn hơn ngày gieo trồng.");
+                    return;
+                  }
+                  const actualYield = Number(String(actualYieldInput ?? "").trim());
+                  if (
+                    String(actualYieldInput ?? "").trim() === "" ||
+                    !Number.isFinite(actualYield) ||
+                    actualYield <= 0
+                  ) {
+                    e.preventDefault();
+                    setHarvestError("Sản lượng thực tế phải lớn hơn 0.");
                     return;
                   }
                   const nextValues = {

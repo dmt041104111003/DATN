@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -34,6 +35,25 @@ export class ContainerController {
   @Get()
   async list(@Req() req: any) {
     return this.containerService.list(this.getCustodian(req));
+  }
+
+  @Get('capacity/summary')
+  async capacitySummary(
+    @Req() _req: any,
+    @Query('productionInventoryKey') productionInventoryKey: string,
+    @Query('excludeContainerInventoryKey') excludeContainerInventoryKey?: string,
+  ) {
+    try {
+      return await this.containerService.getCapacitySummary(
+        productionInventoryKey,
+        excludeContainerInventoryKey,
+      );
+    } catch (e) {
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Failed to calculate remaining capacity.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   @Post()

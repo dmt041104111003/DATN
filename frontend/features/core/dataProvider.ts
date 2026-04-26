@@ -216,9 +216,7 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
 function buildContainerMetadata(data: any, previousData: any) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
   const metadataStatus =
-    rawStatus === "CONSUMED"
-      ? "CONSUMED"
-      : rawStatus === "UPDATE"
+    rawStatus === "UPDATE"
         ? "UPDATE"
         : "CREATE";
   const linkedWalletAddresses = Array.isArray(data?.linkedWalletAddresses)
