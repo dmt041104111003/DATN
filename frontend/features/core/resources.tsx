@@ -7,6 +7,11 @@ import {
   ProductionResourceList,
 } from "@/features/resources/production";
 import {
+  ContainerResourceCreate,
+  ContainerResourceEdit,
+  ContainerResourceList,
+} from "@/features/resources/containers/index";
+import {
   ProfileResourceCreate,
   ProfileResourceEdit,
   ProfileResourceList,
@@ -19,12 +24,20 @@ export function renderAdminResources(permissions?: string) {
   return (
     <>
       {isEnterprise ? (
-        <Resource
-          name="production"
-          list={ProductionResourceList}
-          create={ProductionResourceCreate}
-          edit={ProductionResourceEdit}
-        />
+        <>
+          <Resource
+            name="production"
+            list={ProductionResourceList}
+            create={ProductionResourceCreate}
+            edit={ProductionResourceEdit}
+          />
+          <Resource
+            name="container"
+            list={ContainerResourceList}
+            create={ContainerResourceCreate}
+            edit={ContainerResourceEdit}
+          />
+        </>
       ) : null}
       <Resource
         name="profile"

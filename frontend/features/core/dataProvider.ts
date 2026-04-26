@@ -14,6 +14,7 @@ const BACKEND_URL =
 
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
+  container: "containers",
   profile: "profile",
 };
 
@@ -44,6 +45,7 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
+  "container",
 ]);
 
 function cleanString(value: unknown) {
@@ -211,6 +213,40 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
   };
 }
 
+function buildContainerMetadata(data: any, previousData: any) {
+  const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
+  const metadataStatus =
+    rawStatus === "CONSUMED"
+      ? "CONSUMED"
+      : rawStatus === "UPDATE"
+        ? "UPDATE"
+        : "CREATE";
+  const linkedWalletAddresses = Array.isArray(data?.linkedWalletAddresses)
+    ? data.linkedWalletAddresses
+    : Array.isArray(previousData?.linkedWalletAddresses)
+      ? previousData.linkedWalletAddresses
+      : [];
+  const routeMap = Array.isArray(data?.routeMap)
+    ? data.routeMap
+    : Array.isArray(previousData?.routeMap)
+      ? previousData.routeMap
+      : [];
+  return {
+    status: metadataStatus,
+    container_code: cleanString(data?.code || previousData?.code),
+    production_inventory_key: cleanString(data?.productionInventoryKey || previousData?.productionInventoryKey),
+    container_type: cleanString(data?.containerType || previousData?.containerType),
+    capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
+    product_name: cleanString(data?.productName || previousData?.productName),
+    current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
+    current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
+    current_ward: cleanString(data?.currentWardId || previousData?.currentWardId),
+    linked_wallet_addresses: JSON.stringify(linkedWalletAddresses),
+    route_map: JSON.stringify(routeMap),
+    note: cleanString(data?.note || previousData?.note),
+  };
+}
+
 export const adminDataProvider: DataProvider = {
   ...baseProvider,
   async getList(resource, params) {
@@ -252,6 +288,28 @@ export const adminDataProvider: DataProvider = {
     };
   },
   async update(resource, params) {
+    if (resource === "container") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = String(
+        params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
+      ).trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const metadata = buildContainerMetadata(params.data, params.previousData);
+      const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare container save transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const patchRes = await httpClient(`${BACKEND_URL}/containers/${encodeURIComponent(inventoryKey)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ...params.data, txHash }),
+      });
+      const row = patchRes.json as any;
+      return { data: { ...row, id: normalizeId(row, params.id) } };
+    }
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
@@ -298,6 +356,35 @@ export const adminDataProvider: DataProvider = {
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
+    if (resource === "container") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const metadata = buildContainerMetadata(params.data, null);
+      const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/create`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          assetName: String(params.data?.code || "").trim(),
+          metadata,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare container on-chain transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+
+      const dbRes = await httpClient(`${BACKEND_URL}/containers`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...params.data,
+          traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
+          inventoryKey: String(unsigned.inventoryKey || "").trim(),
+          txHash,
+        }),
+      });
+      const row = dbRes.json as any;
+      return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
+    }
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
@@ -339,6 +426,29 @@ export const adminDataProvider: DataProvider = {
     return baseProvider.create(resource, params);
   },
   async delete(resource, params) {
+    if (resource === "container") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = String((params.previousData as any)?.inventoryKey ?? params.id ?? "").trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/burn`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          containerInventoryKeys: [inventoryKey],
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare container burn transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/containers/${encodeURIComponent(inventoryKey)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
+    }
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);

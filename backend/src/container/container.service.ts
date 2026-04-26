@@ -1,0 +1,176 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+const ENTITY_TYPE = 'CONTAINER';
+
+function cleanString(v: unknown): string {
+  return String(v ?? '').trim();
+}
+
+@Injectable()
+export class ContainerService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  private splitPipe(value: unknown): string[] {
+    const packed = cleanString(value);
+    return packed ? packed.split('|').map((x) => cleanString(x)).filter(Boolean) : [];
+  }
+
+  private joinPipe(values: unknown): string | null {
+    if (!Array.isArray(values)) return null;
+    const packed = values.map((x) => cleanString(x)).filter(Boolean).join('|');
+    return packed || null;
+  }
+
+  private parseLocations(raw: unknown): any[] {
+    const text = cleanString(raw);
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private toResponse(row: any, latest?: any, txHashOverride?: string | null) {
+    return {
+      ...row,
+      linkedWalletAddresses: this.splitPipe(row?.linkedWalletAddresses),
+      routeMap: this.parseLocations(row?.routeMap),
+      txHash: txHashOverride ?? latest?.txHash ?? null,
+      verified: txHashOverride ? false : Boolean(latest?.verified),
+      verifiedAt: txHashOverride ? null : latest?.verifiedAt ?? null,
+    };
+  }
+
+  private async getLatestOp(inventoryKey: string) {
+    return await (this.prisma as any).recordOperation.findFirst({
+      where: { entityType: ENTITY_TYPE, entityKey: inventoryKey },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async list(_createdBy: string) {
+    const rows = await (this.prisma as any).container.findMany({ orderBy: { createdAt: 'desc' } });
+    const keys = rows.map((r: any) => cleanString(r.inventoryKey)).filter(Boolean);
+    const ops = await (this.prisma as any).recordOperation.findMany({
+      where: { entityType: ENTITY_TYPE, entityKey: { in: keys } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const latestByKey = new Map<string, any>();
+    for (const op of ops || []) {
+      const key = cleanString(op.entityKey);
+      if (!key || latestByKey.has(key)) continue;
+      latestByKey.set(key, op);
+    }
+    return rows.map((r: any) => this.toResponse(r, latestByKey.get(cleanString(r.inventoryKey))));
+  }
+
+  async create(createdBy: string, data: any) {
+    const addr = cleanString(createdBy);
+    const inventoryKey = cleanString(data.inventoryKey);
+    const txHash = cleanString(data.txHash);
+
+    const profile = await (this.prisma as any).user.findUnique({
+      where: { address: addr },
+      select: { provinceId: true, districtId: true, wardId: true },
+    });
+
+    const row = await (this.prisma as any).container.create({
+      data: {
+        traceSchemeRef: cleanString(data.traceSchemeRef),
+        inventoryKey,
+        code: cleanString(data.code) || `THUNG_${Date.now()}`,
+        productionInventoryKey: cleanString(data.productionInventoryKey),
+        registeringCustodianAddress: addr,
+        currentProvinceId: cleanString(data.currentProvinceId) || cleanString(profile?.provinceId) || null,
+        currentDistrictId: cleanString(data.currentDistrictId) || cleanString(profile?.districtId) || null,
+        currentWardId: cleanString(data.currentWardId) || cleanString(profile?.wardId) || null,
+        linkedWalletAddresses: this.joinPipe(data?.linkedWalletAddresses),
+        routeMap: JSON.stringify(Array.isArray(data?.routeMap) ? data.routeMap : []),
+        containerType: cleanString(data.containerType) || null,
+        capacityKg: cleanString(data.capacityKg) || null,
+        productName: cleanString(data.productName) || null,
+        note: cleanString(data.note) || null,
+        status: 'CREATE',
+      } as any,
+    });
+
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: ENTITY_TYPE,
+        entityKey: inventoryKey,
+        containerInventoryKey: inventoryKey,
+        opType: 'CREATE',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
+    });
+    return this.toResponse(row, undefined, txHash);
+  }
+
+  async update(createdBy: string, inventoryKey: string, data: any) {
+    const key = decodeURIComponent(cleanString(inventoryKey));
+    const existing = await (this.prisma as any).container.findUnique({ where: { inventoryKey: key } });
+    if (!existing) throw new NotFoundException('Container not found');
+
+    const nextStatus = cleanString(data.status || existing.status).toUpperCase();
+    const patch: Record<string, unknown> = {
+      status: nextStatus,
+    };
+    if (data.note !== undefined) patch.note = cleanString(data.note) || null;
+    if (data.containerType !== undefined) patch.containerType = cleanString(data.containerType) || null;
+    if (data.capacityKg !== undefined) patch.capacityKg = cleanString(data.capacityKg) || null;
+    if (data.productName !== undefined) patch.productName = cleanString(data.productName) || null;
+    if (data.linkedWalletAddresses !== undefined) patch.linkedWalletAddresses = this.joinPipe(data.linkedWalletAddresses);
+    if (data.routeMap !== undefined) {
+      patch.routeMap = JSON.stringify(Array.isArray(data.routeMap) ? data.routeMap : []);
+    }
+    if (data.currentProvinceId !== undefined) patch.currentProvinceId = cleanString(data.currentProvinceId) || null;
+    if (data.currentDistrictId !== undefined) patch.currentDistrictId = cleanString(data.currentDistrictId) || null;
+    if (data.currentWardId !== undefined) patch.currentWardId = cleanString(data.currentWardId) || null;
+
+    const updated = await (this.prisma as any).container.update({
+      where: { inventoryKey: key },
+      data: patch as any,
+    });
+
+    const txHash = cleanString(data.txHash);
+    if (txHash) {
+      await (this.prisma as any).recordOperation.create({
+        data: {
+          entityType: ENTITY_TYPE,
+          entityKey: key,
+          containerInventoryKey: key,
+          opType: nextStatus === 'CONSUMED' ? 'CONSUMED' : 'UPDATE',
+          txHash,
+          verified: false,
+          verifiedAt: null,
+        } as any,
+      });
+    }
+    const latest = txHash ? null : await this.getLatestOp(key);
+    return this.toResponse(updated, latest, txHash || undefined);
+  }
+
+  async deleteByInventoryKey(_createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
+    const key = cleanString(inventoryKeyRaw);
+    const txHash = cleanString(txHashRaw);
+    const existing = await (this.prisma as any).container.findUnique({ where: { inventoryKey: key } });
+    if (!existing) throw new NotFoundException('Container not found');
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: ENTITY_TYPE,
+        entityKey: key,
+        containerInventoryKey: key,
+        opType: 'DELETE',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
+    });
+    return { inventoryKey: key, pendingDelete: true };
+  }
+}

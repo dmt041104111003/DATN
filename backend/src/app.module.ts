@@ -19,6 +19,12 @@ import { ProductionController } from './production/production.controller';
 import { ProductionService } from './production/production.service';
 import { ProductionContractController } from './production/production.contract.controller';
 import { ProductionContractService } from './production/production.contract.service';
+import {
+  ContainerController,
+  ContainerContractController,
+  ContainerContractService,
+  ContainerService,
+} from './container';
 
 @Module({
   imports: [
@@ -40,6 +46,8 @@ import { ProductionContractService } from './production/production.contract.serv
     RecordOperationController,
     ProductionController,
     ProductionContractController,
+    ContainerController,
+    ContainerContractController,
     HealthController,
   ],
   providers: [
@@ -51,6 +59,8 @@ import { ProductionContractService } from './production/production.contract.serv
     RecordOperationVerifierService,
     ProductionService,
     ProductionContractService,
+    ContainerService,
+    ContainerContractService,
   ],
 })
 export class AppModule {}

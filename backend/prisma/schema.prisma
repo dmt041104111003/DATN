@@ -20,6 +20,7 @@ model User {
   wardId   String?
   isActive  Boolean   @default(true)
   productions Production[]
+  containers  Container[]
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -80,7 +81,36 @@ model Production {
   updatedAt                   DateTime @updatedAt
 
   recordOperations RecordOperation[] @relation("ProductionRecordOperations")
+  containers      Container[]
 
+  @@index([registeringCustodianAddress])
+}
+
+model Container {
+  id                          String   @id @default(cuid())
+  traceSchemeRef              String
+  inventoryKey                String   @unique
+  code                        String   @unique
+  productionInventoryKey      String
+  production                  Production @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
+  registeringCustodianAddress String
+  registeringCustodian        User? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  currentProvinceId           String?
+  currentDistrictId           String?
+  currentWardId               String?
+  linkedWalletAddresses       String?
+  routeMap                    String?
+  containerType               String?
+  capacityKg                  String?
+  productName                 String?
+  note                        String?
+  status                      ContainerStage @default(CREATE)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  recordOperations            RecordOperation[] @relation("ContainerRecordOperations")
+
+  @@index([productionInventoryKey])
   @@index([registeringCustodianAddress])
 }
 
@@ -88,6 +118,12 @@ enum ProductionStage {
   CREATED
   UPDATED
   CLOSED
+}
+
+enum ContainerStage {
+  CREATE
+  UPDATE
+  CONSUMED
 }
 
 model RecordOperation {
@@ -107,11 +143,14 @@ model RecordOperation {
 
   productionInventoryKey String?
   production         Production? @relation("ProductionRecordOperations", fields: [productionInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  containerInventoryKey String?
+  container         Container? @relation("ContainerRecordOperations", fields: [containerInventoryKey], references: [inventoryKey], onDelete: Cascade)
 
   @@index([entityType, entityKey])
   @@index([verified, createdAt])
   @@index([entityType, entityKey, createdAt])
   @@index([productionInventoryKey])
+  @@index([containerInventoryKey])
 }
 
 model Media {

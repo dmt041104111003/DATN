@@ -116,6 +116,11 @@ export class RecordOperationVerifierService {
                   where: { inventoryKey: entityKey },
                 });
               }
+              if (entityType === 'CONTAINER') {
+                await (this.prisma as any).container.delete({
+                  where: { inventoryKey: entityKey },
+                });
+              }
             } catch (cleanupError: any) {
               const cleanupMsg = cleanupError?.message ? String(cleanupError.message) : 'cleanup failed';
               this.logger.debug(`[cleanup ${entityType}:${entityKey}] ${cleanupMsg}`);
