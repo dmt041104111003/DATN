@@ -3,7 +3,7 @@
 import { Admin } from "react-admin";
 import { adminAuthProvider } from "./authProvider";
 import { adminDataProvider } from "./dataProvider";
-import { adminResources } from "./resources";
+import { renderAdminResources } from "./resources";
 import { AdminLoginPage } from "@/features/resources/profile/LoginPage";
 import {
   AdminWelcome,
@@ -20,7 +20,7 @@ export function AdminApp() {
       loginPage={AdminLoginPage}
       requireAuth
     >
-      {adminResources}
+      {(permissions) => renderAdminResources(permissions as string)}
     </Admin>
   );
 }

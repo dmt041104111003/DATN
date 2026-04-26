@@ -14,7 +14,9 @@ import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 
 export function AdminMenu() {
   const { permissions } = usePermissions<string>();
-  const isAdminRole = permissions === "ENTERPRISE";
+  const role = String(permissions || "").toUpperCase();
+  const isAdminRole = role === "ENTERPRISE";
+  const hidePackageAndShipment = role === "AGENT" || role === "TRANSIT";
   const items = [
     <MenuItemLink key="overview" to="/" primaryText="Tổng quan" leftIcon={<DashboardIcon />} />,
     ...(isAdminRole
@@ -27,18 +29,22 @@ export function AdminMenu() {
           />,
         ]
       : []),
-    <MenuItemLink
-      key="packages"
-      to="/packages"
-      primaryText="Gói hàng"
-      leftIcon={<Inventory2Icon />}
-    />,
-    <MenuItemLink
-      key="shipments"
-      to="/shipments"
-      primaryText="Lô hàng"
-      leftIcon={<LocalShippingIcon />}
-    />,
+    ...(!hidePackageAndShipment
+      ? [
+          <MenuItemLink
+            key="packages"
+            to="/packages"
+            primaryText="Gói hàng"
+            leftIcon={<Inventory2Icon />}
+          />,
+          <MenuItemLink
+            key="shipments"
+            to="/shipments"
+            primaryText="Lô hàng"
+            leftIcon={<LocalShippingIcon />}
+          />,
+        ]
+      : []),
     <MenuItemLink
       key="shipment-scan"
       to="/shipment-scan"
