@@ -132,6 +132,7 @@ export class ContainerService {
         code: cleanString(data.code) || `THUNG_${Date.now()}`,
         productionInventoryKey: cleanString(data.productionInventoryKey),
         registeringCustodianAddress: addr,
+        holderAddress: cleanString(data.holderAddress) || addr,
         currentProvinceId: cleanString(data.currentProvinceId) || cleanString(profile?.provinceId) || null,
         currentDistrictId: cleanString(data.currentDistrictId) || cleanString(profile?.districtId) || null,
         currentWardId: cleanString(data.currentWardId) || cleanString(profile?.wardId) || null,
@@ -177,6 +178,7 @@ export class ContainerService {
     if (data.capacityKg !== undefined) patch.capacityKg = cleanString(data.capacityKg) || null;
     if (data.actualCapacityKg !== undefined) patch.actualCapacityKg = cleanString(data.actualCapacityKg) || null;
     if (data.productName !== undefined) patch.productName = cleanString(data.productName) || null;
+    if (data.holderAddress !== undefined) patch.holderAddress = cleanString(data.holderAddress) || null;
     if (data.linkedWalletAddresses !== undefined) patch.linkedWalletAddresses = this.joinPipe(data.linkedWalletAddresses);
     if (data.routeMap !== undefined) {
       patch.routeMap = JSON.stringify(Array.isArray(data.routeMap) ? data.routeMap : []);

@@ -161,6 +161,8 @@ function ContainerFormSections() {
         ).trim();
         if (!mounted) return;
         if (meWalletAddress) setValue("currentWalletAddress", meWalletAddress);
+        const currentHolder = String(getValues("holderAddress") || "").trim();
+        if (!currentHolder && meWalletAddress) setValue("holderAddress", meWalletAddress);
         const provinceId = String(getValues("currentProvinceId") || profile?.provinceId || "").trim();
         const districtId = String(getValues("currentDistrictId") || profile?.districtId || "").trim();
         const wardId = String(getValues("currentWardId") || profile?.wardId || "").trim();
@@ -287,6 +289,7 @@ function ContainerFormSections() {
             validate={[required()]}
             fullWidth
           />
+          <TextInput source="holderAddress" label="Holder address" validate={[required()]} fullWidth />
           <div className="md:col-span-2 text-sm text-slate-700">
             {capacitySummary
               ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
@@ -400,6 +403,7 @@ export function ContainerResourceCreate() {
         defaultValues={{
           code: makeContainerCode(),
           status: "CREATE",
+          holderAddress: "",
           currentWalletAddress: "",
           linkedWalletAddressesExtra: [],
         }}

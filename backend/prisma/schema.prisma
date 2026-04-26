@@ -94,6 +94,7 @@ model Container {
   productionInventoryKey      String
   production                  Production @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
   registeringCustodianAddress String
+  holderAddress               String?
   registeringCustodian        User? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
   currentProvinceId           String?
   currentDistrictId           String?
@@ -113,6 +114,7 @@ model Container {
 
   @@index([productionInventoryKey])
   @@index([registeringCustodianAddress])
+  @@index([holderAddress])
 }
 
 enum ProductionStage {
