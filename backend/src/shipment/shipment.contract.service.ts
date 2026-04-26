@@ -31,8 +31,32 @@ function makeMetadata(base: any, shipment: { code: string; inventoryKey: string;
     package_inventory_keys: JSON.stringify(Array.isArray(base?.packageInventoryKeys) ? base.packageInventoryKeys : []),
     updater_addresses: JSON.stringify(Array.isArray(base?.updaterAddresses) ? base.updaterAddresses : []),
     note: clean(base?.note),
-    status: 'IN_TRANSIT',
+    status: 'CREATED',
   } as Record<string, string>;
+}
+
+function decodeAssetNameFromUnit(unit: unknown) {
+  const value = clean(unit);
+  if (!value) return '';
+  const dot = value.indexOf('.');
+  const hex = dot >= 0 ? value.slice(dot + 1) : value;
+  if (!hex) return '';
+  try {
+    return Buffer.from(hex, 'hex').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+function stringifyMetadataValue(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '';
+  }
 }
 
 @Injectable()
@@ -113,6 +137,52 @@ export class ShipmentContractService {
         traceSchemeRef,
       },
     };
+  }
+
+  private async loadOnchainMetadata(walletAddress: string, shipmentInventoryKey: string) {
+    const own = await this.blockfrostProvider.fetchAddressUTxOs(walletAddress);
+    const utxo = (own || []).find((item: any) =>
+      Array.isArray(item?.output?.amount) &&
+      item.output.amount.some((amt: any) => clean(amt?.unit) === shipmentInventoryKey),
+    );
+    if (!utxo) throw new BadRequestException('Cannot find shipment token UTxO in wallet.');
+    const token = (utxo.output.amount || []).find((amt: any) => clean(amt?.unit) === shipmentInventoryKey);
+    const asset = await this.blockfrostProvider.fetchAssetAddresses(shipmentInventoryKey);
+    const metadata = (asset as any)?.onchain_metadata || {};
+    const assetName = decodeAssetNameFromUnit(token?.unit || shipmentInventoryKey);
+    return { assetName, metadata };
+  }
+
+  async createUnsignedSaveTx(dto: any) {
+    const walletAddress = clean(dto?.custodianAddress);
+    const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
+    const inventoryKey = clean(dto?.inventoryKey);
+    const metadataInput = dto?.metadata ?? {};
+    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
+    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
+    if (owners.length === 0) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+    const shipment = await (this.prisma as any).shipment.findUnique({
+      where: { inventoryKey },
+      select: { inventoryKey: true, holderAddress: true },
+    });
+    if (!shipment) throw new BadRequestException('Shipment not found.');
+    if (clean(shipment?.holderAddress) !== walletAddress) {
+      throw new BadRequestException('You can only update shipment(s) that you still hold.');
+    }
+    const { assetName, metadata } = await this.loadOnchainMetadata(walletAddress, inventoryKey);
+    const mergedMetadata: Record<string, string> = {};
+    for (const [key, value] of Object.entries(metadata || {})) {
+      mergedMetadata[String(key)] = stringifyMetadataValue(value);
+    }
+    for (const [key, value] of Object.entries(metadataInput || {})) {
+      mergedMetadata[String(key)] = stringifyMetadataValue(value);
+    }
+    mergedMetadata.status = clean(metadataInput?.status) || clean(mergedMetadata.status) || 'IN_TRANSIT';
+    const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, owners, [
+      { productName: assetName, metadata: mergedMetadata },
+    ]);
+    return { result: true, data: unsignedTx, message: 'Shipment save prepared.' };
   }
 
   async createUnsignedBurnTx(dto: any) {

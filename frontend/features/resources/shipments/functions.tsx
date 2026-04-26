@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import {
   ArrayInput,
   BooleanField,
+  CreateButton,
   Create,
   Datagrid,
   DateField,
@@ -18,6 +19,7 @@ import {
   SelectInput,
   SimpleForm,
   SimpleFormIterator,
+  TopToolbar,
   TextField,
   TextInput,
   Toolbar,
@@ -357,13 +359,38 @@ function ShipmentCreateSections() {
 
 function ShipmentEditSections() {
   const record = useRecordContext<any>();
+  const { permissions } = usePermissions<string>();
   const packageKeys = Array.isArray(record?.packageInventoryKeys) ? record.packageInventoryKeys : [];
   const packageCodes = Array.isArray(record?.packageCodes) ? record.packageCodes : [];
   const roadmap = Array.isArray(record?.roadmap) ? record.roadmap : [];
   const updaters = Array.isArray(record?.updaterAddresses) ? record.updaterAddresses : [];
   const [locationDisplay, setLocationDisplay] = React.useState<string>("—");
   const [roadmapDisplay, setRoadmapDisplay] = React.useState<string[]>([]);
+  const [actorAddress, setActorAddress] = React.useState("");
   const packageDisplayRows = packageCodes.length > 0 ? packageCodes : packageKeys;
+  const status = cleanString(record?.status).toUpperCase();
+  const isEnterprise = permissions === "ENTERPRISE";
+  const isHolder = cleanString(record?.holderAddress) === actorAddress;
+  const canEditShipment = isEnterprise && isHolder && status === "CREATED";
+
+  React.useEffect(() => {
+    let mounted = true;
+    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((json: any) => {
+        if (!mounted) return;
+        const user = json?.user ?? {};
+        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+        setActorAddress(actor);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setActorAddress("");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -387,7 +414,8 @@ function ShipmentEditSections() {
           <TextInput source="code" label="Mã lô" disabled fullWidth />
           <TextInput source="traceSchemeRef" label="Mã chính sách" disabled fullWidth />
           <SelectInput source="status" label="Trạng thái" choices={SHIPMENT_STATUS_CHOICES} disabled fullWidth />
-          <TextInput source="note" label="Ghi chú" multiline disabled fullWidth />
+          <TextInput source="location" label="Vị trí hiện tại" disabled={!canEditShipment} fullWidth />
+          <TextInput source="note" label="Ghi chú" multiline disabled={!canEditShipment} fullWidth />
         </div>
       </div>
       <div className="py-1">
@@ -400,11 +428,47 @@ function ShipmentEditSections() {
         <h3 className="mb-4 font-semibold">[3] Quyền cập nhật vị trí</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {renderReadonlyAddressRows(updaters, "Địa chỉ được phép")}
-          <MuiTextField label="Vị trí hiện tại" value={locationDisplay} disabled fullWidth />
+          <MuiTextField label="Vị trí đã resolve" value={locationDisplay} disabled fullWidth />
           {renderReadonlyAddressRows(roadmapDisplay, "Roadmap hiện tại")}
         </div>
       </div>
     </>
+  );
+}
+
+function ShipmentEditToolbar() {
+  const record = useRecordContext<any>();
+  const { permissions } = usePermissions<string>();
+  const status = cleanString(record?.status).toUpperCase();
+  const isEnterprise = permissions === "ENTERPRISE";
+  const [actorAddress, setActorAddress] = React.useState("");
+  const isHolder = cleanString(record?.holderAddress) === actorAddress;
+  const canEditShipment = isEnterprise && isHolder && status === "CREATED";
+
+  React.useEffect(() => {
+    let mounted = true;
+    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((json: any) => {
+        if (!mounted) return;
+        const user = json?.user ?? {};
+        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+        setActorAddress(actor);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setActorAddress("");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!canEditShipment) return false as any;
+  return (
+    <Toolbar>
+      <SaveButton label="Lưu thay đổi" />
+    </Toolbar>
   );
 }
 
@@ -436,9 +500,9 @@ export function ShipmentsResourceList() {
   }, []);
   return (
     <List
-      empty={<Empty hasCreate={false} />}
+      empty={<Empty hasCreate={isEnterprise} />}
       exporter={false}
-      actions={false}
+      actions={isEnterprise ? <TopToolbar><CreateButton /></TopToolbar> : false}
     >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã lô" />
@@ -569,7 +633,7 @@ export function ShipmentsResourceCreate() {
 export function ShipmentsResourceEdit() {
   return (
     <Edit mutationMode="pessimistic" sx={EDIT_PAGE_SX}>
-      <SimpleForm sx={FORM_SX} toolbar={false}>
+      <SimpleForm sx={FORM_SX} toolbar={<ShipmentEditToolbar />}>
         <ShipmentEditSections />
       </SimpleForm>
     </Edit>

@@ -373,6 +373,16 @@ export function PackagesResourceEdit() {
   return (
     <Edit sx={EDIT_PAGE_SX}>
       <SimpleForm sx={FORM_SX} toolbar={false}>
+        <FunctionField
+          label=""
+          render={(record: any) =>
+            record?.lockedByShipment ? (
+              <p className="mb-2 text-sm text-amber-700">
+                Gói này đã nằm trong lô hàng, chỉ sửa lại được sau khi xóa lô liên kết.
+              </p>
+            ) : null
+          }
+        />
         <div className="py-1">
           <h3 className="mb-4 font-semibold">[1] Nguồn sản xuất</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

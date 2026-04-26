@@ -122,6 +122,9 @@ export class PackageService {
         production: {
           select: { code: true },
         },
+        shipmentLinks: {
+          select: { shipmentInventoryKey: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -142,6 +145,10 @@ export class PackageService {
       return {
         ...row,
         productionCode: clean(row?.production?.code),
+        shipmentInventoryKeys: Array.isArray(row?.shipmentLinks)
+          ? row.shipmentLinks.map((x: any) => clean(x?.shipmentInventoryKey)).filter(Boolean)
+          : [],
+        lockedByShipment: Array.isArray(row?.shipmentLinks) ? row.shipmentLinks.length > 0 : false,
         verified: Boolean(latest?.verified),
         verifiedAt: latest?.verifiedAt ?? null,
       };

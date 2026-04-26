@@ -331,11 +331,25 @@ export const adminDataProvider: DataProvider = {
       if (!shipmentInventoryKey) throw new Error("shipmentInventoryKey is required.");
       const status = String(params.data?.status || "").trim().toUpperCase();
       if (status === "IN_TRANSIT") {
+        const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+        const owners = buildOwnerList(owner, custodianAddress);
+        const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/save`, {
+          method: "POST",
+          body: JSON.stringify({
+            custodianAddress,
+            owners,
+            inventoryKey: shipmentInventoryKey,
+            metadata: { status: "IN_TRANSIT" },
+          }),
+        });
+        const unsigned = contractRes.json as any;
+        ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment save transaction.");
+        const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
         const { json } = await httpClient(
           `${BACKEND_URL}/shipments/${encodeURIComponent(shipmentInventoryKey)}/status`,
           {
             method: "PATCH",
-            body: JSON.stringify({ status: "IN_TRANSIT" }),
+            body: JSON.stringify({ status: "IN_TRANSIT", txHash }),
           },
         );
         const row = json as any;

@@ -148,7 +148,7 @@ export class ShipmentService {
         updaterAddresses: updaterAddresses as any,
         roadmap: roadmap as any,
         note: clean(data?.note) || null,
-        status: 'IN_TRANSIT',
+        status: 'CREATED',
       } as any,
     });
 
@@ -238,6 +238,8 @@ export class ShipmentService {
     if (nextStatus !== 'IN_TRANSIT') {
       throw new BadRequestException('Only IN_TRANSIT is supported for this action.');
     }
+    const txHash = clean(data?.txHash);
+    if (!txHash) throw new BadRequestException('txHash is required.');
 
     if (clean(row?.holderAddress) !== holder) {
       throw new BadRequestException('You can only edit shipment(s) that you still hold.');
@@ -254,6 +256,16 @@ export class ShipmentService {
           },
         },
       },
+    });
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: 'SHIPMENT',
+        entityKey: shipmentInventoryKey,
+        opType: 'UPDATE_STATUS',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
     });
     return {
       ...updated,

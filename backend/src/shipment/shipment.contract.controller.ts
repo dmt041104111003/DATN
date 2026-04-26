@@ -16,4 +16,9 @@ export class ShipmentContractController {
   async burn(@Body() dto: any) {
     return this.svc.createUnsignedBurnTx(dto);
   }
+
+  @Post('save')
+  async save(@Body() dto: any) {
+    return this.svc.createUnsignedSaveTx(dto);
+  }
 }

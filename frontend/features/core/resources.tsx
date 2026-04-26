@@ -16,6 +16,7 @@ import {
   PackagesResourceList,
 } from "@/features/resources/packages";
 import {
+  ShipmentsResourceCreate,
   ShipmentsResourceEdit,
   ShipmentsResourceList,
 } from "@/features/resources/shipments";
@@ -41,6 +42,7 @@ export const adminResources = (
     <Resource
       name="shipments"
       list={ShipmentsResourceList}
+      create={ShipmentsResourceCreate}
       edit={ShipmentsResourceEdit}
     />
     <Resource name="profile" list={ProfileResourceList} edit={ProfileResourceEdit} />
