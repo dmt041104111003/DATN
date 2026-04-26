@@ -24,6 +24,8 @@ import {
   useDelete,
   useNotify,
   useRefresh,
+  useRedirect,
+  useRecordContext,
   useSaveContext,
   required,
 } from "react-admin";
@@ -305,6 +307,11 @@ function ProductionEditToolbar() {
     formState: { dirtyFields },
   } = useFormContext();
   const { save } = useSaveContext();
+  const record = useRecordContext<any>();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const redirect = useRedirect();
+  const [deleteOne, { isPending: deleting }] = useDelete();
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "DRAFT";
   const verified = Boolean(useWatch({ name: "verified" }));
   const seedingDate = String(useWatch({ name: "seedingDate" }) ?? "");
@@ -313,7 +320,6 @@ function ProductionEditToolbar() {
   const [actualYieldInput, setActualYieldInput] = React.useState("");
   const [harvestError, setHarvestError] = React.useState("");
 
-  if (status !== "ACTIVE") return null;
   const dirtyMap = (dirtyFields || {}) as Record<string, unknown>;
   const dirtyKeys = Object.keys(dirtyMap);
   const excludedDirtyKeys = new Set([
@@ -329,36 +335,68 @@ function ProductionEditToolbar() {
     "createdAt",
     "updatedAt",
   ]);
+  const isActive = status === "ACTIVE";
   const hasNonHarvestChanges = dirtyKeys.some((key) => !excludedDirtyKeys.has(key));
-  const canUpdate = verified && hasNonHarvestChanges;
-  const canHarvest = verified && !canUpdate;
+  const canUpdate = isActive && verified && hasNonHarvestChanges;
+  const canHarvest = isActive && verified && !canUpdate;
 
   return (
     <>
       <Toolbar>
-        <SaveButton
-          label="Cập nhật thông tin"
-          disabled={!canUpdate}
-          onClick={() => setValue("status", "ACTIVE")}
-        />
+        {isActive ? (
+          <SaveButton
+            label="Cập nhật thông tin"
+            disabled={!canUpdate}
+            onClick={() => setValue("status", "ACTIVE")}
+          />
+        ) : null}
+        {isActive ? (
+          <Button
+            variant="contained"
+            disableElevation
+            type="button"
+            disabled={!canHarvest}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setHarvestInput("");
+              setActualYieldInput("");
+              setHarvestError("");
+              setHarvestModalOpen(true);
+            }}
+          >
+            Xác nhận thu hoạch
+          </Button>
+        ) : null}
         <Button
-          variant="contained"
-          disableElevation
+          color="error"
+          variant="text"
           type="button"
-          disabled={!canHarvest}
+          disabled={deleting}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            setHarvestInput("");
-            setActualYieldInput("");
-            setHarvestError("");
-            setHarvestModalOpen(true);
+            const inventoryKey = String(record?.inventoryKey || record?.id || "").trim();
+            if (!inventoryKey) return;
+            deleteOne(
+              "production",
+              { id: inventoryKey, previousData: record },
+              {
+                onSuccess: () => {
+                  notify("Đã gửi yêu cầu xóa, chờ verify burn on-chain.", { type: "success" });
+                  refresh();
+                  redirect("list", "production");
+                },
+                onError: (error: any) =>
+                  notify(String(error?.message || "Xóa vụ sản xuất thất bại."), { type: "error" }),
+              },
+            );
           }}
         >
-          Xác nhận thu hoạch
+          DELETE
         </Button>
       </Toolbar>
-      {harvestModalOpen ? (
+      {isActive && harvestModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-md rounded bg-white p-4">
             <h4 className="mb-3 text-base font-semibold">Xác nhận thu hoạch</h4>
@@ -432,10 +470,6 @@ function ProductionEditToolbar() {
 }
 
 export function ProductionResourceList() {
-  const notify = useNotify();
-  const refresh = useRefresh();
-  const [deleteOne, { isPending: deleting }] = useDelete();
-
   return (
     <List exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
@@ -455,36 +489,6 @@ export function ProductionResourceList() {
         <DateField source="seedingDate" label="Ngày gieo" />
         <DateField source="harvestDate" label="Ngày thu hoạch" />
         <TextField source="actualYieldKg" label="Sản lượng thực tế (kg)" />
-        <FunctionField
-          label="Xóa"
-          render={(record: any) => {
-            return (
-              <button
-                type="button"
-                className="text-red-600 underline disabled:opacity-50"
-                disabled={deleting}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  deleteOne(
-                    "production",
-                    { id: record?.inventoryKey || record?.id, previousData: record },
-                    {
-                      onSuccess: () => {
-                        notify("Đã gửi yêu cầu xóa, chờ verify burn on-chain.", { type: "success" });
-                        refresh();
-                      },
-                      onError: (error: any) =>
-                        notify(String(error?.message || "Xóa vụ sản xuất thất bại."), { type: "error" }),
-                    },
-                  );
-                }}
-              >
-                Xóa
-              </button>
-            );
-          }}
-        />
       </Datagrid>
     </List>
   );
