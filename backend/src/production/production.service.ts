@@ -112,9 +112,7 @@ export class ProductionService {
   }
 
   async list(createdBy: string) {
-    const addr = cleanString(createdBy);
     const rows = await (this.prisma as any).production.findMany({
-      where: addr ? { registeringCustodianAddress: addr } : undefined,
       include: { _count: { select: { packages: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -265,8 +263,7 @@ export class ProductionService {
     );
   }
 
-  async deleteByInventoryKey(createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
-    const _addr = cleanString(createdBy);
+  async deleteByInventoryKey(_createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
     const key = cleanString(inventoryKeyRaw);
     const txHash = cleanString(txHashRaw);
 

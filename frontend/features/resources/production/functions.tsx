@@ -23,7 +23,6 @@ import {
   FunctionField,
   useDelete,
   useNotify,
-  usePermissions,
   useRefresh,
   useSaveContext,
   required,
@@ -308,11 +307,9 @@ function ProductionEditToolbar() {
   const { save } = useSaveContext();
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "DRAFT";
   const verified = Boolean(useWatch({ name: "verified" }));
-  const seedingDate = String(useWatch({ name: "seedingDate" }) ?? "");
   const [harvestModalOpen, setHarvestModalOpen] = React.useState(false);
   const [harvestInput, setHarvestInput] = React.useState("");
   const [actualYieldInput, setActualYieldInput] = React.useState("");
-  const [harvestError, setHarvestError] = React.useState("");
 
   if (status !== "ACTIVE") return null;
   const dirtyMap = (dirtyFields || {}) as Record<string, unknown>;
@@ -352,7 +349,6 @@ function ProductionEditToolbar() {
             e.stopPropagation();
             setHarvestInput("");
             setActualYieldInput("");
-            setHarvestError("");
             setHarvestModalOpen(true);
           }}
         >
@@ -379,7 +375,6 @@ function ProductionEditToolbar() {
               value={actualYieldInput}
               onChange={(e) => setActualYieldInput(e.target.value)}
             />
-            {harvestError ? <p className="mt-2 text-sm text-red-600">{harvestError}</p> : null}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" className="rounded border px-3 py-1.5" onClick={() => setHarvestModalOpen(false)}>
                 Hủy
@@ -389,35 +384,6 @@ function ProductionEditToolbar() {
                 disableElevation
                 type="button"
                 onClick={(e) => {
-                  const harvest = harvestInput ? new Date(harvestInput) : null;
-                  const seed = seedingDate ? new Date(seedingDate) : null;
-                  const now = new Date();
-                  if (!harvest || Number.isNaN(harvest.getTime())) {
-                    e.preventDefault();
-                    setHarvestError("Vui lòng nhập ngày thu hoạch.");
-                    return;
-                  }
-                  const actualYield = Number(actualYieldInput);
-                  if (!Number.isFinite(actualYield) || actualYield <= 0) {
-                    e.preventDefault();
-                    setHarvestError("Sản lượng thực tế phải lớn hơn 0.");
-                    return;
-                  }
-                  if (!seed || Number.isNaN(seed.getTime())) {
-                    e.preventDefault();
-                    setHarvestError("Không tìm thấy ngày gieo trồng.");
-                    return;
-                  }
-                  if (harvest.getTime() < seed.getTime()) {
-                    e.preventDefault();
-                    setHarvestError("Ngày thu hoạch phải lớn hơn hoặc bằng ngày gieo.");
-                    return;
-                  }
-                  if (harvest.getTime() > now.getTime()) {
-                    e.preventDefault();
-                    setHarvestError("Ngày thu hoạch không được lớn hơn ngày hiện tại.");
-                    return;
-                  }
                   const nextValues = {
                     ...getValues(),
                     harvestDate: harvestInput,
@@ -445,31 +411,9 @@ function ProductionEditToolbar() {
 }
 
 export function ProductionResourceList() {
-  const { permissions } = usePermissions<string>();
   const notify = useNotify();
   const refresh = useRefresh();
   const [deleteOne, { isPending: deleting }] = useDelete();
-  const isEnterprise = permissions === "ENTERPRISE";
-  const [actorAddress, setActorAddress] = React.useState("");
-  React.useEffect(() => {
-    let mounted = true;
-    const backend = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-    fetch(`${backend}/auth/me`, { method: "GET", credentials: "include" })
-      .then((res) => res.json().catch(() => ({})))
-      .then((json: any) => {
-        if (!mounted) return;
-        const user = json?.user ?? {};
-        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
-        setActorAddress(actor);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setActorAddress("");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   return (
     <List exporter={false}>
@@ -493,10 +437,6 @@ export function ProductionResourceList() {
         <FunctionField
           label="Xóa"
           render={(record: any) => {
-            const isOwner =
-              String(record?.registeringCustodianAddress || "").trim() === actorAddress;
-            const packageCount = Number(record?.packageCount || 0);
-            if (!isEnterprise || !isOwner || packageCount > 0) return "—";
             return (
               <button
                 type="button"

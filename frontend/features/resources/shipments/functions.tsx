@@ -480,6 +480,8 @@ export function ShipmentsResourceList() {
         <FunctionField
           label="Xóa"
           render={(record: any) => {
+            const status = cleanString(record?.status).toUpperCase();
+            if (status === "IN_TRANSIT") return null;
             return (
               <button
                 type="button"

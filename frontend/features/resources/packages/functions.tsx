@@ -71,6 +71,17 @@ type PackageRow = {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
+function hasLinkedShipment(record: any): boolean {
+  if (!record || typeof record !== "object") return false;
+  if (record.lockedByShipment === true) return true;
+  if (Number(record.shipmentCount || 0) > 0) return true;
+  if (Array.isArray(record.shipmentLinks) && record.shipmentLinks.length > 0) return true;
+  if (Array.isArray(record.linkedShipmentInventoryKeys) && record.linkedShipmentInventoryKeys.length > 0) return true;
+  if (Array.isArray(record.shipmentInventoryKeys) && record.shipmentInventoryKeys.length > 0) return true;
+  if (String(record.shipmentInventoryKey || "").trim()) return true;
+  return false;
+}
+
 function clampQuantity(value: unknown) {
   if (value === null || value === undefined || value === "") return value;
   const n = Number(value);
@@ -334,6 +345,7 @@ export function PackagesResourceList() {
         <FunctionField
           label="Xóa"
           render={(record: any) => {
+            if (hasLinkedShipment(record)) return null;
             return (
               <button
                 type="button"

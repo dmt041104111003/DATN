@@ -1,8 +1,6 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProductionContractService } from './production.contract.service';
-import { ProductionContractCreateDto } from './dto/production-contract-create.dto';
-import { ProductionContractSaveDto } from './dto/production-contract-save.dto';
 
 @Controller('productions/contract')
 @UseGuards(JwtAuthGuard)
@@ -16,12 +14,12 @@ export class ProductionContractController {
   }
 
   @Post('create')
-  async create(@Body() dto: ProductionContractCreateDto) {
+  async create(@Body() dto: any) {
     return this.svc.createUnsignedCreateTx(dto);
   }
 
   @Post('save')
-  async save(@Body() dto: ProductionContractSaveDto) {
+  async save(@Body() dto: any) {
     return this.svc.createUnsignedSaveTx(dto);
   }
 
