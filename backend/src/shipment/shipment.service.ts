@@ -47,7 +47,12 @@ export class ShipmentService {
         ],
       },
       include: {
-        packages: { select: { packageInventoryKey: true } },
+        packages: {
+          select: {
+            packageInventoryKey: true,
+            package: { select: { code: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -58,6 +63,9 @@ export class ShipmentService {
         ...row,
         packageInventoryKeys: Array.isArray(row?.packages)
           ? row.packages.map((x: any) => clean(x?.packageInventoryKey)).filter(Boolean)
+          : [],
+        packageCodes: Array.isArray(row?.packages)
+          ? row.packages.map((x: any) => clean(x?.package?.code)).filter(Boolean)
           : [],
         verified: Boolean(latest?.verified),
         verifiedAt: latest?.verifiedAt ?? null,

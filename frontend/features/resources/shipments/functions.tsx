@@ -35,8 +35,11 @@ import { BACKEND_URL, SHIPMENT_STATUS_CHOICES } from "./constants";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
 import {
   getDistrictOptions,
+  getDistrictNameById,
   getProvinceOptions,
+  getProvinceNameById,
   getWardOptions,
+  getWardNameById,
   type Option,
 } from "@/features/resources/shared/location";
 
@@ -78,7 +81,8 @@ function renderReadonlyAddressRows(values: string[], label: string) {
     return <MuiTextField label={label} value="—" disabled fullWidth />;
   }
   return (
-    <div className="grid grid-cols-1 gap-3">
+    <div className="max-h-72 overflow-y-auto pr-1">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {rows.map((row, idx) => (
         <MuiTextField
           key={`${label}-${idx}`}
@@ -86,8 +90,10 @@ function renderReadonlyAddressRows(values: string[], label: string) {
           value={row}
           disabled
           fullWidth
+          size="small"
         />
       ))}
+      </div>
     </div>
   );
 }
@@ -108,6 +114,19 @@ function makeLocationLabel(
   const d = resolveName(districtOptions, cleanString(districtId));
   const w = resolveName(wardOptions, cleanString(wardId));
   return [p, d, w].filter(Boolean).join("/") || "—";
+}
+
+async function resolveLocationDisplay(raw: unknown): Promise<string> {
+  const value = cleanString(raw);
+  if (!value) return "—";
+  const parts = value.split("/").map((x) => cleanString(x)).filter(Boolean);
+  if (parts.length !== 3) return value;
+  const [p, d, w] = await Promise.all([
+    getProvinceNameById(parts[0]),
+    getDistrictNameById(parts[1]),
+    getWardNameById(parts[2]),
+  ]);
+  return [p || parts[0], d || parts[1], w || parts[2]].join("/");
 }
 
 function makeShipmentCode() {
@@ -187,6 +206,7 @@ function ShipmentCreateSections() {
     [districtId, districtOptions, provinceId, provinceOptions, wardId, wardOptions],
   );
   const updaterAddresses = React.useMemo(() => normalizeAddresses(updaterAddressesRaw), [updaterAddressesRaw]);
+  const [updaterLocationMap, setUpdaterLocationMap] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
     let mounted = true;
@@ -217,26 +237,43 @@ function ShipmentCreateSections() {
       mounted = false;
     };
   }, [updaterAddresses]);
-  const updaterLocationMap = React.useMemo(() => {
-    const map = new Map<string, string>();
-    for (const row of updaterLocationRows) {
-      const addr = cleanString(row?.address);
-      if (!addr) continue;
-      const location = makeLocationLabel(
-        row?.provinceId,
-        row?.districtId,
-        row?.wardId,
-        provinceOptions,
-        districtOptions,
-        wardOptions,
-      );
-      map.set(addr, location);
+  React.useEffect(() => {
+    let mounted = true;
+    if (updaterLocationRows.length === 0) {
+      setUpdaterLocationMap({});
+      return;
     }
-    return map;
-  }, [districtOptions, provinceOptions, updaterLocationRows, wardOptions]);
+    (async () => {
+      const entries = await Promise.all(
+        updaterLocationRows.map(async (row) => {
+          const addr = cleanString(row?.address);
+          if (!addr) return null;
+          const [p, d, w] = await Promise.all([
+            getProvinceNameById(cleanString(row?.provinceId)),
+            getDistrictNameById(cleanString(row?.districtId)),
+            getWardNameById(cleanString(row?.wardId)),
+          ]);
+          const location = [p || cleanString(row?.provinceId), d || cleanString(row?.districtId), w || cleanString(row?.wardId)]
+            .filter(Boolean)
+            .join("/") || addr;
+          return [addr, location] as const;
+        }),
+      );
+      if (!mounted) return;
+      const next: Record<string, string> = {};
+      for (const item of entries) {
+        if (!item) continue;
+        next[item[0]] = item[1];
+      }
+      setUpdaterLocationMap(next);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [updaterLocationRows]);
 
   const orderedRoadmap = React.useMemo(
-    () => [baseLocation, ...updaterAddresses.map((addr) => updaterLocationMap.get(addr) || addr)].filter(Boolean),
+    () => [baseLocation, ...updaterAddresses.map((addr) => updaterLocationMap[addr] || addr)].filter(Boolean),
     [baseLocation, updaterAddresses, updaterLocationMap],
   );
   const { data: packageRows = [] } = useGetList<PackageRow>("packages", {
@@ -291,11 +328,13 @@ function ShipmentCreateSections() {
       </div>
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[2] Quyền cập nhật vị trí</h3>
-        <ArrayInput source="updaterAddresses" label="Địa chỉ được phép cập nhật location">
-          <SimpleFormIterator inline>
-            <TextInput source="address" label="Địa chỉ ví" fullWidth />
-          </SimpleFormIterator>
-        </ArrayInput>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <ArrayInput source="updaterAddresses" label="Địa chỉ được phép cập nhật location">
+            <SimpleFormIterator inline>
+              <TextInput source="address" label="Địa chỉ ví" fullWidth />
+            </SimpleFormIterator>
+          </ArrayInput>
+        </div>
       </div>
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[3] Thông tin lô hàng</h3>
@@ -318,12 +357,26 @@ function ShipmentCreateSections() {
 function ShipmentEditSections() {
   const record = useRecordContext<any>();
   const packageKeys = Array.isArray(record?.packageInventoryKeys) ? record.packageInventoryKeys : [];
+  const packageCodes = Array.isArray(record?.packageCodes) ? record.packageCodes : [];
   const roadmap = Array.isArray(record?.roadmap) ? record.roadmap : [];
   const updaters = Array.isArray(record?.updaterAddresses) ? record.updaterAddresses : [];
-  const orderedRoadmap = roadmap
-    .map((x: any) => String(x || "").trim())
-    .filter(Boolean)
-    .map((x: string, idx: number) => `${idx + 1}. ${x}`);
+  const [locationDisplay, setLocationDisplay] = React.useState<string>("—");
+  const [roadmapDisplay, setRoadmapDisplay] = React.useState<string[]>([]);
+  const packageDisplayRows = packageCodes.length > 0 ? packageCodes : packageKeys;
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const loc = await resolveLocationDisplay(record?.location);
+      const rowsRaw = Array.isArray(roadmap) ? roadmap : [];
+      const rowsResolved = await Promise.all(rowsRaw.map((x: any) => resolveLocationDisplay(x)));
+      if (!mounted) return;
+      setLocationDisplay(loc);
+      setRoadmapDisplay(rowsResolved.map((x, idx) => `${idx + 1}. ${x}`));
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [record?.location, roadmap]);
 
   return (
     <>
@@ -332,20 +385,23 @@ function ShipmentEditSections() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextInput source="code" label="Mã lô" disabled fullWidth />
           <TextInput source="traceSchemeRef" label="Mã chính sách" disabled fullWidth />
-          <TextInput source="inventoryKey" label="Inventory Key" disabled fullWidth />
-          <TextInput source="holderAddress" label="Holder hiện tại" disabled fullWidth />
           <SelectInput source="status" label="Trạng thái" choices={SHIPMENT_STATUS_CHOICES} disabled fullWidth />
+          <TextInput source="note" label="Ghi chú" multiline disabled fullWidth />
         </div>
       </div>
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[2] Gói liên kết</h3>
-        {renderReadonlyAddressRows(packageKeys, "Danh sách package inventory key")}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {renderReadonlyAddressRows(packageDisplayRows, "Mã gói liên kết")}
+        </div>
       </div>
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[3] Quyền cập nhật vị trí</h3>
-        {renderReadonlyAddressRows(updaters, "Địa chỉ được phép")}
-        <TextInput source="location" label="Vị trí hiện tại" disabled fullWidth />
-        {renderReadonlyAddressRows(orderedRoadmap, "Roadmap hiện tại")}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {renderReadonlyAddressRows(updaters, "Địa chỉ được phép")}
+          <MuiTextField label="Vị trí hiện tại" value={locationDisplay} disabled fullWidth />
+          {renderReadonlyAddressRows(roadmapDisplay, "Roadmap hiện tại")}
+        </div>
       </div>
     </>
   );
@@ -363,7 +419,6 @@ export function ShipmentsResourceList() {
     >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã lô" />
-        <TextField source="holderAddress" label="Holder" />
         <DateField source="createdAt" label="Ngày đóng lô" showTime />
         <SelectField source="status" label="Trạng thái" choices={SHIPMENT_STATUS_CHOICES} />
         <BooleanField source="verified" label="Đã xác thực" />
