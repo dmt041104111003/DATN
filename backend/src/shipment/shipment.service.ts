@@ -13,6 +13,13 @@ function isValidWalletAddress(value: string): boolean {
 export class ShipmentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private assertEnterprise(roleRaw: unknown) {
+    const role = clean(roleRaw).toUpperCase();
+    if (role !== 'ENTERPRISE') {
+      throw new BadRequestException('Only ENTERPRISE can edit/delete shipments.');
+    }
+  }
+
   private locationFromProfile(profile: any, fallback: string): string {
     const location = [clean(profile?.provinceId), clean(profile?.districtId), clean(profile?.wardId)]
       .filter(Boolean)
@@ -141,7 +148,7 @@ export class ShipmentService {
         updaterAddresses: updaterAddresses as any,
         roadmap: roadmap as any,
         note: clean(data?.note) || null,
-        status: 'CREATED',
+        status: 'IN_TRANSIT',
       } as any,
     });
 
@@ -173,7 +180,8 @@ export class ShipmentService {
     };
   }
 
-  async updateLocation(holderAddressRaw: string, shipmentInventoryKeyRaw: string, data: any) {
+  async updateLocation(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
+    this.assertEnterprise(roleRaw);
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     if (!holder) throw new BadRequestException('Operator account reference is required.');
@@ -184,11 +192,8 @@ export class ShipmentService {
     });
     if (!row) throw new NotFoundException('Shipment not found.');
 
-    const updaters = Array.isArray(row?.updaterAddresses)
-      ? row.updaterAddresses.map((x: unknown) => clean(x)).filter(Boolean)
-      : [];
-    if (!updaters.includes(holder)) {
-      throw new BadRequestException('You are not allowed to update shipment location.');
+    if (clean(row?.holderAddress) !== holder) {
+      throw new BadRequestException('You can only edit shipment(s) that you still hold.');
     }
 
     const location = clean(data?.location);
@@ -207,6 +212,101 @@ export class ShipmentService {
       ...updated,
       packageInventoryKeys: [],
     };
+  }
+
+  async updateStatus(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
+    this.assertEnterprise(roleRaw);
+    const holder = clean(holderAddressRaw);
+    const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
+    if (!holder) throw new BadRequestException('Operator account reference is required.');
+    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
+
+    const row = await (this.prisma as any).shipment.findUnique({
+      where: { inventoryKey: shipmentInventoryKey },
+      include: {
+        packages: {
+          select: {
+            packageInventoryKey: true,
+            package: { select: { code: true } },
+          },
+        },
+      },
+    });
+    if (!row) throw new NotFoundException('Shipment not found.');
+
+    const nextStatus = clean(data?.status).toUpperCase();
+    if (nextStatus !== 'IN_TRANSIT') {
+      throw new BadRequestException('Only IN_TRANSIT is supported for this action.');
+    }
+
+    if (clean(row?.holderAddress) !== holder) {
+      throw new BadRequestException('You can only edit shipment(s) that you still hold.');
+    }
+
+    const updated = await (this.prisma as any).shipment.update({
+      where: { inventoryKey: shipmentInventoryKey },
+      data: { status: 'IN_TRANSIT' } as any,
+      include: {
+        packages: {
+          select: {
+            packageInventoryKey: true,
+            package: { select: { code: true } },
+          },
+        },
+      },
+    });
+    return {
+      ...updated,
+      packageInventoryKeys: Array.isArray(updated?.packages)
+        ? updated.packages.map((x: any) => clean(x?.packageInventoryKey)).filter(Boolean)
+        : [],
+      packageCodes: Array.isArray(updated?.packages)
+        ? updated.packages.map((x: any) => clean(x?.package?.code)).filter(Boolean)
+        : [],
+    };
+  }
+
+  async deleteByInventoryKey(createdByAddress: string, roleRaw: unknown, shipmentInventoryKeyRaw: unknown, txHashRaw: unknown) {
+    this.assertEnterprise(roleRaw);
+    const actor = clean(createdByAddress);
+    const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
+    const txHash = clean(txHashRaw);
+    if (!actor) throw new BadRequestException('Operator account reference is required.');
+    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
+    if (!txHash) throw new BadRequestException('txHash is required.');
+
+    const row = await (this.prisma as any).shipment.findUnique({
+      where: { inventoryKey: shipmentInventoryKey },
+      select: { inventoryKey: true, holderAddress: true },
+    });
+    if (!row) throw new NotFoundException('Shipment not found.');
+    if (clean(row?.holderAddress) !== actor) {
+      throw new BadRequestException('You can only delete shipment(s) that you still hold.');
+    }
+
+    const pendingDelete = await (this.prisma as any).recordOperation.findFirst({
+      where: {
+        entityType: 'SHIPMENT',
+        entityKey: shipmentInventoryKey,
+        opType: 'DELETE',
+        verified: false,
+      },
+      select: { id: true },
+    });
+    if (pendingDelete) {
+      throw new BadRequestException('Delete request is already pending verification.');
+    }
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: 'SHIPMENT',
+        entityKey: shipmentInventoryKey,
+        opType: 'DELETE',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
+    });
+    return { inventoryKey: shipmentInventoryKey, pendingDelete: true };
   }
 
   async resolveUpdaterLocations(addressesRaw: unknown) {

@@ -125,7 +125,7 @@ model Shipment {
   location                    String
   updaterAddresses            Json
   roadmap                     Json
-  status                      ShipmentStatus @default(CREATED)
+  status                      ShipmentStatus @default(IN_TRANSIT)
   note                        String?
   createdAt                   DateTime       @default(now())
   updatedAt                   DateTime       @updatedAt

@@ -28,7 +28,9 @@ import {
   useGetList,
   useNotify,
   usePermissions,
+  useRefresh,
   useRedirect,
+  useDelete,
 } from "react-admin";
 import {
   PACKAGE_STATUS_CHOICES,
@@ -274,7 +276,28 @@ function PackageFormSections({
 export function PackagesResourceList() {
   const { permissions } = usePermissions<string>();
   const notify = useNotify();
+  const refresh = useRefresh();
+  const [deleteOne, { isPending: deleting }] = useDelete();
   const isEnterprise = permissions === "ENTERPRISE";
+  const [actorAddress, setActorAddress] = React.useState("");
+  React.useEffect(() => {
+    let mounted = true;
+    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((json: any) => {
+        if (!mounted) return;
+        const user = json?.user ?? {};
+        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+        setActorAddress(actor);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setActorAddress("");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <List
       empty={<Empty hasCreate={isEnterprise} />}
@@ -308,6 +331,38 @@ export function PackagesResourceList() {
               Tải QR
             </button>
           )}
+        />
+        <FunctionField
+          label="Xóa"
+          render={(record: any) => {
+            const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
+            if (!isEnterprise || !isHolder) return "—";
+            return (
+              <button
+                type="button"
+                className="text-red-600 underline disabled:opacity-50"
+                disabled={deleting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  deleteOne(
+                    "packages",
+                    { id: record?.inventoryKey || record?.id, previousData: record },
+                    {
+                      onSuccess: () => {
+                        notify("Đã gửi yêu cầu xóa, chờ verify burn on-chain.", { type: "success" });
+                        refresh();
+                      },
+                      onError: (error: any) =>
+                        notify(String(error?.message || "Xóa gói hàng thất bại."), { type: "error" }),
+                    },
+                  );
+                }}
+              >
+                Xóa
+              </button>
+            );
+          }}
         />
       </Datagrid>
     </List>

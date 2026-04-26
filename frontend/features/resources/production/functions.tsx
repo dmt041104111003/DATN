@@ -20,6 +20,11 @@ import {
   TextField,
   TextInput,
   Toolbar,
+  FunctionField,
+  useDelete,
+  useNotify,
+  usePermissions,
+  useRefresh,
   useSaveContext,
   required,
 } from "react-admin";
@@ -440,6 +445,32 @@ function ProductionEditToolbar() {
 }
 
 export function ProductionResourceList() {
+  const { permissions } = usePermissions<string>();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [deleteOne, { isPending: deleting }] = useDelete();
+  const isEnterprise = permissions === "ENTERPRISE";
+  const [actorAddress, setActorAddress] = React.useState("");
+  React.useEffect(() => {
+    let mounted = true;
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+    fetch(`${backend}/auth/me`, { method: "GET", credentials: "include" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((json: any) => {
+        if (!mounted) return;
+        const user = json?.user ?? {};
+        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+        setActorAddress(actor);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setActorAddress("");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <List exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
@@ -459,6 +490,40 @@ export function ProductionResourceList() {
         <DateField source="seedingDate" label="Ngày gieo" />
         <DateField source="harvestDate" label="Ngày thu hoạch" />
         <TextField source="actualYieldKg" label="Sản lượng thực tế (kg)" />
+        <FunctionField
+          label="Xóa"
+          render={(record: any) => {
+            const isOwner =
+              String(record?.registeringCustodianAddress || "").trim() === actorAddress;
+            const packageCount = Number(record?.packageCount || 0);
+            if (!isEnterprise || !isOwner || packageCount > 0) return "—";
+            return (
+              <button
+                type="button"
+                className="text-red-600 underline disabled:opacity-50"
+                disabled={deleting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  deleteOne(
+                    "production",
+                    { id: record?.inventoryKey || record?.id, previousData: record },
+                    {
+                      onSuccess: () => {
+                        notify("Đã gửi yêu cầu xóa, chờ verify burn on-chain.", { type: "success" });
+                        refresh();
+                      },
+                      onError: (error: any) =>
+                        notify(String(error?.message || "Xóa vụ sản xuất thất bại."), { type: "error" }),
+                    },
+                  );
+                }}
+              >
+                Xóa
+              </button>
+            );
+          }}
+        />
       </Datagrid>
     </List>
   );

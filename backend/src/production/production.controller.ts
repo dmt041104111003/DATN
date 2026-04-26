@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
@@ -29,6 +30,10 @@ export class ProductionController {
     return custodian;
   }
 
+  private getRole(req: any): string {
+    return String(req?.user?.role || '').trim();
+  }
+
   @Get()
   async list(@Req() req: any) {
     return this.productionService.list(this.getCustodian(req));
@@ -53,6 +58,23 @@ export class ProductionController {
     } catch (e) {
       throw new HttpException(
         e instanceof Error ? e.message : 'Failed to update production.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Delete(':inventoryKey')
+  async remove(@Req() req: any, @Param('inventoryKey') inventoryKey: string, @Body() body: any) {
+    try {
+      return await this.productionService.deleteByInventoryKey(
+        this.getCustodian(req),
+        this.getRole(req),
+        inventoryKey,
+        body?.txHash,
+      );
+    } catch (e) {
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Failed to delete production.',
         HttpStatus.BAD_REQUEST,
       );
     }

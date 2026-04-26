@@ -109,6 +109,27 @@ export class RecordOperationVerifierService {
             } as any,
           });
 
+          if (opType === 'DELETE') {
+            try {
+              if (entityType === 'PACKAGE') {
+                await (this.prisma as any).package.delete({
+                  where: { inventoryKey: entityKey },
+                });
+              } else if (entityType === 'PRODUCTION') {
+                await (this.prisma as any).production.delete({
+                  where: { inventoryKey: entityKey },
+                });
+              } else if (entityType === 'SHIPMENT') {
+                await (this.prisma as any).shipment.delete({
+                  where: { inventoryKey: entityKey },
+                });
+              }
+            } catch (cleanupError: any) {
+              const cleanupMsg = cleanupError?.message ? String(cleanupError.message) : 'cleanup failed';
+              this.logger.debug(`[cleanup ${entityType}:${entityKey}] ${cleanupMsg}`);
+            }
+          }
+
         } catch (e: any) {
           const msg = e?.message ? String(e.message) : 'verify failed';
           this.logger.debug(`[${entityType}:${entityKey}] ${msg}`);

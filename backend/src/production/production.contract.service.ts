@@ -5,6 +5,7 @@ import { TxBuilderHelper } from './helpers/tx-builder.helper';
 import { PlutusHelper } from './helpers/plutus.helper';
 import { ProductionContractCreateDto } from './dto/production-contract-create.dto';
 import { ProductionContractSaveDto } from './dto/production-contract-save.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ProductionContractService {
@@ -12,7 +13,7 @@ export class ProductionContractService {
   private readonly plutusHelper: PlutusHelper;
   private readonly txBuilderHelper: TxBuilderHelper;
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     const apiKey = process.env.BLOCKFROST_API_KEY;
     if (!apiKey) throw new Error('BLOCKFROST_API_KEY is not set');
     this.blockfrostProvider = new BlockfrostProvider(apiKey);
@@ -136,5 +137,46 @@ export class ProductionContractService {
       { productName: code, metadata: merged },
     ]);
     return { result: true, data: unsignedTx, message: 'Production refresh record prepared.' };
+  }
+
+  async createUnsignedBurnTx(dto: any) {
+    const walletAddress = String(dto?.custodianAddress || '').trim();
+    const owners = Array.isArray(dto?.owners) ? dto.owners.map((s: unknown) => String(s || '').trim()).filter(Boolean) : [];
+    const productionInventoryKeys = Array.isArray(dto?.productionInventoryKeys)
+      ? dto.productionInventoryKeys.map((s: unknown) => String(s || '').trim()).filter(Boolean)
+      : [];
+    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
+    if (owners.length === 0) throw new BadRequestException('owners is required.');
+    if (!owners.includes(walletAddress)) {
+      throw new BadRequestException('Your account is not on the joint custody list.');
+    }
+    if (productionInventoryKeys.length < 1) throw new BadRequestException('productionInventoryKeys is required.');
+
+    const rows = await (this.prisma as any).production.findMany({
+      where: {
+        inventoryKey: { in: productionInventoryKeys },
+        registeringCustodianAddress: walletAddress,
+      },
+      select: {
+        inventoryKey: true,
+        code: true,
+        packages: { select: { id: true }, take: 1 },
+      },
+    });
+    if ((rows || []).length !== productionInventoryKeys.length) {
+      throw new BadRequestException('Some productions are invalid or not owned by your address.');
+    }
+    const hasLinkedPackages = (rows || []).some((x: any) => Array.isArray(x?.packages) && x.packages.length > 0);
+    if (hasLinkedPackages) {
+      throw new BadRequestException('Cannot burn production linked to package(s).');
+    }
+    const products = (rows || [])
+      .map((x: any) => ({ productName: String(x?.code || '').trim() }))
+      .filter((x: any) => String(x?.productName || '').trim());
+    if (products.length !== productionInventoryKeys.length) {
+      throw new BadRequestException('Some production codes are missing for burn.');
+    }
+    const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
+    return { result: true, data: unsignedTx, message: 'Production burn prepared.' };
   }
 }

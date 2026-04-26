@@ -115,5 +115,38 @@ export class PackageContractService {
       packageItems,
     };
   }
+
+  async createUnsignedBurnTx(dto: any) {
+    const walletAddress = clean(dto?.custodianAddress);
+    const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
+    const packageInventoryKeys = Array.isArray(dto?.packageInventoryKeys)
+      ? dto.packageInventoryKeys.map(clean).filter(Boolean)
+      : [];
+    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
+    if (packageInventoryKeys.length < 1) throw new BadRequestException('packageInventoryKeys is required.');
+    if (owners.length === 0) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+
+    const rows = await (this.prisma as any).package.findMany({
+      where: { inventoryKey: { in: packageInventoryKeys }, holderAddress: walletAddress },
+      select: { inventoryKey: true, code: true },
+    });
+    if ((rows || []).length !== packageInventoryKeys.length) {
+      throw new BadRequestException('Some packages are invalid or not held by your address.');
+    }
+    const products = (rows || [])
+      .map((row: any) => ({ productName: clean(row?.code) }))
+      .filter((x: any) => clean(x?.productName));
+    if (products.length !== packageInventoryKeys.length) {
+      throw new BadRequestException('Some package codes are missing for burn.');
+    }
+
+    const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
+    return {
+      result: true,
+      data: unsignedTx,
+      message: 'Package burn prepared.',
+    };
+  }
 }
 

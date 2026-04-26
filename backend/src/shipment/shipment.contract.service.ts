@@ -31,7 +31,7 @@ function makeMetadata(base: any, shipment: { code: string; inventoryKey: string;
     package_inventory_keys: JSON.stringify(Array.isArray(base?.packageInventoryKeys) ? base.packageInventoryKeys : []),
     updater_addresses: JSON.stringify(Array.isArray(base?.updaterAddresses) ? base.updaterAddresses : []),
     note: clean(base?.note),
-    status: 'CREATED',
+    status: 'IN_TRANSIT',
   } as Record<string, string>;
 }
 
@@ -112,6 +112,39 @@ export class ShipmentContractService {
         inventoryKey,
         traceSchemeRef,
       },
+    };
+  }
+
+  async createUnsignedBurnTx(dto: any) {
+    const walletAddress = clean(dto?.custodianAddress);
+    const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
+    const shipmentInventoryKeys = Array.isArray(dto?.shipmentInventoryKeys)
+      ? dto.shipmentInventoryKeys.map(clean).filter(Boolean)
+      : [];
+    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
+    if (shipmentInventoryKeys.length < 1) throw new BadRequestException('shipmentInventoryKeys is required.');
+    if (owners.length === 0) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+
+    const rows = await (this.prisma as any).shipment.findMany({
+      where: { inventoryKey: { in: shipmentInventoryKeys }, holderAddress: walletAddress },
+      select: { inventoryKey: true, code: true },
+    });
+    if ((rows || []).length !== shipmentInventoryKeys.length) {
+      throw new BadRequestException('Some shipments are invalid or not held by your address.');
+    }
+    const products = (rows || [])
+      .map((row: any) => ({ productName: clean(row?.code) }))
+      .filter((x: any) => clean(x?.productName));
+    if (products.length !== shipmentInventoryKeys.length) {
+      throw new BadRequestException('Some shipment codes are missing for burn.');
+    }
+
+    const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
+    return {
+      result: true,
+      data: unsignedTx,
+      message: 'Shipment burn prepared.',
     };
   }
 }

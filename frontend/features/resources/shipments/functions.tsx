@@ -6,7 +6,6 @@ import QRCode from "qrcode";
 import {
   ArrayInput,
   BooleanField,
-  CreateButton,
   Create,
   Datagrid,
   DateField,
@@ -19,7 +18,6 @@ import {
   SelectInput,
   SimpleForm,
   SimpleFormIterator,
-  TopToolbar,
   TextField,
   TextInput,
   Toolbar,
@@ -29,6 +27,9 @@ import {
   useNotify,
   usePermissions,
   useRecordContext,
+  useRefresh,
+  useUpdate,
+  useDelete,
 } from "react-admin";
 import { useWatch } from "react-hook-form";
 import { BACKEND_URL, SHIPMENT_STATUS_CHOICES } from "./constants";
@@ -410,12 +411,34 @@ function ShipmentEditSections() {
 export function ShipmentsResourceList() {
   const { permissions } = usePermissions<string>();
   const notify = useNotify();
+  const refresh = useRefresh();
+  const [update, { isPending }] = useUpdate();
+  const [deleteOne, { isPending: deleting }] = useDelete();
   const isEnterprise = permissions === "ENTERPRISE";
+  const [actorAddress, setActorAddress] = React.useState("");
+  React.useEffect(() => {
+    let mounted = true;
+    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((json: any) => {
+        if (!mounted) return;
+        const user = json?.user ?? {};
+        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+        setActorAddress(actor);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setActorAddress("");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <List
-      empty={<Empty hasCreate={isEnterprise} />}
+      empty={<Empty hasCreate={false} />}
       exporter={false}
-      actions={isEnterprise ? <TopToolbar><CreateButton /></TopToolbar> : false}
+      actions={false}
     >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã lô" />
@@ -440,6 +463,76 @@ export function ShipmentsResourceList() {
               Tải QR
             </button>
           )}
+        />
+        <FunctionField
+          label="Action"
+          render={(record: any) => {
+            const status = cleanString(record?.status).toUpperCase();
+            const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
+            if (!isEnterprise || !isHolder) return "—";
+            const disabledDispatch = status === "IN_TRANSIT";
+            return (
+              <button
+                type="button"
+                className="text-blue-600 underline disabled:opacity-50"
+                disabled={isPending || disabledDispatch}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  update(
+                    "shipments",
+                    {
+                      id: record?.inventoryKey || record?.id,
+                      data: { inventoryKey: record?.inventoryKey, status: "IN_TRANSIT" },
+                      previousData: record,
+                    },
+                    {
+                      onSuccess: () => {
+                        notify("Đã xuất kho", { type: "success" });
+                        refresh();
+                      },
+                      onError: (error: any) =>
+                        notify(String(error?.message || "Xuất kho thất bại."), { type: "error" }),
+                    },
+                  );
+                }}
+              >
+                Xuất kho
+              </button>
+            );
+          }}
+        />
+        <FunctionField
+          label="Xóa"
+          render={(record: any) => {
+            const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
+            if (!isEnterprise || !isHolder) return "—";
+            return (
+              <button
+                type="button"
+                className="text-red-600 underline disabled:opacity-50"
+                disabled={deleting}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  deleteOne(
+                    "shipments",
+                    { id: record?.inventoryKey || record?.id, previousData: record },
+                    {
+                      onSuccess: () => {
+                        notify("Đã gửi yêu cầu xóa, chờ verify burn on-chain.", { type: "success" });
+                        refresh();
+                      },
+                      onError: (error: any) =>
+                        notify(String(error?.message || "Xóa lô hàng thất bại."), { type: "error" }),
+                    },
+                  );
+                }}
+              >
+                Xóa
+              </button>
+            );
+          }}
         />
       </Datagrid>
     </List>

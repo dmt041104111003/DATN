@@ -11,5 +11,10 @@ export class PackageContractController {
   async create(@Body() dto: any) {
     return this.svc.createUnsignedCreateTx(dto);
   }
+
+  @Post('burn')
+  async burn(@Body() dto: any) {
+    return this.svc.createUnsignedBurnTx(dto);
+  }
 }
 

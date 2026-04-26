@@ -11,6 +11,13 @@ function cleanString(v: unknown): string {
 export class ProductionService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private assertEnterprise(roleRaw: unknown) {
+    const role = cleanString(roleRaw).toUpperCase();
+    if (role !== 'ENTERPRISE') {
+      throw new BadRequestException('Only ENTERPRISE can delete production.');
+    }
+  }
+
   private certToString(value: unknown): string | null {
     if (!Array.isArray(value)) return null;
     const packed = value.map((x) => cleanString(x)).filter(Boolean).join('|');
@@ -64,6 +71,7 @@ export class ProductionService {
   private composeResponse(row: any, media: Record<string, string[]>, latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
+      packageCount: Number(row?._count?.packages || 0),
       certifications: this.certToArray(row?.certifications),
       certFiles: media.PRODUCTION_CERT_FILE || [],
       evidenceFiles: media.PRODUCTION_EVIDENCE || [],
@@ -115,6 +123,7 @@ export class ProductionService {
     if (!addr) throw new BadRequestException('Operator account reference is required.');
     const rows = await (this.prisma as any).production.findMany({
       where: { registeringCustodianAddress: addr },
+      include: { _count: { select: { packages: true } } },
       orderBy: { createdAt: 'desc' },
     });
     const keys = (rows || []).map((r: any) => cleanString(r.inventoryKey)).filter(Boolean);
@@ -309,5 +318,51 @@ export class ProductionService {
       latestOpAfterUpdate,
       txHash || undefined,
     );
+  }
+
+  async deleteByInventoryKey(createdBy: string, roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
+    this.assertEnterprise(roleRaw);
+    const addr = cleanString(createdBy);
+    const key = cleanString(inventoryKeyRaw);
+    const txHash = cleanString(txHashRaw);
+    if (!addr) throw new BadRequestException('Operator account reference is required.');
+    if (!key) throw new BadRequestException('inventoryKey is required.');
+    if (!txHash) throw new BadRequestException('txHash is required.');
+
+    const existing = await (this.prisma as any).production.findUnique({
+      where: { inventoryKey: key },
+      include: { _count: { select: { packages: true } } },
+    });
+    if (!existing) throw new NotFoundException('Production not found');
+    if (cleanString(existing.registeringCustodianAddress) !== addr) {
+      throw new BadRequestException('You are not allowed to delete this production.');
+    }
+    if (Number(existing?._count?.packages || 0) > 0) {
+      throw new BadRequestException('Production already linked to package(s), cannot delete.');
+    }
+    const pendingDelete = await (this.prisma as any).recordOperation.findFirst({
+      where: {
+        entityType: ENTITY_TYPE,
+        entityKey: key,
+        opType: 'DELETE',
+        verified: false,
+      },
+      select: { id: true },
+    });
+    if (pendingDelete) {
+      throw new BadRequestException('Delete request is already pending verification.');
+    }
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: ENTITY_TYPE,
+        entityKey: key,
+        productionInventoryKey: key,
+        opType: 'DELETE',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
+    });
+    return { inventoryKey: key, pendingDelete: true };
   }
 }

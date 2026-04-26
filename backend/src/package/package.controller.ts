@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PackageService } from './package.service';
 
@@ -18,6 +18,10 @@ export class PackageController {
     return custodian;
   }
 
+  private getRole(req: any): string {
+    return String(req?.user?.role || '').trim();
+  }
+
   @Get()
   async list(@Req() req: any) {
     return this.packageService.list(this.getCustodian(req));
@@ -35,6 +39,23 @@ export class PackageController {
     } catch (e) {
       throw new HttpException(
         e instanceof Error ? e.message : 'Failed to create package(s).',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Delete(':inventoryKey')
+  async remove(@Req() req: any, @Param('inventoryKey') inventoryKey: string, @Body() body: any) {
+    try {
+      return await this.packageService.deleteByInventoryKey(
+        this.getCustodian(req),
+        this.getRole(req),
+        inventoryKey,
+        body?.txHash,
+      );
+    } catch (e) {
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Failed to delete package.',
         HttpStatus.BAD_REQUEST,
       );
     }

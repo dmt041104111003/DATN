@@ -24,4 +24,9 @@ export class ProductionContractController {
   async save(@Body() dto: ProductionContractSaveDto) {
     return this.svc.createUnsignedSaveTx(dto);
   }
+
+  @Post('burn')
+  async burn(@Body() dto: any) {
+    return this.svc.createUnsignedBurnTx(dto);
+  }
 }

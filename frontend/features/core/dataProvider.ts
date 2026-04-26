@@ -329,6 +329,18 @@ export const adminDataProvider: DataProvider = {
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
       if (!shipmentInventoryKey) throw new Error("shipmentInventoryKey is required.");
+      const status = String(params.data?.status || "").trim().toUpperCase();
+      if (status === "IN_TRANSIT") {
+        const { json } = await httpClient(
+          `${BACKEND_URL}/shipments/${encodeURIComponent(shipmentInventoryKey)}/status`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ status: "IN_TRANSIT" }),
+          },
+        );
+        const row = json as any;
+        return { data: { ...row, id: normalizeId(row, params.id) } };
+      }
       const { json } = await httpClient(
         `${BACKEND_URL}/shipments/${encodeURIComponent(shipmentInventoryKey)}/location`,
         {
@@ -473,6 +485,81 @@ export const adminDataProvider: DataProvider = {
     return baseProvider.create(resource, params);
   },
   async delete(resource, params) {
+    if (resource === "production") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = String(
+        (params.previousData as any)?.inventoryKey ?? params.id ?? "",
+      ).trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/burn`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          productionInventoryKeys: [inventoryKey],
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare production burn transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/productions/${encodeURIComponent(inventoryKey)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
+    }
+    if (resource === "packages") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = String(
+        (params.previousData as any)?.inventoryKey ?? params.id ?? "",
+      ).trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const contractRes = await httpClient(`${BACKEND_URL}/packages/contract/burn`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          packageInventoryKeys: [inventoryKey],
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare package burn transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/packages/${encodeURIComponent(inventoryKey)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
+    }
+    if (resource === "shipments") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = String(
+        (params.previousData as any)?.inventoryKey ?? params.id ?? "",
+      ).trim();
+      if (!inventoryKey) throw new Error("shipmentInventoryKey is required.");
+      const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/burn`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          shipmentInventoryKeys: [inventoryKey],
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment burn transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/shipments/${encodeURIComponent(inventoryKey)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
+    }
     return baseProvider.delete(resource, params);
   },
 };
