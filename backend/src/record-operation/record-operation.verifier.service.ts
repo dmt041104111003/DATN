@@ -64,7 +64,7 @@ export class RecordOperationVerifierService {
     }
   }
 
-  @Cron('*/15 * * * * *')
+  @Cron('*/5 * * * * *')
   async tick() {
     const lockKey = BigInt(830101);
     const locked = await this.tryAdvisoryLock(lockKey);

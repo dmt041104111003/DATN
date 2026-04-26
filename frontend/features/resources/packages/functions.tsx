@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Button from "@mui/material/Button";
 import MuiTextField from "@mui/material/TextField";
 import QRCode from "qrcode";
 import {
@@ -57,7 +56,6 @@ type CapacityResponse = {
 };
 
 type PackageRow = {
-  id?: string;
   code?: string;
   inventoryKey?: string;
   traceSchemeRef?: string;
@@ -103,16 +101,11 @@ async function downloadPackageQr(record: PackageRow) {
     inventoryKey,
     policyId,
   });
-  const dataUrl = await QRCode.toDataURL(qrPayload, {
-    width: 512,
-    margin: 2,
-  });
+  const dataUrl = await QRCode.toDataURL(qrPayload, { width: 256, margin: 1 });
   const link = document.createElement("a");
   link.href = dataUrl;
   link.download = `${code}-qr.png`;
-  document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
 }
 
 function PackageFormSections({
@@ -278,7 +271,7 @@ function PackageFormSections({
 export function PackagesResourceList() {
   const notify = useNotify();
   return (
-    <List empty={<Empty />}>
+    <List empty={<Empty />} exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã gói" />
         <NumberField source="weightValue" label="Khối lượng" />
@@ -292,9 +285,9 @@ export function PackagesResourceList() {
         <FunctionField
           label="QR"
           render={(record: any) => (
-            <Button
-              variant="outlined"
-              size="small"
+            <button
+              type="button"
+              className="text-blue-600 underline"
               onClick={async () => {
                 try {
                   await downloadPackageQr(record as PackageRow);
@@ -304,7 +297,7 @@ export function PackagesResourceList() {
               }}
             >
               Tải QR
-            </Button>
+            </button>
           )}
         />
       </Datagrid>

@@ -181,8 +181,8 @@ export function ProfileResourceCreate(props: any) {
 
 export function ProfileResourceList() {
   return (
-    <List>
-      <Datagrid rowClick="edit">
+    <List exporter={false}>
+      <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="id" label="Mã hồ sơ" />
         <TextField source="displayName" label="Tên hiển thị" />
         <TextField source="phoneNumber" label="Số điện thoại" />

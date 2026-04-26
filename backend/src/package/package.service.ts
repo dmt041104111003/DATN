@@ -74,7 +74,7 @@ export class PackageService {
     });
     let packagedKg = 0;
     for (const row of existing || []) {
-      const kg = toKg(Number(row?.weightValue), clean(row?.weightUnit), Number(row?.quantity));
+      const kg = toKg(Number(row?.weightValue), clean(row?.weightUnit), 1);
       if (kg === null) {
         return {
           productionInventoryKey,
@@ -253,7 +253,7 @@ export class PackageService {
           productionInventoryKey,
           weightValue,
           weightUnit,
-          quantity,
+          quantity: 1,
           packagingType,
           packagingDate,
           note,

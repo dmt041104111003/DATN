@@ -440,7 +440,7 @@ function ProductionEditToolbar() {
 
 export function ProductionResourceList() {
   return (
-    <List>
+    <List exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã vụ" />
         <TextField source="facilityId" label="Cơ sở" />
