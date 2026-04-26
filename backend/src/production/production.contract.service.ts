@@ -148,7 +148,6 @@ export class ProductionContractService {
       select: {
         inventoryKey: true,
         code: true,
-        packages: { select: { id: true }, take: 1 },
       },
     });
     const products = (rows || [])

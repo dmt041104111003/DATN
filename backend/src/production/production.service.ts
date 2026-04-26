@@ -64,7 +64,6 @@ export class ProductionService {
   private composeResponse(row: any, media: Record<string, string[]>, latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
-      packageCount: Number(row?._count?.packages || 0),
       certifications: this.certToArray(row?.certifications),
       certFiles: media.PRODUCTION_CERT_FILE || [],
       evidenceFiles: media.PRODUCTION_EVIDENCE || [],
@@ -113,7 +112,6 @@ export class ProductionService {
 
   async list(createdBy: string) {
     const rows = await (this.prisma as any).production.findMany({
-      include: { _count: { select: { packages: true } } },
       orderBy: { createdAt: 'desc' },
     });
     const keys = (rows || []).map((r: any) => cleanString(r.inventoryKey)).filter(Boolean);

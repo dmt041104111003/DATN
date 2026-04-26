@@ -111,11 +111,7 @@ export class RecordOperationVerifierService {
 
           if (opType === 'DELETE') {
             try {
-              if (entityType === 'PACKAGE') {
-                await (this.prisma as any).package.delete({
-                  where: { inventoryKey: entityKey },
-                });
-              } else if (entityType === 'PRODUCTION') {
+              if (entityType === 'PRODUCTION') {
                 await (this.prisma as any).production.delete({
                   where: { inventoryKey: entityKey },
                 });

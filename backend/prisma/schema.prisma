@@ -20,7 +20,6 @@ model User {
   wardId   String?
   isActive  Boolean   @default(true)
   productions Production[]
-  packages  Package[]
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -81,30 +80,8 @@ model Production {
   updatedAt                   DateTime @updatedAt
 
   recordOperations RecordOperation[] @relation("ProductionRecordOperations")
-  packages         Package[]
 
   @@index([registeringCustodianAddress])
-}
-
-model Package {
-  id                     String        @id @default(cuid())
-  traceSchemeRef         String
-  inventoryKey           String        @unique
-  code                   String        @unique
-  registeringCustodianAddress String
-  registeringCustodian   User?         @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
-  holderAddress          String
-  productionInventoryKey String
-  production             Production    @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
-  packagingDate          DateTime
-  note                   String?
-  authorizedAgents       Json
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
-
-  @@index([registeringCustodianAddress])
-  @@index([holderAddress])
-  @@index([productionInventoryKey])
 }
 
 enum ProductionStage {

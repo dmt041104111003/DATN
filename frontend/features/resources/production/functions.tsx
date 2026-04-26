@@ -458,8 +458,6 @@ export function ProductionResourceList() {
         <FunctionField
           label="Xóa"
           render={(record: any) => {
-            const linkedPackageCount = Number(record?.packageCount || 0);
-            if (linkedPackageCount > 0) return null;
             return (
               <button
                 type="button"
