@@ -114,8 +114,8 @@ export class PackageService {
     const rows = await (this.prisma as any).package.findMany({
       where: {
         OR: [
-          { holderAddress: actor },
           { registeringCustodianAddress: actor },
+          { authorizedAgents: { array_contains: actor } },
         ],
       },
       include: {

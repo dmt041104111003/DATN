@@ -49,8 +49,8 @@ export class ShipmentService {
     const rows = await (this.prisma as any).shipment.findMany({
       where: {
         OR: [
-          { holderAddress: actor },
           { registeringCustodianAddress: actor },
+          { updaterAddresses: { array_contains: actor } },
         ],
       },
       include: {
