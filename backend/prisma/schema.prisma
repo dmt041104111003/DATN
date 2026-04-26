@@ -97,7 +97,6 @@ model Package {
   production             Production    @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
   weightValue            Float
   weightUnit             String
-  weightUnitOther        String?
   quantity               Int
   packagingType          String
   packagingDate          DateTime

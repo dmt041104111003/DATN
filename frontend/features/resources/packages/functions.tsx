@@ -1,13 +1,17 @@
 "use client";
 
 import * as React from "react";
+import Button from "@mui/material/Button";
 import MuiTextField from "@mui/material/TextField";
+import QRCode from "qrcode";
 import {
   ArrayInput,
+  BooleanField,
   Create,
   Datagrid,
   DateField,
   DateInput,
+  Edit,
   Empty,
   List,
   NumberField,
@@ -16,6 +20,7 @@ import {
   SelectInput,
   SimpleForm,
   SimpleFormIterator,
+  FunctionField,
   TextField,
   TextInput,
   required,
@@ -31,6 +36,7 @@ import {
 import { useWatch } from "react-hook-form";
 import {
   CREATE_PAGE_SX,
+  EDIT_PAGE_SX,
   FORM_SX,
 } from "@/features/resources/shared/styles";
 
@@ -48,6 +54,13 @@ type CapacityResponse = {
   remainingKg?: number;
   canPackage?: boolean;
   message?: string;
+};
+
+type PackageRow = {
+  id?: string;
+  code?: string;
+  inventoryKey?: string;
+  traceSchemeRef?: string;
 };
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -76,6 +89,30 @@ function normalizeAgents(value: unknown): string[] {
   return value
     .map((x: any) => String(x?.walletAddress || "").trim())
     .filter(Boolean);
+}
+
+async function downloadPackageQr(record: PackageRow) {
+  const code = String(record?.code || "").trim();
+  const inventoryKey = String(record?.inventoryKey || "").trim();
+  const policyId = String(record?.traceSchemeRef || "").trim();
+  if (!code || !inventoryKey || !policyId) {
+    throw new Error("Thiếu dữ liệu để tạo QR.");
+  }
+  const qrPayload = JSON.stringify({
+    packageCode: code,
+    inventoryKey,
+    policyId,
+  });
+  const dataUrl = await QRCode.toDataURL(qrPayload, {
+    width: 512,
+    margin: 2,
+  });
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = `${code}-qr.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function PackageFormSections({
@@ -239,9 +276,10 @@ function PackageFormSections({
 }
 
 export function PackagesResourceList() {
+  const notify = useNotify();
   return (
     <List empty={<Empty />}>
-      <Datagrid rowClick={false} bulkActionButtons={false}>
+      <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã gói" />
         <NumberField source="weightValue" label="Khối lượng" />
         <TextField source="weightUnit" label="Đơn vị" />
@@ -249,8 +287,84 @@ export function PackagesResourceList() {
         <TextField source="packagingType" label="Loại đóng gói" />
         <DateField source="packagingDate" label="Ngày đóng gói" />
         <SelectField source="status" label="Trạng thái" choices={PACKAGE_STATUS_CHOICES} />
+        <BooleanField source="verified" label="Đã xác thực" />
+        <DateField source="verifiedAt" label="Thời gian xác thực" showTime />
+        <FunctionField
+          label="QR"
+          render={(record: any) => (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={async () => {
+                try {
+                  await downloadPackageQr(record as PackageRow);
+                } catch (e: any) {
+                  notify(String(e?.message || "Tải QR thất bại."), { type: "error" });
+                }
+              }}
+            >
+              Tải QR
+            </Button>
+          )}
+        />
       </Datagrid>
     </List>
+  );
+}
+
+export function PackagesResourceEdit() {
+  return (
+    <Edit sx={EDIT_PAGE_SX}>
+      <SimpleForm sx={FORM_SX} toolbar={false}>
+        <div className="py-1">
+          <h3 className="mb-4 font-semibold">[1] Nguồn sản xuất</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TextInput source="productionCode" label="Vụ sản xuất" disabled fullWidth />
+            <TextInput source="traceSchemeRef" label="Mã chính sách" disabled fullWidth />
+          </div>
+        </div>
+        <div className="py-1">
+          <h3 className="mb-4 font-semibold">[2] Quy cách đóng gói</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <TextInput source="code" label="Mã gói" disabled fullWidth />
+            <NumberInput source="weightValue" label="Khối lượng mỗi gói" disabled fullWidth />
+            <TextInput source="weightUnit" label="Đơn vị" disabled fullWidth />
+            <NumberInput source="quantity" label="Số lượng gói" disabled fullWidth />
+            <TextInput source="packagingType" label="Loại đóng gói" disabled fullWidth />
+            <DateInput source="packagingDate" label="Ngày đóng gói" disabled fullWidth />
+            <TextInput source="note" label="Ghi chú" multiline disabled fullWidth />
+            <SelectInput source="status" label="Trạng thái" choices={PACKAGE_STATUS_CHOICES} disabled fullWidth />
+          </div>
+        </div>
+        <div className="py-1">
+          <h3 className="mb-4 font-semibold">[3] Quyền tiêu thụ</h3>
+          <FunctionField
+            label="Địa chỉ ví đại lý"
+            render={(record: any) => {
+              const agents = Array.isArray(record?.authorizedAgents)
+                ? record.authorizedAgents.map((x: any) => String(x || "").trim()).filter(Boolean)
+                : [];
+              if (agents.length === 0) {
+                return <MuiTextField value="—" disabled fullWidth />;
+              }
+              return (
+                <div className="grid grid-cols-1 gap-3">
+                  {agents.map((addr: string, idx: number) => (
+                    <MuiTextField
+                      key={`${addr}-${idx}`}
+                      label={idx === 0 ? "Địa chỉ ví đại lý" : undefined}
+                      value={addr}
+                      disabled
+                      fullWidth
+                    />
+                  ))}
+                </div>
+              );
+            }}
+          />
+        </div>
+      </SimpleForm>
+    </Edit>
   );
 }
 

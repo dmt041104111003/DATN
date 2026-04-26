@@ -104,13 +104,39 @@ export class PackageService {
     const owner = clean(createdByAddress);
     if (!owner) throw new BadRequestException('Operator account reference is required.');
 
-    return (this.prisma as any).package.findMany({
+    const rows = await (this.prisma as any).package.findMany({
       where: {
         production: {
           registeringCustodianAddress: owner,
         },
       },
+      include: {
+        production: {
+          select: { code: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
+    });
+    const keys = (rows || []).map((r: any) => clean(r?.inventoryKey)).filter(Boolean);
+    if (keys.length === 0) return [];
+    const ops = await (this.prisma as any).recordOperation.findMany({
+      where: { entityType: 'PACKAGE', entityKey: { in: keys } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const latestByKey = new Map<string, any>();
+    for (const op of ops || []) {
+      const key = clean(op?.entityKey);
+      if (!key || latestByKey.has(key)) continue;
+      latestByKey.set(key, op);
+    }
+    return (rows || []).map((row: any) => {
+      const latest = latestByKey.get(clean(row?.inventoryKey));
+      return {
+        ...row,
+        productionCode: clean(row?.production?.code),
+        verified: Boolean(latest?.verified),
+        verifiedAt: latest?.verifiedAt ?? null,
+      };
     });
   }
 
@@ -227,7 +253,6 @@ export class PackageService {
           productionInventoryKey,
           weightValue,
           weightUnit,
-          weightUnitOther: null,
           quantity,
           packagingType,
           packagingDate,

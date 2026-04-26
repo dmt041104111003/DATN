@@ -10,7 +10,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
-type EntityType = 'PRODUCTION';
+type EntityType = 'PRODUCTION' | 'PACKAGE';
 
 @Controller('record-operations')
 @UseGuards(JwtAuthGuard)
@@ -38,10 +38,7 @@ export class RecordOperationController {
     const entityType = String(entityTypeParam || '').trim().toUpperCase() as EntityType;
     const entityKey = decodeURIComponent(String(entityKeyParam || '').trim());
 
-    if (
-      !entityType ||
-      entityType !== 'PRODUCTION'
-    ) {
+    if (!entityType || (entityType !== 'PRODUCTION' && entityType !== 'PACKAGE')) {
       throw new HttpException('entityType is required.', HttpStatus.BAD_REQUEST);
     }
     if (!entityKey) throw new HttpException('entityKey is required.', HttpStatus.BAD_REQUEST);
@@ -55,6 +52,15 @@ export class RecordOperationController {
         !production ||
         String(production.registeringCustodianAddress || '').trim() !== custodian
       ) {
+        throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
+      }
+    }
+    if (entityType === 'PACKAGE') {
+      const pkg = await (this.prisma as any).package.findUnique({
+        where: { inventoryKey: entityKey },
+        select: { registeringCustodianAddress: true },
+      });
+      if (!pkg || String(pkg.registeringCustodianAddress || '').trim() !== custodian) {
         throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
       }
     }

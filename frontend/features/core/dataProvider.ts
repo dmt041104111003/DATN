@@ -45,6 +45,7 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
+  "packages",
 ]);
 
 function cleanString(value: unknown) {
@@ -341,7 +342,6 @@ export const adminDataProvider: DataProvider = {
         quantity: params.data?.quantity,
         weightValue: params.data?.weightValue,
         weightUnit: params.data?.weightUnit,
-        weightUnitOther: params.data?.weightUnitOther,
         packagingType: params.data?.packagingType,
         packagingDate: params.data?.packagingDate,
         note: params.data?.note,
