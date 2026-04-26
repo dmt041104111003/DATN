@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Patch,
+  Put,
+  Param,
   Body,
   HttpException,
   HttpStatus,
@@ -67,6 +69,24 @@ export class ProfileController {
     return this.profileService.listProfiles(walletAddress);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async listProfilesForAdmin(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const walletAddress =
+      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const rows = await this.profileService.listProfiles(walletAddress);
+    const total = rows.length;
+    const end = Math.max(total - 1, 0);
+    res.setHeader('Content-Range', `profile 0-${end}/${total}`);
+    return rows;
+  }
+
   @Get('public/:walletAddress')
   async getPublicProfile(@Req() req: any) {
     const walletAddress = (req?.params?.walletAddress || '').trim();
@@ -98,7 +118,7 @@ export class ProfileController {
       if (created?.token && typeof created.token === 'string') {
         this.setAuthCookie(res, created.token);
       }
-      return created;
+      return created?.profile ?? created;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -123,4 +143,35 @@ export class ProfileController {
       throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getProfileById(@Req() req: any, @Param('id') _id: string) {
+    const profileId = req.user?.profileId;
+    if (!profileId) {
+      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
+    }
+    return this.profileService.getProfileById(profileId);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  async replaceProfile(@Body() body: UpdateProfileDto, @Req() req: any, @Param('id') _id: string) {
+    const profileId = req.user?.profileId;
+    if (!profileId) {
+      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
+    }
+    return this.profileService.updateProfile(profileId, body);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  async patchProfile(@Body() body: UpdateProfileDto, @Req() req: any, @Param('id') _id: string) {
+    const profileId = req.user?.profileId;
+    if (!profileId) {
+      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
+    }
+    return this.profileService.updateProfile(profileId, body);
+  }
+
 }

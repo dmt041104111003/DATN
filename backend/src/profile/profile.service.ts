@@ -10,6 +10,23 @@ export class ProfileService {
     private readonly config: ConfigService,
   ) {}
 
+  private mapProfileRow(account: any) {
+    if (!account) return null;
+    return {
+      id: account.id,
+      walletAddress: account.address,
+      roleCode: account.roleCode,
+      displayName: account.displayName,
+      phoneNumber: account.phoneNumber,
+      provinceId: account.provinceId,
+      districtId: account.districtId,
+      wardId: account.wardId,
+      isActive: account.isActive,
+      createdAt: account.createdAt,
+      updatedAt: account.updatedAt,
+    };
+  }
+
   async createProfile(custodianAddress: string, data: {
     roleCode: string;
     displayName: string;
@@ -94,15 +111,7 @@ export class ProfileService {
 
     return {
       token,
-      profile: {
-        id: account.id,
-        role: account.roleCode,
-        displayName: account.displayName,
-        phoneNumber: account.phoneNumber,
-        provinceId: account.provinceId,
-        districtId: account.districtId,
-        wardId: account.wardId,
-      },
+      profile: this.mapProfileRow(account),
     };
   }
 
@@ -143,15 +152,7 @@ export class ProfileService {
       } as any,
     });
 
-    return {
-      id: account.id,
-      role: account.roleCode,
-      displayName: account.displayName,
-      phoneNumber: account.phoneNumber,
-      provinceId: account.provinceId,
-      districtId: account.districtId,
-      wardId: account.wardId,
-    };
+    return this.mapProfileRow(account);
   }
 
   async getRoles() {
@@ -187,19 +188,30 @@ export class ProfileService {
       } as any,
     });
     if (!account || !account.roleCode) return [];
-    return [
-      {
-        id: account.id,
-        walletAddress: account.address,
-        roleCode: account.roleCode,
-        displayName: account.displayName,
-        phoneNumber: account.phoneNumber,
-        provinceId: account.provinceId,
-        districtId: account.districtId,
-        wardId: account.wardId,
-        isActive: account.isActive,
-      },
-    ];
+    return [this.mapProfileRow(account)];
+  }
+
+  async getProfileById(accountId: string) {
+    const account = await (this.prisma as any).user.findUnique({
+      where: { id: accountId },
+      select: {
+        id: true,
+        address: true,
+        roleCode: true,
+        displayName: true,
+        phoneNumber: true,
+        provinceId: true,
+        districtId: true,
+        wardId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      } as any,
+    });
+    if (!account || !account.roleCode) {
+      throw new BadRequestException('Profile not found.');
+    }
+    return this.mapProfileRow(account);
   }
 
   async getPublicProfile(custodianAddress: string) {

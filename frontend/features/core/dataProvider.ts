@@ -164,17 +164,6 @@ function buildOwnerList(owner: string, custodianAddress: string) {
   return [owner || custodianAddress];
 }
 
-async function fetchProfileRow(idFallback: string | number = "me") {
-  const { json } = await httpClient(`${BACKEND_URL}/auth/me`, { method: "GET" });
-  const profile = (json as any)?.profile ?? {};
-  const user = (json as any)?.user ?? {};
-  const row = {
-    ...profile,
-    roleCode: profile?.roleCode ?? user?.roleCode ?? user?.role ?? null,
-  };
-  return { ...row, id: normalizeId(row, user?.profileId ?? idFallback) };
-}
-
 function endpointFor(resource: string) {
   return resourceToEndpoint[resource] ?? resource;
 }
@@ -220,13 +209,6 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
 export const adminDataProvider: DataProvider = {
   ...baseProvider,
   async getList(resource, params) {
-    if (resource === "profile") {
-      return {
-        data: [await fetchProfileRow("me")],
-        total: 1,
-      };
-    }
-
     const query = new URLSearchParams();
     if (params.pagination) {
       query.set("page", String(params.pagination.page));
@@ -239,10 +221,6 @@ export const adminDataProvider: DataProvider = {
     };
   },
   async getOne(resource, params) {
-    if (resource === "profile") {
-      return { data: await fetchProfileRow(params.id ?? "me") };
-    }
-
     if (RESOURCES_WITH_LIST_FALLBACK.has(resource)) {
       const rows = await fetchResourceRows(resource);
       const hit =
@@ -269,14 +247,6 @@ export const adminDataProvider: DataProvider = {
     };
   },
   async update(resource, params) {
-    if (resource === "profile") {
-      const { json } = await httpClient(`${BACKEND_URL}/profile`, {
-        method: "PATCH",
-        body: JSON.stringify(params.data),
-      });
-      const row = (json as any)?.profile ?? json ?? params.data;
-      return { data: { ...row, id: normalizeId(row, params.id) } };
-    }
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
@@ -323,15 +293,6 @@ export const adminDataProvider: DataProvider = {
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
-    if (resource === "profile") {
-      const { json } = await httpClient(`${BACKEND_URL}/profile`, {
-        method: "POST",
-        body: JSON.stringify(params.data),
-      });
-      const row = (json as any)?.profile ?? json ?? params.data;
-      return { data: { ...row, id: normalizeId(row, "me") } };
-    }
-
     if (resource === "production") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);

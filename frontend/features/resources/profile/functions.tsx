@@ -1,35 +1,32 @@
 "use client";
 
+import * as React from "react";
 import { useEffect, useState } from "react";
 import {
   Create,
   Edit,
   List,
-  SaveButton,
   SimpleForm,
   TextField,
   TextInput,
   Datagrid,
   SelectInput,
-  FunctionField,
-  Toolbar,
+  SelectField,
   required,
 } from "react-admin";
-import { Typography } from "@mui/material";
 import { useFormContext, useWatch } from "react-hook-form";
-import { ROLE_CHOICES, roleLabel } from "./constants";
-import * as React from "react";
 import {
   getDistrictOptions,
   getProvinceOptions,
   getWardOptions,
   type Option,
 } from "@/features/resources/shared/location";
+import { ROLE_CHOICES } from "./constants";
 
 function ProfileAreaInputs() {
   const { setValue } = useFormContext();
-  const provinceId = useWatch({ name: "provinceId" }) as string | undefined;
-  const districtId = useWatch({ name: "districtId" }) as string | undefined;
+  const provinceId = String(useWatch({ name: "provinceId" }) ?? "");
+  const districtId = String(useWatch({ name: "districtId" }) ?? "");
   const [provinces, setProvinces] = useState<Option[]>([]);
   const [districts, setDistricts] = useState<Option[]>([]);
   const [wards, setWards] = useState<Option[]>([]);
@@ -47,7 +44,7 @@ function ProfileAreaInputs() {
       return;
     }
     getDistrictOptions(provinceId).then(setDistricts).catch(() => setDistricts([]));
-  }, [provinceId, setValue]);
+  }, [provinceId]);
 
   useEffect(() => {
     if (!districtId) {
@@ -55,29 +52,29 @@ function ProfileAreaInputs() {
       return;
     }
     getWardOptions(districtId).then(setWards).catch(() => setWards([]));
-  }, [districtId, setValue]);
+  }, [districtId]);
 
   useEffect(() => {
     if (!prevProvinceRef.current) {
-      prevProvinceRef.current = String(provinceId || "");
+      prevProvinceRef.current = provinceId;
       return;
     }
-    if (prevProvinceRef.current !== String(provinceId || "")) {
+    if (prevProvinceRef.current !== provinceId) {
       setValue("districtId", "");
       setValue("wardId", "");
       setWards([]);
-      prevProvinceRef.current = String(provinceId || "");
+      prevProvinceRef.current = provinceId;
     }
   }, [provinceId, setValue]);
 
   useEffect(() => {
     if (!prevDistrictRef.current) {
-      prevDistrictRef.current = String(districtId || "");
+      prevDistrictRef.current = districtId;
       return;
     }
-    if (prevDistrictRef.current !== String(districtId || "")) {
+    if (prevDistrictRef.current !== districtId) {
       setValue("wardId", "");
-      prevDistrictRef.current = String(districtId || "");
+      prevDistrictRef.current = districtId;
     }
   }, [districtId, setValue]);
 
@@ -104,76 +101,16 @@ function ProfileAreaInputs() {
   );
 }
 
-type ProfileFormSectionsProps = {
-  allowRoleEdit: boolean;
-};
-
-export function ProfileFormSections({ allowRoleEdit }: ProfileFormSectionsProps) {
-  return (
-    <>
-      <div className="py-1">
-        <Typography fontWeight={700}>[1] Thông tin tài khoản</Typography>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextInput source="walletAddress" label="Địa chỉ ví" disabled fullWidth />
-          <TextInput source="displayName" label="Tên hiển thị" validate={[required()]} fullWidth />
-          <TextInput source="phoneNumber" label="Số điện thoại" fullWidth />
-          <ProfileAreaInputs />
-        </div>
-      </div>
-
-      <div className="py-1">
-        <Typography fontWeight={700}>[2] Vai trò</Typography>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <SelectInput
-            source="roleCode"
-            label="Vai trò"
-            choices={ROLE_CHOICES}
-            validate={[required()]}
-            disabled={!allowRoleEdit}
-            fullWidth
-          />
-        </div>
-      </div>
-    </>
-  );
-}
-
-function ProfileCreateToolbar() {
-  return (
-    <Toolbar>
-      <SaveButton label="Xác nhận" />
-    </Toolbar>
-  );
-}
-
 export function ProfileResourceCreate(props: any) {
   const { defaultValues, ...rest } = props || {};
   return (
-    <Create
-      {...rest}
-      sx={{
-        "& .RaCreate-main": { maxWidth: "none" },
-        "& .RaCreate-card": {
-          maxWidth: "none",
-          width: "100%",
-          boxShadow: "none",
-          border: "none",
-          background: "transparent",
-        },
-      }}
-    >
-      <SimpleForm
-        toolbar={<ProfileCreateToolbar />}
-        defaultValues={defaultValues}
-        sx={{
-          maxWidth: "none",
-          width: "100%",
-          "& .RaSimpleForm-form": { maxWidth: "none", width: "100%" },
-          "& .RaInput-root": { mt: 0, mb: 0, width: "100%" },
-          "& .MuiFormControl-root": { width: "100%" },
-        }}
-      >
-        <ProfileFormSections allowRoleEdit />
+    <Create {...rest}>
+      <SimpleForm defaultValues={defaultValues}>
+        <TextInput source="walletAddress" label="Địa chỉ ví" disabled fullWidth />
+        <TextInput source="displayName" label="Tên hiển thị" validate={[required()]} fullWidth />
+        <TextInput source="phoneNumber" label="Số điện thoại" fullWidth />
+        <ProfileAreaInputs />
+        <SelectInput source="roleCode" label="Vai trò" choices={ROLE_CHOICES} validate={[required()]} fullWidth />
       </SimpleForm>
     </Create>
   );
@@ -189,7 +126,7 @@ export function ProfileResourceList() {
         <TextField source="provinceId" label="Tỉnh/Thành" />
         <TextField source="districtId" label="Quận/Huyện" />
         <TextField source="wardId" label="Phường/Xã" />
-        <FunctionField label="Vai trò" render={(record: any) => roleLabel(record?.roleCode)} />
+        <SelectField source="roleCode" label="Vai trò" choices={ROLE_CHOICES} />
       </Datagrid>
     </List>
   );
@@ -197,22 +134,13 @@ export function ProfileResourceList() {
 
 export function ProfileResourceEdit() {
   return (
-    <Edit
-      sx={{
-        "& .RaEdit-main": { maxWidth: "none" },
-        "& .RaEdit-card": { maxWidth: "none", width: "100%" },
-      }}
-    >
-      <SimpleForm
-        sx={{
-          maxWidth: "none",
-          width: "100%",
-          "& .RaSimpleForm-form": { maxWidth: "none", width: "100%" },
-          "& .RaInput-root": { mt: 0, mb: 0, width: "100%" },
-          "& .MuiFormControl-root": { width: "100%" },
-        }}
-      >
-        <ProfileFormSections allowRoleEdit={false} />
+    <Edit>
+      <SimpleForm>
+        <TextInput source="walletAddress" label="Địa chỉ ví" disabled fullWidth />
+        <TextInput source="displayName" label="Tên hiển thị" validate={[required()]} fullWidth />
+        <TextInput source="phoneNumber" label="Số điện thoại" fullWidth />
+        <ProfileAreaInputs />
+        <SelectInput source="roleCode" label="Vai trò" choices={ROLE_CHOICES} disabled fullWidth />
       </SimpleForm>
     </Edit>
   );

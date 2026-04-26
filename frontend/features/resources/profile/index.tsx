@@ -1,1 +1,1 @@
-export { ProfileResourceEdit, ProfileResourceList } from "./functions";
+export { ProfileResourceCreate, ProfileResourceEdit, ProfileResourceList } from "./functions";

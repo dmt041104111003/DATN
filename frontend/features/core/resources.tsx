@@ -7,6 +7,7 @@ import {
   ProductionResourceList,
 } from "@/features/resources/production";
 import {
+  ProfileResourceCreate,
   ProfileResourceEdit,
   ProfileResourceList,
 } from "@/features/resources/profile";
@@ -25,7 +26,12 @@ export function renderAdminResources(permissions?: string) {
           edit={ProductionResourceEdit}
         />
       ) : null}
-      <Resource name="profile" list={ProfileResourceList} edit={ProfileResourceEdit} />
+      <Resource
+        name="profile"
+        list={ProfileResourceList}
+        create={ProfileResourceCreate}
+        edit={ProfileResourceEdit}
+      />
     </>
   );
 }
