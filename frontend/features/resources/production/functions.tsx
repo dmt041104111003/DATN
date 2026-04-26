@@ -10,6 +10,7 @@ import {
   DateField,
   DateInput,
   Edit,
+  DeleteButton,
   FileField,
   FileInput,
   List,
@@ -21,11 +22,6 @@ import {
   TextInput,
   Toolbar,
   FunctionField,
-  useDelete,
-  useNotify,
-  useRefresh,
-  useRedirect,
-  useRecordContext,
   useSaveContext,
   required,
 } from "react-admin";
@@ -307,11 +303,6 @@ function ProductionEditToolbar() {
     formState: { dirtyFields },
   } = useFormContext();
   const { save } = useSaveContext();
-  const record = useRecordContext<any>();
-  const notify = useNotify();
-  const refresh = useRefresh();
-  const redirect = useRedirect();
-  const [deleteOne, { isPending: deleting }] = useDelete();
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "DRAFT";
   const verified = Boolean(useWatch({ name: "verified" }));
   const seedingDate = String(useWatch({ name: "seedingDate" }) ?? "");
@@ -368,33 +359,7 @@ function ProductionEditToolbar() {
             Xác nhận thu hoạch
           </Button>
         ) : null}
-        <Button
-          color="error"
-          variant="text"
-          type="button"
-          disabled={deleting}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const inventoryKey = String(record?.inventoryKey || record?.id || "").trim();
-            if (!inventoryKey) return;
-            deleteOne(
-              "production",
-              { id: inventoryKey, previousData: record },
-              {
-                onSuccess: () => {
-                  notify("Đã gửi yêu cầu xóa, chờ verify burn on-chain.", { type: "success" });
-                  refresh();
-                  redirect("list", "production");
-                },
-                onError: (error: any) =>
-                  notify(String(error?.message || "Xóa vụ sản xuất thất bại."), { type: "error" }),
-              },
-            );
-          }}
-        >
-          DELETE
-        </Button>
+        <DeleteButton label="DELETE" mutationMode="pessimistic" redirect="list" color="error" />
       </Toolbar>
       {isActive && harvestModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
