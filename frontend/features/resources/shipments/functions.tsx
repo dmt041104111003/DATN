@@ -51,6 +51,7 @@ type PackageRow = {
   inventoryKey?: string;
   code?: string;
   traceSchemeRef?: string;
+  packagingDate?: string;
 };
 
 type ShipmentRow = {
@@ -292,6 +293,42 @@ function ShipmentCreateSections() {
       })),
     [packageRows],
   );
+  const packageMap = React.useMemo(() => {
+    const map = new Map<string, PackageRow>();
+    for (const row of packageRows) {
+      const key = cleanString(row.inventoryKey || row.id);
+      if (!key) continue;
+      map.set(key, row);
+    }
+    return map;
+  }, [packageRows]);
+  const shipmentDate = React.useMemo(() => new Date(), []);
+  const dateValidationErrors = React.useMemo(() => {
+    const errors: string[] = [];
+    for (const key of packageInventoryKeys) {
+      const packageKey = cleanString(key);
+      const pkg = packageMap.get(packageKey);
+      if (!pkg) continue;
+      const packagingDateRaw = cleanString(pkg.packagingDate);
+      const packagingDate = packagingDateRaw ? new Date(packagingDateRaw) : null;
+      if (!packagingDate || Number.isNaN(packagingDate.getTime())) {
+        errors.push(`Gói ${cleanString(pkg.code || packageKey)} thiếu ngày đóng gói hợp lệ.`);
+        continue;
+      }
+      if (shipmentDate.getTime() < packagingDate.getTime()) {
+        errors.push(`Lô hiện tại có ngày đóng lô < ngày đóng gói của ${cleanString(pkg.code || packageKey)}.`);
+      }
+    }
+    return errors;
+  }, [packageInventoryKeys, packageMap, shipmentDate]);
+  const validateShipmentPackageDates = React.useCallback(
+    (value: unknown) => {
+      const selected = Array.isArray(value) ? value.map((x) => cleanString(x)).filter(Boolean) : [];
+      if (selected.length < 1) return "Phải chọn ít nhất 1 gói hàng.";
+      return dateValidationErrors.length > 0 ? dateValidationErrors[0] : undefined;
+    },
+    [dateValidationErrors],
+  );
   const selectedPolicyIds = React.useMemo(() => {
     const selected = new Set(packageInventoryKeys.map((x) => String(x)));
     const rows = packageRows
@@ -317,9 +354,12 @@ function ShipmentCreateSections() {
           choices={packageChoices}
           optionValue="id"
           optionText="name"
-          validate={[required()]}
+          validate={[required(), validateShipmentPackageDates]}
           fullWidth
         />
+        {dateValidationErrors.length > 0 ? (
+          <p className="mt-2 text-sm text-red-600">{dateValidationErrors[0]}</p>
+        ) : null}
         <MuiTextField
           label="PolicyID"
           value={selectedPolicyIds.join("\n")}

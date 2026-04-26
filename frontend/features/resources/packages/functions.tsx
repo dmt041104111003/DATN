@@ -31,6 +31,9 @@ import {
   useRefresh,
   useRedirect,
   useDelete,
+  Toolbar,
+  SaveButton,
+  useRecordContext,
 } from "react-admin";
 import {
   PACKAGE_STATUS_CHOICES,
@@ -50,6 +53,7 @@ type ProductionRow = {
   code?: string;
   traceSchemeRef?: string;
   status?: string;
+  harvestDate?: string;
 };
 
 type CapacityResponse = {
@@ -94,6 +98,10 @@ function normalizeAgents(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function isValidDate(value: unknown): value is Date {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
 async function downloadPackageQr(record: PackageRow) {
   const code = String(record?.code || "").trim();
   const inventoryKey = String(record?.inventoryKey || "").trim();
@@ -115,8 +123,10 @@ async function downloadPackageQr(record: PackageRow) {
 
 function PackageFormSections({
   onCapacityChange,
+  onSelectedHarvestDateChange,
 }: {
   onCapacityChange?: (value: number | null) => void;
+  onSelectedHarvestDateChange?: (value: string) => void;
 }) {
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
   const weightValue = useWatch({ name: "weightValue" });
@@ -147,12 +157,28 @@ function PackageFormSections({
     () => closedProductions.find((p) => String(p.inventoryKey || "") === productionInventoryKey),
     [closedProductions, productionInventoryKey],
   );
+  const selectedHarvestDate = String(pickedProduction?.harvestDate || "").trim();
   const requestedKg = React.useMemo(
     () => toKg(weightValue, weightUnit, quantity),
     [weightValue, weightUnit, quantity],
   );
   const remainingKg = Number(capacity?.remainingKg ?? 0);
   const willExceed = requestedKg !== null && requestedKg > remainingKg + 1e-9;
+  const validatePackagingDate = React.useCallback(
+    (value: unknown) => {
+      if (!value) return "Bắt buộc.";
+      const packagingDate = new Date(String(value));
+      if (!isValidDate(packagingDate)) return "Ngày đóng gói không hợp lệ.";
+      if (!selectedHarvestDate) return "Không tìm thấy ngày thu hoạch của vụ sản xuất.";
+      const harvestDate = new Date(selectedHarvestDate);
+      if (!isValidDate(harvestDate)) return "Ngày thu hoạch không hợp lệ.";
+      if (packagingDate.getTime() < harvestDate.getTime()) {
+        return "Ngày đóng gói phải lớn hơn hoặc bằng ngày thu hoạch.";
+      }
+      return undefined;
+    },
+    [selectedHarvestDate],
+  );
 
   const duplicateWallets = React.useMemo(() => {
     const arr = agents
@@ -160,6 +186,10 @@ function PackageFormSections({
       .filter(Boolean);
     return new Set(arr).size !== arr.length;
   }, [agents]);
+
+  React.useEffect(() => {
+    onSelectedHarvestDateChange?.(selectedHarvestDate);
+  }, [onSelectedHarvestDateChange, selectedHarvestDate]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -249,7 +279,7 @@ function PackageFormSections({
             fullWidth
           />
           <SelectInput source="packagingType" label="Loại đóng gói" choices={PACKAGING_TYPE_CHOICES} validate={[required()]} fullWidth />
-          <DateInput source="packagingDate" label="Ngày đóng gói" validate={[required()]} fullWidth />
+          <DateInput source="packagingDate" label="Ngày đóng gói" validate={[required(), validatePackagingDate]} fullWidth />
           <TextInput source="note" label="Ghi chú" multiline fullWidth />
         </div>
         {requestedKg !== null ? (
@@ -370,19 +400,69 @@ export function PackagesResourceList() {
 }
 
 export function PackagesResourceEdit() {
-  return (
-    <Edit sx={EDIT_PAGE_SX}>
-      <SimpleForm sx={FORM_SX} toolbar={false}>
-        <FunctionField
-          label=""
-          render={(record: any) =>
-            record?.lockedByShipment ? (
-              <p className="mb-2 text-sm text-amber-700">
-                Gói này đã nằm trong lô hàng, chỉ sửa lại được sau khi xóa lô liên kết.
-              </p>
-            ) : null
-          }
-        />
+  const PackageEditToolbar = () => {
+    const record = useRecordContext<any>();
+    const { permissions } = usePermissions<string>();
+    const isEnterprise = permissions === "ENTERPRISE";
+    const [actorAddress, setActorAddress] = React.useState("");
+    React.useEffect(() => {
+      let mounted = true;
+      fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+        .then((res) => res.json().catch(() => ({})))
+        .then((json: any) => {
+          if (!mounted) return;
+          const user = json?.user ?? {};
+          const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+          setActorAddress(actor);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          setActorAddress("");
+        });
+      return () => {
+        mounted = false;
+      };
+    }, []);
+    const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
+    const isUnsold = String(record?.status || "").trim().toUpperCase() === "UNSOLD";
+    const canEdit = isEnterprise && isHolder && isUnsold && !Boolean(record?.lockedByShipment);
+    if (!canEdit) return false as any;
+    return (
+      <Toolbar>
+        <SaveButton label="Lưu thay đổi" />
+      </Toolbar>
+    );
+  };
+
+  const EditFields = () => {
+    const record = useRecordContext<any>();
+    const { permissions } = usePermissions<string>();
+    const isEnterprise = permissions === "ENTERPRISE";
+    const [actorAddress, setActorAddress] = React.useState("");
+    React.useEffect(() => {
+      let mounted = true;
+      fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+        .then((res) => res.json().catch(() => ({})))
+        .then((json: any) => {
+          if (!mounted) return;
+          const user = json?.user ?? {};
+          const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
+          setActorAddress(actor);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          setActorAddress("");
+        });
+      return () => {
+        mounted = false;
+      };
+    }, []);
+    const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
+    const isUnsold = String(record?.status || "").trim().toUpperCase() === "UNSOLD";
+    const canEdit = isEnterprise && isHolder && isUnsold && !Boolean(record?.lockedByShipment);
+
+    return (
+      <>
         <div className="py-1">
           <h3 className="mb-4 font-semibold">[1] Nguồn sản xuất</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -394,15 +474,33 @@ export function PackagesResourceEdit() {
           <h3 className="mb-4 font-semibold">[2] Quy cách đóng gói</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <TextInput source="code" label="Mã gói" disabled fullWidth />
-            <NumberInput source="weightValue" label="Khối lượng mỗi gói" disabled fullWidth />
-            <TextInput source="weightUnit" label="Đơn vị" disabled fullWidth />
+            <NumberInput source="weightValue" label="Khối lượng mỗi gói" disabled={!canEdit} fullWidth />
+            <SelectInput source="weightUnit" label="Đơn vị" choices={WEIGHT_UNIT_CHOICES} disabled={!canEdit} fullWidth />
             <NumberInput source="quantity" label="Số lượng gói" disabled fullWidth />
-            <TextInput source="packagingType" label="Loại đóng gói" disabled fullWidth />
+            <SelectInput source="packagingType" label="Loại đóng gói" choices={PACKAGING_TYPE_CHOICES} disabled={!canEdit} fullWidth />
             <DateInput source="packagingDate" label="Ngày đóng gói" disabled fullWidth />
-            <TextInput source="note" label="Ghi chú" multiline disabled fullWidth />
+            <TextInput source="note" label="Ghi chú" multiline disabled={!canEdit} fullWidth />
             <SelectInput source="status" label="Trạng thái" choices={PACKAGE_STATUS_CHOICES} disabled fullWidth />
           </div>
         </div>
+      </>
+    );
+  };
+
+  return (
+    <Edit sx={EDIT_PAGE_SX}>
+      <SimpleForm sx={FORM_SX} toolbar={<PackageEditToolbar />}>
+        <FunctionField
+          label=""
+          render={(record: any) =>
+            record?.lockedByShipment ? (
+              <p className="mb-2 text-sm text-amber-700">
+                Gói này đã nằm trong lô hàng, chỉ sửa lại được sau khi xóa lô liên kết.
+              </p>
+            ) : null
+          }
+        />
+        <EditFields />
         <div className="py-1">
           <h3 className="mb-4 font-semibold">[3] Quyền tiêu thụ</h3>
           <FunctionField
@@ -439,6 +537,7 @@ export function PackagesResourceCreate() {
   const notify = useNotify();
   const redirect = useRedirect();
   const [remainingKg, setRemainingKg] = React.useState<number | null>(null);
+  const [selectedHarvestDate, setSelectedHarvestDate] = React.useState<string>("");
   return (
     <Create
       mutationOptions={{
@@ -465,6 +564,17 @@ export function PackagesResourceCreate() {
         if (remainingKg === null) {
           throw new Error("Không lấy được dữ liệu sản lượng còn lại.");
         }
+        const packagingDate = new Date(String(data?.packagingDate || ""));
+        const harvestDate = new Date(String(selectedHarvestDate || ""));
+        if (!isValidDate(packagingDate)) {
+          throw new Error("Ngày đóng gói không hợp lệ.");
+        }
+        if (!isValidDate(harvestDate)) {
+          throw new Error("Không tìm thấy ngày thu hoạch hợp lệ.");
+        }
+        if (packagingDate.getTime() < harvestDate.getTime()) {
+          throw new Error("Ngày đóng gói phải lớn hơn hoặc bằng ngày thu hoạch.");
+        }
         if (requestKg > remainingKg + 1e-9) {
           throw new Error(`Vượt quá sản lượng còn lại (${remainingKg.toFixed(3)} kg).`);
         }
@@ -490,7 +600,10 @@ export function PackagesResourceCreate() {
           authorizedAgents: [{ walletAddress: "" }],
         }}
       >
-        <PackageFormSections onCapacityChange={setRemainingKg} />
+        <PackageFormSections
+          onCapacityChange={setRemainingKg}
+          onSelectedHarvestDateChange={setSelectedHarvestDate}
+        />
       </SimpleForm>
     </Create>
   );

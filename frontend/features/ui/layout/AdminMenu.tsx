@@ -21,7 +21,7 @@ export function AdminMenu() {
           <MenuItemLink
             key="production"
             to="/production"
-            primaryText="Quản lý vụ mùa"
+            primaryText="Vụ mùa"
             leftIcon={<PrecisionManufacturingIcon />}
           />,
         ]

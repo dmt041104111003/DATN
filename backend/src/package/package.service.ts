@@ -293,6 +293,69 @@ export class PackageService {
     return created;
   }
 
+  async updateEditable(createdByAddress: string, roleRaw: unknown, inventoryKeyRaw: unknown, data: any) {
+    this.assertEnterprise(roleRaw);
+    const actor = clean(createdByAddress);
+    const inventoryKey = clean(inventoryKeyRaw);
+    if (!actor) throw new BadRequestException('Operator account reference is required.');
+    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
+    const txHash = clean(data?.txHash);
+    if (!txHash) throw new BadRequestException('txHash is required.');
+
+    const row = await (this.prisma as any).package.findUnique({
+      where: { inventoryKey },
+      select: {
+        inventoryKey: true,
+        holderAddress: true,
+        status: true,
+        shipmentLinks: { select: { id: true } },
+      },
+    });
+    if (!row) throw new NotFoundException('Package not found.');
+    if (clean(row?.holderAddress) !== actor) {
+      throw new BadRequestException('You can only edit package(s) that you still hold.');
+    }
+    if (clean(row?.status).toUpperCase() !== 'UNSOLD') {
+      throw new BadRequestException('Only UNSOLD packages can be edited.');
+    }
+    if (Array.isArray(row?.shipmentLinks) && row.shipmentLinks.length > 0) {
+      throw new BadRequestException('Package đang liên kết lô hàng, không thể chỉnh sửa.');
+    }
+
+    const weightValue = Number(data?.weightValue);
+    if (!Number.isFinite(weightValue) || weightValue <= 0) {
+      throw new BadRequestException('weightValue must be greater than 0.');
+    }
+    const weightUnit = clean(data?.weightUnit).toLowerCase();
+    if (weightUnit !== 'kg' && weightUnit !== 'gram') {
+      throw new BadRequestException('weightUnit must be kg or gram.');
+    }
+    const packagingType = clean(data?.packagingType);
+    if (!packagingType) throw new BadRequestException('packagingType is required.');
+    const note = clean(data?.note) || null;
+
+    const updated = await (this.prisma as any).package.update({
+      where: { inventoryKey },
+      data: {
+        weightValue,
+        weightUnit,
+        packagingType,
+        note,
+      } as any,
+    });
+    await (this.prisma as any).recordOperation.create({
+      data: {
+        entityType: 'PACKAGE',
+        entityKey: inventoryKey,
+        opType: 'UPDATE',
+        txHash,
+        verified: false,
+        verifiedAt: null,
+      } as any,
+    });
+    return updated;
+  }
+
   async deleteByInventoryKey(createdByAddress: string, roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
     this.assertEnterprise(roleRaw);
     const actor = clean(createdByAddress);

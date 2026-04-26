@@ -8,6 +8,31 @@ function clean(v: unknown): string {
   return String(v ?? '').trim();
 }
 
+function decodeAssetNameFromUnit(unit: unknown) {
+  const value = clean(unit);
+  if (!value || value.length <= 56) return '';
+  const rest = value.slice(56);
+  const label = CIP68_100('');
+  const hex = rest.startsWith(label) ? rest.slice(label.length) : rest;
+  if (!hex || hex.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(hex)) return '';
+  try {
+    return Buffer.from(hex, 'hex').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+function stringifyMetadataValue(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '';
+  }
+}
+
 function makeMetadata(
   base: any,
   production: { code: string; inventoryKey: string; traceSchemeRef: string },
@@ -146,6 +171,59 @@ export class PackageContractService {
       result: true,
       data: unsignedTx,
       message: 'Package burn prepared.',
+    };
+  }
+
+  private async loadOnchainMetadata(owners: string[], packageInventoryKey: string) {
+    const { policyId, contractAddress } = this.plutusHelper.getScripts(owners);
+    const assetName = decodeAssetNameFromUnit(packageInventoryKey);
+    if (!assetName) return null;
+    const referenceUnit = policyId + CIP68_100(stringToHex(assetName));
+    const utxos = await this.blockfrostProvider.fetchAddressUTxOs(contractAddress, referenceUnit);
+    const ref = utxos.length > 0 ? (utxos[utxos.length - 1] as any) : null;
+    if (!ref) return null;
+    const metadata = (await this.blockfrostProvider.fetchAssetAddresses(packageInventoryKey) as any)?.onchain_metadata || {};
+    return { assetName, metadata };
+  }
+
+  async createUnsignedSaveTx(dto: any) {
+    const walletAddress = clean(dto?.custodianAddress);
+    const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
+    const inventoryKey = clean(dto?.inventoryKey);
+    const metadataInput = dto?.metadata ?? {};
+    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
+    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
+    if (owners.length === 0) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+
+    const row = await (this.prisma as any).package.findUnique({
+      where: { inventoryKey },
+      select: { inventoryKey: true, holderAddress: true },
+    });
+    if (!row) throw new BadRequestException('Package not found.');
+    if (clean(row?.holderAddress) !== walletAddress) {
+      throw new BadRequestException('You can only update package(s) that you still hold.');
+    }
+
+    const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
+    if (!onchain) throw new BadRequestException('Package on-chain metadata was not found.');
+    const { assetName, metadata } = onchain;
+    if (!assetName) throw new BadRequestException('Unable to decode asset name from inventoryKey.');
+    const mergedMetadata: Record<string, string> = {};
+    for (const [key, value] of Object.entries(metadata || {})) {
+      mergedMetadata[String(key)] = stringifyMetadataValue(value);
+    }
+    for (const [key, value] of Object.entries(metadataInput || {})) {
+      mergedMetadata[String(key)] = stringifyMetadataValue(value);
+    }
+
+    const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, owners, [
+      { productName: assetName, metadata: mergedMetadata },
+    ]);
+    return {
+      result: true,
+      data: unsignedTx,
+      message: 'Package save prepared.',
     };
   }
 }

@@ -367,6 +367,44 @@ export const adminDataProvider: DataProvider = {
       const row = json as any;
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
+    if (resource === "packages") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = String(
+        params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
+      ).trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const payload = {
+        weightValue: Number(params.data?.weightValue),
+        weightUnit: String(params.data?.weightUnit || "").trim(),
+        packagingType: String(params.data?.packagingType || "").trim(),
+        note: String(params.data?.note || "").trim(),
+      };
+      const metadata = {
+        weight_value: String(payload.weightValue),
+        weight_unit: payload.weightUnit,
+        packaging_type: payload.packagingType,
+        note: payload.note,
+      };
+      const contractRes = await httpClient(`${BACKEND_URL}/packages/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          inventoryKey,
+          metadata,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare package save transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/packages/${encodeURIComponent(inventoryKey)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ...payload, txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(row, params.id) } };
+    }
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PackageService } from './package.service';
 
@@ -39,6 +39,23 @@ export class PackageController {
     } catch (e) {
       throw new HttpException(
         e instanceof Error ? e.message : 'Failed to create package(s).',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Patch(':inventoryKey')
+  async update(@Req() req: any, @Param('inventoryKey') inventoryKey: string, @Body() body: any) {
+    try {
+      return await this.packageService.updateEditable(
+        this.getCustodian(req),
+        this.getRole(req),
+        inventoryKey,
+        body,
+      );
+    } catch (e) {
+      throw new HttpException(
+        e instanceof Error ? e.message : 'Failed to update package.',
         HttpStatus.BAD_REQUEST,
       );
     }
