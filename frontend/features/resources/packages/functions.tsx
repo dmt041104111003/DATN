@@ -52,12 +52,14 @@ type CapacityResponse = {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
-const quantityValidator = (value: unknown) => {
+function clampQuantity(value: unknown) {
+  if (value === null || value === undefined || value === "") return value;
   const n = Number(value);
-  if (!Number.isInteger(n)) return "Số lượng gói phải là số nguyên";
-  if (n < 1 || n > 5) return "Số lượng gói từ 1 đến 5";
-  return undefined;
-};
+  if (!Number.isFinite(n)) return value;
+  if (n > 5) return 5;
+  if (n < 1) return 1;
+  return Math.trunc(n);
+}
 
 function toKg(weightValueRaw: unknown, weightUnitRaw: unknown, quantityRaw: unknown): number | null {
   const weightValue = Number(weightValueRaw);
@@ -202,7 +204,15 @@ function PackageFormSections({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <NumberInput source="weightValue" label="Khối lượng mỗi gói" validate={[required()]} fullWidth />
           <SelectInput source="weightUnit" label="Đơn vị" choices={WEIGHT_UNIT_CHOICES} validate={[required()]} fullWidth />
-          <NumberInput source="quantity" label="Số lượng gói" validate={[required(), quantityValidator]} fullWidth />
+          <NumberInput
+            source="quantity"
+            label="Số lượng gói"
+            parse={clampQuantity}
+            min={1}
+            max={5}
+            step={1}
+            fullWidth
+          />
           <SelectInput source="packagingType" label="Loại đóng gói" choices={PACKAGING_TYPE_CHOICES} validate={[required()]} fullWidth />
           <DateInput source="packagingDate" label="Ngày đóng gói" validate={[required()]} fullWidth />
           <TextInput source="note" label="Ghi chú" multiline fullWidth />
@@ -267,6 +277,10 @@ export function PackagesResourceCreate() {
         if (requestKg === null) {
           throw new Error("Chỉ hỗ trợ đơn vị kg/gram để kiểm tra sản lượng còn lại.");
         }
+        const quantity = Number(data?.quantity);
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 5) {
+          throw new Error("Số lượng gói phải từ 1 đến 5.");
+        }
         if (remainingKg === null) {
           throw new Error("Không lấy được dữ liệu sản lượng còn lại.");
         }
@@ -277,7 +291,7 @@ export function PackagesResourceCreate() {
           productionInventoryKey: String(data?.productionInventoryKey || "").trim(),
           weightValue: Number(data?.weightValue),
           weightUnit: String(data?.weightUnit || "").trim(),
-          quantity: Number(data?.quantity),
+          quantity,
           packagingType: String(data?.packagingType || "").trim(),
           packagingDate: data?.packagingDate,
           note: String(data?.note || "").trim() || undefined,
