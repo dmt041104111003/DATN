@@ -49,6 +49,7 @@ const positiveNumber = (value: unknown) => {
 function ContainerFormSections() {
   const currentWalletAddress = String(useWatch({ name: "currentWalletAddress" }) ?? "");
   const linkedWalletAddressRows = (useWatch({ name: "linkedWalletAddressesExtra" }) as any[] | undefined) ?? [];
+  const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
   const [locationRows, setLocationRows] = React.useState<any[]>([]);
   const [loadingLocations, setLoadingLocations] = React.useState(false);
   const { setValue, getValues } = useFormContext();
@@ -69,6 +70,21 @@ function ContainerFormSections() {
       })
       .join("\n");
   }, [loadingLocations, locationRows]);
+
+  const actualCapacityValidator = React.useCallback(
+    (value: unknown) => {
+      const actualRaw = String(value ?? "").trim();
+      if (!actualRaw) return undefined;
+      const maxRaw = String(capacityKg || "").trim();
+      if (!maxRaw) return undefined;
+      const actual = Number(actualRaw);
+      const max = Number(maxRaw);
+      if (!Number.isFinite(actual) || !Number.isFinite(max)) return undefined;
+      if (actual >= max) return "Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.";
+      return undefined;
+    },
+    [capacityKg],
+  );
 
   const { data: productionRows = [] } = useGetList("production", {
     pagination: { page: 1, perPage: 1000 },
@@ -198,6 +214,13 @@ function ContainerFormSections() {
             fullWidth
           />
           <TextInput source="capacityKg" label="Dung lượng chứa tối đa (kg)" type="number" validate={[positiveNumber]} fullWidth />
+          <TextInput
+            source="actualCapacityKg"
+            label="Dung lượng thực tế (kg)"
+            type="number"
+            validate={[positiveNumber, actualCapacityValidator]}
+            fullWidth
+          />
           <TextInput source="productName" label="Tên sản phẩm" fullWidth />
           <SelectInput
             source="productionInventoryKey"
@@ -272,6 +295,7 @@ export function ContainerResourceList() {
         <TextField source="code" label="Mã thùng" />
         <TextField source="containerType" label="Loại thùng" />
         <TextField source="capacityKg" label="Dung lượng chứa tối đa (kg)" />
+        <TextField source="actualCapacityKg" label="Dung lượng thực tế (kg)" />
         <TextField source="productName" label="Tên sản phẩm" />
         <TextField source="productionInventoryKey" label="InventoryKey vụ mùa" />
         <SelectField
@@ -294,8 +318,16 @@ export function ContainerResourceList() {
 export function ContainerResourceCreate() {
   return (
     <Create
-      transform={(data: any) => ({
-        ...data,
+      transform={(data: any) => {
+        const code = String(data?.code || "").trim() || makeContainerCode();
+        const max = Number(String(data?.capacityKg || "").trim());
+        const actual = Number(String(data?.actualCapacityKg || "").trim());
+        if (Number.isFinite(max) && Number.isFinite(actual) && actual >= max) {
+          throw new Error("Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.");
+        }
+        return {
+          ...data,
+          code,
         currentLocationLabel: undefined,
         currentWalletAddress: undefined,
         linkedWalletAddressesExtra: undefined,
@@ -307,7 +339,8 @@ export function ContainerResourceCreate() {
           .map((row: any) => String(row?.walletAddress ?? row ?? "").trim())
           .filter(Boolean),
         routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
-      })}
+      };
+      }}
       sx={CREATE_PAGE_SX}
     >
       <SimpleForm
@@ -331,19 +364,26 @@ export function ContainerResourceEdit() {
     <Edit
       mutationMode="pessimistic"
       sx={EDIT_PAGE_SX}
-      transform={(data: any) => ({
-        ...data,
-        currentLocationLabel: undefined,
-        currentWalletAddress: undefined,
-        linkedWalletAddressesExtra: undefined,
-        linkedWalletAddresses: [
-          String(data?.currentWalletAddress || "").trim(),
-          ...(Array.isArray(data?.linkedWalletAddressesExtra) ? data.linkedWalletAddressesExtra : []),
-        ]
-          .map((row: any) => String(row?.walletAddress ?? row ?? "").trim())
-          .filter(Boolean),
-        routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
-      })}
+      transform={(data: any) => {
+        const max = Number(String(data?.capacityKg || "").trim());
+        const actual = Number(String(data?.actualCapacityKg || "").trim());
+        if (Number.isFinite(max) && Number.isFinite(actual) && actual >= max) {
+          throw new Error("Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.");
+        }
+        return {
+          ...data,
+          currentLocationLabel: undefined,
+          currentWalletAddress: undefined,
+          linkedWalletAddressesExtra: undefined,
+          linkedWalletAddresses: [
+            String(data?.currentWalletAddress || "").trim(),
+            ...(Array.isArray(data?.linkedWalletAddressesExtra) ? data.linkedWalletAddressesExtra : []),
+          ]
+            .map((row: any) => String(row?.walletAddress ?? row ?? "").trim())
+            .filter(Boolean),
+          routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
+        };
+      }}
     >
       <SimpleForm
         sx={FORM_SX}

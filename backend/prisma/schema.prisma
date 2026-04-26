@@ -102,6 +102,7 @@ model Container {
   routeMap                    String?
   containerType               String?
   capacityKg                  String?
+  actualCapacityKg            String?
   productName                 String?
   note                        String?
   status                      ContainerStage @default(CREATE)

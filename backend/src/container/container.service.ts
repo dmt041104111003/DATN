@@ -91,6 +91,7 @@ export class ContainerService {
         routeMap: JSON.stringify(Array.isArray(data?.routeMap) ? data.routeMap : []),
         containerType: cleanString(data.containerType) || null,
         capacityKg: cleanString(data.capacityKg) || null,
+        actualCapacityKg: cleanString(data.actualCapacityKg) || null,
         productName: cleanString(data.productName) || null,
         note: cleanString(data.note) || null,
         status: 'CREATE',
@@ -123,6 +124,7 @@ export class ContainerService {
     if (data.note !== undefined) patch.note = cleanString(data.note) || null;
     if (data.containerType !== undefined) patch.containerType = cleanString(data.containerType) || null;
     if (data.capacityKg !== undefined) patch.capacityKg = cleanString(data.capacityKg) || null;
+    if (data.actualCapacityKg !== undefined) patch.actualCapacityKg = cleanString(data.actualCapacityKg) || null;
     if (data.productName !== undefined) patch.productName = cleanString(data.productName) || null;
     if (data.linkedWalletAddresses !== undefined) patch.linkedWalletAddresses = this.joinPipe(data.linkedWalletAddresses);
     if (data.routeMap !== undefined) {

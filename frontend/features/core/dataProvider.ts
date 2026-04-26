@@ -237,6 +237,7 @@ function buildContainerMetadata(data: any, previousData: any) {
     production_inventory_key: cleanString(data?.productionInventoryKey || previousData?.productionInventoryKey),
     container_type: cleanString(data?.containerType || previousData?.containerType),
     capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
+    actual_capacity_kg: cleanString(data?.actualCapacityKg || previousData?.actualCapacityKg),
     product_name: cleanString(data?.productName || previousData?.productName),
     current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
     current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
