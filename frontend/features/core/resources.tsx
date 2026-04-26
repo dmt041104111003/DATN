@@ -15,16 +15,10 @@ import {
   PackagesResourceEdit,
   PackagesResourceList,
 } from "@/features/resources/packages";
-import {
-  ShipmentsResourceCreate,
-  ShipmentsResourceEdit,
-  ShipmentsResourceList,
-} from "@/features/resources/shipments";
-import { ShipmentScanResourceList } from "@/features/resources/shipment-scan";
 
 export function renderAdminResources(permissions?: string) {
   const role = String(permissions || "").toUpperCase();
-  const hidePackageAndShipment = role === "AGENT" || role === "TRANSIT";
+  const hidePackages = role === "AGENT" || role === "TRANSIT";
   const isEnterprise = role === "ENTERPRISE";
 
   return (
@@ -37,7 +31,7 @@ export function renderAdminResources(permissions?: string) {
           edit={ProductionResourceEdit}
         />
       ) : null}
-      {!hidePackageAndShipment ? (
+      {!hidePackages ? (
         <Resource
           name="packages"
           list={PackagesResourceList}
@@ -45,15 +39,6 @@ export function renderAdminResources(permissions?: string) {
           edit={PackagesResourceEdit}
         />
       ) : null}
-      {!hidePackageAndShipment ? (
-        <Resource
-          name="shipments"
-          list={ShipmentsResourceList}
-          create={ShipmentsResourceCreate}
-          edit={ShipmentsResourceEdit}
-        />
-      ) : null}
-      <Resource name="shipment-scan" list={ShipmentScanResourceList} />
       <Resource name="profile" list={ProfileResourceList} edit={ProfileResourceEdit} />
     </>
   );

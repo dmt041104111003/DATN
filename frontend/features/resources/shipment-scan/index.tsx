@@ -1,2 +1,0 @@
-export { ShipmentScanResourceList } from "./functions";
-

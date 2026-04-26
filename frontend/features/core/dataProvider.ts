@@ -15,7 +15,6 @@ const BACKEND_URL =
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
   packages: "packages",
-  shipments: "shipments",
   profile: "profile",
 };
 
@@ -47,7 +46,6 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
   "packages",
-  "shipments",
 ]);
 
 function cleanString(value: unknown) {
@@ -324,62 +322,6 @@ export const adminDataProvider: DataProvider = {
       const row = patchRes.json as any;
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
-    if (resource === "shipments") {
-      const shipmentInventoryKey = String(
-        params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
-      ).trim();
-      if (!shipmentInventoryKey) throw new Error("shipmentInventoryKey is required.");
-      const status = String(params.data?.status || "").trim().toUpperCase();
-      if (status === "IN_TRANSIT") {
-        const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-        const owners = buildOwnerList(owner, custodianAddress);
-        const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/save`, {
-          method: "POST",
-          body: JSON.stringify({
-            custodianAddress,
-            owners,
-            inventoryKey: shipmentInventoryKey,
-            metadata: { status: "IN_TRANSIT" },
-          }),
-        });
-        const unsigned = contractRes.json as any;
-        ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment save transaction.");
-        const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
-        const { json } = await httpClient(
-          `${BACKEND_URL}/shipments/${encodeURIComponent(shipmentInventoryKey)}/status`,
-          {
-            method: "PATCH",
-            body: JSON.stringify({ status: "IN_TRANSIT", txHash }),
-          },
-        );
-        const row = json as any;
-        return { data: { ...row, id: normalizeId(row, params.id) } };
-      }
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
-      const nextNote = String(params.data?.note || "").trim();
-      const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/save`, {
-        method: "POST",
-        body: JSON.stringify({
-          custodianAddress,
-          owners,
-          inventoryKey: shipmentInventoryKey,
-          metadata: { note: nextNote },
-        }),
-      });
-      const unsigned = contractRes.json as any;
-      ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment save transaction.");
-      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
-      const { json } = await httpClient(`${BACKEND_URL}/shipments/${encodeURIComponent(shipmentInventoryKey)}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          note: nextNote,
-          txHash,
-        }),
-      });
-      const row = json as any;
-      return { data: { ...row, id: normalizeId(row, params.id) } };
-    }
     if (resource === "packages") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
@@ -511,41 +453,6 @@ export const adminDataProvider: DataProvider = {
       return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
     }
 
-    if (resource === "shipments") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
-      const shipmentPayload = {
-        packageInventoryKeys: Array.isArray(params.data?.packageInventoryKeys)
-          ? params.data.packageInventoryKeys
-          : [],
-        updaterAddresses: Array.isArray(params.data?.updaterAddresses)
-          ? params.data.updaterAddresses
-          : [],
-        note: params.data?.note,
-      };
-      const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/create`, {
-        method: "POST",
-        body: JSON.stringify({
-          custodianAddress,
-          owners,
-          ...shipmentPayload,
-        }),
-      });
-      const unsigned = contractRes.json as any;
-      ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment on-chain transaction.");
-      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
-
-      const { json } = await httpClient(`${BACKEND_URL}/shipments`, {
-        method: "POST",
-        body: JSON.stringify({
-          ...shipmentPayload,
-          txHash,
-          shipmentItem: unsigned?.shipmentItem || {},
-        }),
-      });
-      const row = json as any;
-      return { data: { ...row, id: normalizeId(row) } };
-    }
 
     return baseProvider.create(resource, params);
   },
@@ -594,31 +501,6 @@ export const adminDataProvider: DataProvider = {
       ensureUnsignedTxResponse(unsigned, "Failed to prepare package burn transaction.");
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
       const { json } = await httpClient(`${BACKEND_URL}/packages/${encodeURIComponent(inventoryKey)}`, {
-        method: "DELETE",
-        body: JSON.stringify({ txHash }),
-      });
-      const row = json as any;
-      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
-    }
-    if (resource === "shipments") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
-      const inventoryKey = String(
-        (params.previousData as any)?.inventoryKey ?? params.id ?? "",
-      ).trim();
-      if (!inventoryKey) throw new Error("shipmentInventoryKey is required.");
-      const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/burn`, {
-        method: "POST",
-        body: JSON.stringify({
-          custodianAddress,
-          owners,
-          shipmentInventoryKeys: [inventoryKey],
-        }),
-      });
-      const unsigned = contractRes.json as any;
-      ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment burn transaction.");
-      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
-      const { json } = await httpClient(`${BACKEND_URL}/shipments/${encodeURIComponent(inventoryKey)}`, {
         method: "DELETE",
         body: JSON.stringify({ txHash }),
       });

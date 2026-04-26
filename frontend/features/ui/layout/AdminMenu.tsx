@@ -9,14 +9,12 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import PersonIcon from "@mui/icons-material/Person";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 
 export function AdminMenu() {
   const { permissions } = usePermissions<string>();
   const role = String(permissions || "").toUpperCase();
   const isAdminRole = role === "ENTERPRISE";
-  const hidePackageAndShipment = role === "AGENT" || role === "TRANSIT";
+  const hidePackages = role === "AGENT" || role === "TRANSIT";
   const items = [
     <MenuItemLink key="overview" to="/" primaryText="Tổng quan" leftIcon={<DashboardIcon />} />,
     ...(isAdminRole
@@ -29,28 +27,16 @@ export function AdminMenu() {
           />,
         ]
       : []),
-    ...(!hidePackageAndShipment
+    ...(!hidePackages
       ? [
           <MenuItemLink
             key="packages"
             to="/packages"
-            primaryText="Gói hàng"
+            primaryText="Sản phẩm"
             leftIcon={<Inventory2Icon />}
-          />,
-          <MenuItemLink
-            key="shipments"
-            to="/shipments"
-            primaryText="Lô hàng"
-            leftIcon={<LocalShippingIcon />}
           />,
         ]
       : []),
-    <MenuItemLink
-      key="shipment-scan"
-      to="/shipment-scan"
-      primaryText="Nhập hàng"
-      leftIcon={<QrCodeScannerIcon />}
-    />,
     <MenuItemLink key="profile" to="/profile" primaryText="Hồ sơ" leftIcon={<PersonIcon />} />,
   ];
 

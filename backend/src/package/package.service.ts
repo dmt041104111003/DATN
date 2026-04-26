@@ -99,9 +99,6 @@ export class PackageService {
         production: {
           select: { code: true },
         },
-        shipmentLinks: {
-          select: { shipmentInventoryKey: true },
-        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -122,10 +119,6 @@ export class PackageService {
       return {
         ...row,
         productionCode: clean(row?.production?.code),
-        shipmentInventoryKeys: Array.isArray(row?.shipmentLinks)
-          ? row.shipmentLinks.map((x: any) => clean(x?.shipmentInventoryKey)).filter(Boolean)
-          : [],
-        lockedByShipment: Array.isArray(row?.shipmentLinks) ? row.shipmentLinks.length > 0 : false,
         verified: Boolean(latest?.verified),
         verifiedAt: latest?.verifiedAt ?? null,
       };
@@ -207,7 +200,6 @@ export class PackageService {
   }
 
   async updateEditable(createdByAddress: string, roleRaw: unknown, inventoryKeyRaw: unknown, data: any) {
-    const actor = clean(createdByAddress);
     const inventoryKey = clean(inventoryKeyRaw);
     const txHash = clean(data?.txHash);
 
@@ -248,7 +240,6 @@ export class PackageService {
   }
 
   async deleteByInventoryKey(createdByAddress: string, roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
-    const actor = clean(createdByAddress);
     const inventoryKey = clean(inventoryKeyRaw);
     const txHash = clean(txHashRaw);
 
