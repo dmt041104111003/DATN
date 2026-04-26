@@ -33,6 +33,11 @@ import {
   getProvinceOptions,
   getWardOptions,
 } from "@/features/resources/shared/location";
+import {
+  CREATE_PAGE_SX,
+  EDIT_PAGE_SX,
+  FORM_SX,
+} from "@/features/resources/shared/styles";
 
 function makeProductionCode() {
   const now = new Date();
@@ -44,6 +49,7 @@ function makeProductionCode() {
 }
 
 const positiveNumber = (value: unknown) => {
+  if (value === null || value === undefined || String(value).trim() === "") return undefined;
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return "Phải lớn hơn 0";
   return undefined;
@@ -461,19 +467,10 @@ export function ProductionResourceCreate() {
         certFiles: [],
         evidenceFiles: [],
       })}
-      sx={{
-        "& .RaCreate-main": { maxWidth: "none" },
-        "& .RaCreate-card": { maxWidth: "none", width: "100%" },
-      }}
+      sx={CREATE_PAGE_SX}
     >
       <SimpleForm
-        sx={{
-          maxWidth: "none",
-          width: "100%",
-          "& .RaSimpleForm-form": { maxWidth: "none", width: "100%" },
-          "& .RaInput-root": { mt: 0, mb: 0, width: "100%" },
-          "& .MuiFormControl-root": { width: "100%" },
-        }}
+        sx={FORM_SX}
         defaultValues={{
           code: makeProductionCode(),
           status: "DRAFT",
@@ -492,19 +489,10 @@ export function ProductionResourceEdit() {
   return (
     <Edit
       mutationMode="pessimistic"
-      sx={{
-        "& .RaEdit-main": { maxWidth: "none" },
-        "& .RaEdit-card": { maxWidth: "none", width: "100%" },
-      }}
+      sx={EDIT_PAGE_SX}
     >
       <SimpleForm
-        sx={{
-          maxWidth: "none",
-          width: "100%",
-          "& .RaSimpleForm-form": { maxWidth: "none", width: "100%" },
-          "& .RaInput-root": { mt: 0, mb: 0, width: "100%" },
-          "& .MuiFormControl-root": { width: "100%" },
-        }}
+        sx={FORM_SX}
         toolbar={<ProductionEditToolbar />}
       >
         <ProductionFormSections />

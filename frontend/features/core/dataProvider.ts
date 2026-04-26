@@ -14,6 +14,7 @@ const BACKEND_URL =
 
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
+  packages: "packages",
   profile: "profile",
 };
 
@@ -194,7 +195,10 @@ function mapRowsWithId(resource: string, rows: any[]) {
 }
 
 function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: string[], evidenceFilesIpfs: string[]) {
+  const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
+  const metadataStatus = rawStatus === "CLOSED" ? "CLOSED" : "ACTIVE";
   return {
+    status: metadataStatus,
     production_code: cleanString(data?.code || previousData?.code),
     facility: cleanString(data?.facilityId || previousData?.facilityId),
     province: cleanString(data?.provinceId || previousData?.provinceId),
@@ -327,6 +331,51 @@ export const adminDataProvider: DataProvider = {
       });
       const row = (json as any)?.profile ?? json ?? params.data;
       return { data: { ...row, id: normalizeId(row, "me") } };
+    }
+
+    if (resource === "packages") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const packagePayload = {
+        productionInventoryKey: params.data?.productionInventoryKey,
+        quantity: params.data?.quantity,
+        weightValue: params.data?.weightValue,
+        weightUnit: params.data?.weightUnit,
+        weightUnitOther: params.data?.weightUnitOther,
+        packagingType: params.data?.packagingType,
+        packagingDate: params.data?.packagingDate,
+        note: params.data?.note,
+        authorizedAgents: params.data?.authorizedAgents,
+      };
+      const contractRes = await httpClient(`${BACKEND_URL}/packages/contract/create`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          ...packagePayload,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare package on-chain transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+
+      const { json } = await httpClient(`${BACKEND_URL}/packages`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...packagePayload,
+          txHash,
+          packageItems: unsigned?.packageItems || [],
+        }),
+      });
+      const rows = Array.isArray(json) ? json : [];
+      const first = rows[0] ?? {};
+      return {
+        data: {
+          ...first,
+          id: normalizeId(first, first?.code ?? "1"),
+          createdCount: rows.length,
+        },
+      };
     }
 
     if (resource === "production") {

@@ -10,6 +10,10 @@ import {
   ProfileResourceEdit,
   ProfileResourceList,
 } from "@/features/resources/profile";
+import {
+  PackagesResourceCreate,
+  PackagesResourceList,
+} from "@/features/resources/packages";
 
 export function AdminResources() {
   return null;
@@ -22,6 +26,11 @@ export const adminResources = (
       list={ProductionResourceList}
       create={ProductionResourceCreate}
       edit={ProductionResourceEdit}
+    />
+    <Resource
+      name="packages"
+      list={PackagesResourceList}
+      create={PackagesResourceCreate}
     />
     <Resource name="profile" list={ProfileResourceList} edit={ProfileResourceEdit} />
   </>

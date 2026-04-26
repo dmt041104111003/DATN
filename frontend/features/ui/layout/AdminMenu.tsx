@@ -8,6 +8,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PersonIcon from "@mui/icons-material/Person";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 
 export function AdminMenu() {
   const { permissions } = usePermissions<string>();
@@ -21,6 +22,12 @@ export function AdminMenu() {
             to="/production"
             primaryText="Quản lý vụ mùa"
             leftIcon={<PrecisionManufacturingIcon />}
+          />,
+          <MenuItemLink
+            key="packages"
+            to="/packages"
+            primaryText="Đóng gói"
+            leftIcon={<Inventory2Icon />}
           />,
         ]
       : []),
