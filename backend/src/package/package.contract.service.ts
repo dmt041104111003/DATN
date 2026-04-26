@@ -8,15 +8,28 @@ function clean(v: unknown): string {
   return String(v ?? '').trim();
 }
 
-function makeMetadata(base: any, productionCode: string, packageCode: string) {
+function makeMetadata(
+  base: any,
+  production: { code: string; inventoryKey: string; traceSchemeRef: string },
+  item: { code: string; inventoryKey: string },
+  holderAddress: string,
+) {
   return {
-    production_code: productionCode,
-    package_code: packageCode,
+    production_code: clean(production.code),
+    production_inventory_key: clean(production.inventoryKey),
+    package_code: clean(item.code),
+    package_inventory_key: clean(item.inventoryKey),
+    trace_scheme_ref: clean(production.traceSchemeRef),
+    holder_address: clean(holderAddress),
+    registering_custodian_address: clean(holderAddress),
     weight_value: clean(base?.weightValue),
     weight_unit: clean(base?.weightUnit),
+    quantity_per_record: '1',
+    requested_quantity: clean(base?.quantity),
     packaging_type: clean(base?.packagingType),
     packaging_date: clean(base?.packagingDate),
     authorized_agents: JSON.stringify(Array.isArray(base?.authorizedAgents) ? base.authorizedAgents : []),
+    note: clean(base?.note),
     status: 'UNSOLD',
   } as Record<string, string>;
 }
@@ -80,7 +93,16 @@ export class PackageContractService {
 
     const products = packageItems.map((item) => ({
       productName: item.code,
-      metadata: makeMetadata(dto, productionCode, item.code),
+      metadata: makeMetadata(
+        dto,
+        {
+          code: productionCode,
+          inventoryKey: clean(production.inventoryKey),
+          traceSchemeRef,
+        },
+        { code: item.code, inventoryKey: item.inventoryKey },
+        walletAddress,
+      ),
       quantity: '1',
       receiver: walletAddress,
     }));

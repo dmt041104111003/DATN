@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import {
   ArrayInput,
   BooleanField,
+  CreateButton,
   Create,
   Datagrid,
   DateField,
@@ -19,12 +20,14 @@ import {
   SelectInput,
   SimpleForm,
   SimpleFormIterator,
+  TopToolbar,
   FunctionField,
   TextField,
   TextInput,
   required,
   useGetList,
   useNotify,
+  usePermissions,
   useRedirect,
 } from "react-admin";
 import {
@@ -269,9 +272,15 @@ function PackageFormSections({
 }
 
 export function PackagesResourceList() {
+  const { permissions } = usePermissions<string>();
   const notify = useNotify();
+  const isEnterprise = permissions === "ENTERPRISE";
   return (
-    <List empty={<Empty />} exporter={false}>
+    <List
+      empty={<Empty hasCreate={isEnterprise} />}
+      exporter={false}
+      actions={isEnterprise ? <TopToolbar><CreateButton /></TopToolbar> : false}
+    >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã gói" />
         <NumberField source="weightValue" label="Khối lượng" />

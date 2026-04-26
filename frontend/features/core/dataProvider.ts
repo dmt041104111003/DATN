@@ -15,6 +15,7 @@ const BACKEND_URL =
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
   packages: "packages",
+  shipments: "shipments",
   profile: "profile",
 };
 
@@ -46,6 +47,7 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
   "packages",
+  "shipments",
 ]);
 
 function cleanString(value: unknown) {
@@ -322,6 +324,23 @@ export const adminDataProvider: DataProvider = {
       const row = patchRes.json as any;
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
+    if (resource === "shipments") {
+      const shipmentInventoryKey = String(
+        params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
+      ).trim();
+      if (!shipmentInventoryKey) throw new Error("shipmentInventoryKey is required.");
+      const { json } = await httpClient(
+        `${BACKEND_URL}/shipments/${encodeURIComponent(shipmentInventoryKey)}/location`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            location: String(params.data?.location || "").trim(),
+          }),
+        },
+      );
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(row, params.id) } };
+    }
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
@@ -413,6 +432,42 @@ export const adminDataProvider: DataProvider = {
       });
       const row = dbRes.json as any;
       return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
+    }
+
+    if (resource === "shipments") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const shipmentPayload = {
+        packageInventoryKeys: Array.isArray(params.data?.packageInventoryKeys)
+          ? params.data.packageInventoryKeys
+          : [],
+        updaterAddresses: Array.isArray(params.data?.updaterAddresses)
+          ? params.data.updaterAddresses
+          : [],
+        note: params.data?.note,
+      };
+      const contractRes = await httpClient(`${BACKEND_URL}/shipments/contract/create`, {
+        method: "POST",
+        body: JSON.stringify({
+          custodianAddress,
+          owners,
+          ...shipmentPayload,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare shipment on-chain transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+
+      const { json } = await httpClient(`${BACKEND_URL}/shipments`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...shipmentPayload,
+          txHash,
+          shipmentItem: unsigned?.shipmentItem || {},
+        }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(row) } };
     }
 
     return baseProvider.create(resource, params);

@@ -101,14 +101,15 @@ export class PackageService {
   }
 
   async list(createdByAddress: string) {
-    const owner = clean(createdByAddress);
-    if (!owner) throw new BadRequestException('Operator account reference is required.');
+    const actor = clean(createdByAddress);
+    if (!actor) throw new BadRequestException('Operator account reference is required.');
 
     const rows = await (this.prisma as any).package.findMany({
       where: {
-        production: {
-          registeringCustodianAddress: owner,
-        },
+        OR: [
+          { holderAddress: actor },
+          { registeringCustodianAddress: actor },
+        ],
       },
       include: {
         production: {
@@ -250,6 +251,7 @@ export class PackageService {
           inventoryKey,
           code,
           registeringCustodianAddress: owner,
+          holderAddress: owner,
           productionInventoryKey,
           weightValue,
           weightUnit,

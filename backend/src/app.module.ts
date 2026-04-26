@@ -23,6 +23,10 @@ import { PackageController } from './package/package.controller';
 import { PackageService } from './package/package.service';
 import { PackageContractController } from './package/package.contract.controller';
 import { PackageContractService } from './package/package.contract.service';
+import { ShipmentController } from './shipment/shipment.controller';
+import { ShipmentService } from './shipment/shipment.service';
+import { ShipmentContractController } from './shipment/shipment.contract.controller';
+import { ShipmentContractService } from './shipment/shipment.contract.service';
 
 @Module({
   imports: [
@@ -46,6 +50,8 @@ import { PackageContractService } from './package/package.contract.service';
     ProductionContractController,
     PackageController,
     PackageContractController,
+    ShipmentController,
+    ShipmentContractController,
     HealthController,
   ],
   providers: [
@@ -59,6 +65,8 @@ import { PackageContractService } from './package/package.contract.service';
     ProductionContractService,
     PackageService,
     PackageContractService,
+    ShipmentService,
+    ShipmentContractService,
   ],
 })
 export class AppModule {}

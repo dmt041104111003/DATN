@@ -21,6 +21,7 @@ model User {
   isActive  Boolean   @default(true)
   productions Production[]
   packages  Package[]
+  shipments Shipment[]
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -93,8 +94,10 @@ model Package {
   code                   String        @unique
   registeringCustodianAddress String
   registeringCustodian   User?         @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  holderAddress          String
   productionInventoryKey String
   production             Production    @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
+  shipmentLinks          ShipmentPackage[]
   weightValue            Float
   weightUnit             String
   quantity               Int
@@ -107,12 +110,52 @@ model Package {
   updatedAt              DateTime      @updatedAt
 
   @@index([registeringCustodianAddress])
+  @@index([holderAddress])
   @@index([productionInventoryKey])
+}
+
+model Shipment {
+  id                          String         @id @default(cuid())
+  traceSchemeRef              String
+  inventoryKey                String         @unique
+  code                        String         @unique
+  registeringCustodianAddress String
+  registeringCustodian        User?          @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  holderAddress               String
+  location                    String
+  updaterAddresses            Json
+  roadmap                     Json
+  status                      ShipmentStatus @default(CREATED)
+  note                        String?
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+
+  packages ShipmentPackage[]
+
+  @@index([registeringCustodianAddress])
+  @@index([holderAddress])
+}
+
+model ShipmentPackage {
+  id                    String   @id @default(cuid())
+  shipmentInventoryKey  String
+  shipment              Shipment @relation(fields: [shipmentInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  packageInventoryKey   String   @unique
+  package               Package  @relation(fields: [packageInventoryKey], references: [inventoryKey], onDelete: Restrict)
+  createdAt             DateTime @default(now())
+
+  @@index([shipmentInventoryKey])
 }
 
 enum PackageStatus {
   UNSOLD
   SOLD
+}
+
+enum ShipmentStatus {
+  CREATED
+  IN_TRANSIT
+  DELIVERED
 }
 
 enum ProductionStage {
