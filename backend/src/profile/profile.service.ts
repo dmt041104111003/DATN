@@ -40,14 +40,14 @@ export class ProfileService {
       throw new BadRequestException('Province, district and ward are required.');
     }
     const phoneNumber = (data.phoneNumber || '').trim() || null;
-    const existing = await (this.prisma as any).custodianAccount.findUnique({
+    const existing = await (this.prisma as any).user.findUnique({
       where: { address: addr },
       select: { roleCode: true },
     });
     if (existing?.roleCode && existing.roleCode !== roleCode) {
       throw new BadRequestException('Role cannot be changed after profile creation.');
     }
-    const account = await (this.prisma as any).custodianAccount.update({
+    const account = await (this.prisma as any).user.update({
       where: { address: addr },
       data: {
         roleCode: existing?.roleCode || roleCode,
@@ -123,7 +123,7 @@ export class ProfileService {
       throw new BadRequestException('Display name is required.');
     }
 
-    const account = await (this.prisma as any).custodianAccount.update({
+    const account = await (this.prisma as any).user.update({
       where: { id: accountId },
       data: {
         displayName,
@@ -172,7 +172,7 @@ export class ProfileService {
       throw new BadRequestException('Account reference is required.');
     }
 
-    const account = await (this.prisma as any).custodianAccount.findUnique({
+    const account = await (this.prisma as any).user.findUnique({
       where: { address: addr },
       select: {
         id: true,
@@ -212,7 +212,7 @@ export class ProfileService {
       );
     }
 
-    const account = await (this.prisma as any).custodianAccount.findUnique({
+    const account = await (this.prisma as any).user.findUnique({
       where: { address: addr },
       select: {
         address: true,

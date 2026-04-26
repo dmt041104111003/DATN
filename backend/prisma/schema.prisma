@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model CustodianAccount {
+model User {
   id        String    @id @default(cuid())
   address   String    @unique
   lastLogin DateTime?
@@ -48,7 +48,7 @@ model Role {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts  CustodianAccount[]
+  accounts  User[]
 }
 
 model Production {
@@ -57,7 +57,7 @@ model Production {
   inventoryKey                String   @unique
   code                        String   @unique
   registeringCustodianAddress String
-  registeringCustodian        CustodianAccount? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  registeringCustodian        User? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
 
   facilityId                  String
   provinceId                  String
@@ -122,7 +122,7 @@ model Media {
   mimeType        String?
   sizeBytes       Int?
   createdByAddress String?
-  createdBy       CustodianAccount? @relation(fields: [createdByAddress], references: [address], onDelete: SetNull)
+  createdBy       User? @relation(fields: [createdByAddress], references: [address], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
   links           EntityMedia[]

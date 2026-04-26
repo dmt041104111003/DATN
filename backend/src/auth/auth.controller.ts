@@ -115,7 +115,7 @@ export class AuthController {
   async getProfile(@Req() req: any) {
     const account =
       req.user && req.user.sub
-        ? await (this.authService as any)['prisma'].custodianAccount.findUnique({
+        ? await (this.authService as any)['prisma'].user.findUnique({
             where: { address: String(req.user.sub || '').trim() },
           })
         : null;

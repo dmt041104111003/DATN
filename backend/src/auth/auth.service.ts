@@ -105,7 +105,7 @@ export class AuthService {
       );
     }
 
-    await this.prisma.custodianAccount.upsert({
+    await (this.prisma as any).user.upsert({
       where: { address: paymentAddr },
       update: { lastLogin: new Date() },
       create: {
@@ -114,7 +114,7 @@ export class AuthService {
       },
     });
 
-    const account = await (this.prisma as any).custodianAccount.findUnique({
+    const account = await (this.prisma as any).user.findUnique({
       where: { address: paymentAddr },
       select: {
         id: true,
