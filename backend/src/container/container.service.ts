@@ -58,17 +58,6 @@ export class ContainerService {
     }
   }
 
-  private splitPipe(value: unknown): string[] {
-    const packed = cleanString(value);
-    return packed ? packed.split('|').map((x) => cleanString(x)).filter(Boolean) : [];
-  }
-
-  private joinPipe(values: unknown): string | null {
-    if (!Array.isArray(values)) return null;
-    const packed = values.map((x) => cleanString(x)).filter(Boolean).join('|');
-    return packed || null;
-  }
-
   private parseLocations(raw: unknown): any[] {
     const text = cleanString(raw);
     if (!text) return [];
@@ -83,7 +72,6 @@ export class ContainerService {
   private toResponse(row: any, latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
-      linkedWalletAddresses: this.splitPipe(row?.linkedWalletAddresses),
       routeMap: this.parseLocations(row?.routeMap),
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
@@ -136,7 +124,6 @@ export class ContainerService {
         currentProvinceId: cleanString(data.currentProvinceId) || cleanString(profile?.provinceId) || null,
         currentDistrictId: cleanString(data.currentDistrictId) || cleanString(profile?.districtId) || null,
         currentWardId: cleanString(data.currentWardId) || cleanString(profile?.wardId) || null,
-        linkedWalletAddresses: this.joinPipe(data?.linkedWalletAddresses),
         routeMap: JSON.stringify(Array.isArray(data?.routeMap) ? data.routeMap : []),
         containerType: cleanString(data.containerType) || null,
         capacityKg: cleanString(data.capacityKg) || null,
@@ -179,7 +166,6 @@ export class ContainerService {
     if (data.actualCapacityKg !== undefined) patch.actualCapacityKg = cleanString(data.actualCapacityKg) || null;
     if (data.productName !== undefined) patch.productName = cleanString(data.productName) || null;
     if (data.holderAddress !== undefined) patch.holderAddress = cleanString(data.holderAddress) || null;
-    if (data.linkedWalletAddresses !== undefined) patch.linkedWalletAddresses = this.joinPipe(data.linkedWalletAddresses);
     if (data.routeMap !== undefined) {
       patch.routeMap = JSON.stringify(Array.isArray(data.routeMap) ? data.routeMap : []);
     }

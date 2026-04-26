@@ -64,10 +64,13 @@ const positiveNumber = (value: unknown) => {
   return undefined;
 };
 
-function ContainerFormSections() {
+function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
+  const isEditForm = mode === "edit";
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
   const currentWalletAddress = String(useWatch({ name: "currentWalletAddress" }) ?? "");
+  const holderAddressFromRecord = String(useWatch({ name: "holderAddress" }) ?? "");
+  const routeMapRaw = (useWatch({ name: "routeMap" }) as any[] | undefined) ?? [];
   const linkedWalletAddressRows = (useWatch({ name: "linkedWalletAddressesExtra" }) as any[] | undefined) ?? [];
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
   const [locationRows, setLocationRows] = React.useState<any[]>([]);
@@ -95,6 +98,17 @@ function ContainerFormSections() {
       })
       .join("\n");
   }, [loadingLocations, locationRows]);
+  const routeWallets = React.useMemo(
+    () =>
+      (Array.isArray(routeMapRaw) ? routeMapRaw : [])
+        .map((x: any) => String(x?.walletAddress ?? "").trim())
+        .filter(Boolean),
+    [routeMapRaw],
+  );
+  const roadmapPrimaryWallet = React.useMemo(() => {
+    if (isEditForm) return String(holderAddressFromRecord || routeWallets[0] || "").trim();
+    return String(currentWalletAddress || "").trim();
+  }, [isEditForm, holderAddressFromRecord, routeWallets, currentWalletAddress]);
 
   const actualCapacityValidator = React.useCallback(
     (value: unknown) => {
@@ -105,7 +119,7 @@ function ContainerFormSections() {
       const actual = Number(actualRaw);
       const max = Number(maxRaw);
       if (!Number.isFinite(actual) || !Number.isFinite(max)) return undefined;
-      if (actual >= max) return "Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.";
+      if (actual > max) return "Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.";
       return undefined;
     },
     [capacityKg],
@@ -160,10 +174,18 @@ function ContainerFormSections() {
           json?.user?.paymentAddress || json?.user?.walletAddress || json?.user?.sub || "",
         ).trim();
         if (!mounted) return;
-        if (meWalletAddress) setValue("currentWalletAddress", meWalletAddress);
-        const provinceId = String(getValues("currentProvinceId") || profile?.provinceId || "").trim();
-        const districtId = String(getValues("currentDistrictId") || profile?.districtId || "").trim();
-        const wardId = String(getValues("currentWardId") || profile?.wardId || "").trim();
+        if (!isEditForm) {
+          if (meWalletAddress) setValue("currentWalletAddress", meWalletAddress);
+        }
+        const provinceId = String(
+          getValues("currentProvinceId") || (!isEditForm ? profile?.provinceId : "") || "",
+        ).trim();
+        const districtId = String(
+          getValues("currentDistrictId") || (!isEditForm ? profile?.districtId : "") || "",
+        ).trim();
+        const wardId = String(
+          getValues("currentWardId") || (!isEditForm ? profile?.wardId : "") || "",
+        ).trim();
         setValue("currentProvinceId", provinceId);
         setValue("currentDistrictId", districtId);
         setValue("currentWardId", wardId);
@@ -183,9 +205,26 @@ function ContainerFormSections() {
     return () => {
       mounted = false;
     };
-  }, [getValues, setValue]);
+  }, [isEditForm, getValues, setValue]);
 
   React.useEffect(() => {
+    if (!isEditForm) return;
+    if (roadmapPrimaryWallet) setValue("currentWalletAddress", roadmapPrimaryWallet);
+    const extraRows = routeWallets
+      .filter((addr) => addr !== roadmapPrimaryWallet)
+      .map((walletAddress) => ({ walletAddress }));
+    setValue("linkedWalletAddressesExtra", extraRows);
+  }, [isEditForm, roadmapPrimaryWallet, routeWallets, setValue]);
+
+  React.useEffect(() => {
+    if (!isEditForm) return;
+    const rows = Array.isArray(routeMapRaw) ? routeMapRaw : [];
+    if (!rows.length) return;
+    setLocationRows(rows);
+  }, [isEditForm, routeMapRaw]);
+
+  React.useEffect(() => {
+    if (isEditForm) return;
     const extraAddresses = linkedWalletAddressRows
       .map((row) => String(row?.walletAddress ?? row ?? "").trim())
       .filter(Boolean);
@@ -193,7 +232,6 @@ function ContainerFormSections() {
     if (addresses.length === 0) {
       setLocationRows([]);
       setValue("routeMap", []);
-      setValue("linkedWalletAddresses", []);
       return;
     }
     let mounted = true;
@@ -239,14 +277,13 @@ function ContainerFormSections() {
     ).then((rows) => {
       if (!mounted) return;
       setLocationRows(rows);
-      setValue("linkedWalletAddresses", rows.map((x) => String(x?.walletAddress || "").trim()).filter(Boolean));
       setValue("routeMap", rows);
       setLoadingLocations(false);
     });
     return () => {
       mounted = false;
     };
-  }, [currentWalletAddress, linkedWalletAddressRows, setValue]);
+  }, [isEditForm, currentWalletAddress, linkedWalletAddressRows, setValue]);
 
   return (
     <>
@@ -298,14 +335,20 @@ function ContainerFormSections() {
       </div>
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[2] Đơn vị liên kết</h3>
-        <TextInput source="currentWalletAddress" label="Địa chỉ ví hiện tại" disabled fullWidth />
-        <ArrayInput source="linkedWalletAddressesExtra" label="Địa chỉ ví liên kết">
+        <MuiTextField
+          label=""
+          value={roadmapPrimaryWallet}
+          disabled
+          fullWidth
+          InputProps={{ readOnly: true }}
+        />
+        <ArrayInput source="linkedWalletAddressesExtra" label="">
           <SimpleFormIterator>
             <TextInput source="walletAddress" label="Địa chỉ ví" fullWidth />
           </SimpleFormIterator>
         </ArrayInput>
         <MuiTextField
-          label="Lộ trình địa chỉ liên kết"
+          label="Lộ trình"
           value={roadmapPreview}
           multiline
           minRows={4}
@@ -368,8 +411,8 @@ export function ContainerResourceCreate() {
         const code = String(data?.code || "").trim() || makeContainerCode();
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
-        if (Number.isFinite(max) && Number.isFinite(actual) && actual >= max) {
-          throw new Error("Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.");
+        if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
+          throw new Error("Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.");
         }
         return fetchCapacitySummary(String(data?.productionInventoryKey || "").trim()).then((summary) => {
           if (actual > Number(summary?.remainingCapacityKg || 0)) {
@@ -382,12 +425,6 @@ export function ContainerResourceCreate() {
         currentWalletAddress: undefined,
         linkedWalletAddressesExtra: undefined,
         status: "CREATE",
-        linkedWalletAddresses: [
-          String(data?.currentWalletAddress || "").trim(),
-          ...(Array.isArray(data?.linkedWalletAddressesExtra) ? data.linkedWalletAddressesExtra : []),
-        ]
-          .map((row: any) => String(row?.walletAddress ?? row ?? "").trim())
-          .filter(Boolean),
         routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
       };
         });
@@ -404,7 +441,7 @@ export function ContainerResourceCreate() {
           linkedWalletAddressesExtra: [],
         }}
       >
-        <ContainerFormSections />
+        <ContainerFormSections mode="create" />
       </SimpleForm>
     </Create>
   );
@@ -418,8 +455,8 @@ export function ContainerResourceEdit() {
       transform={(data: any) => {
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
-        if (Number.isFinite(max) && Number.isFinite(actual) && actual >= max) {
-          throw new Error("Dung lượng thực tế phải nhỏ hơn dung lượng chứa tối đa.");
+        if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
+          throw new Error("Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.");
         }
         return fetchCapacitySummary(
           String(data?.productionInventoryKey || "").trim(),
@@ -433,12 +470,6 @@ export function ContainerResourceEdit() {
           currentLocationLabel: undefined,
           currentWalletAddress: undefined,
           linkedWalletAddressesExtra: undefined,
-          linkedWalletAddresses: [
-            String(data?.currentWalletAddress || "").trim(),
-            ...(Array.isArray(data?.linkedWalletAddressesExtra) ? data.linkedWalletAddressesExtra : []),
-          ]
-            .map((row: any) => String(row?.walletAddress ?? row ?? "").trim())
-            .filter(Boolean),
           routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
         };
         });
@@ -448,7 +479,7 @@ export function ContainerResourceEdit() {
         sx={FORM_SX}
         toolbar={<ContainerEditToolbar />}
       >
-        <ContainerFormSections />
+        <ContainerFormSections mode="edit" />
       </SimpleForm>
     </Edit>
   );

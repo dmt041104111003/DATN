@@ -219,11 +219,6 @@ function buildContainerMetadata(data: any, previousData: any) {
     rawStatus === "UPDATE"
         ? "UPDATE"
         : "CREATE";
-  const linkedWalletAddresses = Array.isArray(data?.linkedWalletAddresses)
-    ? data.linkedWalletAddresses
-    : Array.isArray(previousData?.linkedWalletAddresses)
-      ? previousData.linkedWalletAddresses
-      : [];
   const routeMap = Array.isArray(data?.routeMap)
     ? data.routeMap
     : Array.isArray(previousData?.routeMap)
@@ -241,7 +236,6 @@ function buildContainerMetadata(data: any, previousData: any) {
     current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
     current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
     current_ward: cleanString(data?.currentWardId || previousData?.currentWardId),
-    linked_wallet_addresses: JSON.stringify(linkedWalletAddresses),
     route_map: JSON.stringify(routeMap),
     note: cleanString(data?.note || previousData?.note),
   };

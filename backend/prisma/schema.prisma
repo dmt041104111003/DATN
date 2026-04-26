@@ -99,7 +99,6 @@ model Container {
   currentProvinceId           String?
   currentDistrictId           String?
   currentWardId               String?
-  linkedWalletAddresses       String?
   routeMap                    String?
   containerType               String?
   capacityKg                  String?
