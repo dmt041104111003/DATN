@@ -3,7 +3,6 @@
 export const WEIGHT_UNIT_CHOICES = [
   { id: "kg", name: "kg" },
   { id: "gram", name: "gram" },
-  { id: "other", name: "khác" },
 ];
 
 export const PACKAGING_TYPE_CHOICES = [

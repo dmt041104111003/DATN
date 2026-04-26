@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PackageService } from './package.service';
 
@@ -21,6 +21,11 @@ export class PackageController {
   @Get()
   async list(@Req() req: any) {
     return this.packageService.list(this.getCustodian(req));
+  }
+
+  @Get('capacity/:productionInventoryKey')
+  async capacity(@Req() req: any, @Param('productionInventoryKey') productionInventoryKey: string) {
+    return this.packageService.getCapacity(this.getCustodian(req), productionInventoryKey);
   }
 
   @Post()

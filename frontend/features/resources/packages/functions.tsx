@@ -39,7 +39,18 @@ type ProductionRow = {
   inventoryKey?: string;
   code?: string;
   traceSchemeRef?: string;
+  status?: string;
 };
+
+type CapacityResponse = {
+  totalYieldKg?: number;
+  packagedKg?: number;
+  remainingKg?: number;
+  canPackage?: boolean;
+  message?: string;
+};
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 const quantityValidator = (value: unknown) => {
   const n = Number(value);
@@ -48,6 +59,16 @@ const quantityValidator = (value: unknown) => {
   return undefined;
 };
 
+function toKg(weightValueRaw: unknown, weightUnitRaw: unknown, quantityRaw: unknown): number | null {
+  const weightValue = Number(weightValueRaw);
+  const quantity = Number(quantityRaw);
+  const unit = String(weightUnitRaw || "").trim().toLowerCase();
+  if (!Number.isFinite(weightValue) || weightValue <= 0 || !Number.isFinite(quantity) || quantity <= 0) return null;
+  if (unit === "kg") return weightValue * quantity;
+  if (unit === "gram") return (weightValue * quantity) / 1000;
+  return null;
+}
+
 function normalizeAgents(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -55,27 +76,46 @@ function normalizeAgents(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function PackageFormSections() {
+function PackageFormSections({
+  onCapacityChange,
+}: {
+  onCapacityChange?: (value: number | null) => void;
+}) {
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
+  const weightValue = useWatch({ name: "weightValue" });
   const weightUnit = String(useWatch({ name: "weightUnit" }) ?? "");
+  const quantity = useWatch({ name: "quantity" });
   const agents = (useWatch({ name: "authorizedAgents" }) as Array<{ walletAddress?: string }> | undefined) ?? [];
+  const [capacity, setCapacity] = React.useState<CapacityResponse | null>(null);
+  const [capacityLoading, setCapacityLoading] = React.useState(false);
+  const [capacityError, setCapacityError] = React.useState("");
   const { data: productions = [] } = useGetList<ProductionRow>("production", {
     pagination: { page: 1, perPage: 100 },
     sort: { field: "createdAt", order: "DESC" },
-    filter: {},
+    filter: { status: "CLOSED" },
   });
+  const closedProductions = React.useMemo(
+    () => productions.filter((p) => String(p.status || "").toUpperCase() === "CLOSED"),
+    [productions],
+  );
   const productionChoices = React.useMemo(
     () =>
-      productions.map((p) => ({
+      closedProductions.map((p) => ({
         id: String(p.inventoryKey || ""),
         name: String(p.code || p.inventoryKey || ""),
       })),
-    [productions],
+    [closedProductions],
   );
   const pickedProduction = React.useMemo(
-    () => productions.find((p) => String(p.inventoryKey || "") === productionInventoryKey),
-    [productions, productionInventoryKey],
+    () => closedProductions.find((p) => String(p.inventoryKey || "") === productionInventoryKey),
+    [closedProductions, productionInventoryKey],
   );
+  const requestedKg = React.useMemo(
+    () => toKg(weightValue, weightUnit, quantity),
+    [weightValue, weightUnit, quantity],
+  );
+  const remainingKg = Number(capacity?.remainingKg ?? 0);
+  const willExceed = requestedKg !== null && requestedKg > remainingKg + 1e-9;
 
   const duplicateWallets = React.useMemo(() => {
     const arr = agents
@@ -83,6 +123,46 @@ function PackageFormSections() {
       .filter(Boolean);
     return new Set(arr).size !== arr.length;
   }, [agents]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    if (!productionInventoryKey) {
+      setCapacity(null);
+      setCapacityError("");
+      onCapacityChange?.(null);
+      return;
+    }
+    setCapacityLoading(true);
+    setCapacityError("");
+    fetch(`${BACKEND_URL}/packages/capacity/${encodeURIComponent(productionInventoryKey)}`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(String((body as any)?.message || "Không lấy được sản lượng còn lại."));
+        return body as CapacityResponse;
+      })
+      .then((data) => {
+        if (!mounted) return;
+        setCapacity(data);
+        const remain = Number(data?.remainingKg);
+        onCapacityChange?.(Number.isFinite(remain) ? remain : null);
+      })
+      .catch((e: any) => {
+        if (!mounted) return;
+        setCapacity(null);
+        setCapacityError(String(e?.message || "Không lấy được sản lượng còn lại."));
+        onCapacityChange?.(null);
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setCapacityLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [onCapacityChange, productionInventoryKey]);
 
   return (
     <>
@@ -99,18 +179,22 @@ function PackageFormSections() {
             fullWidth
           />
           <MuiTextField
-            label="Mã vụ *"
-            value={String(pickedProduction?.code || "")}
-            disabled
-            fullWidth
-          />
-          <MuiTextField
             label="PolicyID *"
             value={String(pickedProduction?.traceSchemeRef || "")}
             disabled
             fullWidth
           />
         </div>
+        {capacityLoading ? (
+          <p className="mt-2 text-sm text-slate-600">Đang tính sản lượng còn lại...</p>
+        ) : null}
+        {!capacityLoading && capacity ? (
+          <p className="mt-2 text-sm text-slate-700">
+            Sản lượng còn lại: <b>{Number(capacity.remainingKg || 0).toFixed(3)} kg</b> (Tổng:{" "}
+            {Number(capacity.totalYieldKg || 0).toFixed(3)} kg, đã đóng gói: {Number(capacity.packagedKg || 0).toFixed(3)} kg)
+          </p>
+        ) : null}
+        {capacityError ? <p className="mt-2 text-sm text-red-600">{capacityError}</p> : null}
       </div>
 
       <div className="py-1">
@@ -118,14 +202,17 @@ function PackageFormSections() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <NumberInput source="weightValue" label="Khối lượng mỗi gói" validate={[required()]} fullWidth />
           <SelectInput source="weightUnit" label="Đơn vị" choices={WEIGHT_UNIT_CHOICES} validate={[required()]} fullWidth />
-          {weightUnit === "other" ? (
-            <TextInput source="weightUnitOther" label="Đơn vị khác" validate={[required()]} fullWidth />
-          ) : null}
           <NumberInput source="quantity" label="Số lượng gói" validate={[required(), quantityValidator]} fullWidth />
           <SelectInput source="packagingType" label="Loại đóng gói" choices={PACKAGING_TYPE_CHOICES} validate={[required()]} fullWidth />
           <DateInput source="packagingDate" label="Ngày đóng gói" validate={[required()]} fullWidth />
           <TextInput source="note" label="Ghi chú" multiline fullWidth />
         </div>
+        {requestedKg !== null ? (
+          <p className={`mt-2 text-sm ${willExceed ? "text-red-600" : "text-slate-700"}`}>
+            Khối lượng đóng gói lần này: {requestedKg.toFixed(3)} kg
+          </p>
+        ) : null}
+        {willExceed ? <p className="mt-1 text-sm text-red-600">Vượt quá sản lượng còn lại, không thể tạo gói.</p> : null}
       </div>
 
       <div className="py-1">
@@ -146,7 +233,6 @@ export function PackagesResourceList() {
     <List empty={<Empty />}>
       <Datagrid rowClick={false} bulkActionButtons={false}>
         <TextField source="code" label="Mã gói" />
-        <TextField source="production.code" label="Mã vụ" />
         <NumberField source="weightValue" label="Khối lượng" />
         <TextField source="weightUnit" label="Đơn vị" />
         <NumberField source="quantity" label="Số lượng gói" />
@@ -161,6 +247,7 @@ export function PackagesResourceList() {
 export function PackagesResourceCreate() {
   const notify = useNotify();
   const redirect = useRedirect();
+  const [remainingKg, setRemainingKg] = React.useState<number | null>(null);
   return (
     <Create
       mutationOptions={{
@@ -176,11 +263,20 @@ export function PackagesResourceCreate() {
         if (uniqueAgents.length !== agents.length) {
           throw new Error("Ví đại lý bị trùng.");
         }
+        const requestKg = toKg(data?.weightValue, data?.weightUnit, data?.quantity);
+        if (requestKg === null) {
+          throw new Error("Chỉ hỗ trợ đơn vị kg/gram để kiểm tra sản lượng còn lại.");
+        }
+        if (remainingKg === null) {
+          throw new Error("Không lấy được dữ liệu sản lượng còn lại.");
+        }
+        if (requestKg > remainingKg + 1e-9) {
+          throw new Error(`Vượt quá sản lượng còn lại (${remainingKg.toFixed(3)} kg).`);
+        }
         return {
           productionInventoryKey: String(data?.productionInventoryKey || "").trim(),
           weightValue: Number(data?.weightValue),
           weightUnit: String(data?.weightUnit || "").trim(),
-          weightUnitOther: String(data?.weightUnitOther || "").trim() || undefined,
           quantity: Number(data?.quantity),
           packagingType: String(data?.packagingType || "").trim(),
           packagingDate: data?.packagingDate,
@@ -199,7 +295,7 @@ export function PackagesResourceCreate() {
           authorizedAgents: [{ walletAddress: "" }],
         }}
       >
-        <PackageFormSections />
+        <PackageFormSections onCapacityChange={setRemainingKg} />
       </SimpleForm>
     </Create>
   );
