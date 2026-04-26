@@ -5,20 +5,9 @@ function clean(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-function isValidWalletAddress(value: string): boolean {
-  return /^addr1[0-9a-z]+$/.test(value) || /^addr_test1[0-9a-z]+$/.test(value);
-}
-
 @Injectable()
 export class ShipmentService {
   constructor(private readonly prisma: PrismaService) {}
-
-  private assertEnterprise(roleRaw: unknown) {
-    const role = clean(roleRaw).toUpperCase();
-    if (role !== 'ENTERPRISE') {
-      throw new BadRequestException('Only ENTERPRISE can edit/delete shipments.');
-    }
-  }
 
   private locationFromProfile(profile: any, fallback: string): string {
     const location = [clean(profile?.provinceId), clean(profile?.districtId), clean(profile?.wardId)]
@@ -44,15 +33,7 @@ export class ShipmentService {
   }
 
   async list(holderAddressRaw: string) {
-    const actor = clean(holderAddressRaw);
-    if (!actor) throw new BadRequestException('Operator account reference is required.');
     const rows = await (this.prisma as any).shipment.findMany({
-      where: {
-        OR: [
-          { registeringCustodianAddress: actor },
-          { updaterAddresses: { array_contains: actor } },
-        ],
-      },
       include: {
         packages: {
           select: {
@@ -98,21 +79,12 @@ export class ShipmentService {
     const packageInventoryKeys = Array.isArray(data?.packageInventoryKeys)
       ? data.packageInventoryKeys.map((x: unknown) => clean(x)).filter(Boolean)
       : [];
-    if (packageInventoryKeys.length < 1) {
-      throw new BadRequestException('packageInventoryKeys requires at least one package.');
-    }
     const uniquePackageKeys = Array.from(new Set(packageInventoryKeys));
-    if (uniquePackageKeys.length !== packageInventoryKeys.length) {
-      throw new BadRequestException('packageInventoryKeys contains duplicated values.');
-    }
 
     const requestedUpdaters = Array.isArray(data?.updaterAddresses)
       ? data.updaterAddresses.map((x: unknown) => clean(x)).filter(Boolean)
       : [];
     const updaterAddresses = Array.from(new Set([holder, ...requestedUpdaters]));
-    if (!updaterAddresses.every(isValidWalletAddress)) {
-      throw new BadRequestException('updaterAddresses contains invalid wallet address format.');
-    }
 
     const user = await (this.prisma as any).user.findUnique({
       where: { address: holder },
@@ -135,12 +107,9 @@ export class ShipmentService {
     ];
 
     const packages = await (this.prisma as any).package.findMany({
-      where: { inventoryKey: { in: uniquePackageKeys }, holderAddress: holder },
+      where: { inventoryKey: { in: uniquePackageKeys } },
       select: { inventoryKey: true },
     });
-    if ((packages || []).length !== uniquePackageKeys.length) {
-      throw new BadRequestException('Some packages are invalid or not held by your address.');
-    }
 
     const row = await (this.prisma as any).shipment.create({
       data: {
@@ -186,7 +155,6 @@ export class ShipmentService {
   }
 
   async updateLocation(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
-    this.assertEnterprise(roleRaw);
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     if (!holder) throw new BadRequestException('Operator account reference is required.');
@@ -196,10 +164,6 @@ export class ShipmentService {
       where: { inventoryKey: shipmentInventoryKey },
     });
     if (!row) throw new NotFoundException('Shipment not found.');
-
-    if (clean(row?.holderAddress) !== holder) {
-      throw new BadRequestException('You can only edit shipment(s) that you still hold.');
-    }
 
     const location = clean(data?.location);
     if (!location) throw new BadRequestException('location is required.');
@@ -220,7 +184,6 @@ export class ShipmentService {
   }
 
   async updateStatus(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
-    this.assertEnterprise(roleRaw);
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     if (!holder) throw new BadRequestException('Operator account reference is required.');
@@ -239,16 +202,8 @@ export class ShipmentService {
     });
     if (!row) throw new NotFoundException('Shipment not found.');
 
-    const nextStatus = clean(data?.status).toUpperCase();
-    if (nextStatus !== 'IN_TRANSIT') {
-      throw new BadRequestException('Only IN_TRANSIT is supported for this action.');
-    }
     const txHash = clean(data?.txHash);
     if (!txHash) throw new BadRequestException('txHash is required.');
-
-    if (clean(row?.holderAddress) !== holder) {
-      throw new BadRequestException('You can only edit shipment(s) that you still hold.');
-    }
 
     const updated = await (this.prisma as any).shipment.update({
       where: { inventoryKey: shipmentInventoryKey },
@@ -284,7 +239,6 @@ export class ShipmentService {
   }
 
   async updateEditable(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
-    this.assertEnterprise(roleRaw);
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     const txHash = clean(data?.txHash);
@@ -304,13 +258,6 @@ export class ShipmentService {
       },
     });
     if (!row) throw new NotFoundException('Shipment not found.');
-    if (clean(row?.holderAddress) !== holder) {
-      throw new BadRequestException('You can only edit shipment(s) that you still hold.');
-    }
-    if (clean(row?.status).toUpperCase() !== 'CREATED') {
-      throw new BadRequestException('Only CREATED shipments can be edited.');
-    }
-
     const note = clean(data?.note) || null;
     const updated = await (this.prisma as any).shipment.update({
       where: { inventoryKey: shipmentInventoryKey },
@@ -346,7 +293,6 @@ export class ShipmentService {
   }
 
   async deleteByInventoryKey(createdByAddress: string, roleRaw: unknown, shipmentInventoryKeyRaw: unknown, txHashRaw: unknown) {
-    this.assertEnterprise(roleRaw);
     const actor = clean(createdByAddress);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     const txHash = clean(txHashRaw);
@@ -359,9 +305,6 @@ export class ShipmentService {
       select: { inventoryKey: true, holderAddress: true },
     });
     if (!row) throw new NotFoundException('Shipment not found.');
-    if (clean(row?.holderAddress) !== actor) {
-      throw new BadRequestException('You can only delete shipment(s) that you still hold.');
-    }
 
     const pendingDelete = await (this.prisma as any).recordOperation.findFirst({
       where: {

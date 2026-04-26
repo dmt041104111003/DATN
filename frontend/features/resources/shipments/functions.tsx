@@ -27,7 +27,6 @@ import {
   required,
   useGetList,
   useNotify,
-  usePermissions,
   useRecordContext,
   useRefresh,
   useUpdate,
@@ -284,42 +283,6 @@ function ShipmentCreateSections() {
       })),
     [packageRows],
   );
-  const packageMap = React.useMemo(() => {
-    const map = new Map<string, PackageRow>();
-    for (const row of packageRows) {
-      const key = cleanString(row.inventoryKey || row.id);
-      if (!key) continue;
-      map.set(key, row);
-    }
-    return map;
-  }, [packageRows]);
-  const shipmentDate = React.useMemo(() => new Date(), []);
-  const dateValidationErrors = React.useMemo(() => {
-    const errors: string[] = [];
-    for (const key of packageInventoryKeys) {
-      const packageKey = cleanString(key);
-      const pkg = packageMap.get(packageKey);
-      if (!pkg) continue;
-      const packagingDateRaw = cleanString(pkg.packagingDate);
-      const packagingDate = packagingDateRaw ? new Date(packagingDateRaw) : null;
-      if (!packagingDate || Number.isNaN(packagingDate.getTime())) {
-        errors.push(`Gói ${cleanString(pkg.code || packageKey)} thiếu ngày đóng gói hợp lệ.`);
-        continue;
-      }
-      if (shipmentDate.getTime() < packagingDate.getTime()) {
-        errors.push(`Lô hiện tại có ngày đóng lô < ngày đóng gói của ${cleanString(pkg.code || packageKey)}.`);
-      }
-    }
-    return errors;
-  }, [packageInventoryKeys, packageMap, shipmentDate]);
-  const validateShipmentPackageDates = React.useCallback(
-    (value: unknown) => {
-      const selected = Array.isArray(value) ? value.map((x) => cleanString(x)).filter(Boolean) : [];
-      if (selected.length < 1) return "Phải chọn ít nhất 1 gói hàng.";
-      return dateValidationErrors.length > 0 ? dateValidationErrors[0] : undefined;
-    },
-    [dateValidationErrors],
-  );
   const selectedPolicyIds = React.useMemo(() => {
     const selected = new Set(packageInventoryKeys.map((x) => String(x)));
     const rows = packageRows
@@ -345,12 +308,9 @@ function ShipmentCreateSections() {
           choices={packageChoices}
           optionValue="id"
           optionText="name"
-          validate={[required(), validateShipmentPackageDates]}
+          validate={[required()]}
           fullWidth
         />
-        {dateValidationErrors.length > 0 ? (
-          <p className="mt-2 text-sm text-red-600">{dateValidationErrors[0]}</p>
-        ) : null}
         <MuiTextField
           label="PolicyID"
           value={selectedPolicyIds.join("\n")}
@@ -390,38 +350,13 @@ function ShipmentCreateSections() {
 
 function ShipmentEditSections() {
   const record = useRecordContext<any>();
-  const { permissions } = usePermissions<string>();
   const packageKeys = Array.isArray(record?.packageInventoryKeys) ? record.packageInventoryKeys : [];
   const packageCodes = Array.isArray(record?.packageCodes) ? record.packageCodes : [];
   const roadmap = Array.isArray(record?.roadmap) ? record.roadmap : [];
   const updaters = Array.isArray(record?.updaterAddresses) ? record.updaterAddresses : [];
   const [locationDisplay, setLocationDisplay] = React.useState<string>("—");
   const [roadmapDisplay, setRoadmapDisplay] = React.useState<string[]>([]);
-  const [actorAddress, setActorAddress] = React.useState("");
   const packageDisplayRows = packageCodes.length > 0 ? packageCodes : packageKeys;
-  const status = cleanString(record?.status).toUpperCase();
-  const isEnterprise = permissions === "ENTERPRISE";
-  const isHolder = cleanString(record?.holderAddress) === actorAddress;
-  const canEditShipment = isEnterprise && isHolder && status === "CREATED";
-
-  React.useEffect(() => {
-    let mounted = true;
-    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
-      .then((res) => res.json().catch(() => ({})))
-      .then((json: any) => {
-        if (!mounted) return;
-        const user = json?.user ?? {};
-        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
-        setActorAddress(actor);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setActorAddress("");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -445,7 +380,7 @@ function ShipmentEditSections() {
           <TextInput source="code" label="Mã lô" disabled fullWidth />
           <TextInput source="traceSchemeRef" label="Mã chính sách" disabled fullWidth />
           <MuiTextField label="Vị trí hiện tại" value={locationDisplay} disabled fullWidth />
-          <TextInput source="note" label="Ghi chú" multiline disabled={!canEditShipment} fullWidth />
+          <TextInput source="note" label="Ghi chú" multiline fullWidth />
         </div>
       </div>
       <div className="py-1">
@@ -466,34 +401,6 @@ function ShipmentEditSections() {
 }
 
 function ShipmentEditToolbar() {
-  const record = useRecordContext<any>();
-  const { permissions } = usePermissions<string>();
-  const status = cleanString(record?.status).toUpperCase();
-  const isEnterprise = permissions === "ENTERPRISE";
-  const [actorAddress, setActorAddress] = React.useState("");
-  const isHolder = cleanString(record?.holderAddress) === actorAddress;
-  const canEditShipment = isEnterprise && isHolder && status === "CREATED";
-
-  React.useEffect(() => {
-    let mounted = true;
-    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
-      .then((res) => res.json().catch(() => ({})))
-      .then((json: any) => {
-        if (!mounted) return;
-        const user = json?.user ?? {};
-        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
-        setActorAddress(actor);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setActorAddress("");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (!canEditShipment) return false as any;
   return (
     <Toolbar>
       <SaveButton label="Lưu thay đổi" />
@@ -502,36 +409,15 @@ function ShipmentEditToolbar() {
 }
 
 export function ShipmentsResourceList() {
-  const { permissions } = usePermissions<string>();
   const notify = useNotify();
   const refresh = useRefresh();
   const [update, { isPending }] = useUpdate();
   const [deleteOne, { isPending: deleting }] = useDelete();
-  const isEnterprise = permissions === "ENTERPRISE";
-  const [actorAddress, setActorAddress] = React.useState("");
-  React.useEffect(() => {
-    let mounted = true;
-    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
-      .then((res) => res.json().catch(() => ({})))
-      .then((json: any) => {
-        if (!mounted) return;
-        const user = json?.user ?? {};
-        const actor = String(user?.walletAddress || user?.paymentAddress || user?.sub || "").trim();
-        setActorAddress(actor);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setActorAddress("");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
   return (
     <List
-      empty={<Empty hasCreate={isEnterprise} />}
+      empty={<Empty hasCreate />}
       exporter={false}
-      actions={isEnterprise ? <TopToolbar><CreateButton /></TopToolbar> : false}
+      actions={<TopToolbar><CreateButton /></TopToolbar>}
     >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã lô" />
@@ -560,15 +446,11 @@ export function ShipmentsResourceList() {
         <FunctionField
           label="Action"
           render={(record: any) => {
-            const status = cleanString(record?.status).toUpperCase();
-            const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
-            if (!isEnterprise || !isHolder) return "—";
-            const disabledDispatch = status === "IN_TRANSIT";
             return (
               <button
                 type="button"
                 className="text-blue-600 underline disabled:opacity-50"
-                disabled={isPending || disabledDispatch}
+                disabled={isPending}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -598,9 +480,6 @@ export function ShipmentsResourceList() {
         <FunctionField
           label="Xóa"
           render={(record: any) => {
-            const isHolder = String(record?.holderAddress || "").trim() === actorAddress;
-            const status = cleanString(record?.status).toUpperCase();
-            if (!isEnterprise || !isHolder || status === "IN_TRANSIT") return "—";
             return (
               <button
                 type="button"
