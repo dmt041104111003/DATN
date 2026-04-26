@@ -162,7 +162,7 @@ export class ProductionService {
         harvestDate: data?.harvestDate ? new Date(data.harvestDate) : null,
         expectedYieldKg: cleanString(data.expectedYieldKg) || null,
         actualYieldKg: cleanString(data.actualYieldKg) || null,
-        status: 'ACTIVE',
+        status: 'CREATED',
         certifications: this.certToString(data?.certifications),
         customCertificationName: cleanString(data?.customCertificationName) || null,
         note: cleanString(data.note) || null,
@@ -202,7 +202,7 @@ export class ProductionService {
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
 
     const patch: Record<string, unknown> = {};
-    if (nextStatus === 'ACTIVE') {
+    if (nextStatus === 'CREATED' || nextStatus === 'UPDATED') {
       if (cleanString(existing.varietyId) === '' && data.varietyId !== undefined) {
         patch.varietyId = cleanString(data.varietyId) || null;
       }

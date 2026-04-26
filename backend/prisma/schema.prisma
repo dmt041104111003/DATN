@@ -71,7 +71,7 @@ model Production {
   harvestDate                 DateTime?
   expectedYieldKg             String?
   actualYieldKg               String?
-  status                      ProductionStage @default(ACTIVE)
+  status                      ProductionStage @default(CREATED)
 
   certifications              String?
   customCertificationName     String?
@@ -85,7 +85,8 @@ model Production {
 }
 
 enum ProductionStage {
-  ACTIVE
+  CREATED
+  UPDATED
   CLOSED
 }
 

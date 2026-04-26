@@ -1,4 +1,4 @@
-export type ProductionStatus = "DRAFT" | "ACTIVE" | "CLOSED";
+export type ProductionStatus = "CREATED" | "UPDATED" | "CLOSED";
 import type { Option } from "@/features/resources/shared/location";
 export type { Option } from "@/features/resources/shared/location";
 

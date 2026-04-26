@@ -184,7 +184,12 @@ function mapRowsWithId(resource: string, rows: any[]) {
 
 function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: string[], evidenceFilesIpfs: string[]) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
-  const metadataStatus = rawStatus === "CLOSED" ? "CLOSED" : "ACTIVE";
+  const metadataStatus =
+    rawStatus === "CLOSED"
+      ? "CLOSED"
+      : rawStatus === "UPDATED"
+        ? "UPDATED"
+        : "CREATED";
   return {
     status: metadataStatus,
     production_code: cleanString(data?.code || previousData?.code),

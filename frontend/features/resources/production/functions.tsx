@@ -60,14 +60,14 @@ const positiveNumber = (value: unknown) => {
 
 function ProductionFormSections() {
   const { setValue } = useFormContext();
-  const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "DRAFT";
+  const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "CREATED";
   const provinceId = String(useWatch({ name: "provinceId" }) ?? "");
   const districtId = String(useWatch({ name: "districtId" }) ?? "");
   const varietyId = String(useWatch({ name: "varietyId" }) ?? "");
   const certifications = (useWatch({ name: "certifications" }) as string[] | undefined) ?? [];
   const hasOtherCertification = certifications.includes("other");
 
-  const isDraft = status === "DRAFT";
+  const isDraft = status === "CREATED";
   const fullyLocked = status === "CLOSED";
   const lockedCore = !isDraft;
   const [provinceOptions, setProvinceOptions] = React.useState<Option[]>([]);
@@ -303,7 +303,7 @@ function ProductionEditToolbar() {
     formState: { dirtyFields },
   } = useFormContext();
   const { save } = useSaveContext();
-  const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "DRAFT";
+  const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "CREATED";
   const verified = Boolean(useWatch({ name: "verified" }));
   const seedingDate = String(useWatch({ name: "seedingDate" }) ?? "");
   const [harvestModalOpen, setHarvestModalOpen] = React.useState(false);
@@ -326,22 +326,22 @@ function ProductionEditToolbar() {
     "createdAt",
     "updatedAt",
   ]);
-  const isActive = status === "ACTIVE";
+  const isClosed = status === "CLOSED";
   const hasNonHarvestChanges = dirtyKeys.some((key) => !excludedDirtyKeys.has(key));
-  const canUpdate = isActive && verified && hasNonHarvestChanges;
-  const canHarvest = isActive && verified && !canUpdate;
+  const canUpdate = !isClosed && verified && hasNonHarvestChanges;
+  const canHarvest = !isClosed && verified && !canUpdate;
 
   return (
     <>
       <Toolbar>
-        {isActive ? (
+        {!isClosed ? (
           <SaveButton
             label="Cập nhật thông tin"
             disabled={!canUpdate}
-            onClick={() => setValue("status", "ACTIVE")}
+            onClick={() => setValue("status", "UPDATED")}
           />
         ) : null}
-        {isActive ? (
+        {!isClosed ? (
           <Button
             variant="contained"
             disableElevation
@@ -361,7 +361,7 @@ function ProductionEditToolbar() {
         ) : null}
         <DeleteButton label="DELETE" mutationMode="pessimistic" redirect="list" color="error" />
       </Toolbar>
-      {isActive && harvestModalOpen ? (
+      {!isClosed && harvestModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-md rounded bg-white p-4">
             <h4 className="mb-3 text-base font-semibold">Xác nhận thu hoạch</h4>
@@ -445,7 +445,8 @@ export function ProductionResourceList() {
           source="status"
           label="Trạng thái"
           choices={[
-            { id: "ACTIVE", name: "Đang hoạt động" },
+            { id: "CREATED", name: "Đã tạo" },
+            { id: "UPDATED", name: "Đã cập nhật" },
             { id: "CLOSED", name: "Đã đóng vụ" },
           ]}
         />
@@ -464,7 +465,7 @@ export function ProductionResourceCreate() {
     <Create
       transform={(data: any) => ({
         ...data,
-        status: "ACTIVE",
+        status: "CREATED",
         harvestDate: null,
         certifications: [],
         certFiles: [],
@@ -476,7 +477,7 @@ export function ProductionResourceCreate() {
         sx={FORM_SX}
         defaultValues={{
           code: makeProductionCode(),
-          status: "DRAFT",
+          status: "CREATED",
           certFiles: [],
           evidenceFiles: [],
         }}
