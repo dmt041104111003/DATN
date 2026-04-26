@@ -81,18 +81,13 @@ export class ShipmentContractService {
     const packageInventoryKeys = Array.isArray(dto?.packageInventoryKeys)
       ? dto.packageInventoryKeys.map(clean).filter(Boolean)
       : [];
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (packageInventoryKeys.length < 1) throw new BadRequestException('packageInventoryKeys is required.');
     if (owners.length === 0) owners.push(walletAddress);
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const packages = await (this.prisma as any).package.findMany({
-      where: { inventoryKey: { in: packageInventoryKeys }, holderAddress: walletAddress },
+      where: { inventoryKey: { in: packageInventoryKeys } },
       select: { inventoryKey: true, traceSchemeRef: true },
     });
-    if ((packages || []).length !== packageInventoryKeys.length) {
-      throw new BadRequestException('Some packages are invalid or not held by your address.');
-    }
     const traceSchemeRef = clean(packages?.[0]?.traceSchemeRef);
     if (!traceSchemeRef) throw new BadRequestException('Policy reference is missing from package.');
 
@@ -157,8 +152,6 @@ export class ShipmentContractService {
     const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
     const inventoryKey = clean(dto?.inventoryKey);
     const metadataInput = dto?.metadata ?? {};
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
     if (owners.length === 0) owners.push(walletAddress);
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
     const shipment = await (this.prisma as any).shipment.findUnique({
@@ -166,9 +159,6 @@ export class ShipmentContractService {
       select: { inventoryKey: true, holderAddress: true },
     });
     if (!shipment) throw new BadRequestException('Shipment not found.');
-    if (clean(shipment?.holderAddress) !== walletAddress) {
-      throw new BadRequestException('You can only update shipment(s) that you still hold.');
-    }
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
     if (!onchain) throw new BadRequestException('Shipment on-chain metadata was not found.');
     const { assetName, metadata } = onchain;
@@ -193,24 +183,16 @@ export class ShipmentContractService {
     const shipmentInventoryKeys = Array.isArray(dto?.shipmentInventoryKeys)
       ? dto.shipmentInventoryKeys.map(clean).filter(Boolean)
       : [];
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (shipmentInventoryKeys.length < 1) throw new BadRequestException('shipmentInventoryKeys is required.');
     if (owners.length === 0) owners.push(walletAddress);
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const rows = await (this.prisma as any).shipment.findMany({
-      where: { inventoryKey: { in: shipmentInventoryKeys }, holderAddress: walletAddress },
+      where: { inventoryKey: { in: shipmentInventoryKeys } },
       select: { inventoryKey: true, code: true },
     });
-    if ((rows || []).length !== shipmentInventoryKeys.length) {
-      throw new BadRequestException('Some shipments are invalid or not held by your address.');
-    }
     const products = (rows || [])
       .map((row: any) => ({ productName: clean(row?.code) }))
       .filter((x: any) => clean(x?.productName));
-    if (products.length !== shipmentInventoryKeys.length) {
-      throw new BadRequestException('Some shipment codes are missing for burn.');
-    }
 
     const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
     return {

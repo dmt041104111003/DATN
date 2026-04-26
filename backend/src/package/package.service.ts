@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 function clean(value: unknown): string {
@@ -22,8 +22,6 @@ export class PackageService {
   async getCapacity(createdByAddress: string, productionInventoryKeyRaw: unknown) {
     const owner = clean(createdByAddress);
     const productionInventoryKey = clean(productionInventoryKeyRaw);
-    if (!owner) throw new BadRequestException('Operator account reference is required.');
-    if (!productionInventoryKey) throw new BadRequestException('productionInventoryKey is required.');
 
     const production = await (this.prisma as any).production.findUnique({
       where: { inventoryKey: productionInventoryKey },
@@ -36,9 +34,6 @@ export class PackageService {
       },
     });
     if (!production) throw new NotFoundException('Production not found.');
-    if (clean(production.registeringCustodianAddress) !== owner) {
-      throw new BadRequestException('You are not allowed to package this production.');
-    }
     const status = clean(production.status).toUpperCase();
     const totalYieldKg = Number(clean(production.actualYieldKg));
     if (status !== 'CLOSED') {
@@ -137,10 +132,8 @@ export class PackageService {
 
   async createBulk(createdByAddress: string, data: any) {
     const owner = clean(createdByAddress);
-    if (!owner) throw new BadRequestException('Operator account reference is required.');
 
     const productionInventoryKey = clean(data?.productionInventoryKey);
-    if (!productionInventoryKey) throw new BadRequestException('productionInventoryKey is required.');
 
     const production = await (this.prisma as any).production.findUnique({
       where: { inventoryKey: productionInventoryKey },
@@ -167,18 +160,9 @@ export class PackageService {
     const uniqueAgents = Array.from(new Set(agents));
 
     const traceSchemeRef = clean(production.traceSchemeRef);
-    if (!traceSchemeRef) {
-      throw new BadRequestException('Production code/policy is missing.');
-    }
     const txHash = clean(data?.txHash);
-    if (!txHash) {
-      throw new BadRequestException('txHash is required.');
-    }
 
     const packageItems = Array.isArray(data?.packageItems) ? data.packageItems : [];
-    if (packageItems.length !== quantity) {
-      throw new BadRequestException('packageItems size must match quantity.');
-    }
 
     const note = clean(data?.note) || null;
     const created: any[] = [];
@@ -187,9 +171,6 @@ export class PackageService {
       const code = clean(item?.code);
       const inventoryKey = clean(item?.inventoryKey);
       const itemTraceSchemeRef = clean(item?.traceSchemeRef) || traceSchemeRef;
-      if (!code || !inventoryKey) {
-        throw new BadRequestException('packageItems are invalid.');
-      }
       const row = await (this.prisma as any).package.create({
         data: {
           traceSchemeRef: itemTraceSchemeRef,
@@ -227,10 +208,7 @@ export class PackageService {
   async updateEditable(createdByAddress: string, roleRaw: unknown, inventoryKeyRaw: unknown, data: any) {
     const actor = clean(createdByAddress);
     const inventoryKey = clean(inventoryKeyRaw);
-    if (!actor) throw new BadRequestException('Operator account reference is required.');
-    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
     const txHash = clean(data?.txHash);
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const row = await (this.prisma as any).package.findUnique({
       where: { inventoryKey },
@@ -272,9 +250,6 @@ export class PackageService {
     const actor = clean(createdByAddress);
     const inventoryKey = clean(inventoryKeyRaw);
     const txHash = clean(txHashRaw);
-    if (!actor) throw new BadRequestException('Operator account reference is required.');
-    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const row = await (this.prisma as any).package.findUnique({
       where: { inventoryKey },
@@ -282,18 +257,6 @@ export class PackageService {
     });
     if (!row) throw new NotFoundException('Package not found.');
 
-    const pendingDelete = await (this.prisma as any).recordOperation.findFirst({
-      where: {
-        entityType: 'PACKAGE',
-        entityKey: inventoryKey,
-        opType: 'DELETE',
-        verified: false,
-      },
-      select: { id: true },
-    });
-    if (pendingDelete) {
-      throw new BadRequestException('Delete request is already pending verification.');
-    }
     await (this.prisma as any).recordOperation.create({
       data: {
         entityType: 'PACKAGE',

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 function clean(value: unknown): string {
@@ -63,18 +63,13 @@ export class ShipmentService {
 
   async create(holderAddressRaw: string, data: any) {
     const holder = clean(holderAddressRaw);
-    if (!holder) throw new BadRequestException('Operator account reference is required.');
 
     const txHash = clean(data?.txHash);
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const shipmentItem = data?.shipmentItem ?? {};
     const code = clean(shipmentItem?.code);
     const inventoryKey = clean(shipmentItem?.inventoryKey);
     const traceSchemeRef = clean(shipmentItem?.traceSchemeRef);
-    if (!code || !inventoryKey || !traceSchemeRef) {
-      throw new BadRequestException('shipmentItem is invalid.');
-    }
 
     const packageInventoryKeys = Array.isArray(data?.packageInventoryKeys)
       ? data.packageInventoryKeys.map((x: unknown) => clean(x)).filter(Boolean)
@@ -157,8 +152,6 @@ export class ShipmentService {
   async updateLocation(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
-    if (!holder) throw new BadRequestException('Operator account reference is required.');
-    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
 
     const row = await (this.prisma as any).shipment.findUnique({
       where: { inventoryKey: shipmentInventoryKey },
@@ -166,7 +159,6 @@ export class ShipmentService {
     if (!row) throw new NotFoundException('Shipment not found.');
 
     const location = clean(data?.location);
-    if (!location) throw new BadRequestException('location is required.');
     const roadmap = Array.isArray(row?.roadmap) ? row.roadmap.map((x: unknown) => clean(x)).filter(Boolean) : [];
     const nextRoadmap = [...roadmap, location];
 
@@ -186,8 +178,6 @@ export class ShipmentService {
   async updateStatus(holderAddressRaw: string, roleRaw: unknown, shipmentInventoryKeyRaw: string, data: any) {
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
-    if (!holder) throw new BadRequestException('Operator account reference is required.');
-    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
 
     const row = await (this.prisma as any).shipment.findUnique({
       where: { inventoryKey: shipmentInventoryKey },
@@ -203,7 +193,6 @@ export class ShipmentService {
     if (!row) throw new NotFoundException('Shipment not found.');
 
     const txHash = clean(data?.txHash);
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const updated = await (this.prisma as any).shipment.update({
       where: { inventoryKey: shipmentInventoryKey },
@@ -242,9 +231,6 @@ export class ShipmentService {
     const holder = clean(holderAddressRaw);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     const txHash = clean(data?.txHash);
-    if (!holder) throw new BadRequestException('Operator account reference is required.');
-    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const row = await (this.prisma as any).shipment.findUnique({
       where: { inventoryKey: shipmentInventoryKey },
@@ -296,9 +282,6 @@ export class ShipmentService {
     const actor = clean(createdByAddress);
     const shipmentInventoryKey = clean(shipmentInventoryKeyRaw);
     const txHash = clean(txHashRaw);
-    if (!actor) throw new BadRequestException('Operator account reference is required.');
-    if (!shipmentInventoryKey) throw new BadRequestException('shipmentInventoryKey is required.');
-    if (!txHash) throw new BadRequestException('txHash is required.');
 
     const row = await (this.prisma as any).shipment.findUnique({
       where: { inventoryKey: shipmentInventoryKey },
@@ -306,18 +289,6 @@ export class ShipmentService {
     });
     if (!row) throw new NotFoundException('Shipment not found.');
 
-    const pendingDelete = await (this.prisma as any).recordOperation.findFirst({
-      where: {
-        entityType: 'SHIPMENT',
-        entityKey: shipmentInventoryKey,
-        opType: 'DELETE',
-        verified: false,
-      },
-      select: { id: true },
-    });
-    if (pendingDelete) {
-      throw new BadRequestException('Delete request is already pending verification.');
-    }
     await (this.prisma as any).recordOperation.create({
       data: {
         entityType: 'SHIPMENT',

@@ -78,20 +78,13 @@ export class PackageContractService {
     const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
     const productionInventoryKey = clean(dto?.productionInventoryKey);
     const quantity = Number(dto?.quantity);
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (!productionInventoryKey) throw new BadRequestException('productionInventoryKey is required.');
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 5) {
-      throw new BadRequestException('quantity must be between 1 and 5.');
-    }
+    const safeQuantity = Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
 
     const production = await (this.prisma as any).production.findUnique({
       where: { inventoryKey: productionInventoryKey },
       select: { inventoryKey: true, code: true, traceSchemeRef: true, registeringCustodianAddress: true },
     });
     if (!production) throw new NotFoundException('Production not found.');
-    if (clean(production.registeringCustodianAddress) !== walletAddress) {
-      throw new BadRequestException('You are not allowed to package this production.');
-    }
     if (owners.length === 0) owners.push(walletAddress);
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
@@ -109,7 +102,7 @@ export class PackageContractService {
       return Number.isInteger(suffix) && suffix > max ? suffix : max;
     }, 0);
 
-    const packageItems = Array.from({ length: quantity }).map((_, idx) => {
+    const packageItems = Array.from({ length: safeQuantity }).map((_, idx) => {
       const n = maxIndex + idx + 1;
       const code = `${productionCode}-${String(n).padStart(3, '0')}`;
       const inventoryKey = traceSchemeRef + CIP68_100(stringToHex(code));
@@ -147,24 +140,16 @@ export class PackageContractService {
     const packageInventoryKeys = Array.isArray(dto?.packageInventoryKeys)
       ? dto.packageInventoryKeys.map(clean).filter(Boolean)
       : [];
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (packageInventoryKeys.length < 1) throw new BadRequestException('packageInventoryKeys is required.');
     if (owners.length === 0) owners.push(walletAddress);
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const rows = await (this.prisma as any).package.findMany({
-      where: { inventoryKey: { in: packageInventoryKeys }, holderAddress: walletAddress },
+      where: { inventoryKey: { in: packageInventoryKeys } },
       select: { inventoryKey: true, code: true },
     });
-    if ((rows || []).length !== packageInventoryKeys.length) {
-      throw new BadRequestException('Some packages are invalid or not held by your address.');
-    }
     const products = (rows || [])
       .map((row: any) => ({ productName: clean(row?.code) }))
       .filter((x: any) => clean(x?.productName));
-    if (products.length !== packageInventoryKeys.length) {
-      throw new BadRequestException('Some package codes are missing for burn.');
-    }
 
     const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
     return {
@@ -191,8 +176,6 @@ export class PackageContractService {
     const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
     const inventoryKey = clean(dto?.inventoryKey);
     const metadataInput = dto?.metadata ?? {};
-    if (!walletAddress) throw new BadRequestException('custodianAddress is required.');
-    if (!inventoryKey) throw new BadRequestException('inventoryKey is required.');
     if (owners.length === 0) owners.push(walletAddress);
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
@@ -201,9 +184,6 @@ export class PackageContractService {
       select: { inventoryKey: true, holderAddress: true },
     });
     if (!row) throw new BadRequestException('Package not found.');
-    if (clean(row?.holderAddress) !== walletAddress) {
-      throw new BadRequestException('You can only update package(s) that you still hold.');
-    }
 
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
     if (!onchain) throw new BadRequestException('Package on-chain metadata was not found.');
