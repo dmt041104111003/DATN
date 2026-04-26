@@ -14,6 +14,7 @@ import {
   FileInput,
   List,
   SaveButton,
+  SelectField,
   SelectInput,
   SimpleForm,
   TextField,
@@ -445,7 +446,14 @@ export function ProductionResourceList() {
         <TextField source="code" label="Mã vụ" />
         <TextField source="facilityId" label="Cơ sở" />
         <TextField source="cropType" label="Loại cây" />
-        <TextField source="status" label="Trạng thái" />
+        <SelectField
+          source="status"
+          label="Trạng thái"
+          choices={[
+            { id: "ACTIVE", name: "Đang hoạt động" },
+            { id: "CLOSED", name: "Đã đóng vụ" },
+          ]}
+        />
         <BooleanField source="verified" label="Đã xác thực" />
         <DateField source="verifiedAt" label="Thời gian xác thực" showTime />
         <DateField source="seedingDate" label="Ngày gieo" />
