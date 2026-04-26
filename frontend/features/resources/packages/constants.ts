@@ -11,8 +11,3 @@ export const PACKAGING_TYPE_CHOICES = [
   { id: "Thùng", name: "Thùng" },
 ];
 
-export const PACKAGE_STATUS_CHOICES = [
-  { id: "UNSOLD", name: "Chưa bán" },
-  { id: "SOLD", name: "Đã bán" },
-];
-

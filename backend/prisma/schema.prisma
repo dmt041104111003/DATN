@@ -96,25 +96,15 @@ model Package {
   holderAddress          String
   productionInventoryKey String
   production             Production    @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
-  weightValue            Float
-  weightUnit             String
-  quantity               Int
-  packagingType          String
   packagingDate          DateTime
   note                   String?
   authorizedAgents       Json
-  status                 PackageStatus @default(UNSOLD)
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
   @@index([registeringCustodianAddress])
   @@index([holderAddress])
   @@index([productionInventoryKey])
-}
-
-enum PackageStatus {
-  UNSOLD
-  SOLD
 }
 
 enum ProductionStage {

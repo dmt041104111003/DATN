@@ -330,15 +330,9 @@ export const adminDataProvider: DataProvider = {
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
       const payload = {
-        weightValue: Number(params.data?.weightValue),
-        weightUnit: String(params.data?.weightUnit || "").trim(),
-        packagingType: String(params.data?.packagingType || "").trim(),
         note: String(params.data?.note || "").trim(),
       };
       const metadata = {
-        weight_value: String(payload.weightValue),
-        weight_unit: payload.weightUnit,
-        packaging_type: payload.packagingType,
         note: payload.note,
       };
       const contractRes = await httpClient(`${BACKEND_URL}/packages/contract/save`, {
@@ -377,10 +371,6 @@ export const adminDataProvider: DataProvider = {
       const owners = buildOwnerList(owner, custodianAddress);
       const packagePayload = {
         productionInventoryKey: params.data?.productionInventoryKey,
-        quantity: params.data?.quantity,
-        weightValue: params.data?.weightValue,
-        weightUnit: params.data?.weightUnit,
-        packagingType: params.data?.packagingType,
         packagingDate: params.data?.packagingDate,
         note: params.data?.note,
         authorizedAgents: params.data?.authorizedAgents,
@@ -402,16 +392,13 @@ export const adminDataProvider: DataProvider = {
         body: JSON.stringify({
           ...packagePayload,
           txHash,
-          packageItems: unsigned?.packageItems || [],
+          packageItem: unsigned?.packageItem || {},
         }),
       });
-      const rows = Array.isArray(json) ? json : [];
-      const first = rows[0] ?? {};
       return {
         data: {
-          ...first,
-          id: normalizeId(first, first?.code ?? "1"),
-          createdCount: rows.length,
+          ...(json as any),
+          id: normalizeId(json as any),
         },
       };
     }

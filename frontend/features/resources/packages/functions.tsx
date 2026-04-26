@@ -16,7 +16,6 @@ import {
   List,
   NumberField,
   NumberInput,
-  SelectField,
   SelectInput,
   SimpleForm,
   SimpleFormIterator,
@@ -35,9 +34,6 @@ import {
   useRecordContext,
 } from "react-admin";
 import {
-  PACKAGE_STATUS_CHOICES,
-  PACKAGING_TYPE_CHOICES,
-  WEIGHT_UNIT_CHOICES,
 } from "./constants";
 import { useWatch } from "react-hook-form";
 import {
@@ -55,40 +51,11 @@ type ProductionRow = {
   harvestDate?: string;
 };
 
-type CapacityResponse = {
-  totalYieldKg?: number;
-  packagedKg?: number;
-  remainingKg?: number;
-  canPackage?: boolean;
-  message?: string;
-};
-
 type PackageRow = {
   code?: string;
   inventoryKey?: string;
   traceSchemeRef?: string;
 };
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-
-function clampQuantity(value: unknown) {
-  if (value === null || value === undefined || value === "") return value;
-  const n = Number(value);
-  if (!Number.isFinite(n)) return value;
-  if (n > 5) return 5;
-  if (n < 1) return 1;
-  return Math.trunc(n);
-}
-
-function toKg(weightValueRaw: unknown, weightUnitRaw: unknown, quantityRaw: unknown): number | null {
-  const weightValue = Number(weightValueRaw);
-  const quantity = Number(quantityRaw);
-  const unit = String(weightUnitRaw || "").trim().toLowerCase();
-  if (!Number.isFinite(weightValue) || weightValue <= 0 || !Number.isFinite(quantity) || quantity <= 0) return null;
-  if (unit === "kg") return weightValue * quantity;
-  if (unit === "gram") return (weightValue * quantity) / 1000;
-  return null;
-}
 
 function normalizeAgents(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -121,20 +88,12 @@ async function downloadPackageQr(record: PackageRow) {
 }
 
 function PackageFormSections({
-  onCapacityChange,
   onSelectedHarvestDateChange,
 }: {
-  onCapacityChange?: (value: number | null) => void;
   onSelectedHarvestDateChange?: (value: string) => void;
 }) {
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
-  const weightValue = useWatch({ name: "weightValue" });
-  const weightUnit = String(useWatch({ name: "weightUnit" }) ?? "");
-  const quantity = useWatch({ name: "quantity" });
   const agents = (useWatch({ name: "authorizedAgents" }) as Array<{ walletAddress?: string }> | undefined) ?? [];
-  const [capacity, setCapacity] = React.useState<CapacityResponse | null>(null);
-  const [capacityLoading, setCapacityLoading] = React.useState(false);
-  const [capacityError, setCapacityError] = React.useState("");
   const { data: productions = [] } = useGetList<ProductionRow>("production", {
     pagination: { page: 1, perPage: 100 },
     sort: { field: "createdAt", order: "DESC" },
@@ -157,12 +116,6 @@ function PackageFormSections({
     [closedProductions, productionInventoryKey],
   );
   const selectedHarvestDate = String(pickedProduction?.harvestDate || "").trim();
-  const requestedKg = React.useMemo(
-    () => toKg(weightValue, weightUnit, quantity),
-    [weightValue, weightUnit, quantity],
-  );
-  const remainingKg = Number(capacity?.remainingKg ?? 0);
-  const willExceed = requestedKg !== null && requestedKg > remainingKg + 1e-9;
   const validatePackagingDate = React.useCallback((value: unknown) => {
     if (!value) return "Bắt buộc.";
     const packagingDate = new Date(String(value));
@@ -187,46 +140,6 @@ function PackageFormSections({
     onSelectedHarvestDateChange?.(selectedHarvestDate);
   }, [onSelectedHarvestDateChange, selectedHarvestDate]);
 
-  React.useEffect(() => {
-    let mounted = true;
-    if (!productionInventoryKey) {
-      setCapacity(null);
-      setCapacityError("");
-      onCapacityChange?.(null);
-      return;
-    }
-    setCapacityLoading(true);
-    setCapacityError("");
-    fetch(`${BACKEND_URL}/packages/capacity/${encodeURIComponent(productionInventoryKey)}`, {
-      method: "GET",
-      credentials: "include",
-    })
-      .then(async (res) => {
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(String((body as any)?.message || "Không lấy được sản lượng còn lại."));
-        return body as CapacityResponse;
-      })
-      .then((data) => {
-        if (!mounted) return;
-        setCapacity(data);
-        const remain = Number(data?.remainingKg);
-        onCapacityChange?.(Number.isFinite(remain) ? remain : null);
-      })
-      .catch((e: any) => {
-        if (!mounted) return;
-        setCapacity(null);
-        setCapacityError(String(e?.message || "Không lấy được sản lượng còn lại."));
-        onCapacityChange?.(null);
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setCapacityLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [onCapacityChange, productionInventoryKey]);
-
   return (
     <>
       <div className="py-1">
@@ -248,42 +161,14 @@ function PackageFormSections({
             fullWidth
           />
         </div>
-        {capacityLoading ? (
-          <p className="mt-2 text-sm text-slate-600">Đang tính sản lượng còn lại...</p>
-        ) : null}
-        {!capacityLoading && capacity ? (
-          <p className="mt-2 text-sm text-slate-700">
-            Sản lượng còn lại: <b>{Number(capacity.remainingKg || 0).toFixed(3)} kg</b> (Tổng:{" "}
-            {Number(capacity.totalYieldKg || 0).toFixed(3)} kg, đã đóng gói: {Number(capacity.packagedKg || 0).toFixed(3)} kg)
-          </p>
-        ) : null}
-        {capacityError ? <p className="mt-2 text-sm text-red-600">{capacityError}</p> : null}
       </div>
 
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[2] Quy cách đóng gói</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <NumberInput source="weightValue" label="Khối lượng mỗi gói" validate={[required()]} fullWidth />
-          <SelectInput source="weightUnit" label="Đơn vị" choices={WEIGHT_UNIT_CHOICES} validate={[required()]} fullWidth />
-          <NumberInput
-            source="quantity"
-            label="Số lượng gói"
-            parse={clampQuantity}
-            min={1}
-            max={5}
-            step={1}
-            fullWidth
-          />
-          <SelectInput source="packagingType" label="Loại đóng gói" choices={PACKAGING_TYPE_CHOICES} validate={[required()]} fullWidth />
           <DateInput source="packagingDate" label="Ngày đóng gói" validate={[required(), validatePackagingDate]} fullWidth />
           <TextInput source="note" label="Ghi chú" multiline fullWidth />
         </div>
-        {requestedKg !== null ? (
-          <p className={`mt-2 text-sm ${willExceed ? "text-red-600" : "text-slate-700"}`}>
-            Khối lượng đóng gói lần này: {requestedKg.toFixed(3)} kg
-          </p>
-        ) : null}
-        {willExceed ? <p className="mt-1 text-sm text-red-600">Vượt quá sản lượng còn lại, không thể tạo gói.</p> : null}
       </div>
 
       <div className="py-1">
@@ -311,12 +196,7 @@ export function PackagesResourceList() {
     >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã gói" />
-        <NumberField source="weightValue" label="Khối lượng" />
-        <TextField source="weightUnit" label="Đơn vị" />
-        <NumberField source="quantity" label="Số lượng gói" />
-        <TextField source="packagingType" label="Loại đóng gói" />
         <DateField source="packagingDate" label="Ngày đóng gói" />
-        <SelectField source="status" label="Trạng thái" choices={PACKAGE_STATUS_CHOICES} />
         <BooleanField source="verified" label="Đã xác thực" />
         <DateField source="verifiedAt" label="Thời gian xác thực" showTime />
         <FunctionField
@@ -393,13 +273,8 @@ export function PackagesResourceEdit() {
           <h3 className="mb-4 font-semibold">[2] Quy cách đóng gói</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <TextInput source="code" label="Mã gói" disabled fullWidth />
-            <NumberInput source="weightValue" label="Khối lượng mỗi gói" fullWidth />
-            <SelectInput source="weightUnit" label="Đơn vị" choices={WEIGHT_UNIT_CHOICES} fullWidth />
-            <NumberInput source="quantity" label="Số lượng gói" disabled fullWidth />
-            <SelectInput source="packagingType" label="Loại đóng gói" choices={PACKAGING_TYPE_CHOICES} fullWidth />
             <DateInput source="packagingDate" label="Ngày đóng gói" disabled fullWidth />
             <TextInput source="note" label="Ghi chú" multiline fullWidth />
-            <SelectInput source="status" label="Trạng thái" choices={PACKAGE_STATUS_CHOICES} disabled fullWidth />
           </div>
         </div>
       </>
@@ -445,14 +320,12 @@ export function PackagesResourceEdit() {
 export function PackagesResourceCreate() {
   const notify = useNotify();
   const redirect = useRedirect();
-  const [remainingKg, setRemainingKg] = React.useState<number | null>(null);
   const [selectedHarvestDate, setSelectedHarvestDate] = React.useState<string>("");
   return (
     <Create
       mutationOptions={{
-        onSuccess: (data: any) => {
-          const count = Number(data?.createdCount || 1);
-          notify(`Đã tạo ${count} gói thành công`, { type: "success" });
+        onSuccess: () => {
+          notify("Đã tạo gói thành công", { type: "success" });
           redirect("list", "packages");
         },
       }}
@@ -461,17 +334,6 @@ export function PackagesResourceCreate() {
         const uniqueAgents = Array.from(new Set(agents));
         if (uniqueAgents.length !== agents.length) {
           throw new Error("Ví đại lý bị trùng.");
-        }
-        const requestKg = toKg(data?.weightValue, data?.weightUnit, data?.quantity);
-        if (requestKg === null) {
-          throw new Error("Chỉ hỗ trợ đơn vị kg/gram để kiểm tra sản lượng còn lại.");
-        }
-        const quantity = Number(data?.quantity);
-        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 5) {
-          throw new Error("Số lượng gói phải từ 1 đến 5.");
-        }
-        if (remainingKg === null) {
-          throw new Error("Không lấy được dữ liệu sản lượng còn lại.");
         }
         const packagingDate = data?.packagingDate ? new Date(String(data.packagingDate)) : null;
         const harvestDate = selectedHarvestDate ? new Date(selectedHarvestDate) : null;
@@ -483,10 +345,6 @@ export function PackagesResourceCreate() {
         }
         return {
           productionInventoryKey: String(data?.productionInventoryKey || "").trim(),
-          weightValue: Number(data?.weightValue),
-          weightUnit: String(data?.weightUnit || "").trim(),
-          quantity,
-          packagingType: String(data?.packagingType || "").trim(),
           packagingDate: data?.packagingDate,
           note: String(data?.note || "").trim() || undefined,
           authorizedAgents: uniqueAgents,
@@ -498,13 +356,10 @@ export function PackagesResourceCreate() {
         sx={FORM_SX}
         defaultValues={{
           productionInventoryKey: "",
-          weightUnit: "gram",
-          quantity: 1,
           authorizedAgents: [{ walletAddress: "" }],
         }}
       >
         <PackageFormSections
-          onCapacityChange={setRemainingKg}
           onSelectedHarvestDateChange={setSelectedHarvestDate}
         />
       </SimpleForm>

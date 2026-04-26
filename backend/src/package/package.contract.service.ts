@@ -47,15 +47,9 @@ function makeMetadata(
     trace_scheme_ref: clean(production.traceSchemeRef),
     holder_address: clean(holderAddress),
     registering_custodian_address: clean(holderAddress),
-    weight_value: clean(base?.weightValue),
-    weight_unit: clean(base?.weightUnit),
-    quantity_per_record: '1',
-    requested_quantity: clean(base?.quantity),
-    packaging_type: clean(base?.packagingType),
     packaging_date: clean(base?.packagingDate),
     authorized_agents: JSON.stringify(Array.isArray(base?.authorizedAgents) ? base.authorizedAgents : []),
     note: clean(base?.note),
-    status: 'UNSOLD',
   } as Record<string, string>;
 }
 
@@ -77,8 +71,6 @@ export class PackageContractService {
     const walletAddress = clean(dto?.custodianAddress);
     const owners = Array.isArray(dto?.owners) ? dto.owners.map(clean).filter(Boolean) : [];
     const productionInventoryKey = clean(dto?.productionInventoryKey);
-    const quantity = Number(dto?.quantity);
-    const safeQuantity = Number.isInteger(quantity) && quantity > 0 ? quantity : 1;
 
     const production = await (this.prisma as any).production.findUnique({
       where: { inventoryKey: productionInventoryKey },
@@ -102,15 +94,12 @@ export class PackageContractService {
       return Number.isInteger(suffix) && suffix > max ? suffix : max;
     }, 0);
 
-    const packageItems = Array.from({ length: safeQuantity }).map((_, idx) => {
-      const n = maxIndex + idx + 1;
-      const code = `${productionCode}-${String(n).padStart(3, '0')}`;
-      const inventoryKey = traceSchemeRef + CIP68_100(stringToHex(code));
-      return { code, inventoryKey, traceSchemeRef };
-    });
-
-    const products = packageItems.map((item) => ({
-      productName: item.code,
+    const n = maxIndex + 1;
+    const code = `${productionCode}-${String(n).padStart(3, '0')}`;
+    const inventoryKey = traceSchemeRef + CIP68_100(stringToHex(code));
+    const packageItem = { code, inventoryKey, traceSchemeRef };
+    const products = [{
+      productName: packageItem.code,
       metadata: makeMetadata(
         dto,
         {
@@ -118,19 +107,19 @@ export class PackageContractService {
           inventoryKey: clean(production.inventoryKey),
           traceSchemeRef,
         },
-        { code: item.code, inventoryKey: item.inventoryKey },
+        { code: packageItem.code, inventoryKey: packageItem.inventoryKey },
         walletAddress,
       ),
       quantity: '1',
       receiver: walletAddress,
-    }));
+    }];
     const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, products);
 
     return {
       result: true,
       data: unsignedTx,
-      message: 'Package records prepared.',
-      packageItems,
+      message: 'Package record prepared.',
+      packageItem,
     };
   }
 
@@ -181,7 +170,7 @@ export class PackageContractService {
 
     const row = await (this.prisma as any).package.findUnique({
       where: { inventoryKey },
-      select: { inventoryKey: true, holderAddress: true },
+      select: { inventoryKey: true },
     });
     if (!row) throw new BadRequestException('Package not found.');
 
