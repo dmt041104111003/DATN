@@ -295,7 +295,10 @@ export const adminDataProvider: DataProvider = {
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
-      const metadata = buildContainerMetadata(params.data, params.previousData);
+      const metadata = buildContainerMetadata(
+        { ...params.data, holderAddress: cleanString(params.data?.holderAddress || owner) },
+        params.previousData,
+      );
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -305,7 +308,7 @@ export const adminDataProvider: DataProvider = {
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
       const patchRes = await httpClient(`${BACKEND_URL}/containers/${encodeURIComponent(inventoryKey)}`, {
         method: "PATCH",
-        body: JSON.stringify({ ...params.data, txHash }),
+        body: JSON.stringify({ ...params.data, holderAddress: cleanString(params.data?.holderAddress || owner), txHash }),
       });
       const row = patchRes.json as any;
       return { data: { ...row, id: normalizeId(row, params.id) } };
@@ -359,7 +362,10 @@ export const adminDataProvider: DataProvider = {
     if (resource === "container") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
-      const metadata = buildContainerMetadata(params.data, null);
+      const metadata = buildContainerMetadata(
+        { ...params.data, holderAddress: cleanString(params.data?.holderAddress || owner) },
+        null,
+      );
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/create`, {
         method: "POST",
         body: JSON.stringify({
@@ -377,6 +383,7 @@ export const adminDataProvider: DataProvider = {
         method: "POST",
         body: JSON.stringify({
           ...params.data,
+          holderAddress: cleanString(params.data?.holderAddress || owner),
           traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
           inventoryKey: String(unsigned.inventoryKey || "").trim(),
           txHash,
