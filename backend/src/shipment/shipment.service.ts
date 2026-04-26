@@ -33,7 +33,9 @@ export class ShipmentService {
   }
 
   async list(holderAddressRaw: string) {
+    const holder = clean(holderAddressRaw);
     const rows = await (this.prisma as any).shipment.findMany({
+      where: { registeringCustodianAddress: holder },
       include: {
         packages: {
           select: {

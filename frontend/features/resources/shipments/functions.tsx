@@ -283,6 +283,17 @@ function ShipmentCreateSections() {
       })),
     [packageRows],
   );
+  const packageDateMap = React.useMemo(() => {
+    const out = new Map<string, number>();
+    for (const row of packageRows) {
+      const key = cleanString(row.inventoryKey || row.id);
+      const packagingDate = cleanString(row.packagingDate);
+      if (!key || !packagingDate) continue;
+      const time = new Date(packagingDate).getTime();
+      if (!Number.isNaN(time)) out.set(key, time);
+    }
+    return out;
+  }, [packageRows]);
   const selectedPolicyIds = React.useMemo(() => {
     const selected = new Set(packageInventoryKeys.map((x) => String(x)));
     const rows = packageRows
@@ -297,6 +308,21 @@ function ShipmentCreateSections() {
     if (selectedPolicyIds.length > 0) return;
     notify("Một số gói không hợp lệ với holder hiện tại.", { type: "warning" });
   }, [notify, packageInventoryKeys, selectedPolicyIds.length]);
+  const validateShipmentPackageDates = React.useCallback(
+    (value: unknown) => {
+      const keys = Array.isArray(value) ? value.map((x) => cleanString(x)).filter(Boolean) : [];
+      const now = Date.now();
+      for (const key of keys) {
+        const packagingTime = packageDateMap.get(key);
+        if (packagingTime === undefined) continue;
+        if (packagingTime > now) {
+          return "Ngày tạo lô phải lớn hơn hoặc bằng ngày đóng gói của tất cả gói đã chọn.";
+        }
+      }
+      return undefined;
+    },
+    [packageDateMap],
+  );
 
   return (
     <>
@@ -308,7 +334,7 @@ function ShipmentCreateSections() {
           choices={packageChoices}
           optionValue="id"
           optionText="name"
-          validate={[required()]}
+          validate={[required(), validateShipmentPackageDates]}
           fullWidth
         />
         <MuiTextField

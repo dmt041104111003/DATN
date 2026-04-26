@@ -92,7 +92,9 @@ export class PackageService {
   }
 
   async list(createdByAddress: string) {
+    const addr = clean(createdByAddress);
     const rows = await (this.prisma as any).package.findMany({
+      where: { registeringCustodianAddress: addr },
       include: {
         production: {
           select: { code: true },

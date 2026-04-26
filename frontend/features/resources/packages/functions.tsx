@@ -178,8 +178,14 @@ function PackageFormSections({
     if (!value) return "Bắt buộc.";
     const packagingDate = new Date(String(value));
     if (!isValidDate(packagingDate)) return "Ngày đóng gói không hợp lệ.";
+    if (selectedHarvestDate) {
+      const harvestDate = new Date(selectedHarvestDate);
+      if (isValidDate(harvestDate) && packagingDate.getTime() < harvestDate.getTime()) {
+        return "Ngày đóng gói phải lớn hơn hoặc bằng ngày thu hoạch.";
+      }
+    }
     return undefined;
-  }, []);
+  }, [selectedHarvestDate]);
 
   const duplicateWallets = React.useMemo(() => {
     const arr = agents
@@ -478,6 +484,14 @@ export function PackagesResourceCreate() {
         }
         if (remainingKg === null) {
           throw new Error("Không lấy được dữ liệu sản lượng còn lại.");
+        }
+        const packagingDate = data?.packagingDate ? new Date(String(data.packagingDate)) : null;
+        const harvestDate = selectedHarvestDate ? new Date(selectedHarvestDate) : null;
+        if (!packagingDate || !isValidDate(packagingDate)) {
+          throw new Error("Ngày đóng gói không hợp lệ.");
+        }
+        if (harvestDate && isValidDate(harvestDate) && packagingDate.getTime() < harvestDate.getTime()) {
+          throw new Error("Ngày đóng gói phải lớn hơn hoặc bằng ngày thu hoạch.");
         }
         return {
           productionInventoryKey: String(data?.productionInventoryKey || "").trim(),
