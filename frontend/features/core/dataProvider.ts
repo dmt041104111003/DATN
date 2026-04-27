@@ -219,11 +219,6 @@ function buildContainerMetadata(data: any, previousData: any) {
     rawStatus === "UPDATE"
         ? "UPDATE"
         : "CREATE";
-  const routeMap = Array.isArray(data?.routeMap)
-    ? data.routeMap
-    : Array.isArray(previousData?.routeMap)
-      ? previousData.routeMap
-      : [];
   return {
     status: metadataStatus,
     container_code: cleanString(data?.code || previousData?.code),
@@ -232,11 +227,9 @@ function buildContainerMetadata(data: any, previousData: any) {
     capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
     actual_capacity_kg: cleanString(data?.actualCapacityKg || previousData?.actualCapacityKg),
     product_name: cleanString(data?.productName || previousData?.productName),
-    holder_address: cleanString(data?.holderAddress || previousData?.holderAddress),
     current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
     current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
     current_ward: cleanString(data?.currentWardId || previousData?.currentWardId),
-    route_map: JSON.stringify(routeMap),
     note: cleanString(data?.note || previousData?.note),
   };
 }
@@ -289,10 +282,7 @@ export const adminDataProvider: DataProvider = {
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
-      const metadata = buildContainerMetadata(
-        { ...params.data, holderAddress: cleanString(params.data?.holderAddress || owner) },
-        params.previousData,
-      );
+      const metadata = buildContainerMetadata(params.data, params.previousData);
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -302,7 +292,7 @@ export const adminDataProvider: DataProvider = {
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
       const patchRes = await httpClient(`${BACKEND_URL}/containers/${encodeURIComponent(inventoryKey)}`, {
         method: "PATCH",
-        body: JSON.stringify({ ...params.data, holderAddress: cleanString(params.data?.holderAddress || owner), txHash }),
+        body: JSON.stringify({ ...params.data, txHash }),
       });
       const row = patchRes.json as any;
       return { data: { ...row, id: normalizeId(row, params.id) } };
@@ -356,10 +346,7 @@ export const adminDataProvider: DataProvider = {
     if (resource === "container") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
-      const metadata = buildContainerMetadata(
-        { ...params.data, holderAddress: cleanString(params.data?.holderAddress || owner) },
-        null,
-      );
+      const metadata = buildContainerMetadata(params.data, null);
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/create`, {
         method: "POST",
         body: JSON.stringify({
@@ -377,7 +364,6 @@ export const adminDataProvider: DataProvider = {
         method: "POST",
         body: JSON.stringify({
           ...params.data,
-          holderAddress: cleanString(params.data?.holderAddress || owner),
           traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
           inventoryKey: String(unsigned.inventoryKey || "").trim(),
           txHash,

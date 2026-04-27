@@ -67,9 +67,8 @@ function ProductionFormSections() {
   const certifications = (useWatch({ name: "certifications" }) as string[] | undefined) ?? [];
   const hasOtherCertification = certifications.includes("other");
 
-  const isDraft = status === "CREATED";
   const fullyLocked = status === "CLOSED";
-  const lockedCore = !isDraft;
+  const lockedCore = fullyLocked;
   const [provinceOptions, setProvinceOptions] = React.useState<Option[]>([]);
   const [districtOptions, setDistrictOptions] = React.useState<Option[]>([]);
   const [wardOptions, setWardOptions] = React.useState<Option[]>([]);
@@ -242,7 +241,7 @@ function ProductionFormSections() {
             validate={[positiveNumber]}
             fullWidth
           />
-          {!isDraft ? (
+          {fullyLocked ? (
             <TextInput
               source="actualYieldKg"
               label="Sản lượng thực tế (kg)"

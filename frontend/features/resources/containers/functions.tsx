@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  ArrayInput,
   BooleanField,
   Create,
   Datagrid,
@@ -14,14 +13,12 @@ import {
   SelectField,
   SelectInput,
   SimpleForm,
-  SimpleFormIterator,
   TextField,
   TextInput,
   Toolbar,
   useGetList,
   required,
 } from "react-admin";
-import MuiTextField from "@mui/material/TextField";
 import { useFormContext, useWatch } from "react-hook-form";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
 import {
@@ -68,47 +65,13 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
   const isEditForm = mode === "edit";
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
-  const currentWalletAddress = String(useWatch({ name: "currentWalletAddress" }) ?? "");
-  const holderAddressFromRecord = String(useWatch({ name: "holderAddress" }) ?? "");
-  const routeMapRaw = (useWatch({ name: "routeMap" }) as any[] | undefined) ?? [];
-  const linkedWalletAddressRows = (useWatch({ name: "linkedWalletAddressesExtra" }) as any[] | undefined) ?? [];
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
-  const [locationRows, setLocationRows] = React.useState<any[]>([]);
-  const [loadingLocations, setLoadingLocations] = React.useState(false);
   const { setValue, getValues } = useFormContext();
   const [capacitySummary, setCapacitySummary] = React.useState<{
     totalCapacityKg: number;
     usedCapacityKg: number;
     remainingCapacityKg: number;
   } | null>(null);
-  const roadmapPreview = React.useMemo(() => {
-    if (loadingLocations) return "Đang tải địa điểm...";
-    if (!locationRows.length) return "Chưa có dữ liệu";
-    return locationRows
-      .map((x, idx) => {
-        const locationLabel = [x.wardName, x.districtName, x.provinceName]
-          .map((v: unknown) => String(v || "").trim())
-          .filter(Boolean)
-          .join(", ");
-        const fallbackIds = [x.wardId, x.districtId, x.provinceId]
-          .map((v: unknown) => String(v || "").trim())
-          .filter(Boolean)
-          .join("/");
-        return `${idx + 1}. ${locationLabel || fallbackIds || "Chưa có địa điểm"}`;
-      })
-      .join("\n");
-  }, [loadingLocations, locationRows]);
-  const routeWallets = React.useMemo(
-    () =>
-      (Array.isArray(routeMapRaw) ? routeMapRaw : [])
-        .map((x: any) => String(x?.walletAddress ?? "").trim())
-        .filter(Boolean),
-    [routeMapRaw],
-  );
-  const roadmapPrimaryWallet = React.useMemo(() => {
-    if (isEditForm) return String(holderAddressFromRecord || routeWallets[0] || "").trim();
-    return String(currentWalletAddress || "").trim();
-  }, [isEditForm, holderAddressFromRecord, routeWallets, currentWalletAddress]);
 
   const actualCapacityValidator = React.useCallback(
     (value: unknown) => {
@@ -174,9 +137,6 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
           json?.user?.paymentAddress || json?.user?.walletAddress || json?.user?.sub || "",
         ).trim();
         if (!mounted) return;
-        if (!isEditForm) {
-          if (meWalletAddress) setValue("currentWalletAddress", meWalletAddress);
-        }
         const provinceId = String(
           getValues("currentProvinceId") || (!isEditForm ? profile?.provinceId : "") || "",
         ).trim();
@@ -206,84 +166,6 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
       mounted = false;
     };
   }, [isEditForm, getValues, setValue]);
-
-  React.useEffect(() => {
-    if (!isEditForm) return;
-    if (roadmapPrimaryWallet) setValue("currentWalletAddress", roadmapPrimaryWallet);
-    const extraRows = routeWallets
-      .filter((addr) => addr !== roadmapPrimaryWallet)
-      .map((walletAddress) => ({ walletAddress }));
-    setValue("linkedWalletAddressesExtra", extraRows);
-  }, [isEditForm, roadmapPrimaryWallet, routeWallets, setValue]);
-
-  React.useEffect(() => {
-    if (!isEditForm) return;
-    const rows = Array.isArray(routeMapRaw) ? routeMapRaw : [];
-    if (!rows.length) return;
-    setLocationRows(rows);
-  }, [isEditForm, routeMapRaw]);
-
-  React.useEffect(() => {
-    if (isEditForm) return;
-    const extraAddresses = linkedWalletAddressRows
-      .map((row) => String(row?.walletAddress ?? row ?? "").trim())
-      .filter(Boolean);
-    const addresses = [currentWalletAddress, ...extraAddresses].filter(Boolean);
-    if (addresses.length === 0) {
-      setLocationRows([]);
-      setValue("routeMap", []);
-      return;
-    }
-    let mounted = true;
-    setLoadingLocations(true);
-    Promise.all(
-      addresses.map(async (walletAddress) => {
-        try {
-          const res = await fetch(`${BACKEND_URL}/profile/public/${encodeURIComponent(walletAddress)}`, {
-            method: "GET",
-            credentials: "include",
-          });
-          const json = res.ok ? await res.json() : {};
-          const profile = (json as any)?.profile ?? null;
-          const provinceId = String(profile?.provinceId || "").trim();
-          const districtId = String(profile?.districtId || "").trim();
-          const wardId = String(profile?.wardId || "").trim();
-          const [provinceName, districtName, wardName] = await Promise.all([
-            provinceId ? getProvinceNameById(provinceId) : Promise.resolve(""),
-            districtId ? getDistrictNameById(districtId) : Promise.resolve(""),
-            wardId ? getWardNameById(wardId) : Promise.resolve(""),
-          ]);
-          return {
-            walletAddress,
-            provinceId,
-            districtId,
-            wardId,
-            provinceName,
-            districtName,
-            wardName,
-          };
-        } catch {
-          return {
-            walletAddress,
-            provinceId: "",
-            districtId: "",
-            wardId: "",
-            provinceName: "",
-            districtName: "",
-            wardName: "",
-          };
-        }
-      }),
-    ).then((rows) => {
-      if (!mounted) return;
-      setLocationRows(rows);
-      setValue("routeMap", rows);
-      setLoadingLocations(false);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [isEditForm, currentWalletAddress, linkedWalletAddressRows, setValue]);
 
   return (
     <>
@@ -332,29 +214,6 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
           <TextInput source="currentLocationLabel" label="Địa điểm hiện tại" disabled fullWidth />
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
         </div>
-      </div>
-      <div className="py-1">
-        <h3 className="mb-4 font-semibold">[2] Đơn vị liên kết</h3>
-        <MuiTextField
-          label=""
-          value={roadmapPrimaryWallet}
-          disabled
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
-        <ArrayInput source="linkedWalletAddressesExtra" label="">
-          <SimpleFormIterator>
-            <TextInput source="walletAddress" label="Địa chỉ ví" fullWidth />
-          </SimpleFormIterator>
-        </ArrayInput>
-        <MuiTextField
-          label="Lộ trình"
-          value={roadmapPreview}
-          multiline
-          minRows={4}
-          fullWidth
-          InputProps={{ readOnly: true }}
-        />
       </div>
     </>
   );
@@ -422,10 +281,7 @@ export function ContainerResourceCreate() {
           ...data,
           code,
         currentLocationLabel: undefined,
-        currentWalletAddress: undefined,
-        linkedWalletAddressesExtra: undefined,
         status: "CREATE",
-        routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
       };
         });
       }}
@@ -437,8 +293,6 @@ export function ContainerResourceCreate() {
         defaultValues={{
           code: makeContainerCode(),
           status: "CREATE",
-          currentWalletAddress: "",
-          linkedWalletAddressesExtra: [],
         }}
       >
         <ContainerFormSections mode="create" />
@@ -468,9 +322,6 @@ export function ContainerResourceEdit() {
           return {
           ...data,
           currentLocationLabel: undefined,
-          currentWalletAddress: undefined,
-          linkedWalletAddressesExtra: undefined,
-          routeMap: Array.isArray(data?.routeMap) ? data.routeMap : [],
         };
         });
       }}

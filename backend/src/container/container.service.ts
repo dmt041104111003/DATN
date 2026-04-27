@@ -58,21 +58,9 @@ export class ContainerService {
     }
   }
 
-  private parseLocations(raw: unknown): any[] {
-    const text = cleanString(raw);
-    if (!text) return [];
-    try {
-      const parsed = JSON.parse(text);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
   private toResponse(row: any, latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
-      routeMap: this.parseLocations(row?.routeMap),
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
       verifiedAt: txHashOverride ? null : latest?.verifiedAt ?? null,
@@ -120,11 +108,9 @@ export class ContainerService {
         code: cleanString(data.code) || `THUNG_${Date.now()}`,
         productionInventoryKey: cleanString(data.productionInventoryKey),
         registeringCustodianAddress: addr,
-        holderAddress: cleanString(data.holderAddress) || addr,
         currentProvinceId: cleanString(data.currentProvinceId) || cleanString(profile?.provinceId) || null,
         currentDistrictId: cleanString(data.currentDistrictId) || cleanString(profile?.districtId) || null,
         currentWardId: cleanString(data.currentWardId) || cleanString(profile?.wardId) || null,
-        routeMap: JSON.stringify(Array.isArray(data?.routeMap) ? data.routeMap : []),
         containerType: cleanString(data.containerType) || null,
         capacityKg: cleanString(data.capacityKg) || null,
         actualCapacityKg: cleanString(data.actualCapacityKg) || null,
@@ -165,10 +151,6 @@ export class ContainerService {
     if (data.capacityKg !== undefined) patch.capacityKg = cleanString(data.capacityKg) || null;
     if (data.actualCapacityKg !== undefined) patch.actualCapacityKg = cleanString(data.actualCapacityKg) || null;
     if (data.productName !== undefined) patch.productName = cleanString(data.productName) || null;
-    if (data.holderAddress !== undefined) patch.holderAddress = cleanString(data.holderAddress) || null;
-    if (data.routeMap !== undefined) {
-      patch.routeMap = JSON.stringify(Array.isArray(data.routeMap) ? data.routeMap : []);
-    }
     if (data.currentProvinceId !== undefined) patch.currentProvinceId = cleanString(data.currentProvinceId) || null;
     if (data.currentDistrictId !== undefined) patch.currentDistrictId = cleanString(data.currentDistrictId) || null;
     if (data.currentWardId !== undefined) patch.currentWardId = cleanString(data.currentWardId) || null;
