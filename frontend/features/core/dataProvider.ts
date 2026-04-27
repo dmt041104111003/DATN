@@ -8,6 +8,7 @@ import {
   publishAttestedRecord,
   signOutgoingAttestation,
 } from "@/lib/wallet";
+import { captureCurrentGpsLocation } from "@/features/resources/shared/location";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -256,7 +257,6 @@ function buildContainerMetadata(data: any, previousData: any) {
     capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
     actual_capacity_kg: cleanString(data?.actualCapacityKg || previousData?.actualCapacityKg),
     product_name: cleanString(data?.productName || previousData?.productName),
-    current_location: cleanString(data?.location || previousData?.location),
     participant_wallet_addresses: JSON.stringify(
       parseStringList(
         data?.participantWalletAddresses !== undefined
@@ -281,6 +281,7 @@ function buildWarehouseStorageMetadata(data: any, previousData: any, opType: "IN
     storage_op: opType,
     warehouse_id: cleanString(data?.warehouseId || previousData?.warehouseId),
     container_inventory_key: cleanString(data?.containerInventoryKey || data?.productId || previousData?.containerInventoryKey),
+    current_location: cleanString(data?.location || previousData?.location),
     storage_created_at: createdAt,
     storage_updated_at: updatedAt,
     storage_conditions: cleanString(data?.conditions || previousData?.conditions),
@@ -490,7 +491,9 @@ export const adminDataProvider: DataProvider = {
       const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = cleanString(params.data?.containerInventoryKey || params.data?.productId);
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
-      const createPayload = { ...params.data };
+      const gps = await captureCurrentGpsLocation();
+      const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
+      const createPayload = { ...params.data, location };
       const metadata = buildWarehouseStorageMetadata(createPayload, null, "IN");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
@@ -564,8 +567,10 @@ export const adminDataProvider: DataProvider = {
         (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
       );
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
+      const gps = await captureCurrentGpsLocation();
+      const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
       const metadata = buildWarehouseStorageMetadata(
-        { ...(params.previousData as any) },
+        { ...(params.previousData as any), location },
         params.previousData,
         "OUT",
       );
@@ -578,7 +583,7 @@ export const adminDataProvider: DataProvider = {
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
       const { json } = await httpClient(`${BACKEND_URL}/warehouse-storages/${encodeURIComponent(String(params.id))}`, {
         method: "DELETE",
-        body: JSON.stringify({ txHash }),
+        body: JSON.stringify({ txHash, location }),
       });
       const row = json as any;
       return { data: { ...row, id: normalizeId(params.previousData, params.id) } };

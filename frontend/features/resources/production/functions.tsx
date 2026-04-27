@@ -22,7 +22,6 @@ import {
   TextInput,
   Toolbar,
   FunctionField,
-  useRecordContext,
   useSaveContext,
   required,
 } from "react-admin";
@@ -31,7 +30,7 @@ import {
   CERTIFICATIONS,
   type ProductionStatus,
 } from "./constants";
-import { AdministrativeAreaFields } from "@/features/resources/shared/areaFields";
+import { getDistrictOptions, getProvinceOptions, getWardOptions, type Option } from "@/features/resources/shared/location";
 import {
   CREATE_PAGE_SX,
   EDIT_PAGE_SX,
@@ -76,34 +75,43 @@ function buildLocation(formData: any) {
   return [province, district, ward].filter(Boolean).join(", ");
 }
 
+function ProductionAdministrativeAreaFields({ disabled }: { disabled: boolean }) {
+  const provinceId = String(useWatch({ name: "productionProvinceId" }) ?? "");
+  const districtId = String(useWatch({ name: "productionDistrictId" }) ?? "");
+  const [provinces, setProvinces] = React.useState<Option[]>([]);
+  const [districts, setDistricts] = React.useState<Option[]>([]);
+  const [wards, setWards] = React.useState<Option[]>([]);
+  React.useEffect(() => {
+    let mounted = true;
+    getProvinceOptions().then((rows) => mounted && setProvinces(rows)).catch(() => mounted && setProvinces([]));
+    return () => { mounted = false; };
+  }, []);
+  React.useEffect(() => {
+    let mounted = true;
+    if (!provinceId) { setDistricts([]); setWards([]); return () => { mounted = false; }; }
+    getDistrictOptions(provinceId).then((rows) => mounted && setDistricts(rows)).catch(() => mounted && setDistricts([]));
+    return () => { mounted = false; };
+  }, [provinceId]);
+  React.useEffect(() => {
+    let mounted = true;
+    if (!districtId) { setWards([]); return () => { mounted = false; }; }
+    getWardOptions(districtId).then((rows) => mounted && setWards(rows)).catch(() => mounted && setWards([]));
+    return () => { mounted = false; };
+  }, [districtId]);
+  return (
+    <>
+      <SelectInput source="productionProvinceId" label="Tỉnh/Thành" choices={provinces} optionValue="id" optionText="name" disabled={disabled} fullWidth />
+      <SelectInput source="productionDistrictId" label="Quận/Huyện" choices={districts} optionValue="id" optionText="name" disabled={disabled || !provinceId} fullWidth />
+      <SelectInput source="productionWardId" label="Xã/Phường" choices={wards} optionValue="id" optionText="name" disabled={disabled || !districtId} fullWidth />
+    </>
+  );
+}
+
 function ProductionFormSections() {
-  const record = useRecordContext<any>();
-  const { setValue } = useFormContext();
-  const hydratedLocationRef = React.useRef<string>("");
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "CREATED";
   const varietyId = String(useWatch({ name: "varietyId" }) ?? "");
   const certifications = (useWatch({ name: "certifications" }) as string[] | undefined) ?? [];
   const hasOtherCertification = certifications.includes("other");
-
-  React.useEffect(() => {
-    const locationRaw = cleanString(record?.location);
-    if (!locationRaw) return;
-    if (hydratedLocationRef.current === locationRaw) return;
-    const parsed = parseLocation(locationRaw);
-    setValue("productionProvinceId", parsed.productionProvinceId, {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-    setValue("productionDistrictId", parsed.productionDistrictId, {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-    setValue("productionWardId", parsed.productionWardId, {
-      shouldDirty: false,
-      shouldValidate: false,
-    });
-    hydratedLocationRef.current = locationRaw;
-  }, [record, setValue]);
 
   const fullyLocked = status === "CLOSED";
   const lockedCore = fullyLocked;
@@ -125,13 +133,7 @@ function ProductionFormSections() {
             validate={[required()]}
             fullWidth
           />
-          <AdministrativeAreaFields
-            provinceSource="productionProvinceId"
-            districtSource="productionDistrictId"
-            wardSource="productionWardId"
-            wardLabel="Xã/Phường"
-            disabled={lockedCore}
-          />
+          <ProductionAdministrativeAreaFields disabled={lockedCore} />
           <SelectInput
             source="farmingMethod"
             label="Phương thức canh tác"
@@ -470,6 +472,15 @@ export function ProductionResourceEdit() {
     >
       <SimpleForm
         sx={FORM_SX}
+        defaultValues={(record: any) => {
+          const parsed = parseLocation(record?.location);
+          return {
+            ...record,
+            productionProvinceId: parsed.productionProvinceId,
+            productionDistrictId: parsed.productionDistrictId,
+            productionWardId: parsed.productionWardId,
+          };
+        }}
         toolbar={<ProductionEditToolbar />}
       >
         <ProductionFormSections />

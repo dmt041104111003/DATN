@@ -7,14 +7,14 @@ import {
   Edit,
   List,
   required,
+  SelectInput,
   SimpleForm,
   TextField,
   TextInput,
-  useRecordContext,
 } from "react-admin";
-import { useFormContext } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
-import { AdministrativeAreaFields } from "@/features/resources/shared/areaFields";
+import { getDistrictOptions, getProvinceOptions, getWardOptions, type Option } from "@/features/resources/shared/location";
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
@@ -38,32 +38,35 @@ function buildLocation(formData: any) {
   return [province, district, ward].filter(Boolean).join(", ");
 }
 
-function WarehouseLocationFields() {
-  const record = useRecordContext<any>();
-  const { setValue } = useFormContext();
-  const hydratedLocationRef = React.useRef<string>("");
-
+function WarehouseAdministrativeAreaFields() {
+  const provinceId = String(useWatch({ name: "warehouseProvinceId" }) ?? "");
+  const districtId = String(useWatch({ name: "warehouseDistrictId" }) ?? "");
+  const [provinces, setProvinces] = React.useState<Option[]>([]);
+  const [districts, setDistricts] = React.useState<Option[]>([]);
+  const [wards, setWards] = React.useState<Option[]>([]);
   React.useEffect(() => {
-    const locationRaw = cleanString(record?.location);
-    if (!locationRaw) return;
-    if (hydratedLocationRef.current === locationRaw) return;
-    const parsed = parseLocation(locationRaw);
-    setValue("warehouseProvinceId", parsed.warehouseProvinceId, { shouldDirty: false, shouldValidate: false });
-    setValue("warehouseDistrictId", parsed.warehouseDistrictId, { shouldDirty: false, shouldValidate: false });
-    setValue("warehouseWardId", parsed.warehouseWardId, { shouldDirty: false, shouldValidate: false });
-    hydratedLocationRef.current = locationRaw;
-  }, [record, setValue]);
-
+    let mounted = true;
+    getProvinceOptions().then((rows) => mounted && setProvinces(rows)).catch(() => mounted && setProvinces([]));
+    return () => { mounted = false; };
+  }, []);
+  React.useEffect(() => {
+    let mounted = true;
+    if (!provinceId) { setDistricts([]); setWards([]); return () => { mounted = false; }; }
+    getDistrictOptions(provinceId).then((rows) => mounted && setDistricts(rows)).catch(() => mounted && setDistricts([]));
+    return () => { mounted = false; };
+  }, [provinceId]);
+  React.useEffect(() => {
+    let mounted = true;
+    if (!districtId) { setWards([]); return () => { mounted = false; }; }
+    getWardOptions(districtId).then((rows) => mounted && setWards(rows)).catch(() => mounted && setWards([]));
+    return () => { mounted = false; };
+  }, [districtId]);
   return (
-    <AdministrativeAreaFields
-      provinceSource="warehouseProvinceId"
-      districtSource="warehouseDistrictId"
-      wardSource="warehouseWardId"
-      provinceLabel="Tỉnh/Thành kho"
-      districtLabel="Quận/Huyện kho"
-      wardLabel="Phường/Xã kho"
-      requiredAll={false}
-    />
+    <>
+      <SelectInput source="warehouseProvinceId" label="Tỉnh/Thành kho" choices={provinces} optionValue="id" optionText="name" fullWidth />
+      <SelectInput source="warehouseDistrictId" label="Quận/Huyện kho" choices={districts} optionValue="id" optionText="name" fullWidth />
+      <SelectInput source="warehouseWardId" label="Phường/Xã kho" choices={wards} optionValue="id" optionText="name" fullWidth />
+    </>
   );
 }
 
@@ -98,7 +101,7 @@ export function WarehouseResourceCreate() {
     >
       <SimpleForm sx={FORM_SX}>
         <TextInput source="name" label="Tên kho" validate={[required()]} fullWidth />
-        <WarehouseLocationFields />
+        <WarehouseAdministrativeAreaFields />
         <TextInput source="capacity" label="Sức chứa (kg)" type="number" validate={[required()]} fullWidth />
       </SimpleForm>
     </Create>
@@ -122,9 +125,20 @@ export function WarehouseResourceEdit() {
         };
       }}
     >
-      <SimpleForm sx={FORM_SX}>
+      <SimpleForm
+        sx={FORM_SX}
+        defaultValues={(record: any) => {
+          const parsed = parseLocation(record?.location);
+          return {
+            ...record,
+            warehouseProvinceId: parsed.warehouseProvinceId,
+            warehouseDistrictId: parsed.warehouseDistrictId,
+            warehouseWardId: parsed.warehouseWardId,
+          };
+        }}
+      >
         <TextInput source="name" label="Tên kho" validate={[required()]} fullWidth />
-        <WarehouseLocationFields />
+        <WarehouseAdministrativeAreaFields />
         <TextInput source="capacity" label="Sức chứa (kg)" type="number" validate={[required()]} fullWidth />
       </SimpleForm>
     </Edit>

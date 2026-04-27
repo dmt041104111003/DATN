@@ -97,6 +97,13 @@ export class WarehouseStorageService {
         conditions: cleanString(data?.conditions) || null,
       } as any,
     });
+    const location = cleanString(data?.location);
+    if (location) {
+      await (this.prisma as any).container.update({
+        where: { inventoryKey: containerInventoryKey },
+        data: { location } as any,
+      });
+    }
     await this.writeOperation('CREATE', data?.txHash, cleanString(row?.id), containerInventoryKey, {
       warehouseId,
       storageTime: new Date().toISOString(),
@@ -169,6 +176,13 @@ export class WarehouseStorageService {
       storageTime: new Date().toISOString(),
       conditions: cleanString((existing as any)?.conditions),
     });
+    const location = cleanString(data?.location);
+    if (location) {
+      await (this.prisma as any).container.update({
+        where: { inventoryKey: cleanString((existing as any)?.containerInventoryKey) },
+        data: { location } as any,
+      });
+    }
     await (this.prisma as any).warehouseStorage.delete({ where: { id } });
     return { id };
   }
