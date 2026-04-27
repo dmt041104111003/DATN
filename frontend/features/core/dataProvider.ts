@@ -76,6 +76,50 @@ function parseStringList(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function parseRoadmapTriples(raw: unknown): string[] {
+  const value = cleanString(raw);
+  if (!value) return [];
+  const compact = value.replace(/[\[\]\(\)"']/g, " ");
+  const matches = compact.match(/\d+\s*,\s*\d+\s*,\s*\d+/g) || [];
+  const normalized = matches
+    .map((item) =>
+      item
+        .split(",")
+        .map((x) => cleanString(x))
+        .filter(Boolean)
+        .join(", "),
+    )
+    .filter(Boolean);
+  return Array.from(new Set(normalized));
+}
+
+function parseWhitelist(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map((x) => cleanString(x)).filter(Boolean);
+  const value = cleanString(raw);
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.map((x) => cleanString(x)).filter(Boolean);
+    }
+  } catch {}
+  return value
+    .split(/[;,|\s]+/)
+    .map((x) => cleanString(x))
+    .filter((x) => x.startsWith("addr"));
+}
+
+function parseLocationTriple(raw: unknown): string {
+  const value = cleanString(raw);
+  if (!value) return "";
+  const parts = value
+    .split(",")
+    .map((x) => cleanString(x))
+    .filter(Boolean);
+  if (parts.length < 3) return "";
+  return `${parts[0]}, ${parts[1]}, ${parts[2]}`;
+}
+
 function normalizeId(row: any, fallback: string | number = "1") {
   return row?.id ?? row?.profileId ?? row?.inventoryKey ?? row?.code ?? fallback;
 }
@@ -206,6 +250,62 @@ async function fetchResourceRows(resource: string, query?: URLSearchParams) {
   const url = `${BACKEND_URL}/${endpoint}${query && query.size ? `?${query.toString()}` : ""}`;
   const { json } = await httpClient(url, { method: "GET" });
   return Array.isArray(json) ? json : [];
+}
+
+async function enforceWarehouseStorageRoadmapGuards(inventoryKey: string, warehouseIdRaw: unknown, gpsTriple: string) {
+  const warehouseId = cleanString(warehouseIdRaw);
+  if (!warehouseId) {
+    throw new Error("warehouseId is required.");
+  }
+
+  const [warehouses, traceRes, meRes] = await Promise.all([
+    fetchResourceRows("warehouse"),
+    httpClient(`${BACKEND_URL}/trace/${encodeURIComponent(inventoryKey)}`, { method: "GET" }),
+    httpClient(`${BACKEND_URL}/auth/me`, { method: "GET" }),
+  ]);
+
+  const warehouse = (warehouses || []).find((row: any) => cleanString(row?.id) === warehouseId);
+  const warehouseLocationTriple = parseLocationTriple(warehouse?.location);
+  if (!warehouseLocationTriple) {
+    throw new Error("Kho chưa có location hợp lệ dạng 'tỉnh, quận, xã'.");
+  }
+
+  const traceJson = traceRes.json as any;
+  const meJson = meRes.json as any;
+  const lotPassport = (traceJson?.lotPassport || {}) as Record<string, unknown>;
+  const roadmapRaw =
+    lotPassport.roadmap ??
+    lotPassport.route_map ??
+    lotPassport.routeMap ??
+    lotPassport.ref99 ??
+    lotPassport.ref98;
+  const roadmapTriples = parseRoadmapTriples(roadmapRaw);
+  if (roadmapTriples.length === 0) {
+    throw new Error("NFT chưa có roadmap hợp lệ.");
+  }
+  if (!roadmapTriples.includes(gpsTriple)) {
+    throw new Error("GPS hiện tại không khớp roadmap NFT.");
+  }
+  if (!roadmapTriples.includes(warehouseLocationTriple)) {
+    throw new Error("Location kho không khớp roadmap NFT.");
+  }
+
+  const whitelistRaw =
+    lotPassport.ref100 ??
+    lotPassport.owner_whitelist ??
+    lotPassport.ownerWhitelist ??
+    lotPassport.participant_wallet_addresses;
+  const whitelist = parseWhitelist(whitelistRaw);
+  const currentWallet =
+    cleanString(meJson?.user?.paymentAddress) ||
+    cleanString(meJson?.user?.walletAddress) ||
+    cleanString(meJson?.user?.sub);
+  if (!currentWallet) {
+    throw new Error("Không xác định được ví người dùng hiện tại.");
+  }
+  if (!whitelist.includes(currentWallet)) {
+    throw new Error("Ví hiện tại không thuộc whitelist owner (ref100).");
+  }
 }
 
 function mapRowsWithId(resource: string, rows: any[]) {
@@ -404,6 +504,13 @@ export const adminDataProvider: DataProvider = {
         params.previousData?.productId,
       );
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
+      const gps = await captureCurrentGpsLocation();
+      const gpsTriple = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
+      await enforceWarehouseStorageRoadmapGuards(
+        inventoryKey,
+        params.data?.warehouseId || params.previousData?.warehouseId,
+        gpsTriple,
+      );
       const metadata = buildWarehouseStorageMetadata(params.data, params.previousData, "UPDATE");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
@@ -493,6 +600,7 @@ export const adminDataProvider: DataProvider = {
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
       const gps = await captureCurrentGpsLocation();
       const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
+      await enforceWarehouseStorageRoadmapGuards(inventoryKey, params.data?.warehouseId, location);
       const createPayload = { ...params.data, location };
       const metadata = buildWarehouseStorageMetadata(createPayload, null, "IN");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
@@ -569,6 +677,11 @@ export const adminDataProvider: DataProvider = {
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
       const gps = await captureCurrentGpsLocation();
       const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
+      await enforceWarehouseStorageRoadmapGuards(
+        inventoryKey,
+        (params.previousData as any)?.warehouseId,
+        location,
+      );
       const metadata = buildWarehouseStorageMetadata(
         { ...(params.previousData as any), location },
         params.previousData,

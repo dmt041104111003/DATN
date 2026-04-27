@@ -12,7 +12,6 @@ import {
   ContainerResourceList,
 } from "@/features/resources/containers/index";
 import {
-  WarehouseResourceCreate,
   WarehouseResourceEdit,
   WarehouseResourceList,
 } from "@/features/resources/warehouses";
@@ -21,7 +20,6 @@ import {
   WarehouseStorageResourceList,
 } from "@/features/resources/warehouse-storages";
 import {
-  ProfileResourceCreate,
   ProfileResourceEdit,
   ProfileResourceList,
 } from "@/features/resources/profile";
@@ -50,7 +48,6 @@ export function renderAdminResources(permissions?: string) {
           <Resource
             name="warehouse"
             list={WarehouseResourceList}
-            create={WarehouseResourceCreate}
             edit={WarehouseResourceEdit}
           />
           <Resource
@@ -64,7 +61,6 @@ export function renderAdminResources(permissions?: string) {
       <Resource
         name="profile"
         list={ProfileResourceList}
-        create={ProfileResourceCreate}
         edit={ProfileResourceEdit}
       />
     </>

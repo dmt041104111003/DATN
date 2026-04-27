@@ -85,7 +85,7 @@ function WarehouseStorageForm() {
 
   return (
     <>
-      <SelectInput source="warehouseId" label="Kho lưu trữ" choices={warehouseChoices} validate={[required()]} fullWidth />
+      <SelectInput source="warehouseId" label="Kho lưu trữ" choices={warehouseChoices} validate={[required()]} disabled fullWidth />
       <SelectInput
         source="containerInventoryKey"
         label="Thùng hàng"

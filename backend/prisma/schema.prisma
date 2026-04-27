@@ -11,14 +11,14 @@ model User {
   id        String    @id @default(cuid())
   address   String    @unique
   lastLogin DateTime?
-  roleCode  String?
-  role      Role?     @relation(fields: [roleCode], references: [code], onDelete: Restrict)
+  roleCode  String
+  role      Role      @relation(fields: [roleCode], references: [code], onDelete: Restrict)
   displayName String?
   phoneNumber String?
   isActive  Boolean   @default(true)
   productions Production[]
   containers  Container[]
-  warehouses  Warehouse[]
+  warehouse   Warehouse?
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -122,7 +122,7 @@ model Warehouse {
 
   storages                    WarehouseStorage[]
 
-  @@index([registeringCustodianAddress])
+  @@unique([registeringCustodianAddress])
 }
 
 model WarehouseStorage {

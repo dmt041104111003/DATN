@@ -12,8 +12,10 @@ import {
 } from "@mui/material";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { useDataProvider, useGetList } from "react-admin";
+import { captureCurrentGpsLocation } from "@/features/resources/shared/location";
 
 const DEFAULT_WAREHOUSE_KEY = "qr-scan-default-warehouse-id";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
@@ -22,6 +24,50 @@ function cleanString(value: unknown) {
 function parsePositiveNumber(value: unknown) {
   const n = Number(String(value ?? "").replace(",", "."));
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function parseRoadmapTriples(raw: unknown): string[] {
+  const value = cleanString(raw);
+  if (!value) return [];
+  const compact = value.replace(/[\[\]\(\)"']/g, " ");
+  const matches = compact.match(/\d+\s*,\s*\d+\s*,\s*\d+/g) || [];
+  const normalized = matches
+    .map((item) =>
+      item
+        .split(",")
+        .map((x) => cleanString(x))
+        .filter(Boolean)
+        .join(", "),
+    )
+    .filter(Boolean);
+  return Array.from(new Set(normalized));
+}
+
+function parseWhitelist(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map((x) => cleanString(x)).filter(Boolean);
+  const value = cleanString(raw);
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.map((x) => cleanString(x)).filter(Boolean);
+    }
+  } catch {}
+  return value
+    .split(/[;,|\s]+/)
+    .map((x) => cleanString(x))
+    .filter((x) => x.startsWith("addr"));
+}
+
+function parseLocationTriple(raw: unknown): string {
+  const value = cleanString(raw);
+  if (!value) return "";
+  const parts = value
+    .split(",")
+    .map((x) => cleanString(x))
+    .filter(Boolean);
+  if (parts.length < 3) return "";
+  return `${parts[0]}, ${parts[1]}, ${parts[2]}`;
 }
 
 export function QrScanResourcePage() {
@@ -63,6 +109,12 @@ export function QrScanResourcePage() {
     name: `${cleanString(row?.name)} - ${cleanString(row?.location)}`,
   }));
 
+  React.useEffect(() => {
+    if (warehouseId) return;
+    if (warehouseChoices.length !== 1) return;
+    setWarehouseId(cleanString(warehouseChoices[0]?.id));
+  }, [warehouseChoices, warehouseId]);
+
   const containerByInventoryKey = React.useMemo(
     () =>
       new Map(
@@ -89,10 +141,19 @@ export function QrScanResourcePage() {
         setStatusError("Không tìm thấy thùng hàng từ QR.");
         return;
       }
+      const warehouse = (warehouses || []).find((row: any) => cleanString(row?.id) === warehouseId);
+      if (!warehouse) {
+        setStatusError("Kho mặc định không hợp lệ.");
+        return;
+      }
+      const warehouseLocationTriple = parseLocationTriple(warehouse?.location);
+      if (!warehouseLocationTriple) {
+        setStatusError("Kho chưa có location hợp lệ dạng 'tỉnh, quận, xã'.");
+        return;
+      }
       const selectedContainerCapacity = parsePositiveNumber(
         selectedContainer?.actualCapacityKg || selectedContainer?.capacityKg,
       );
-      const warehouse = (warehouses || []).find((row: any) => cleanString(row?.id) === warehouseId);
       const warehouseCapacity = parsePositiveNumber(warehouse?.capacity);
       const usedCapacity = (storageRows || [])
         .filter((row: any) => cleanString(row?.warehouseId) === warehouseId)
@@ -122,6 +183,71 @@ export function QrScanResourcePage() {
       setStatusError("");
       setStatusText("");
       try {
+        const gps = await captureCurrentGpsLocation();
+        const gpsTriple = `${cleanString(gps?.provinceId)}, ${cleanString(gps?.districtId)}, ${cleanString(gps?.wardId)}`;
+        if (!gpsTriple.replace(/[,\s]/g, "")) {
+          throw new Error("Không đọc được GPS location hiện tại.");
+        }
+
+        const [traceRes, meRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/trace/${encodeURIComponent(inventoryKey)}`, {
+            method: "GET",
+            credentials: "include",
+          }),
+          fetch(`${BACKEND_URL}/auth/me`, {
+            method: "GET",
+            credentials: "include",
+          }),
+        ]);
+        if (!traceRes.ok) {
+          throw new Error("Không lấy được roadmap onchain từ NFT.");
+        }
+        if (!meRes.ok) {
+          throw new Error("Không lấy được thông tin ví hiện tại.");
+        }
+        const traceJson = (await traceRes.json()) as any;
+        const meJson = (await meRes.json()) as any;
+        const lotPassport = (traceJson?.lotPassport || {}) as Record<string, unknown>;
+
+        const roadmapRaw =
+          lotPassport.roadmap ??
+          lotPassport.route_map ??
+          lotPassport.routeMap ??
+          lotPassport.ref99 ??
+          lotPassport.ref98;
+        const roadmapTriples = parseRoadmapTriples(roadmapRaw);
+        if (roadmapTriples.length === 0) {
+          throw new Error("NFT chưa có roadmap hợp lệ.");
+        }
+
+        const gpsMatched = roadmapTriples.includes(gpsTriple);
+        if (!gpsMatched) {
+          throw new Error("GPS hiện tại không khớp roadmap NFT.");
+        }
+
+        const warehouseMatched = roadmapTriples.includes(warehouseLocationTriple);
+        if (!warehouseMatched) {
+          throw new Error("Location kho không khớp roadmap NFT.");
+        }
+
+        const whitelistRaw =
+          lotPassport.ref100 ??
+          lotPassport.owner_whitelist ??
+          lotPassport.ownerWhitelist ??
+          lotPassport.participant_wallet_addresses;
+        const whitelist = parseWhitelist(whitelistRaw);
+        const currentWallet =
+          cleanString(meJson?.user?.paymentAddress) ||
+          cleanString(meJson?.user?.walletAddress) ||
+          cleanString(meJson?.user?.sub);
+        if (!currentWallet) {
+          throw new Error("Không xác định được ví người dùng hiện tại.");
+        }
+        const isOwnerWhitelisted = whitelist.includes(currentWallet);
+        if (!isOwnerWhitelisted) {
+          throw new Error("Ví hiện tại không thuộc whitelist owner (ref100).");
+        }
+
         await dataProvider.create("warehouse-storage", {
           data: {
             warehouseId,
@@ -154,6 +280,7 @@ export function QrScanResourcePage() {
             label="Kho mặc định"
             value={warehouseId}
             onChange={(event) => setWarehouseId(cleanString(event.target.value))}
+            disabled
             fullWidth
           >
             {warehouseChoices.map((choice) => (

@@ -174,7 +174,6 @@ function AdditionalParticipantRow() {
         source="walletAddress"
         label="Địa chỉ ví"
         validate={[required()]}
-        disabled={index === 0}
         fullWidth
       />
       <ParticipantAdministrativeAreaFields index={index} />
