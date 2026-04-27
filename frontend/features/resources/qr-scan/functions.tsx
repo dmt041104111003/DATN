@@ -26,37 +26,39 @@ function parsePositiveNumber(value: unknown) {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function parseRoadmapTriples(raw: unknown): string[] {
-  const value = cleanString(raw);
-  if (!value) return [];
-  const compact = value.replace(/[\[\]\(\)"']/g, " ");
-  const matches = compact.match(/\d+\s*,\s*\d+\s*,\s*\d+/g) || [];
-  const normalized = matches
-    .map((item) =>
-      item
-        .split(",")
-        .map((x) => cleanString(x))
-        .filter(Boolean)
-        .join(", "),
-    )
+function normalizeTripleKey(raw: unknown): string {
+  const parts = cleanString(raw)
+    .split(",")
+    .map((x) => cleanString(x))
     .filter(Boolean);
-  return Array.from(new Set(normalized));
+  if (parts.length < 3) return "";
+  return `${parts[0]},${parts[1]},${parts[2]}`;
 }
 
-function parseWhitelist(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.map((x) => cleanString(x)).filter(Boolean);
-  const value = cleanString(raw);
-  if (!value) return [];
+function parseParticipantLocationLabels(raw: unknown): string[] {
+  const text = cleanString(raw);
+  if (!text) return [];
+  return Array.from(
+    new Set(
+      text
+        .split(";")
+        .map((x) => normalizeTripleKey(x))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function parseParticipantWalletAddresses(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
+  const text = cleanString(raw);
+  if (!text) return [];
   try {
-    const parsed = JSON.parse(value);
+    const parsed = JSON.parse(text);
     if (Array.isArray(parsed)) {
-      return parsed.map((x) => cleanString(x)).filter(Boolean);
+      return Array.from(new Set(parsed.map((x) => cleanString(x).toLowerCase()).filter(Boolean)));
     }
   } catch {}
-  return value
-    .split(/[;,|\s]+/)
-    .map((x) => cleanString(x))
-    .filter((x) => x.startsWith("addr"));
+  return [];
 }
 
 function parseLocationTriple(raw: unknown): string {
@@ -78,6 +80,7 @@ export function QrScanResourcePage() {
   const [warehouseId, setWarehouseId] = React.useState("");
   const lastInventoryKeyRef = React.useRef("");
   const scanGuardRef = React.useRef(false);
+  const resetTimerRef = React.useRef<number | null>(null);
 
   const { data: warehouses = [] } = useGetList("warehouse", {
     pagination: { page: 1, perPage: 1000 },
@@ -103,6 +106,14 @@ export function QrScanResourcePage() {
     if (!warehouseId) return;
     window.localStorage.setItem(DEFAULT_WAREHOUSE_KEY, warehouseId);
   }, [warehouseId]);
+
+  React.useEffect(() => {
+    return () => {
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
 
   const warehouseChoices = (warehouses || []).map((row: any) => ({
     id: cleanString(row?.id),
@@ -209,33 +220,24 @@ export function QrScanResourcePage() {
         const meJson = (await meRes.json()) as any;
         const lotPassport = (traceJson?.lotPassport || {}) as Record<string, unknown>;
 
-        const roadmapRaw =
-          lotPassport.roadmap ??
-          lotPassport.route_map ??
-          lotPassport.routeMap ??
-          lotPassport.ref99 ??
-          lotPassport.ref98;
-        const roadmapTriples = parseRoadmapTriples(roadmapRaw);
+        const roadmapRaw = lotPassport.participant_location_labels;
+        const roadmapTriples = parseParticipantLocationLabels(roadmapRaw);
         if (roadmapTriples.length === 0) {
-          throw new Error("NFT chưa có roadmap hợp lệ.");
+          throw new Error(cleanString(traceJson?.message) );
         }
 
-        const gpsMatched = roadmapTriples.includes(gpsTriple);
+        const gpsMatched = roadmapTriples.includes(normalizeTripleKey(gpsTriple));
         if (!gpsMatched) {
           throw new Error("GPS hiện tại không khớp roadmap NFT.");
         }
 
-        const warehouseMatched = roadmapTriples.includes(warehouseLocationTriple);
+        const warehouseMatched = roadmapTriples.includes(normalizeTripleKey(warehouseLocationTriple));
         if (!warehouseMatched) {
           throw new Error("Location kho không khớp roadmap NFT.");
         }
 
-        const whitelistRaw =
-          lotPassport.ref100 ??
-          lotPassport.owner_whitelist ??
-          lotPassport.ownerWhitelist ??
-          lotPassport.participant_wallet_addresses;
-        const whitelist = parseWhitelist(whitelistRaw);
+        const whitelistRaw = lotPassport.participant_wallet_addresses;
+        const whitelist = parseParticipantWalletAddresses(whitelistRaw);
         const currentWallet =
           cleanString(meJson?.user?.paymentAddress) ||
           cleanString(meJson?.user?.walletAddress) ||
@@ -243,9 +245,9 @@ export function QrScanResourcePage() {
         if (!currentWallet) {
           throw new Error("Không xác định được ví người dùng hiện tại.");
         }
-        const isOwnerWhitelisted = whitelist.includes(currentWallet);
+        const isOwnerWhitelisted = whitelist.includes(currentWallet.toLowerCase());
         if (!isOwnerWhitelisted) {
-          throw new Error("Ví hiện tại không thuộc whitelist owner (ref100).");
+          throw new Error("Ví hiện tại không thuộc participant_wallet_addresses.");
         }
 
         await dataProvider.create("warehouse-storage", {
@@ -261,8 +263,15 @@ export function QrScanResourcePage() {
         setStatusError(e instanceof Error ? e.message : "Nhập kho thất bại.");
       } finally {
         setBusy(false);
-        window.setTimeout(() => {
+        if (resetTimerRef.current !== null) {
+          window.clearTimeout(resetTimerRef.current);
+        }
+        resetTimerRef.current = window.setTimeout(() => {
+          setStatusText("");
+          setStatusError("");
+          lastInventoryKeyRef.current = "";
           scanGuardRef.current = false;
+          resetTimerRef.current = null;
         }, 1200);
       }
     },

@@ -96,10 +96,8 @@ export class ContainerService {
           }))
           .filter((row: any) => row.walletAddress)
       : [];
-    const fromWalletArray = parseStringArray(data?.participantWalletAddresses);
-    const fromLocationArray = parseStringArray(data?.participantLocationLabels);
-
-    const wallets = [...fromRows.map((x: any) => x.walletAddress), ...fromWalletArray]
+    const wallets = fromRows
+      .map((x: any) => x.walletAddress)
       .map((x) => cleanString(x))
       .filter(Boolean);
     const locationByWallet = new Map<string, string>();
@@ -108,12 +106,6 @@ export class ContainerService {
       if (!key) continue;
       const location = cleanString(row.locationLabel);
       if (location) locationByWallet.set(key, location);
-    }
-    for (let i = 0; i < fromWalletArray.length; i += 1) {
-      const key = cleanString(fromWalletArray[i]).toLowerCase();
-      const location = cleanString(fromLocationArray[i]);
-      if (!key || !location) continue;
-      locationByWallet.set(key, location);
     }
     const locations = wallets.map((wallet) => cleanString(locationByWallet.get(wallet.toLowerCase()) || ''));
     return { wallets, locations };

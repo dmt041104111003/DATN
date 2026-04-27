@@ -12,6 +12,7 @@ import {
   ContainerResourceList,
 } from "@/features/resources/containers/index";
 import {
+  WarehouseResourceCreate,
   WarehouseResourceEdit,
   WarehouseResourceList,
 } from "@/features/resources/warehouses";
@@ -45,19 +46,20 @@ export function renderAdminResources(permissions?: string) {
             create={ContainerResourceCreate}
             edit={ContainerResourceEdit}
           />
-          <Resource
-            name="warehouse"
-            list={WarehouseResourceList}
-            edit={WarehouseResourceEdit}
-          />
-          <Resource
-            name="warehouse-storage"
-            list={WarehouseStorageResourceList}
-            edit={WarehouseStorageResourceEdit}
-          />
-          <Resource name="qr-scan" list={QrScanResourcePage} />
         </>
       ) : null}
+      <Resource
+        name="warehouse"
+        list={WarehouseResourceList}
+        create={WarehouseResourceCreate}
+        edit={WarehouseResourceEdit}
+      />
+      <Resource
+        name="warehouse-storage"
+        list={WarehouseStorageResourceList}
+        edit={WarehouseStorageResourceEdit}
+      />
+      <Resource name="qr-scan" list={QrScanResourcePage} />
       <Resource
         name="profile"
         list={ProfileResourceList}

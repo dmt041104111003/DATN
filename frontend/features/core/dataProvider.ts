@@ -62,6 +62,18 @@ function cleanString(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function toCip68SafeText(value: unknown) {
+  const raw = cleanString(value);
+  if (!raw) return "";
+  if (/^[0-9a-f]+$/i.test(raw) && raw.length % 2 === 0) {
+    const num = Number(raw);
+    if (Number.isFinite(num)) {
+      return `${raw}.0`;
+    }
+  }
+  return raw;
+}
+
 function parseStringList(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((x) => cleanString(x)).filter(Boolean);
   const raw = cleanString(value);
@@ -76,37 +88,39 @@ function parseStringList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function parseRoadmapTriples(raw: unknown): string[] {
-  const value = cleanString(raw);
-  if (!value) return [];
-  const compact = value.replace(/[\[\]\(\)"']/g, " ");
-  const matches = compact.match(/\d+\s*,\s*\d+\s*,\s*\d+/g) || [];
-  const normalized = matches
-    .map((item) =>
-      item
-        .split(",")
-        .map((x) => cleanString(x))
-        .filter(Boolean)
-        .join(", "),
-    )
+function normalizeTripleKey(raw: unknown): string {
+  const parts = cleanString(raw)
+    .split(",")
+    .map((x) => cleanString(x))
     .filter(Boolean);
-  return Array.from(new Set(normalized));
+  if (parts.length < 3) return "";
+  return `${parts[0]},${parts[1]},${parts[2]}`;
 }
 
-function parseWhitelist(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.map((x) => cleanString(x)).filter(Boolean);
-  const value = cleanString(raw);
-  if (!value) return [];
+function parseParticipantLocationLabels(raw: unknown): string[] {
+  const text = cleanString(raw);
+  if (!text) return [];
+  return Array.from(
+    new Set(
+      text
+        .split(";")
+        .map((x) => normalizeTripleKey(x))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function parseParticipantWalletAddresses(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
+  const text = cleanString(raw);
+  if (!text) return [];
   try {
-    const parsed = JSON.parse(value);
+    const parsed = JSON.parse(text);
     if (Array.isArray(parsed)) {
-      return parsed.map((x) => cleanString(x)).filter(Boolean);
+      return Array.from(new Set(parsed.map((x) => cleanString(x).toLowerCase()).filter(Boolean)));
     }
   } catch {}
-  return value
-    .split(/[;,|\s]+/)
-    .map((x) => cleanString(x))
-    .filter((x) => x.startsWith("addr"));
+  return [];
 }
 
 function parseLocationTriple(raw: unknown): string {
@@ -238,7 +252,26 @@ async function signAndPublishUnsignedTx(unsignedCbor: string) {
 }
 
 function buildOwnerList(owner: string, custodianAddress: string) {
-  return [owner || custodianAddress];
+  const values = [cleanString(owner), cleanString(custodianAddress)].filter(Boolean);
+  return Array.from(new Set(values));
+}
+
+function buildOwnersFromParticipantData(
+  source: any,
+  fallbackOwner: string,
+  fallbackCustodian: string,
+) {
+  const fromRows = Array.isArray(source?.participantRows)
+    ? source.participantRows
+        .map((row: any) => cleanString(row?.walletAddress))
+        .filter(Boolean)
+    : [];
+  const fromField = parseStringList(source?.participantWalletAddresses).map((x) =>
+    cleanString(x),
+  );
+  const participants = Array.from(new Set([...fromRows, ...fromField].filter(Boolean)));
+  if (participants.length) return participants;
+  return buildOwnerList(fallbackOwner, fallbackCustodian);
 }
 
 function endpointFor(resource: string) {
@@ -250,6 +283,20 @@ async function fetchResourceRows(resource: string, query?: URLSearchParams) {
   const url = `${BACKEND_URL}/${endpoint}${query && query.size ? `?${query.toString()}` : ""}`;
   const { json } = await httpClient(url, { method: "GET" });
   return Array.isArray(json) ? json : [];
+}
+
+async function fetchContainerByInventoryKey(inventoryKeyRaw: unknown) {
+  const inventoryKey = cleanString(inventoryKeyRaw);
+  if (!inventoryKey) return null;
+  const rows = await fetchResourceRows("container");
+  return rows.find((r: any) => cleanString(r?.inventoryKey) === inventoryKey) || null;
+}
+
+async function fetchProductionByInventoryKey(inventoryKeyRaw: unknown) {
+  const inventoryKey = cleanString(inventoryKeyRaw);
+  if (!inventoryKey) return null;
+  const rows = await fetchResourceRows("production");
+  return rows.find((r: any) => cleanString(r?.inventoryKey) === inventoryKey) || null;
 }
 
 async function enforceWarehouseStorageRoadmapGuards(inventoryKey: string, warehouseIdRaw: unknown, gpsTriple: string) {
@@ -273,29 +320,20 @@ async function enforceWarehouseStorageRoadmapGuards(inventoryKey: string, wareho
   const traceJson = traceRes.json as any;
   const meJson = meRes.json as any;
   const lotPassport = (traceJson?.lotPassport || {}) as Record<string, unknown>;
-  const roadmapRaw =
-    lotPassport.roadmap ??
-    lotPassport.route_map ??
-    lotPassport.routeMap ??
-    lotPassport.ref99 ??
-    lotPassport.ref98;
-  const roadmapTriples = parseRoadmapTriples(roadmapRaw);
+  const roadmapRaw = lotPassport.participant_location_labels;
+  const roadmapTriples = parseParticipantLocationLabels(roadmapRaw);
   if (roadmapTriples.length === 0) {
-    throw new Error("NFT chưa có roadmap hợp lệ.");
+    throw new Error(cleanString(traceJson?.message));
   }
-  if (!roadmapTriples.includes(gpsTriple)) {
+  if (!roadmapTriples.includes(normalizeTripleKey(gpsTriple))) {
     throw new Error("GPS hiện tại không khớp roadmap NFT.");
   }
-  if (!roadmapTriples.includes(warehouseLocationTriple)) {
+  if (!roadmapTriples.includes(normalizeTripleKey(warehouseLocationTriple))) {
     throw new Error("Location kho không khớp roadmap NFT.");
   }
 
-  const whitelistRaw =
-    lotPassport.ref100 ??
-    lotPassport.owner_whitelist ??
-    lotPassport.ownerWhitelist ??
-    lotPassport.participant_wallet_addresses;
-  const whitelist = parseWhitelist(whitelistRaw);
+  const whitelistRaw = lotPassport.participant_wallet_addresses;
+  const whitelist = parseParticipantWalletAddresses(whitelistRaw);
   const currentWallet =
     cleanString(meJson?.user?.paymentAddress) ||
     cleanString(meJson?.user?.walletAddress) ||
@@ -303,8 +341,8 @@ async function enforceWarehouseStorageRoadmapGuards(inventoryKey: string, wareho
   if (!currentWallet) {
     throw new Error("Không xác định được ví người dùng hiện tại.");
   }
-  if (!whitelist.includes(currentWallet)) {
-    throw new Error("Ví hiện tại không thuộc whitelist owner (ref100).");
+  if (!whitelist.includes(currentWallet.toLowerCase())) {
+    throw new Error("Ví hiện tại không thuộc participant_wallet_addresses.");
   }
 }
 
@@ -354,8 +392,8 @@ function buildContainerMetadata(data: any, previousData: any) {
     container_code: cleanString(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
     production_inventory_key: cleanString(data?.productionInventoryKey || previousData?.productionInventoryKey),
     container_type: cleanString(data?.containerType || previousData?.containerType),
-    capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
-    actual_capacity_kg: cleanString(data?.actualCapacityKg || previousData?.actualCapacityKg),
+    capacity_kg: toCip68SafeText(data?.capacityKg || previousData?.capacityKg),
+    actual_capacity_kg: toCip68SafeText(data?.actualCapacityKg || previousData?.actualCapacityKg),
     product_name: cleanString(data?.productName || previousData?.productName),
     participant_wallet_addresses: JSON.stringify(
       parseStringList(
@@ -429,14 +467,27 @@ export const adminDataProvider: DataProvider = {
     };
   },
   async update(resource, params) {
+    if (resource === "warehouse") {
+      const warehouseId = cleanString(params.id);
+      if (!warehouseId) throw new Error("warehouse id is required.");
+      const patchRes = await httpClient(`${BACKEND_URL}/warehouses/${encodeURIComponent(warehouseId)}`, {
+        method: "PATCH",
+        body: JSON.stringify(params.data || {}),
+      });
+      const row = patchRes.json as any;
+      return { data: { ...row, id: normalizeId(row, params.id) } };
+    }
     if (resource === "container") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const inventoryKey = String(
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
-      const metadata = buildContainerMetadata(params.data, params.previousData);
-      const owners = buildOwnerList(owner, custodianAddress);
+      const currentContainer = await fetchContainerByInventoryKey(inventoryKey);
+      const base = currentContainer || params.previousData || {};
+      const mergedForMetadata = { ...base, ...(params.data || {}) };
+      const metadata = buildContainerMetadata(mergedForMetadata, base);
+      const owners = buildOwnersFromParticipantData(mergedForMetadata, owner, custodianAddress);
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -458,14 +509,17 @@ export const adminDataProvider: DataProvider = {
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const currentProduction = await fetchProductionByInventoryKey(inventoryKey);
+      const base = currentProduction || params.previousData || {};
+      const mergedForMetadata = { ...base, ...(params.data || {}) };
 
       const certFiles = pickRawFiles((params.data as any)?.certFiles);
       const evidenceFiles = pickRawFiles((params.data as any)?.evidenceFiles);
       const certFilesIpfs = await uploadMany(certFiles);
       const evidenceFilesIpfs = await uploadMany(evidenceFiles);
       const metadata = buildProductionMetadata(
-        params.data,
-        params.previousData,
+        mergedForMetadata,
+        base,
         certFilesIpfs,
         evidenceFilesIpfs,
       );
@@ -496,7 +550,6 @@ export const adminDataProvider: DataProvider = {
     }
     if (resource === "warehouse-storage") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = cleanString(
         params.data?.containerInventoryKey ||
         params.data?.productId ||
@@ -511,7 +564,13 @@ export const adminDataProvider: DataProvider = {
         params.data?.warehouseId || params.previousData?.warehouseId,
         gpsTriple,
       );
-      const metadata = buildWarehouseStorageMetadata(params.data, params.previousData, "UPDATE");
+      const containerBase = (await fetchContainerByInventoryKey(inventoryKey)) || {};
+      const owners = buildOwnersFromParticipantData(containerBase, owner, custodianAddress);
+      const fullContainerMetadata = buildContainerMetadata(containerBase, containerBase);
+      const metadata = {
+        ...fullContainerMetadata,
+        ...buildWarehouseStorageMetadata(params.data, params.previousData, "UPDATE"),
+      };
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -519,11 +578,17 @@ export const adminDataProvider: DataProvider = {
       const unsigned = contractRes.json as any;
       ensureUnsignedTxResponse(unsigned, "Failed to prepare warehouse storage on-chain update.");
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
-      const result = await baseProvider.update(resource, {
-        ...params,
-        data: { ...params.data, txHash, containerInventoryKey: inventoryKey },
-      });
-      return result;
+      const storageId = cleanString(params.id);
+      if (!storageId) throw new Error("warehouse-storage id is required.");
+      const patchRes = await httpClient(
+        `${BACKEND_URL}/warehouse-storages/${encodeURIComponent(storageId)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ ...params.data, txHash, containerInventoryKey: inventoryKey }),
+        },
+      );
+      const row = patchRes.json as any;
+      return { data: { ...row, id: normalizeId(row, params.id) } };
     }
     return baseProvider.update(resource, params);
   },
@@ -531,7 +596,7 @@ export const adminDataProvider: DataProvider = {
     if (resource === "container") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const metadata = buildContainerMetadata(params.data, null);
-      const owners = buildOwnerList(owner, custodianAddress);
+      const owners = buildOwnersFromParticipantData(params.data, owner, custodianAddress);
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/create`, {
         method: "POST",
         body: JSON.stringify({
@@ -595,14 +660,19 @@ export const adminDataProvider: DataProvider = {
     }
     if (resource === "warehouse-storage") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = cleanString(params.data?.containerInventoryKey || params.data?.productId);
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
       const gps = await captureCurrentGpsLocation();
       const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
       await enforceWarehouseStorageRoadmapGuards(inventoryKey, params.data?.warehouseId, location);
       const createPayload = { ...params.data, location };
-      const metadata = buildWarehouseStorageMetadata(createPayload, null, "IN");
+      const containerBase = (await fetchContainerByInventoryKey(inventoryKey)) || {};
+      const owners = buildOwnersFromParticipantData(containerBase, owner, custodianAddress);
+      const fullContainerMetadata = buildContainerMetadata(containerBase, containerBase);
+      const metadata = {
+        ...fullContainerMetadata,
+        ...buildWarehouseStorageMetadata(createPayload, null, "IN"),
+      };
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -670,7 +740,6 @@ export const adminDataProvider: DataProvider = {
     }
     if (resource === "warehouse-storage") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = cleanString(
         (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
       );
@@ -682,11 +751,17 @@ export const adminDataProvider: DataProvider = {
         (params.previousData as any)?.warehouseId,
         location,
       );
-      const metadata = buildWarehouseStorageMetadata(
+      const containerBase = (await fetchContainerByInventoryKey(inventoryKey)) || {};
+      const owners = buildOwnersFromParticipantData(containerBase, owner, custodianAddress);
+      const fullContainerMetadata = buildContainerMetadata(containerBase, containerBase);
+      const metadata = {
+        ...fullContainerMetadata,
+        ...buildWarehouseStorageMetadata(
         { ...(params.previousData as any), location },
         params.previousData,
         "OUT",
-      );
+      ),
+      };
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),

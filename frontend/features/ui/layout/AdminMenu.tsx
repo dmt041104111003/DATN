@@ -16,10 +16,10 @@ import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 export function AdminMenu() {
   const { permissions } = usePermissions<string>();
   const role = String(permissions || "").toUpperCase();
-  const isAdminRole = role === "ENTERPRISE";
+  const isEnterprise = role === "ENTERPRISE";
   const items = [
     <MenuItemLink key="overview" to="/" primaryText="Tổng quan" leftIcon={<DashboardIcon />} />,
-    ...(isAdminRole
+    ...(isEnterprise
       ? [
           <MenuItemLink
             key="production"
@@ -33,26 +33,26 @@ export function AdminMenu() {
             primaryText="Thùng hàng"
             leftIcon={<Inventory2Icon />}
           />,
-          <MenuItemLink
-            key="warehouse"
-            to="/warehouse"
-            primaryText="Kho lưu trữ"
-            leftIcon={<WarehouseIcon />}
-          />,
-          <MenuItemLink
-            key="warehouse-storage"
-            to="/warehouse-storage"
-            primaryText="Lưu trữ kho"
-            leftIcon={<StorageIcon />}
-          />,
-          <MenuItemLink
-            key="qr-scan"
-            to="/qr-scan"
-            primaryText="Quét QR"
-            leftIcon={<QrCodeScannerIcon />}
-          />,
         ]
       : []),
+    <MenuItemLink
+      key="warehouse"
+      to="/warehouse"
+      primaryText="Kho lưu trữ"
+      leftIcon={<WarehouseIcon />}
+    />,
+    <MenuItemLink
+      key="warehouse-storage"
+      to="/warehouse-storage"
+      primaryText="Lưu trữ kho"
+      leftIcon={<StorageIcon />}
+    />,
+    <MenuItemLink
+      key="qr-scan"
+      to="/qr-scan"
+      primaryText="Quét QR"
+      leftIcon={<QrCodeScannerIcon />}
+    />,
     <MenuItemLink key="profile" to="/profile" primaryText="Hồ sơ" leftIcon={<PersonIcon />} />,
   ];
 

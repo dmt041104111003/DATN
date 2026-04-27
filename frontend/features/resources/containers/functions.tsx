@@ -131,7 +131,7 @@ function buildParticipantPayload(rowsRaw: unknown) {
   return { participantWalletAddresses, participantLocationLabels, participantRows: normalized };
 }
 
-function ParticipantAdministrativeAreaFields({ index }: { index: number }) {
+function ParticipantAdministrativeAreaFields({ index, disabled = false }: { index: number; disabled?: boolean }) {
   const provinceName = `participantRows.${index}.provinceId`;
   const districtName = `participantRows.${index}.districtId`;
   const wardName = `participantRows.${index}.wardId`;
@@ -159,14 +159,14 @@ function ParticipantAdministrativeAreaFields({ index }: { index: number }) {
   }, [districtId]);
   return (
     <>
-      <SelectInput source="provinceId" label="Tỉnh/Thành" choices={provinces} optionValue="id" optionText="name" validate={[required()]} fullWidth />
-      <SelectInput source="districtId" label="Quận/Huyện" choices={districts} optionValue="id" optionText="name" validate={[required()]} disabled={!provinceId} fullWidth />
-      <SelectInput source="wardId" label="Phường/Xã" choices={wards} optionValue="id" optionText="name" validate={[required()]} disabled={!districtId} fullWidth />
+      <SelectInput source="provinceId" label="Tỉnh/Thành" choices={provinces} optionValue="id" optionText="name" validate={[required()]} disabled={disabled} fullWidth />
+      <SelectInput source="districtId" label="Quận/Huyện" choices={districts} optionValue="id" optionText="name" validate={[required()]} disabled={disabled || !provinceId} fullWidth />
+      <SelectInput source="wardId" label="Phường/Xã" choices={wards} optionValue="id" optionText="name" validate={[required()]} disabled={disabled || !districtId} fullWidth />
     </>
   );
 }
 
-function AdditionalParticipantRow() {
+function AdditionalParticipantRow({ disabled = false }: { disabled?: boolean }) {
   const { index } = useSimpleFormIteratorItem();
   return (
     <>
@@ -174,14 +174,15 @@ function AdditionalParticipantRow() {
         source="walletAddress"
         label="Địa chỉ ví"
         validate={[required()]}
+        disabled={disabled}
         fullWidth
       />
-      <ParticipantAdministrativeAreaFields index={index} />
+      <ParticipantAdministrativeAreaFields index={index} disabled={disabled} />
     </>
   );
 }
 
-function ContainerFormSections() {
+function ContainerFormSections({ participantsReadOnly = false }: { participantsReadOnly?: boolean }) {
   const { getValues, setValue } = useFormContext();
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
@@ -324,8 +325,12 @@ function ContainerFormSections() {
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
           <ArrayInput source="participantRows" label="Danh sách địa chỉ ví tham gia">
-            <SimpleFormIterator disableReordering>
-              <FormDataConsumer>{() => <AdditionalParticipantRow />}</FormDataConsumer>
+            <SimpleFormIterator
+              disableReordering
+              disableAdd={participantsReadOnly}
+              disableRemove={participantsReadOnly}
+            >
+              <FormDataConsumer>{() => <AdditionalParticipantRow disabled={participantsReadOnly} />}</FormDataConsumer>
             </SimpleFormIterator>
           </ArrayInput>
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
@@ -477,7 +482,7 @@ export function ContainerResourceEdit() {
         }}
         toolbar={<ContainerEditToolbar />}
       >
-        <ContainerFormSections />
+        <ContainerFormSections participantsReadOnly />
       </SimpleForm>
     </Edit>
   );

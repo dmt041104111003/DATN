@@ -11,6 +11,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:300
 
 const MENU = [
   { id: "home", label: "Trang chủ", href: "/" },
+  { id: "trace-scan", label: "Quét truy xuất", href: "/trace-scan" },
 ];
 
 export function Header() {
@@ -70,6 +71,8 @@ export function Header() {
   const activeId =
     pathname === "/"
       ? "home"
+      : pathname.startsWith("/trace-scan")
+      ? "trace-scan"
       : pathname.startsWith("/admin") ||
         pathname.startsWith("/enterprise") ||
         pathname.startsWith("/transit") ||

@@ -171,20 +171,16 @@ export class WarehouseStorageService {
       select: { id: true, containerInventoryKey: true, warehouseId: true, conditions: true },
     });
     if (!existing) throw new NotFoundException('Warehouse storage not found');
+
     await this.writeOperation('DELETE', data?.txHash, id, cleanString((existing as any)?.containerInventoryKey), {
       warehouseId: cleanString((existing as any)?.warehouseId),
       storageTime: new Date().toISOString(),
       conditions: cleanString((existing as any)?.conditions),
     });
-    const location = cleanString(data?.location);
-    if (location) {
-      await (this.prisma as any).container.update({
-        where: { inventoryKey: cleanString((existing as any)?.containerInventoryKey) },
-        data: { location } as any,
-      });
-    }
-    await (this.prisma as any).warehouseStorage.delete({ where: { id } });
-    return { id };
+    await (this.prisma as any).warehouseStorage.delete({
+      where: { id },
+    });
+    return { id, deleted: true, txHash: cleanString(data?.txHash) || null };
   }
 }
 

@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BlockFrostAPI, BlockfrostServerError } from '@blockfrost/blockfrost-js';
-// Prisma client is generated at build time; keep this as a string for type stability.
-type LifecycleStatus = string;
-import { PrismaService } from '../prisma/prisma.service';
+import * as cbor from 'cbor';
 import { deserializeDatum } from '../utils/deserialize-datum';
 
 const POLICY_ID_HEX_LEN = 56;
@@ -14,7 +12,7 @@ function buildNativeAssetUnitCandidates(inventoryKey: string): string[] {
   if (!raw) {
     return [];
   }
-  const k = raw.toLowerCase();
+  const k = raw.toLowerCase().replace(/^0x/, '');
   const candidates: string[] = [];
   const push = (u: string) => {
     const t = u.trim().toLowerCase();
@@ -23,6 +21,12 @@ function buildNativeAssetUnitCandidates(inventoryKey: string): string[] {
     }
   };
   push(k);
+  if (!/^[0-9a-f]+$/.test(k)) {
+    const hexFromUtf8 = Buffer.from(raw, 'utf8').toString('hex').toLowerCase();
+    if (hexFromUtf8) {
+      push(hexFromUtf8);
+    }
+  }
   if (/^[0-9a-f]+$/.test(k) && k.length > POLICY_ID_HEX_LEN) {
     const policy = k.slice(0, POLICY_ID_HEX_LEN);
     const rest = k.slice(POLICY_ID_HEX_LEN);
@@ -41,32 +45,14 @@ function buildNativeAssetUnitCandidates(inventoryKey: string): string[] {
 
 function isAssetNotFoundError(err: unknown): boolean {
   if (err instanceof BlockfrostServerError) {
-    return err.status_code === 404;
+    return err.status_code === 404 || err.status_code === 400;
   }
   return false;
 }
 
-export type HandlingMilestone =
-  | 'Lot first registered'
-  | 'Lot closed in circulation'
-  | 'Custody handoff'
-  | 'Passport refreshed'
-  | 'Handling event recorded';
-
-export interface HandlingLogEntry {
-  confirmationRef: string;
-  recordedAt: number;
-  outcome: 'Completed';
-  milestone: HandlingMilestone;
-  lotPassport: Record<string, unknown>;
-  recordKeepingCharge: string;
-}
-
 export interface TraceResult {
   lotPassport: Record<string, unknown>;
-  handlingLog: HandlingLogEntry[];
-  tracingEnded: boolean;
-  lifecycleStatus?: LifecycleStatus | null;
+  transactions?: Array<{ txHash: string; blockTime: number | null }>;
   message?: string;
 }
 
@@ -74,7 +60,34 @@ export interface TraceResult {
 export class TraceService {
   private blockfrost: BlockFrostAPI;
 
-  constructor(private readonly prisma: PrismaService) {
+  private extractProductionInventoryKeyHex(rawDatum: string): string {
+    try {
+      const cborDatum = Buffer.from(rawDatum, 'hex');
+      const decoded = cbor.decodeFirstSync(cborDatum) as { value?: unknown[] } | unknown[];
+      const datumMap = Array.isArray(decoded) ? decoded[0] : decoded?.value?.[0];
+      if (!(datumMap instanceof Map)) {
+        return '';
+      }
+      for (const [k, v] of datumMap.entries()) {
+        const key =
+          Buffer.isBuffer(k) || k instanceof Uint8Array
+            ? Buffer.from(k).toString('utf-8')
+            : String(k);
+        if (key !== 'production_inventory_key') continue;
+        if (Buffer.isBuffer(v) || v instanceof Uint8Array) {
+          return `0x${Buffer.from(v).toString('hex')}`;
+        }
+        const text = String(v ?? '').trim();
+        if (!text) return '';
+        return text.startsWith('0x') ? text : text;
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  }
+
+  constructor() {
     const projectId = process.env.BLOCKFROST_API_KEY || '';
     if (!projectId) {
       throw new Error('BLOCKFROST_API_KEY is not set');
@@ -90,36 +103,6 @@ export class TraceService {
     });
   }
 
-  private milestoneForFlow(
-    inputQty: number,
-    outputQty: number,
-    inputAddress?: string,
-    outputAddress?: string,
-  ): HandlingMilestone {
-    if (inputQty === 0 && outputQty > 0) {
-      return 'Lot first registered';
-    }
-    if (outputQty === 0 && inputQty > 0) {
-      return 'Lot closed in circulation';
-    }
-    if (inputQty > 0 && outputQty > 0) {
-      const quantityChange = outputQty - inputQty;
-      // When the asset stays on the same script address, this is usually a
-      // passport refresh (datum update). When it moves to a different address,
-      // we treat it as a custody handoff.
-      if (inputAddress && outputAddress) {
-        return inputAddress === outputAddress
-          ? 'Passport refreshed'
-          : 'Custody handoff';
-      }
-
-      // Fallback: if we cannot read addresses, use quantity delta.
-      // (This is less accurate but better than returning the same label.)
-      return quantityChange === 0 ? 'Passport refreshed' : 'Custody handoff';
-    }
-    return 'Handling event recorded';
-  }
-
   private async resolveBlockfrostAssetUnit(
     inventoryKey: string,
   ): Promise<{ unit: string } | { error: TraceResult }> {
@@ -128,8 +111,6 @@ export class TraceService {
       return {
         error: {
           lotPassport: {},
-          handlingLog: [],
-          tracingEnded: false,
           message: 'Invalid inventory key for chain lookup.',
         },
       };
@@ -149,8 +130,6 @@ export class TraceService {
     return {
       error: {
         lotPassport: {},
-        handlingLog: [],
-        tracingEnded: false,
         message:
           lastErr instanceof Error
             ? `Blockfrost could not find this asset (tried CIP-68 unit variants). ${lastErr.message}`
@@ -159,117 +138,69 @@ export class TraceService {
     };
   }
 
-  private async getProductTraceInternal(inventoryKey: string): Promise<TraceResult> {
+  private async readLatestPassport(inventoryKey: string): Promise<TraceResult> {
     const resolved = await this.resolveBlockfrostAssetUnit(inventoryKey);
     if ('error' in resolved) {
       return resolved.error;
     }
     const chainUnit = resolved.unit;
 
-    const assetTxRefs = await this.blockfrost.assetsTransactions(chainUnit);
-    const histories: HandlingLogEntry[] = [];
-
-    for (const { tx_hash } of assetTxRefs) {
-      try {
-        const txInfo = await this.blockfrost.txs(tx_hash);
-        const utxos = await this.blockfrost.txsUtxos(tx_hash);
-
-        let inputQty = 0;
-        let outputQty = 0;
-
-        const inputWithAsset = utxos.inputs.find((input: { amount: { unit: string; quantity: string }[] }) =>
-          input.amount.some((a) => a.unit === chainUnit),
-        );
-        if (inputWithAsset) {
-          const amt = inputWithAsset.amount.find((a) => a.unit === chainUnit);
-          inputQty = Number(amt?.quantity || 0);
+    const assetTxRefs = await this.blockfrost.assetsTransactions(chainUnit, { count: 100, page: 1, order: 'desc' as any });
+    const transactions = await Promise.all(
+      (assetTxRefs || []).map(async (tx: any) => {
+        const txHash = String(tx?.tx_hash || '').trim();
+        if (!txHash) return null;
+        try {
+          const txInfo = await this.blockfrost.txs(txHash);
+          return {
+            txHash,
+            blockTime: typeof txInfo?.block_time === 'number' ? txInfo.block_time : null,
+          };
+        } catch {
+          return { txHash, blockTime: null };
         }
+      }),
+    );
+    const txList = transactions.filter(Boolean) as Array<{ txHash: string; blockTime: number | null }>;
 
-        const outputWithAsset = utxos.outputs.find((output: { amount: { unit: string; quantity: string }[] }) =>
-          output.amount.some((a) => a.unit === chainUnit),
-        );
-        if (outputWithAsset) {
-          const amt = outputWithAsset.amount.find((a) => a.unit === chainUnit);
-          outputQty = Number(amt?.quantity || 0);
-        }
-
-        const inputAddress = (inputWithAsset as any)?.address;
-        const outputAddress = (outputWithAsset as any)?.address;
-        let milestone = this.milestoneForFlow(
-          inputQty,
-          outputQty,
-          inputAddress,
-          outputAddress,
-        );
-
-        let rawDatum: string | undefined;
-        const outWithDatum = outputWithAsset as { inline_datum?: string } | undefined;
-        const inWithDatum = inputWithAsset as { inline_datum?: string } | undefined;
-        if (outWithDatum?.inline_datum) {
-          rawDatum = outWithDatum.inline_datum;
-        } else if (inWithDatum?.inline_datum) {
-          rawDatum = inWithDatum.inline_datum;
-        }
-
-        let lotPassport: Record<string, unknown> = {};
-        if (rawDatum) {
-          try {
-            lotPassport = (await deserializeDatum(rawDatum)) as Record<string, unknown>;
-          } catch (err) {
-            console.error(`Passport decode failed for record ${tx_hash}:`, err);
-          }
-        }
-
-        histories.push({
-          confirmationRef: tx_hash,
-          recordedAt: txInfo.block_time,
-          recordKeepingCharge: txInfo.fees,
-          outcome: 'Completed',
-          milestone,
-          lotPassport,
-        });
-      } catch (err) {
-        console.error(`Error processing record ${tx_hash}:`, err);
-      }
-    }
-
-    histories.sort((a, b) => b.recordedAt - a.recordedAt);
-
-    const filteredLog: HandlingLogEntry[] = [];
-    for (const entry of histories) {
-      filteredLog.push(entry);
-      if (entry.milestone === 'Lot first registered') {
-        break;
-      }
-    }
-
-    if (
-      filteredLog.length === 0 ||
-      !filteredLog.some((e) => e.milestone === 'Lot first registered')
-    ) {
+    const latestTxHash = String(assetTxRefs?.[0]?.tx_hash || '').trim();
+    if (!latestTxHash) {
       return {
-        lotPassport: (histories[0]?.lotPassport as Record<string, unknown>) || {},
-        handlingLog: histories,
-        tracingEnded: false,
-        message: 'No first registration event found for this inventory key.',
+        lotPassport: {},
+        transactions: txList,
+        message: 'No transaction found for this inventory key.',
       };
     }
-
-    const latestPassport = (histories[0]?.lotPassport as Record<string, unknown>) || {};
-
-    return {
-      lotPassport: latestPassport,
-      handlingLog: filteredLog,
-      tracingEnded:
-        histories.length > 0 && histories[0].milestone === 'Lot closed in circulation',
-    };
+    try {
+      const utxos = await this.blockfrost.txsUtxos(latestTxHash);
+      const outputWithAsset = utxos.outputs.find((output: { amount: { unit: string; quantity: string }[] }) =>
+        output.amount.some((a) => a.unit === chainUnit),
+      );
+      const rawDatum = String((outputWithAsset as { inline_datum?: string } | undefined)?.inline_datum || '').trim();
+      if (!rawDatum) {
+        return {
+          lotPassport: {},
+          transactions: txList,
+          message: 'Latest transaction has no inline datum on output.',
+        };
+      }
+      const lotPassport = (await deserializeDatum(rawDatum)) as Record<string, unknown>;
+      const productionInventoryKeyHex = this.extractProductionInventoryKeyHex(rawDatum);
+      if (productionInventoryKeyHex) {
+        lotPassport.production_inventory_key = productionInventoryKeyHex;
+      }
+      return { lotPassport, transactions: txList };
+    } catch (err) {
+      console.error(`Error processing latest record ${latestTxHash}:`, err);
+      return {
+        lotPassport: {},
+        transactions: txList,
+        message: 'Failed to decode latest on-chain passport.',
+      };
+    }
   }
 
   async getProductTrace(inventoryKey: string): Promise<TraceResult> {
-    const base = await this.getProductTraceInternal(inventoryKey);
-    return {
-      ...base,
-      lifecycleStatus: null,
-    };
+    return this.readLatestPassport(inventoryKey);
   }
 }

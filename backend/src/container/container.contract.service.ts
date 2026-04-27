@@ -101,8 +101,7 @@ export class ContainerContractService {
     const walletAddress = String(dto.custodianAddress || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const code = String(dto.assetName || '').trim();
-    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
-    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+    if (owners.length === 0) throw new BadRequestException('Container owners are required.');
     if (!code) throw new BadRequestException('Container code is required.');
 
     const metadata = this.normalizeParticipantMetadata(this.stringifyMetadata(dto.metadata));
@@ -119,8 +118,7 @@ export class ContainerContractService {
     const walletAddress = String(dto.custodianAddress || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const inventoryKey = String(dto.inventoryKey || '').trim();
-    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
-    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+    if (owners.length === 0) throw new BadRequestException('Container owners are required.');
 
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
     if (!onchain) throw new BadRequestException('Container on-chain metadata was not found.');
