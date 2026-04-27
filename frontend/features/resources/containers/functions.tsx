@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  ArrayInput,
   BooleanField,
   Create,
   Datagrid,
@@ -14,7 +13,6 @@ import {
   SelectField,
   SelectInput,
   SimpleForm,
-  SimpleFormIterator,
   TextField,
   TextInput,
   Toolbar,
@@ -23,7 +21,12 @@ import {
 } from "react-admin";
 import { useFormContext, useWatch } from "react-hook-form";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
-import { captureCurrentGpsLocation } from "@/features/resources/shared/location";
+import {
+  captureCurrentGpsLocation,
+  getDistrictNameById,
+  getProvinceNameById,
+  getWardNameById,
+} from "@/features/resources/shared/location";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -63,8 +66,11 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
   const isEditForm = mode === "edit";
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
+  const currentProvinceId = String(useWatch({ name: "currentProvinceId" }) ?? "");
+  const currentDistrictId = String(useWatch({ name: "currentDistrictId" }) ?? "");
+  const currentWardId = String(useWatch({ name: "currentWardId" }) ?? "");
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
-  const { setValue, getValues } = useFormContext();
+  const { setValue } = useFormContext();
   const [capacitySummary, setCapacitySummary] = React.useState<{
     totalCapacityKg: number;
     usedCapacityKg: number;
@@ -111,6 +117,24 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
     };
   }, [productionInventoryKey, currentInventoryKey]);
 
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const [provinceName, districtName, wardName] = await Promise.all([
+        currentProvinceId ? getProvinceNameById(currentProvinceId) : Promise.resolve(""),
+        currentDistrictId ? getDistrictNameById(currentDistrictId) : Promise.resolve(""),
+        currentWardId ? getWardNameById(currentWardId) : Promise.resolve(""),
+      ]);
+      if (!mounted) return;
+      setValue("currentProvinceName", provinceName || currentProvinceId || "");
+      setValue("currentDistrictName", districtName || currentDistrictId || "");
+      setValue("currentWardName", wardName || currentWardId || "");
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [currentProvinceId, currentDistrictId, currentWardId, setValue]);
+
   const { data: productionRows = [] } = useGetList("production", {
     pagination: { page: 1, perPage: 1000 },
     sort: { field: "createdAt", order: "DESC" },
@@ -122,30 +146,6 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
       id: String(row?.inventoryKey || row?.id || ""),
       name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
     }));
-
-  const { data: partnerRows = [] } = useGetList("partner", {
-    pagination: { page: 1, perPage: 1000 },
-    sort: { field: "createdAt", order: "DESC" },
-  });
-  const partnerChoices = (partnerRows || []).map((row: any) => ({
-    id: String(row?.id || ""),
-    name: `${String(row?.displayName || "")} - ${String(row?.walletAddress || "").slice(0, 16)}...`,
-  }));
-
-  React.useEffect(() => {
-    const currentRows = getValues("partnerRows");
-    const currentPartnerIds = getValues("partnerIds");
-    const hasRows = Array.isArray(currentRows) && currentRows.length > 0;
-    if (hasRows) return;
-    if (!Array.isArray(currentPartnerIds) || !currentPartnerIds.length) return;
-    setValue(
-      "partnerRows",
-      currentPartnerIds
-        .map((id: unknown) => String(id || "").trim())
-        .filter(Boolean)
-        .map((partnerId: string) => ({ partnerId })),
-    );
-  }, [getValues, setValue]);
 
   return (
     <>
@@ -191,17 +191,9 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
               ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
-          <ArrayInput source="partnerRows" label="Đơn vị liên kết">
-            <SimpleFormIterator inline>
-              <SelectInput
-                source="partnerId"
-                label="Đơn vị liên kết"
-                choices={partnerChoices}
-                validate={[required()]}
-                fullWidth
-              />
-            </SimpleFormIterator>
-          </ArrayInput>
+          <TextInput source="currentProvinceName" label="Tỉnh/Thành hiện tại" disabled fullWidth />
+          <TextInput source="currentDistrictName" label="Quận/Huyện hiện tại" disabled fullWidth />
+          <TextInput source="currentWardName" label="Phường/Xã hiện tại" disabled fullWidth />
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
         </div>
       </div>
@@ -257,11 +249,6 @@ export function ContainerResourceCreate() {
   return (
     <Create
       transform={async (data: any) => {
-        const partnerIds = Array.isArray(data?.partnerRows)
-          ? data.partnerRows.map((row: any) => String(row?.partnerId || "").trim()).filter(Boolean)
-          : Array.isArray(data?.partnerIds)
-            ? data.partnerIds.map((x: any) => String(x || "").trim()).filter(Boolean)
-            : [];
         const code = String(data?.code || "").trim() || makeContainerCode();
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
@@ -275,9 +262,10 @@ export function ContainerResourceCreate() {
         }
         return {
           ...data,
-          partnerIds,
-          partnerRows: undefined,
           code,
+          currentProvinceName: undefined,
+          currentDistrictName: undefined,
+          currentWardName: undefined,
           currentLocationLabel: undefined,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
@@ -311,11 +299,6 @@ export function ContainerResourceEdit() {
       mutationMode="pessimistic"
       sx={EDIT_PAGE_SX}
       transform={async (data: any) => {
-        const partnerIds = Array.isArray(data?.partnerRows)
-          ? data.partnerRows.map((row: any) => String(row?.partnerId || "").trim()).filter(Boolean)
-          : Array.isArray(data?.partnerIds)
-            ? data.partnerIds.map((x: any) => String(x || "").trim()).filter(Boolean)
-            : [];
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
         if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
@@ -331,8 +314,9 @@ export function ContainerResourceEdit() {
         }
         return {
           ...data,
-          partnerIds,
-          partnerRows: undefined,
+          currentProvinceName: undefined,
+          currentDistrictName: undefined,
+          currentWardName: undefined,
           currentLocationLabel: undefined,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,

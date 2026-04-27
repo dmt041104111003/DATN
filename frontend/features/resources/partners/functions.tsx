@@ -133,7 +133,7 @@ export function PartnerResourceCreate() {
       >
         <TextInput source="code" label="Mã đơn vị liên kết" disabled fullWidth />
         <TextInput source="displayName" label="Tên đơn vị" validate={[required()]} fullWidth />
-        <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} fullWidth />
+        <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} disabled fullWidth />
         <PartnerAreaInputs />
         <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
       </SimpleForm>
@@ -147,7 +147,7 @@ export function PartnerResourceEdit() {
       <SimpleForm sx={FORM_SX}>
         <TextInput source="code" label="Mã đơn vị liên kết" disabled fullWidth />
         <TextInput source="displayName" label="Tên đơn vị" validate={[required()]} fullWidth />
-        <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} fullWidth />
+        <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} disabled fullWidth />
         <PartnerAreaInputs />
         <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
       </SimpleForm>
