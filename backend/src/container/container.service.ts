@@ -7,6 +7,24 @@ function cleanString(v: unknown): string {
   return String(v ?? '').trim();
 }
 
+function buildRootLocationLabel(provinceId: unknown, districtId: unknown, wardId: unknown) {
+  return [cleanString(provinceId), cleanString(districtId), cleanString(wardId)].filter(Boolean).join(', ');
+}
+
+function uniqWallets(values: string[]) {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of values) {
+    const wallet = cleanString(raw);
+    if (!wallet) continue;
+    const key = wallet.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(wallet);
+  }
+  return out;
+}
+
 @Injectable()
 export class ContainerService {
   constructor(private readonly prisma: PrismaService) {}
@@ -98,6 +116,14 @@ export class ContainerService {
     const txHash = cleanString(data.txHash);
     await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
 
+    const rootWallet = cleanString(addr);
+    const rootLocationLabel = buildRootLocationLabel(data?.currentProvinceId, data?.currentDistrictId, data?.currentWardId);
+    const incomingWallets = Array.isArray(data?.partnerWalletAddresses)
+      ? data.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+      : [];
+    const incomingLocations = Array.isArray(data?.partnerLocationLabels)
+      ? data.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+      : [];
     const row = await (this.prisma as any).container.create({
       data: {
         traceSchemeRef: cleanString(data.traceSchemeRef),
@@ -126,6 +152,10 @@ export class ContainerService {
         txHash,
         verified: false,
         verifiedAt: null,
+        payload: {
+          partnerWalletAddresses: uniqWallets([rootWallet, ...incomingWallets]),
+          partnerLocationLabels: [rootLocationLabel, ...incomingLocations].filter(Boolean),
+        },
       } as any,
     });
     const fresh = await (this.prisma as any).container.findUnique({
@@ -163,6 +193,17 @@ export class ContainerService {
     });
     const txHash = cleanString(data.txHash);
     if (txHash) {
+      const rootWallet = cleanString(createdBy);
+      const nextProvinceId = data.currentProvinceId !== undefined ? data.currentProvinceId : existing.currentProvinceId;
+      const nextDistrictId = data.currentDistrictId !== undefined ? data.currentDistrictId : existing.currentDistrictId;
+      const nextWardId = data.currentWardId !== undefined ? data.currentWardId : existing.currentWardId;
+      const rootLocationLabel = buildRootLocationLabel(nextProvinceId, nextDistrictId, nextWardId);
+      const incomingWallets = Array.isArray(data?.partnerWalletAddresses)
+        ? data.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : [];
+      const incomingLocations = Array.isArray(data?.partnerLocationLabels)
+        ? data.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : [];
       await (this.prisma as any).recordOperation.create({
         data: {
           entityType: ENTITY_TYPE,
@@ -172,6 +213,10 @@ export class ContainerService {
           txHash,
           verified: false,
           verifiedAt: null,
+          payload: {
+            partnerWalletAddresses: uniqWallets([rootWallet, ...incomingWallets]),
+            partnerLocationLabels: [rootLocationLabel, ...incomingLocations].filter(Boolean),
+          },
         } as any,
       });
     }

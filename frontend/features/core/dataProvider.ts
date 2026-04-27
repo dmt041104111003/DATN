@@ -240,6 +240,19 @@ function buildContainerMetadata(data: any, previousData: any) {
     gps_payload: cleanString(data?.locationProofPayload || previousData?.locationProofPayload),
     gps_signature: cleanString(data?.locationProofSignature || previousData?.locationProofSignature),
     gps_signed: cleanString(data?.locationProofSigned || previousData?.locationProofSigned),
+    partner_wallet_addresses: JSON.stringify(
+      Array.isArray(data?.partnerWalletAddresses)
+        ? data.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : Array.isArray(previousData?.partnerWalletAddresses)
+          ? previousData.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+          : [],
+    ),
+    partner_location_labels: (Array.isArray(data?.partnerLocationLabels)
+      ? data.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+      : Array.isArray(previousData?.partnerLocationLabels)
+        ? previousData.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : []
+    ).join("; "),
     note: cleanString(data?.note || previousData?.note),
   };
 }

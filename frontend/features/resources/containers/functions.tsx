@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  ArrayInput,
   BooleanField,
   Create,
   Datagrid,
@@ -13,9 +14,12 @@ import {
   SelectField,
   SelectInput,
   SimpleForm,
+  SimpleFormIterator,
   TextField,
   TextInput,
   Toolbar,
+  FormDataConsumer,
+  useSimpleFormIteratorItem,
   useGetList,
   required,
 } from "react-admin";
@@ -23,10 +27,8 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
 import {
   captureCurrentGpsLocation,
-  getDistrictNameById,
-  getProvinceNameById,
-  getWardNameById,
 } from "@/features/resources/shared/location";
+import { AdministrativeAreaFields } from "@/features/resources/shared/areaFields";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -62,15 +64,53 @@ const positiveNumber = (value: unknown) => {
   return undefined;
 };
 
-function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
-  const isEditForm = mode === "edit";
+
+function buildLocationLabelFromRow(row: any) {
+  const province = String(row?.provinceId || "").trim();
+  const district = String(row?.districtId || "").trim();
+  const ward = String(row?.wardId || "").trim();
+  return [province, district, ward].filter(Boolean).join(", ");
+}
+
+function AdditionalParticipantRow({ partnerById }: { partnerById: Map<string, any> }) {
+  const { setValue } = useFormContext();
+  const { index } = useSimpleFormIteratorItem();
+  const partnerId = String(useWatch({ name: `partnerRows.${index}.partnerId` }) || "").trim();
+  const partner = partnerById.get(partnerId);
+
+  React.useEffect(() => {
+    if (!partnerId || !partner) return;
+    setValue(`partnerRows.${index}.walletAddress`, String(partner?.walletAddress || "").trim());
+    setValue(`partnerRows.${index}.provinceId`, String(partner?.provinceId || "").trim());
+    setValue(`partnerRows.${index}.districtId`, String(partner?.districtId || "").trim());
+    setValue(`partnerRows.${index}.wardId`, String(partner?.wardId || "").trim());
+  }, [index, partner, partnerId, setValue]);
+
+  const partnerChoices = Array.from(partnerById.values()).map((row: any) => ({
+    id: String(row?.id || ""),
+    name: `${String(row?.displayName || "")} - ${String(row?.walletAddress || "").slice(0, 16)}...`,
+  }));
+
+  return (
+    <>
+      <SelectInput source="partnerId" label="Chọn đơn vị liên kết" choices={partnerChoices} fullWidth />
+      <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} disabled={Boolean(partnerId)} fullWidth />
+      <AdministrativeAreaFields
+        provinceSource="provinceId"
+        districtSource="districtId"
+        wardSource="wardId"
+        provinceLabel="Tỉnh/Thành phố"
+        requiredAll={false}
+        disabled
+      />
+    </>
+  );
+}
+
+function ContainerFormSections() {
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
-  const currentProvinceId = String(useWatch({ name: "currentProvinceId" }) ?? "");
-  const currentDistrictId = String(useWatch({ name: "currentDistrictId" }) ?? "");
-  const currentWardId = String(useWatch({ name: "currentWardId" }) ?? "");
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
-  const { setValue } = useFormContext();
   const [capacitySummary, setCapacitySummary] = React.useState<{
     totalCapacityKg: number;
     usedCapacityKg: number;
@@ -117,29 +157,23 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
     };
   }, [productionInventoryKey, currentInventoryKey]);
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const [provinceName, districtName, wardName] = await Promise.all([
-        currentProvinceId ? getProvinceNameById(currentProvinceId) : Promise.resolve(""),
-        currentDistrictId ? getDistrictNameById(currentDistrictId) : Promise.resolve(""),
-        currentWardId ? getWardNameById(currentWardId) : Promise.resolve(""),
-      ]);
-      if (!mounted) return;
-      setValue("currentProvinceName", provinceName || currentProvinceId || "");
-      setValue("currentDistrictName", districtName || currentDistrictId || "");
-      setValue("currentWardName", wardName || currentWardId || "");
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [currentProvinceId, currentDistrictId, currentWardId, setValue]);
-
   const { data: productionRows = [] } = useGetList("production", {
     pagination: { page: 1, perPage: 1000 },
     sort: { field: "createdAt", order: "DESC" },
   });
-
+  const { data: partnerRows = [] } = useGetList("partner", {
+    pagination: { page: 1, perPage: 1000 },
+    sort: { field: "createdAt", order: "DESC" },
+  });
+  const partnerById = React.useMemo(() => {
+    const map = new Map<string, any>();
+    for (const row of partnerRows || []) {
+      const id = String((row as any)?.id || "").trim();
+      if (!id) continue;
+      map.set(id, row);
+    }
+    return map;
+  }, [partnerRows]);
   const productionChoices = (productionRows || [])
     .filter((row: any) => String(row?.status || "").toUpperCase() === "CLOSED")
     .map((row: any) => ({
@@ -191,9 +225,21 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
               ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
-          <TextInput source="currentProvinceName" label="Tỉnh/Thành hiện tại" disabled fullWidth />
-          <TextInput source="currentDistrictName" label="Quận/Huyện hiện tại" disabled fullWidth />
-          <TextInput source="currentWardName" label="Phường/Xã hiện tại" disabled fullWidth />
+          <AdministrativeAreaFields
+            provinceSource="currentProvinceId"
+            districtSource="currentDistrictId"
+            wardSource="currentWardId"
+            provinceLabel="Tỉnh/Thành hiện tại"
+            districtLabel="Quận/Huyện hiện tại"
+            wardLabel="Phường/Xã hiện tại"
+            requiredAll={false}
+            disabled
+          />
+          <ArrayInput source="partnerRows" label="Danh sách đơn vị liên kết bổ sung">
+            <SimpleFormIterator>
+              <FormDataConsumer>{() => <AdditionalParticipantRow partnerById={partnerById} />}</FormDataConsumer>
+            </SimpleFormIterator>
+          </ArrayInput>
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
         </div>
       </div>
@@ -260,12 +306,19 @@ export function ContainerResourceCreate() {
         if (actual > Number(summary?.remainingCapacityKg || 0)) {
           throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
         }
+        const extraRows = Array.isArray(data?.partnerRows) ? data.partnerRows : [];
+        const partnerWalletAddresses = extraRows
+          .map((row: any) => String(row?.walletAddress || "").trim())
+          .filter(Boolean);
+        const partnerLocationLabels = extraRows
+          .map((row: any) => buildLocationLabelFromRow(row))
+          .filter(Boolean);
         return {
           ...data,
           code,
-          currentProvinceName: undefined,
-          currentDistrictName: undefined,
-          currentWardName: undefined,
+          partnerWalletAddresses,
+          partnerLocationLabels,
+          partnerRows: undefined,
           currentLocationLabel: undefined,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
@@ -287,7 +340,7 @@ export function ContainerResourceCreate() {
           status: "CREATE",
         }}
       >
-        <ContainerFormSections mode="create" />
+        <ContainerFormSections />
       </SimpleForm>
     </Create>
   );
@@ -312,11 +365,18 @@ export function ContainerResourceEdit() {
         if (actual > Number(summary?.remainingCapacityKg || 0)) {
           throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
         }
+        const extraRows = Array.isArray(data?.partnerRows) ? data.partnerRows : [];
+        const partnerWalletAddresses = extraRows
+          .map((row: any) => String(row?.walletAddress || "").trim())
+          .filter(Boolean);
+        const partnerLocationLabels = extraRows
+          .map((row: any) => buildLocationLabelFromRow(row))
+          .filter(Boolean);
         return {
           ...data,
-          currentProvinceName: undefined,
-          currentDistrictName: undefined,
-          currentWardName: undefined,
+          partnerWalletAddresses,
+          partnerLocationLabels,
+          partnerRows: undefined,
           currentLocationLabel: undefined,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
@@ -332,7 +392,7 @@ export function ContainerResourceEdit() {
         sx={FORM_SX}
         toolbar={<ContainerEditToolbar />}
       >
-        <ContainerFormSections mode="edit" />
+        <ContainerFormSections />
       </SimpleForm>
     </Edit>
   );

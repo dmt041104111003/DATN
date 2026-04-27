@@ -28,14 +28,9 @@ import {
 import { useFormContext, useWatch } from "react-hook-form";
 import {
   CERTIFICATIONS,
-  type Option,
   type ProductionStatus,
 } from "./constants";
-import {
-  getDistrictOptions,
-  getProvinceOptions,
-  getWardOptions,
-} from "@/features/resources/shared/location";
+import { AdministrativeAreaFields } from "@/features/resources/shared/areaFields";
 import {
   CREATE_PAGE_SX,
   EDIT_PAGE_SX,
@@ -59,86 +54,13 @@ const positiveNumber = (value: unknown) => {
 };
 
 function ProductionFormSections() {
-  const { setValue } = useFormContext();
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "CREATED";
-  const provinceId = String(useWatch({ name: "provinceId" }) ?? "");
-  const districtId = String(useWatch({ name: "districtId" }) ?? "");
   const varietyId = String(useWatch({ name: "varietyId" }) ?? "");
   const certifications = (useWatch({ name: "certifications" }) as string[] | undefined) ?? [];
   const hasOtherCertification = certifications.includes("other");
 
   const fullyLocked = status === "CLOSED";
   const lockedCore = fullyLocked;
-  const [provinceOptions, setProvinceOptions] = React.useState<Option[]>([]);
-  const [districtOptions, setDistrictOptions] = React.useState<Option[]>([]);
-  const [wardOptions, setWardOptions] = React.useState<Option[]>([]);
-  const prevProvinceRef = React.useRef<string>("");
-  const prevDistrictRef = React.useRef<string>("");
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const rows = await getProvinceOptions();
-      if (mounted) setProvinceOptions(rows);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!provinceId) {
-        setDistrictOptions([]);
-        return;
-      }
-      const rows = await getDistrictOptions(provinceId);
-      if (mounted) setDistrictOptions(rows);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [provinceId]);
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!districtId) {
-        setWardOptions([]);
-        return;
-      }
-      const rows = await getWardOptions(districtId);
-      if (mounted) setWardOptions(rows);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [districtId]);
-
-  React.useEffect(() => {
-    if (!prevProvinceRef.current) {
-      prevProvinceRef.current = provinceId;
-      return;
-    }
-    if (prevProvinceRef.current !== provinceId) {
-      setValue("districtId", "");
-      setValue("wardId", "");
-      prevProvinceRef.current = provinceId;
-    }
-  }, [provinceId, setValue]);
-
-  React.useEffect(() => {
-    if (!prevDistrictRef.current) {
-      prevDistrictRef.current = districtId;
-      return;
-    }
-    if (prevDistrictRef.current !== districtId) {
-      setValue("wardId", "");
-      prevDistrictRef.current = districtId;
-    }
-  }, [districtId, setValue]);
-
   return (
     <>
       {fullyLocked ? (
@@ -157,35 +79,12 @@ function ProductionFormSections() {
             validate={[required()]}
             fullWidth
           />
-          <SelectInput
-            source="provinceId"
-            label="Tỉnh/Thành"
-            choices={provinceOptions}
-            optionValue="id"
-            optionText="name"
+          <AdministrativeAreaFields
+            provinceSource="provinceId"
+            districtSource="districtId"
+            wardSource="wardId"
+            wardLabel="Xã/Phường"
             disabled={lockedCore}
-            validate={[required()]}
-            fullWidth
-          />
-          <SelectInput
-            source="districtId"
-            label="Quận/Huyện"
-            choices={districtOptions}
-            optionValue="id"
-            optionText="name"
-            disabled={lockedCore || !provinceId}
-            validate={[required()]}
-            fullWidth
-          />
-          <SelectInput
-            source="wardId"
-            label="Xã/Phường"
-            choices={wardOptions}
-            optionValue="id"
-            optionText="name"
-            disabled={lockedCore || !districtId}
-            validate={[required()]}
-            fullWidth
           />
           <SelectInput
             source="farmingMethod"

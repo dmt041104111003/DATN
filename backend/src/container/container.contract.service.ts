@@ -42,6 +42,41 @@ export class ContainerContractService {
     return out;
   }
 
+  private ensureRootParticipantMetadata(
+    metadata: Record<string, string>,
+    custodianAddress: string,
+  ): Record<string, string> {
+    const out = { ...metadata };
+    const wallet = String(custodianAddress || '').trim();
+    let incomingWallets: string[] = [];
+    try {
+      const parsed = JSON.parse(String(out.partner_wallet_addresses || '[]'));
+      incomingWallets = Array.isArray(parsed) ? parsed.map((x) => String(x || '').trim()).filter(Boolean) : [];
+    } catch {
+      incomingWallets = [];
+    }
+    const wallets = [wallet, ...incomingWallets].filter(Boolean);
+    const uniqWallets = Array.from(new Set(wallets.map((x) => x.toLowerCase())))
+      .map((lower) => wallets.find((x) => x.toLowerCase() === lower) as string)
+      .filter(Boolean);
+
+    const location = [
+      String(out.current_province || '').trim(),
+      String(out.current_district || '').trim(),
+      String(out.current_ward || '').trim(),
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const incomingLocations = String(out.partner_location_labels || '')
+      .split(';')
+      .map((x) => String(x || '').trim())
+      .filter(Boolean);
+    const locations = [location, ...incomingLocations].filter(Boolean);
+    out.partner_wallet_addresses = JSON.stringify(uniqWallets);
+    out.partner_location_labels = locations.join('; ');
+    return out;
+  }
+
   private async loadOnchainMetadata(owners: string[], inventoryKey: string): Promise<Record<string, unknown> | null> {
     const { policyId, contractAddress } = this.plutusHelper.getScripts(owners);
     const assetName = this.decodeAssetNameFromUnit(inventoryKey);
@@ -72,7 +107,10 @@ export class ContainerContractService {
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
     if (!code) throw new BadRequestException('Container code is required.');
 
-    const metadata = this.stringifyMetadata(dto.metadata);
+    const metadata = this.ensureRootParticipantMetadata(
+      this.stringifyMetadata(dto.metadata),
+      walletAddress,
+    );
     metadata.container_code = metadata.container_code || code;
     const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, [
       { productName: code, metadata, quantity: '1' },
@@ -93,7 +131,11 @@ export class ContainerContractService {
     if (!onchain) throw new BadRequestException('Container on-chain metadata was not found.');
     const merged: Record<string, string> = {};
     for (const [k, v] of Object.entries(onchain || {})) merged[String(k)] = String(v ?? '').trim();
-    for (const [k, v] of Object.entries(this.stringifyMetadata(dto.metadata))) merged[String(k)] = String(v ?? '').trim();
+    const incoming = this.ensureRootParticipantMetadata(
+      this.stringifyMetadata(dto.metadata),
+      walletAddress,
+    );
+    for (const [k, v] of Object.entries(incoming)) merged[String(k)] = String(v ?? '').trim();
 
     const code = this.decodeAssetNameFromUnit(inventoryKey);
     if (!code) throw new BadRequestException('Unable to decode asset name from inventoryKey.');

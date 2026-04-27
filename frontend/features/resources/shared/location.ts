@@ -9,9 +9,6 @@ const VIETNAM_PROVINCES_API = "https://provinces.open-api.vn/api";
 const provinceCache: Option[] = [];
 const districtCache = new Map<string, Option[]>();
 const wardCache = new Map<string, Option[]>();
-const provinceNameCache = new Map<string, string>();
-const districtNameCache = new Map<string, string>();
-const wardNameCache = new Map<string, string>();
 async function fetchJson(path: string): Promise<any> {
   const res = await fetch(`${VIETNAM_PROVINCES_API}${path}`);
   if (!res.ok) return null;
@@ -29,7 +26,6 @@ export async function getProvinceOptions(): Promise<Option[]> {
   const rows = (await fetchJson("/p/")) as AreaRow[] | null;
   const mapped = mapRows(rows ?? undefined);
   provinceCache.splice(0, provinceCache.length, ...mapped);
-  for (const item of mapped) provinceNameCache.set(item.id, item.name);
   return mapped;
 }
 
@@ -40,7 +36,6 @@ export async function getDistrictOptions(provinceId: string): Promise<Option[]> 
   const json = (await fetchJson(`/p/${key}?depth=2`)) as { districts?: AreaRow[] } | null;
   const mapped = mapRows(json?.districts);
   districtCache.set(key, mapped);
-  for (const item of mapped) districtNameCache.set(item.id, item.name);
   return mapped;
 }
 
@@ -51,38 +46,7 @@ export async function getWardOptions(districtId: string): Promise<Option[]> {
   const json = (await fetchJson(`/d/${key}?depth=2`)) as { wards?: AreaRow[] } | null;
   const mapped = mapRows(json?.wards);
   wardCache.set(key, mapped);
-  for (const item of mapped) wardNameCache.set(item.id, item.name);
   return mapped;
-}
-
-export async function getProvinceNameById(provinceId: string): Promise<string> {
-  const key = String(provinceId || "").trim();
-  if (!key) return "";
-  if (provinceNameCache.has(key)) return provinceNameCache.get(key) || "";
-  const json = (await fetchJson(`/p/${key}`)) as AreaRow | null;
-  const name = String(json?.name || "").trim();
-  if (name) provinceNameCache.set(key, name);
-  return name;
-}
-
-export async function getDistrictNameById(districtId: string): Promise<string> {
-  const key = String(districtId || "").trim();
-  if (!key) return "";
-  if (districtNameCache.has(key)) return districtNameCache.get(key) || "";
-  const json = (await fetchJson(`/d/${key}`)) as AreaRow | null;
-  const name = String(json?.name || "").trim();
-  if (name) districtNameCache.set(key, name);
-  return name;
-}
-
-export async function getWardNameById(wardId: string): Promise<string> {
-  const key = String(wardId || "").trim();
-  if (!key) return "";
-  if (wardNameCache.has(key)) return wardNameCache.get(key) || "";
-  const json = (await fetchJson(`/w/${key}`)) as AreaRow | null;
-  const name = String(json?.name || "").trim();
-  if (name) wardNameCache.set(key, name);
-  return name;
 }
 
 function cleanString(value: unknown) {
@@ -146,7 +110,6 @@ export async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error("Không truy vấn được Geoapify reverse geocoding.");
   const json = (await res.json()) as any;
-  console.log("Geoapify reverse raw:", json);
   const feature = Array.isArray(json?.features) && json.features.length ? json.features[0] : null;
   const props = feature?.properties || {};
   const geoapifyProvince = cleanString(props?.state || props?.state_district);
@@ -186,10 +149,6 @@ export async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
     wardId,
     locationLabel,
   };
-  console.log("GPS mapped area:", {
-    input: { lat, lng },
-    mapped,
-  });
   return mapped;
 }
 
