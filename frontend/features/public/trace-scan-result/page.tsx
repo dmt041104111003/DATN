@@ -29,6 +29,18 @@ function parseTripleList(raw: unknown): string[] {
     .filter(Boolean);
 }
 
+function parseWalletList(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
+  const text = cleanString(raw);
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
+  } catch {}
+  const matched = text.match(/addr_[a-z0-9]+/gi) || [];
+  return Array.from(new Set(matched.map((x) => cleanString(x).toLowerCase()).filter(Boolean)));
+}
+
 type TraceView = {
   containerTitle: string;
   containerCode: string;
@@ -70,13 +82,16 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         const json = (await res.json()) as any;
         const lotPassport = (json?.lotPassport || {}) as Record<string, unknown>;
         const points = parseTripleList(lotPassport.participant_location_labels);
+        const wallets = parseWalletList(lotPassport.participant_wallet_addresses);
+        const latestSignerWallet = cleanString(json?.latestSignerWallet).toLowerCase();
         if (!points.length) {
           throw new Error(cleanString(json?.message) || "Không có participant_location_labels để vẽ point.");
         }
-        const matchedLocation = normalizeTriple(
-          lotPassport.current_location || lotPassport.location || lotPassport.container_location,
-        );
-        const matchedIndex = matchedLocation ? points.findIndex((x) => x === matchedLocation) : -1;
+        const signerIndex =
+          latestSignerWallet && wallets.length
+            ? wallets.findIndex((w) => w === latestSignerWallet)
+            : -1;
+        const matchedIndex = signerIndex >= 0 && signerIndex < points.length ? signerIndex : -1;
         const containerTitle = cleanString(lotPassport.product_name) || "Chưa có tên sản phẩm";
         const containerCode = cleanString(lotPassport.container_code);
         const containerType = cleanString(lotPassport.container_type);

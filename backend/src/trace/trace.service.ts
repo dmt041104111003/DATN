@@ -53,12 +53,44 @@ function isAssetNotFoundError(err: unknown): boolean {
 export interface TraceResult {
   lotPassport: Record<string, unknown>;
   transactions?: Array<{ txHash: string; blockTime: number | null }>;
+  latestSignerWallet?: string | null;
   message?: string;
 }
 
 @Injectable()
 export class TraceService {
   private blockfrost: BlockFrostAPI;
+
+  private parseParticipantWallets(raw: unknown): string[] {
+    if (Array.isArray(raw)) {
+      return raw.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean);
+    }
+    const text = String(raw || '').trim();
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        return parsed.map((x) => String(x || '').trim().toLowerCase()).filter(Boolean);
+      }
+    } catch {}
+    return (text.match(/addr_[a-z0-9]+/gi) || [])
+      .map((x) => String(x || '').trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  private extractLatestSignerWallet(utxos: any, participantWallets: string[]): string | null {
+    const inputAddresses = Array.isArray(utxos?.inputs)
+      ? utxos.inputs
+          .map((x: any) => String(x?.address || '').trim().toLowerCase())
+          .filter(Boolean)
+      : [];
+    if (!inputAddresses.length) return null;
+    if (participantWallets.length) {
+      const matched = inputAddresses.find((addr) => participantWallets.includes(addr));
+      if (matched) return matched;
+    }
+    return inputAddresses[0] || null;
+  }
 
   private extractProductionInventoryKeyHex(rawDatum: string): string {
     try {
@@ -168,6 +200,7 @@ export class TraceService {
       return {
         lotPassport: {},
         transactions: txList,
+        latestSignerWallet: null,
         message: 'No transaction found for this inventory key.',
       };
     }
@@ -189,12 +222,17 @@ export class TraceService {
       if (productionInventoryKeyHex) {
         lotPassport.production_inventory_key = productionInventoryKeyHex;
       }
-      return { lotPassport, transactions: txList };
+      const participantWallets = this.parseParticipantWallets(
+        lotPassport?.participant_wallet_addresses,
+      );
+      const latestSignerWallet = this.extractLatestSignerWallet(utxos, participantWallets);
+      return { lotPassport, transactions: txList, latestSignerWallet };
     } catch (err) {
       console.error(`Error processing latest record ${latestTxHash}:`, err);
       return {
         lotPassport: {},
         transactions: txList,
+        latestSignerWallet: null,
         message: 'Failed to decode latest on-chain passport.',
       };
     }
