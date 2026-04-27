@@ -71,7 +71,7 @@ function ProductionFormSections() {
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[1] Thông tin vụ sản xuất</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextInput source="code" label="Mã vụ *" disabled fullWidth />
+          <TextInput source="assetName" label="assetName *" disabled fullWidth />
           <TextInput
             source="facilityId"
             label="Tên cơ sở sản xuất"
@@ -344,7 +344,7 @@ export function ProductionResourceList() {
   return (
     <List exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
-        <TextField source="code" label="Mã vụ" />
+        <TextField source="id" label="Mã vụ" />
         <TextField source="facilityId" label="Cơ sở" />
         <TextField source="cropType" label="Loại cây" />
         <SelectField
@@ -371,6 +371,8 @@ export function ProductionResourceCreate() {
     <Create
       transform={(data: any) => ({
         ...data,
+        code: String(data?.assetName || data?.code || "").trim() || makeProductionCode(),
+        assetName: undefined,
         status: "CREATED",
         harvestDate: null,
         certifications: [],
@@ -382,7 +384,7 @@ export function ProductionResourceCreate() {
       <SimpleForm
         sx={FORM_SX}
         defaultValues={{
-          code: makeProductionCode(),
+          assetName: makeProductionCode(),
           status: "CREATED",
           certFiles: [],
           evidenceFiles: [],

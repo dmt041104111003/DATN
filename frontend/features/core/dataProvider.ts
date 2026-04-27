@@ -15,6 +15,8 @@ const BACKEND_URL =
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
   container: "containers",
+  warehouse: "warehouses",
+  "warehouse-storage": "warehouse-storages",
   profile: "profile",
 };
 
@@ -46,6 +48,8 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
   "container",
+  "warehouse",
+  "warehouse-storage",
 ]);
 
 function cleanString(value: unknown) {
@@ -98,8 +102,15 @@ function attachMediaUrls(resource: string, row: any) {
   if (resource === "production") {
     return {
       ...row,
+      assetName: cleanString((row as any)?.assetName || (row as any)?.code),
       evidenceFiles: mapMediaArray(row.evidenceFiles),
       certFiles: mapMediaArray(row.certFiles),
+    };
+  }
+  if (resource === "container") {
+    return {
+      ...row,
+      assetName: cleanString((row as any)?.assetName || (row as any)?.code),
     };
   }
   return row;
@@ -194,7 +205,7 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
         : "CREATED";
   return {
     status: metadataStatus,
-    production_code: cleanString(data?.code || previousData?.code),
+    production_code: cleanString(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
     facility: cleanString(data?.facilityId || previousData?.facilityId),
     province: cleanString(data?.provinceId || previousData?.provinceId),
     district: cleanString(data?.districtId || previousData?.districtId),
@@ -221,7 +232,7 @@ function buildContainerMetadata(data: any, previousData: any) {
         : "CREATE";
   return {
     status: metadataStatus,
-    container_code: cleanString(data?.code || previousData?.code),
+    container_code: cleanString(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
     production_inventory_key: cleanString(data?.productionInventoryKey || previousData?.productionInventoryKey),
     container_type: cleanString(data?.containerType || previousData?.containerType),
     capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
@@ -230,14 +241,6 @@ function buildContainerMetadata(data: any, previousData: any) {
     current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
     current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
     current_ward: cleanString(data?.currentWardId || previousData?.currentWardId),
-    gps_lat: cleanString(data?.locationProofLat || previousData?.locationProofLat),
-    gps_lng: cleanString(data?.locationProofLng || previousData?.locationProofLng),
-    gps_accuracy_m: cleanString(data?.locationProofAccuracyM || previousData?.locationProofAccuracyM),
-    gps_timestamp_iso: cleanString(data?.locationProofTimestampIso || previousData?.locationProofTimestampIso),
-    gps_wallet: cleanString(data?.locationProofWalletAddress || previousData?.locationProofWalletAddress),
-    gps_payload: cleanString(data?.locationProofPayload || previousData?.locationProofPayload),
-    gps_signature: cleanString(data?.locationProofSignature || previousData?.locationProofSignature),
-    gps_signed: cleanString(data?.locationProofSigned || previousData?.locationProofSigned),
     participant_wallet_addresses: JSON.stringify(
       Array.isArray(data?.participantWalletAddresses)
         ? data.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
@@ -252,6 +255,17 @@ function buildContainerMetadata(data: any, previousData: any) {
         : []
     ).join("; "),
     note: cleanString(data?.note || previousData?.note),
+  };
+}
+
+function buildWarehouseStorageMetadata(data: any, previousData: any, opType: "IN" | "OUT" | "UPDATE") {
+  return {
+    storage_op: opType,
+    warehouse_id: cleanString(data?.warehouseId || previousData?.warehouseId),
+    container_inventory_key: cleanString(data?.containerInventoryKey || data?.productId || previousData?.containerInventoryKey),
+    entry_time: cleanString(data?.entryTime || previousData?.entryTime),
+    exit_time: cleanString(data?.exitTime || previousData?.exitTime),
+    storage_conditions: cleanString(data?.conditions || previousData?.conditions),
   };
 }
 
@@ -361,6 +375,30 @@ export const adminDataProvider: DataProvider = {
       const row = patchRes.json as any;
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
+    if (resource === "warehouse-storage") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = cleanString(
+        params.data?.containerInventoryKey ||
+        params.data?.productId ||
+        params.previousData?.containerInventoryKey ||
+        params.previousData?.productId,
+      );
+      if (!inventoryKey) throw new Error("containerInventoryKey is required.");
+      const metadata = buildWarehouseStorageMetadata(params.data, params.previousData, "UPDATE");
+      const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare warehouse storage on-chain update.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const result = await baseProvider.update(resource, {
+        ...params,
+        data: { ...params.data, txHash, containerInventoryKey: inventoryKey },
+      });
+      return result;
+    }
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
@@ -373,7 +411,7 @@ export const adminDataProvider: DataProvider = {
         body: JSON.stringify({
           custodianAddress,
           owners,
-          assetName: String(params.data?.code || "").trim(),
+          assetName: String(params.data?.assetName || params.data?.code || "").trim(),
           metadata,
         }),
       });
@@ -407,7 +445,7 @@ export const adminDataProvider: DataProvider = {
         body: JSON.stringify({
           custodianAddress,
           owners,
-          assetName: String(params.data?.code || "").trim(),
+          assetName: String(params.data?.assetName || params.data?.code || "").trim(),
           metadata,
         }),
       });
@@ -428,6 +466,24 @@ export const adminDataProvider: DataProvider = {
       });
       const row = dbRes.json as any;
       return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
+    }
+    if (resource === "warehouse-storage") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = cleanString(params.data?.containerInventoryKey || params.data?.productId);
+      if (!inventoryKey) throw new Error("containerInventoryKey is required.");
+      const metadata = buildWarehouseStorageMetadata(params.data, null, "IN");
+      const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare warehouse storage on-chain update.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      return baseProvider.create(resource, {
+        ...params,
+        data: { ...params.data, txHash, containerInventoryKey: inventoryKey },
+      });
     }
 
 
@@ -476,6 +532,32 @@ export const adminDataProvider: DataProvider = {
       ensureUnsignedTxResponse(unsigned, "Failed to prepare production burn transaction.");
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
       const { json } = await httpClient(`${BACKEND_URL}/productions/${encodeURIComponent(inventoryKey)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
+    }
+    if (resource === "warehouse-storage") {
+      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const owners = buildOwnerList(owner, custodianAddress);
+      const inventoryKey = cleanString(
+        (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
+      );
+      if (!inventoryKey) throw new Error("containerInventoryKey is required.");
+      const metadata = buildWarehouseStorageMetadata(
+        { ...(params.previousData as any), exitTime: new Date().toISOString() },
+        params.previousData,
+        "OUT",
+      );
+      const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare warehouse storage on-chain update.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/warehouse-storages/${encodeURIComponent(String(params.id))}`, {
         method: "DELETE",
         body: JSON.stringify({ txHash }),
       });

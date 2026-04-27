@@ -18,6 +18,7 @@ model User {
   isActive  Boolean   @default(true)
   productions Production[]
   containers  Container[]
+  warehouses  Warehouse[]
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -107,9 +108,42 @@ model Container {
   updatedAt                   DateTime @updatedAt
 
   recordOperations            RecordOperation[] @relation("ContainerRecordOperations")
+  warehouseStorages           WarehouseStorage[]
 
   @@index([productionInventoryKey])
   @@index([registeringCustodianAddress])
+}
+
+model Warehouse {
+  id                          String   @id @default(cuid())
+  name                        String
+  location                    String
+  capacity                    String
+  registeringCustodianAddress String
+  registeringCustodian        User?    @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  storages                    WarehouseStorage[]
+
+  @@index([registeringCustodianAddress])
+}
+
+model WarehouseStorage {
+  id                    String    @id @default(cuid())
+  containerInventoryKey String
+  warehouseId           String
+  entryTime             DateTime
+  exitTime              DateTime?
+  conditions            String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  container             Container @relation(fields: [containerInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  warehouse             Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@index([containerInventoryKey])
+  @@index([warehouseId])
 }
 
 enum ProductionStage {

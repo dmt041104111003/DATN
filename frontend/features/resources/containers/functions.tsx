@@ -193,7 +193,7 @@ function ContainerFormSections() {
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[1] Thông tin thùng hàng</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextInput source="code" label="Mã thùng *" disabled fullWidth />
+          <TextInput source="assetName" label="assetName *" disabled fullWidth />
           <SelectInput
             source="containerType"
             label="Loại thùng"
@@ -281,7 +281,7 @@ export function ContainerResourceList() {
   return (
     <List exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
-        <TextField source="code" label="Mã thùng" />
+        <TextField source="id" label="Mã thùng" />
         <TextField source="containerType" label="Loại thùng" />
         <SelectField
           source="status"
@@ -302,7 +302,7 @@ export function ContainerResourceCreate() {
   return (
     <Create
       transform={async (data: any) => {
-        const code = String(data?.code || "").trim() || makeContainerCode();
+        const code = String(data?.assetName || data?.code || "").trim() || makeContainerCode();
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
         if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
@@ -317,16 +317,13 @@ export function ContainerResourceCreate() {
         return {
           ...data,
           code,
+          assetName: undefined,
           participantWalletAddresses: participants.participantWalletAddresses,
           participantLocationLabels: participants.participantLocationLabels,
           participantRows: participants.participantRows,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
           currentWardId: gps.wardId,
-          locationProofLat: String(gps.lat),
-          locationProofLng: String(gps.lng),
-          locationProofAccuracyM: gps.accuracyM === null ? "" : String(gps.accuracyM),
-          locationProofTimestampIso: gps.timestampIso,
           status: "CREATE",
         };
       }}
@@ -336,7 +333,7 @@ export function ContainerResourceCreate() {
         sx={FORM_SX}
         toolbar={<ContainerCreateToolbar />}
         defaultValues={{
-          code: makeContainerCode(),
+          assetName: makeContainerCode(),
           status: "CREATE",
         }}
       >
@@ -374,10 +371,6 @@ export function ContainerResourceEdit() {
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
           currentWardId: gps.wardId,
-          locationProofLat: String(gps.lat),
-          locationProofLng: String(gps.lng),
-          locationProofAccuracyM: gps.accuracyM === null ? "" : String(gps.accuracyM),
-          locationProofTimestampIso: gps.timestampIso,
         };
       }}
     >

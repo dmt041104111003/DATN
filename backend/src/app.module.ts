@@ -26,6 +26,8 @@ import {
   ContainerService,
 } from './container';
 import { LocationController } from './location/location.controller';
+import { WarehouseController, WarehouseService } from './warehouse';
+import { WarehouseStorageController, WarehouseStorageService } from './warehouse-storage';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { LocationController } from './location/location.controller';
     ProductionContractController,
     ContainerController,
     ContainerContractController,
+    WarehouseController,
+    WarehouseStorageController,
     HealthController,
     LocationController,
   ],
@@ -63,6 +67,8 @@ import { LocationController } from './location/location.controller';
     ProductionContractService,
     ContainerService,
     ContainerContractService,
+    WarehouseService,
+    WarehouseStorageService,
   ],
 })
 export class AppModule {}
