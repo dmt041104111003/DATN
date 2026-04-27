@@ -25,6 +25,20 @@ function buildLocationLabel(provinceId: unknown, districtId: unknown, wardId: un
   return [cleanString(provinceId), cleanString(districtId), cleanString(wardId)].filter(Boolean).join(', ');
 }
 
+function parseStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((x) => cleanString(x)).filter(Boolean);
+  const raw = cleanString(value);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map((x) => cleanString(x)).filter(Boolean);
+  } catch {}
+  return raw
+    .split(';')
+    .map((x) => cleanString(x))
+    .filter(Boolean);
+}
+
 @Injectable()
 export class ContainerService {
   constructor(private readonly prisma: PrismaService) {}
@@ -79,12 +93,8 @@ export class ContainerService {
   private toResponse(row: any, latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
-      participantWalletAddresses: Array.isArray(row?.participantWalletAddresses)
-        ? row.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : [],
-      participantLocationLabels: Array.isArray(row?.participantLocationLabels)
-        ? row.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : [],
+      participantWalletAddresses: parseStringArray(row?.participantWalletAddresses),
+      participantLocationLabels: parseStringArray(row?.participantLocationLabels),
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
       verifiedAt: txHashOverride ? null : latest?.verifiedAt ?? null,
@@ -103,12 +113,8 @@ export class ContainerService {
           }))
           .filter((row: any) => row.walletAddress)
       : [];
-    const fromWalletArray = Array.isArray(data?.participantWalletAddresses)
-      ? data.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-      : [];
-    const fromLocationArray = Array.isArray(data?.participantLocationLabels)
-      ? data.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-      : [];
+    const fromWalletArray = parseStringArray(data?.participantWalletAddresses);
+    const fromLocationArray = parseStringArray(data?.participantLocationLabels);
 
     const wallets = uniqWallets([owner, ...fromRows.map((x: any) => x.walletAddress), ...fromWalletArray]);
     const locationByWallet = new Map<string, string>();
@@ -159,7 +165,7 @@ export class ContainerService {
     const inventoryKey = cleanString(data.inventoryKey);
     const txHash = cleanString(data.txHash);
     await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
-    const ownerLocationLabel = buildLocationLabel(data?.currentProvinceId, data?.currentDistrictId, data?.currentWardId);
+    const ownerLocationLabel = cleanString(data?.location);
     const participants = this.buildParticipants(data, addr, ownerLocationLabel);
     const row = await (this.prisma as any).container.create({
       data: {
@@ -168,15 +174,13 @@ export class ContainerService {
         code: cleanString(data.code) || `THUNG_${Date.now()}`,
         productionInventoryKey: cleanString(data.productionInventoryKey),
         registeringCustodianAddress: addr,
-        currentProvinceId: cleanString(data.currentProvinceId) || null,
-        currentDistrictId: cleanString(data.currentDistrictId) || null,
-        currentWardId: cleanString(data.currentWardId) || null,
+        location: cleanString(data.location) || null,
         containerType: cleanString(data.containerType) || null,
         capacityKg: cleanString(data.capacityKg) || null,
         actualCapacityKg: cleanString(data.actualCapacityKg) || null,
         productName: cleanString(data.productName) || null,
-        participantWalletAddresses: participants.wallets,
-        participantLocationLabels: participants.locations,
+        participantWalletAddresses: JSON.stringify(participants.wallets),
+        participantLocationLabels: participants.locations.join('; '),
         note: cleanString(data.note) || null,
         status: 'CREATE',
       } as any,
@@ -214,27 +218,23 @@ export class ContainerService {
     await this.assertCapacityWithinRemaining(nextProductionInventoryKey, nextActualCapacityKg, key);
 
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
-    const nextProvinceId = data.currentProvinceId !== undefined ? data.currentProvinceId : existing.currentProvinceId;
-    const nextDistrictId = data.currentDistrictId !== undefined ? data.currentDistrictId : existing.currentDistrictId;
-    const nextWardId = data.currentWardId !== undefined ? data.currentWardId : existing.currentWardId;
+    const nextLocation = data.location !== undefined ? data.location : existing.location;
     const participants = this.buildParticipants(
       data,
       cleanString(existing.registeringCustodianAddress || createdBy),
-      buildLocationLabel(nextProvinceId, nextDistrictId, nextWardId),
+      cleanString(nextLocation),
     );
     const patch: Record<string, unknown> = {
       status: nextStatus,
-      participantWalletAddresses: participants.wallets,
-      participantLocationLabels: participants.locations,
+      participantWalletAddresses: JSON.stringify(participants.wallets),
+      participantLocationLabels: participants.locations.join('; '),
     };
     if (data.note !== undefined) patch.note = cleanString(data.note) || null;
     if (data.containerType !== undefined) patch.containerType = cleanString(data.containerType) || null;
     if (data.capacityKg !== undefined) patch.capacityKg = cleanString(data.capacityKg) || null;
     if (data.actualCapacityKg !== undefined) patch.actualCapacityKg = cleanString(data.actualCapacityKg) || null;
     if (data.productName !== undefined) patch.productName = cleanString(data.productName) || null;
-    if (data.currentProvinceId !== undefined) patch.currentProvinceId = cleanString(data.currentProvinceId) || null;
-    if (data.currentDistrictId !== undefined) patch.currentDistrictId = cleanString(data.currentDistrictId) || null;
-    if (data.currentWardId !== undefined) patch.currentWardId = cleanString(data.currentWardId) || null;
+    if (data.location !== undefined) patch.location = cleanString(data.location) || null;
 
     const updated = await (this.prisma as any).container.update({
       where: { inventoryKey: key },

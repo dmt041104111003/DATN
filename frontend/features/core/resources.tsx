@@ -17,7 +17,6 @@ import {
   WarehouseResourceList,
 } from "@/features/resources/warehouses";
 import {
-  WarehouseStorageResourceCreate,
   WarehouseStorageResourceEdit,
   WarehouseStorageResourceList,
 } from "@/features/resources/warehouse-storages";
@@ -57,7 +56,6 @@ export function renderAdminResources(permissions?: string) {
           <Resource
             name="warehouse-storage"
             list={WarehouseStorageResourceList}
-            create={WarehouseStorageResourceCreate}
             edit={WarehouseStorageResourceEdit}
           />
           <Resource name="qr-scan" list={QrScanResourcePage} />

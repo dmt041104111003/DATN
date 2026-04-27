@@ -68,7 +68,7 @@ export class ContainerContractService {
       .split(';')
       .map((x) => String(x || '').trim())
       .filter(Boolean);
-    const ownerLocation = [
+    const ownerLocation = String(out.current_location || '').trim() || [
       String(out.current_province || '').trim(),
       String(out.current_district || '').trim(),
       String(out.current_ward || '').trim(),

@@ -22,6 +22,7 @@ import {
   TextInput,
   Toolbar,
   FunctionField,
+  useRecordContext,
   useSaveContext,
   required,
 } from "react-admin";
@@ -53,11 +54,56 @@ const positiveNumber = (value: unknown) => {
   return undefined;
 };
 
+function cleanString(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function parseLocation(value: unknown) {
+  const parts = cleanString(value)
+    .split(",")
+    .map((x) => cleanString(x));
+  return {
+    productionProvinceId: parts[0] || "",
+    productionDistrictId: parts[1] || "",
+    productionWardId: parts[2] || "",
+  };
+}
+
+function buildLocation(formData: any) {
+  const province = cleanString(formData?.productionProvinceId);
+  const district = cleanString(formData?.productionDistrictId);
+  const ward = cleanString(formData?.productionWardId);
+  return [province, district, ward].filter(Boolean).join(", ");
+}
+
 function ProductionFormSections() {
+  const record = useRecordContext<any>();
+  const { setValue } = useFormContext();
+  const hydratedLocationRef = React.useRef<string>("");
   const status = (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "CREATED";
   const varietyId = String(useWatch({ name: "varietyId" }) ?? "");
   const certifications = (useWatch({ name: "certifications" }) as string[] | undefined) ?? [];
   const hasOtherCertification = certifications.includes("other");
+
+  React.useEffect(() => {
+    const locationRaw = cleanString(record?.location);
+    if (!locationRaw) return;
+    if (hydratedLocationRef.current === locationRaw) return;
+    const parsed = parseLocation(locationRaw);
+    setValue("productionProvinceId", parsed.productionProvinceId, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    setValue("productionDistrictId", parsed.productionDistrictId, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    setValue("productionWardId", parsed.productionWardId, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    hydratedLocationRef.current = locationRaw;
+  }, [record, setValue]);
 
   const fullyLocked = status === "CLOSED";
   const lockedCore = fullyLocked;
@@ -80,9 +126,9 @@ function ProductionFormSections() {
             fullWidth
           />
           <AdministrativeAreaFields
-            provinceSource="provinceId"
-            districtSource="districtId"
-            wardSource="wardId"
+            provinceSource="productionProvinceId"
+            districtSource="productionDistrictId"
+            wardSource="productionWardId"
             wardLabel="Xã/Phường"
             disabled={lockedCore}
           />
@@ -369,16 +415,24 @@ export function ProductionResourceList() {
 export function ProductionResourceCreate() {
   return (
     <Create
-      transform={(data: any) => ({
-        ...data,
-        code: String(data?.assetName || data?.code || "").trim() || makeProductionCode(),
-        assetName: undefined,
-        status: "CREATED",
-        harvestDate: null,
-        certifications: [],
-        certFiles: [],
-        evidenceFiles: [],
-      })}
+      transform={(data: any) => {
+        const location = buildLocation(data);
+        if (!location) throw new Error("Vị trí là bắt buộc.");
+        return {
+          ...data,
+          location,
+          code: String(data?.assetName || data?.code || "").trim() || makeProductionCode(),
+          assetName: undefined,
+          status: "CREATED",
+          harvestDate: null,
+          certifications: [],
+          certFiles: [],
+          evidenceFiles: [],
+          productionProvinceId: undefined,
+          productionDistrictId: undefined,
+          productionWardId: undefined,
+        };
+      }}
       sx={CREATE_PAGE_SX}
     >
       <SimpleForm
@@ -402,6 +456,17 @@ export function ProductionResourceEdit() {
     <Edit
       mutationMode="pessimistic"
       sx={EDIT_PAGE_SX}
+      transform={(data: any) => {
+        const location = buildLocation(data);
+        if (!location) throw new Error("Vị trí là bắt buộc.");
+        return {
+          ...data,
+          location,
+          productionProvinceId: undefined,
+          productionDistrictId: undefined,
+          productionWardId: undefined,
+        };
+      }}
     >
       <SimpleForm
         sx={FORM_SX}

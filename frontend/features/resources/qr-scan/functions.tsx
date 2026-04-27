@@ -1,109 +1,175 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, Typography, Alert, Stack, TextField } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Typography,
+  Alert,
+  Stack,
+  TextField,
+  MenuItem,
+} from "@mui/material";
 import { Scanner } from "@yudiel/react-qr-scanner";
+import { useDataProvider, useGetList } from "react-admin";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const DEFAULT_WAREHOUSE_KEY = "qr-scan-default-warehouse-id";
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
 }
 
-function makePartnerCode() {
-  return `DVLK_${Date.now()}`;
+function parsePositiveNumber(value: unknown) {
+  const n = Number(String(value ?? "").replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 export function QrScanResourcePage() {
+  const dataProvider = useDataProvider();
   const [statusText, setStatusText] = React.useState("");
   const [statusError, setStatusError] = React.useState("");
   const [busy, setBusy] = React.useState(false);
-  const lastWalletRef = React.useRef("");
+  const [warehouseId, setWarehouseId] = React.useState("");
+  const lastInventoryKeyRef = React.useRef("");
+  const scanGuardRef = React.useRef(false);
 
-  const insertFromWallet = React.useCallback(async (walletRaw: string) => {
-    const wallet = cleanString(walletRaw);
-    if (!wallet) {
-      setStatusError("Chưa có địa chỉ ví từ QR.");
-      return;
+  const { data: warehouses = [] } = useGetList("warehouse", {
+    pagination: { page: 1, perPage: 1000 },
+    sort: { field: "createdAt", order: "DESC" },
+  });
+  const { data: containers = [] } = useGetList("container", {
+    pagination: { page: 1, perPage: 2000 },
+    sort: { field: "createdAt", order: "DESC" },
+  });
+  const { data: storageRows = [], refetch: refetchStorageRows } = useGetList("warehouse-storage", {
+    pagination: { page: 1, perPage: 3000 },
+    sort: { field: "createdAt", order: "DESC" },
+  });
+
+  React.useEffect(() => {
+    const fromStorage = cleanString(window.localStorage.getItem(DEFAULT_WAREHOUSE_KEY));
+    if (fromStorage) {
+      setWarehouseId(fromStorage);
     }
-    if (busy) return;
-    if (lastWalletRef.current === wallet) return;
-    lastWalletRef.current = wallet;
-    setBusy(true);
-    setStatusError("");
-    setStatusText("");
-    try {
-      const meRes = await fetch(`${BACKEND_URL}/auth/me`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (!meRes.ok) throw new Error("Không xác định được tài khoản hiện tại.");
-      const meJson = (await meRes.json()) as any;
-      const myWallet = cleanString(
-        meJson?.user?.paymentAddress || meJson?.user?.walletAddress || meJson?.user?.sub || "",
-      );
-      if (myWallet && wallet === myWallet) {
-        throw new Error("Không thể tự thêm chính tài khoản của bạn.");
+  }, []);
+
+  React.useEffect(() => {
+    if (!warehouseId) return;
+    window.localStorage.setItem(DEFAULT_WAREHOUSE_KEY, warehouseId);
+  }, [warehouseId]);
+
+  const warehouseChoices = (warehouses || []).map((row: any) => ({
+    id: cleanString(row?.id),
+    name: `${cleanString(row?.name)} - ${cleanString(row?.location)}`,
+  }));
+
+  const containerByInventoryKey = React.useMemo(
+    () =>
+      new Map(
+        (containers || []).map((row: any) => [cleanString(row?.inventoryKey), row]),
+      ),
+    [containers],
+  );
+
+  const insertFromQr = React.useCallback(
+    async (inventoryKeyRaw: string) => {
+      const inventoryKey = cleanString(inventoryKeyRaw);
+      if (!inventoryKey) {
+        setStatusError("QR không có mã thùng hàng.");
+        return;
       }
-
-      const partnerListRes = await fetch(`${BACKEND_URL}/partners`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (!partnerListRes.ok) throw new Error("Không kiểm tra được danh sách đơn vị liên kết.");
-      const partnerRows = (await partnerListRes.json()) as any[];
-      const duplicated = (partnerRows || []).some(
-        (row: any) => cleanString(row?.walletAddress).toLowerCase() === wallet.toLowerCase(),
-      );
-      if (duplicated) {
-        throw new Error("Địa chỉ ví này đã tồn tại trong đơn vị liên kết.");
+      if (!warehouseId) {
+        setStatusError("Chọn kho mặc định trước khi quét.");
+        return;
       }
-
-      const profileRes = await fetch(`${BACKEND_URL}/profile/public/${encodeURIComponent(wallet)}`, {
-        method: "GET",
-        credentials: "include",
-      });
-      if (!profileRes.ok) throw new Error("Không kiểm tra được hồ sơ ví.");
-      const profileJson = (await profileRes.json()) as any;
-      const profile = profileJson?.profile;
-      if (!profile) throw new Error("Ví chưa có tài khoản trong hệ thống.");
-
-      const createRes = await fetch(`${BACKEND_URL}/partners`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: makePartnerCode(),
-          walletAddress: wallet,
-          displayName: cleanString(profile?.displayName) || wallet,
-          provinceId: cleanString(profile?.provinceId),
-          districtId: cleanString(profile?.districtId),
-          wardId: cleanString(profile?.wardId),
-          note: "",
-        }),
-      });
-      if (!createRes.ok) throw new Error(await createRes.text());
-      setStatusText(`Đã insert đơn vị liên kết: ${wallet}`);
-    } catch (e) {
-      setStatusError(e instanceof Error ? e.message : "Insert thất bại.");
-    } finally {
-      setBusy(false);
-    }
-  }, [busy]);
+      if (busy || scanGuardRef.current) return;
+      if (lastInventoryKeyRef.current === inventoryKey) return;
+      const selectedContainer = containerByInventoryKey.get(inventoryKey);
+      if (!selectedContainer) {
+        setStatusError("Không tìm thấy thùng hàng từ QR.");
+        return;
+      }
+      const selectedContainerCapacity = parsePositiveNumber(
+        selectedContainer?.actualCapacityKg || selectedContainer?.capacityKg,
+      );
+      const warehouse = (warehouses || []).find((row: any) => cleanString(row?.id) === warehouseId);
+      const warehouseCapacity = parsePositiveNumber(warehouse?.capacity);
+      const usedCapacity = (storageRows || [])
+        .filter((row: any) => cleanString(row?.warehouseId) === warehouseId)
+        .reduce((sum: number, row: any) => {
+          const key = cleanString(row?.containerInventoryKey || row?.productId);
+          const c = containerByInventoryKey.get(key);
+          return sum + parsePositiveNumber(c?.actualCapacityKg || c?.capacityKg);
+        }, 0);
+      if (
+        warehouseCapacity > 0 &&
+        selectedContainerCapacity > 0 &&
+        usedCapacity + selectedContainerCapacity > warehouseCapacity
+      ) {
+        setStatusError("Kho đầy.");
+        return;
+      }
+      const alreadyStored = (storageRows || []).some(
+        (row: any) => cleanString(row?.containerInventoryKey || row?.productId) === inventoryKey,
+      );
+      if (alreadyStored) {
+        setStatusError("Thùng hàng đã ở trong kho.");
+        return;
+      }
+      scanGuardRef.current = true;
+      lastInventoryKeyRef.current = inventoryKey;
+      setBusy(true);
+      setStatusError("");
+      setStatusText("");
+      try {
+        await dataProvider.create("warehouse-storage", {
+          data: {
+            warehouseId,
+            containerInventoryKey: inventoryKey,
+            conditions: "",
+          },
+        });
+        setStatusText(`Đã nhập kho: ${inventoryKey}`);
+        void refetchStorageRows();
+      } catch (e) {
+        setStatusError(e instanceof Error ? e.message : "Nhập kho thất bại.");
+      } finally {
+        setBusy(false);
+        window.setTimeout(() => {
+          scanGuardRef.current = false;
+        }, 1200);
+      }
+    },
+    [busy, containerByInventoryKey, dataProvider, refetchStorageRows, storageRows, warehouseId, warehouses],
+  );
 
   return (
     <Card>
       <CardContent>
         <Stack spacing={2}>
-          <Typography variant="h6">Quét QR</Typography>
-          <TextField label="Loại QR" value="Đơn vị liên kết" disabled fullWidth />
+          <Typography variant="h6">Quét QR nhập kho</Typography>
+          <TextField label="Loại QR" value="Nhập kho" disabled fullWidth />
+          <TextField
+            select
+            label="Kho mặc định"
+            value={warehouseId}
+            onChange={(event) => setWarehouseId(cleanString(event.target.value))}
+            fullWidth
+          >
+            {warehouseChoices.map((choice) => (
+              <MenuItem key={choice.id} value={choice.id}>
+                {choice.name}
+              </MenuItem>
+            ))}
+          </TextField>
           <Scanner
             onScan={(result) => {
               const raw = Array.isArray(result) && result[0] ? result[0].rawValue : "";
-              insertFromWallet(raw);
+              void insertFromQr(raw);
             }}
             onError={() => undefined}
           />
+          {busy ? <Alert severity="info">Đang nhập kho...</Alert> : null}
           {statusText ? <Alert severity="success">{statusText}</Alert> : null}
           {statusError ? <Alert severity="error">{statusError}</Alert> : null}
         </Stack>
@@ -111,4 +177,3 @@ export function QrScanResourcePage() {
     </Card>
   );
 }
-

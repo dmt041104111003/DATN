@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 const ENTITY_TYPE = 'WAREHOUSE_STORAGE';
 
@@ -45,10 +45,29 @@ export class WarehouseStorageService {
         container: { select: { inventoryKey: true, code: true } },
       },
     });
+    const entityKeys = rows.map((row: any) => cleanString(row?.id)).filter(Boolean);
+    const ops = entityKeys.length
+      ? await (this.prisma as any).recordOperation.findMany({
+          where: {
+            entityType: ENTITY_TYPE,
+            entityKey: { in: entityKeys },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { entityKey: true, verified: true, verifiedAt: true },
+        })
+      : [];
+    const latestOpByEntityKey = new Map<string, any>();
+    for (const op of ops) {
+      const key = cleanString((op as any)?.entityKey);
+      if (!key || latestOpByEntityKey.has(key)) continue;
+      latestOpByEntityKey.set(key, op);
+    }
     return rows.map((row: any) => ({
       ...row,
       warehouseName: cleanString(row?.warehouse?.name),
       containerCode: cleanString(row?.container?.code),
+      verified: Boolean(latestOpByEntityKey.get(cleanString(row?.id))?.verified),
+      verifiedAt: latestOpByEntityKey.get(cleanString(row?.id))?.verifiedAt || null,
     }));
   }
 
@@ -66,6 +85,11 @@ export class WarehouseStorageService {
       select: { inventoryKey: true },
     });
     if (!container) throw new NotFoundException('Container not found');
+    const duplicated = await (this.prisma as any).warehouseStorage.findFirst({
+      where: { containerInventoryKey },
+      select: { id: true },
+    });
+    if (duplicated) throw new ConflictException('Container already stored in warehouse');
     const row = await (this.prisma as any).warehouseStorage.create({
       data: {
         warehouseId,
@@ -98,6 +122,19 @@ export class WarehouseStorageService {
       patch.containerInventoryKey = cleanString(data?.containerInventoryKey || data?.productId);
     }
     if (data?.conditions !== undefined) patch.conditions = cleanString(data?.conditions) || null;
+    const nextContainerInventoryKey = cleanString(
+      patch.containerInventoryKey ?? (data?.containerInventoryKey || data?.productId),
+    );
+    if (nextContainerInventoryKey) {
+      const duplicated = await (this.prisma as any).warehouseStorage.findFirst({
+        where: {
+          containerInventoryKey: nextContainerInventoryKey,
+          id: { not: id },
+        },
+        select: { id: true },
+      });
+      if (duplicated) throw new ConflictException('Container already stored in warehouse');
+    }
     const row = await (this.prisma as any).warehouseStorage.update({
       where: { id },
       data: patch as any,

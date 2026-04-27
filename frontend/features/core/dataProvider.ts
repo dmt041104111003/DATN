@@ -35,8 +35,13 @@ const httpClient: typeof fetchUtils.fetchJson = async (url, options = {}) => {
 
 function mapUrlToBackend(url: string) {
   let mapped = url;
-  for (const [resource, endpoint] of Object.entries(resourceToEndpoint)) {
-    mapped = mapped.replace(`/${resource}`, `/${endpoint}`);
+  const entries = Object.entries(resourceToEndpoint).sort(
+    (a, b) => b[0].length - a[0].length,
+  );
+  for (const [resource, endpoint] of entries) {
+    const escaped = resource.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`(^|/)${escaped}(?=/|$)`);
+    mapped = mapped.replace(pattern, `$1${endpoint}`);
   }
   return mapped;
 }
@@ -54,6 +59,20 @@ const RESOURCES_WITH_LIST_FALLBACK = new Set([
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function parseStringList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((x) => cleanString(x)).filter(Boolean);
+  const raw = cleanString(value);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map((x) => cleanString(x)).filter(Boolean);
+  } catch {}
+  return raw
+    .split(";")
+    .map((x) => cleanString(x))
+    .filter(Boolean);
 }
 
 function normalizeId(row: any, fallback: string | number = "1") {
@@ -207,8 +226,7 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
     status: metadataStatus,
     production_code: cleanString(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
     facility: cleanString(data?.facilityId || previousData?.facilityId),
-    province: cleanString(data?.provinceId || previousData?.provinceId),
-    district: cleanString(data?.districtId || previousData?.districtId),
+    location: cleanString(data?.location || previousData?.location),
     farming_method: cleanString(data?.farmingMethod || previousData?.farmingMethod),
     seeding_date: cleanString(data?.seedingDate || previousData?.seedingDate),
     harvest_date: cleanString(data?.harvestDate || previousData?.harvestDate),
@@ -238,21 +256,18 @@ function buildContainerMetadata(data: any, previousData: any) {
     capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
     actual_capacity_kg: cleanString(data?.actualCapacityKg || previousData?.actualCapacityKg),
     product_name: cleanString(data?.productName || previousData?.productName),
-    current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
-    current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
-    current_ward: cleanString(data?.currentWardId || previousData?.currentWardId),
+    current_location: cleanString(data?.location || previousData?.location),
     participant_wallet_addresses: JSON.stringify(
-      Array.isArray(data?.participantWalletAddresses)
-        ? data.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : Array.isArray(previousData?.participantWalletAddresses)
-          ? previousData.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-          : [],
+      parseStringList(
+        data?.participantWalletAddresses !== undefined
+          ? data?.participantWalletAddresses
+          : previousData?.participantWalletAddresses,
+      ),
     ),
-    participant_location_labels: (Array.isArray(data?.participantLocationLabels)
-      ? data.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-      : Array.isArray(previousData?.participantLocationLabels)
-        ? previousData.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : []
+    participant_location_labels: parseStringList(
+      data?.participantLocationLabels !== undefined
+        ? data?.participantLocationLabels
+        : previousData?.participantLocationLabels,
     ).join("; "),
     note: cleanString(data?.note || previousData?.note),
   };

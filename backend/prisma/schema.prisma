@@ -59,9 +59,7 @@ model Production {
   registeringCustodian        User? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
 
   facilityId                  String
-  provinceId                  String
-  districtId                  String
-  wardId                      String
+  location                    String
   farmingMethod               String
   cropType                    String
   varietyId                   String?
@@ -93,15 +91,13 @@ model Container {
   production                  Production @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
   registeringCustodianAddress String
   registeringCustodian        User? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
-  currentProvinceId           String?
-  currentDistrictId           String?
-  currentWardId               String?
+  location                    String?
   containerType               String?
   capacityKg                  String?
   actualCapacityKg            String?
   productName                 String?
-  participantWalletAddresses  String[] @default([])
-  participantLocationLabels   String[] @default([])
+  participantWalletAddresses  String   @default("[]")
+  participantLocationLabels   String   @default("")
   note                        String?
   status                      ContainerStage @default(CREATE)
   createdAt                   DateTime @default(now())

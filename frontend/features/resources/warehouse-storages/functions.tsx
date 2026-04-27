@@ -1,16 +1,20 @@
 "use client";
 
 import {
+  BooleanField,
   Create,
   Datagrid,
   DateField,
+  DeleteButton,
   Edit,
   List,
+  SaveButton,
   SelectInput,
   required,
   SimpleForm,
   TextField,
   TextInput,
+  Toolbar,
   useGetList,
   useRecordContext,
 } from "react-admin";
@@ -87,6 +91,7 @@ function WarehouseStorageForm() {
         label="Thùng hàng"
         choices={containerChoices}
         validate={[required(), capacityValidator]}
+        disabled
         fullWidth
       />
       <TextInput source="conditions" label="Điều kiện bảo quản" fullWidth />
@@ -101,8 +106,8 @@ export function WarehouseStorageResourceList() {
         <TextField source="id" label="Mã lưu trữ" />
         <TextField source="warehouseName" label="Kho" />
         <TextField source="containerCode" label="Thùng hàng" />
-        <DateField source="createdAt" label="Nhập kho" showTime />
-        <DateField source="updatedAt" label="Cập nhật" showTime />
+        <BooleanField source="verified" label="Đã xác thực" />
+        <DateField source="verifiedAt" label="Thời gian xác thực" showTime />
         <TextField source="conditions" label="Điều kiện" />
       </Datagrid>
     </List>
@@ -122,7 +127,15 @@ export function WarehouseStorageResourceCreate() {
 export function WarehouseStorageResourceEdit() {
   return (
     <Edit mutationMode="pessimistic" sx={EDIT_PAGE_SX}>
-      <SimpleForm sx={FORM_SX}>
+      <SimpleForm
+        sx={FORM_SX}
+        toolbar={(
+          <Toolbar>
+            <SaveButton />
+            <DeleteButton label="Xuất kho" mutationMode="pessimistic" redirect="list" color="error" />
+          </Toolbar>
+        )}
+      >
         <WarehouseStorageForm />
       </SimpleForm>
     </Edit>

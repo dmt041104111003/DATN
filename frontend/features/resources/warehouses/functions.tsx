@@ -41,15 +41,17 @@ function buildLocation(formData: any) {
 function WarehouseLocationFields() {
   const record = useRecordContext<any>();
   const { setValue } = useFormContext();
-  const initedRef = React.useRef(false);
+  const hydratedLocationRef = React.useRef<string>("");
 
   React.useEffect(() => {
-    if (initedRef.current) return;
-    const parsed = parseLocation(record?.location);
+    const locationRaw = cleanString(record?.location);
+    if (!locationRaw) return;
+    if (hydratedLocationRef.current === locationRaw) return;
+    const parsed = parseLocation(locationRaw);
     setValue("warehouseProvinceId", parsed.warehouseProvinceId, { shouldDirty: false, shouldValidate: false });
     setValue("warehouseDistrictId", parsed.warehouseDistrictId, { shouldDirty: false, shouldValidate: false });
     setValue("warehouseWardId", parsed.warehouseWardId, { shouldDirty: false, shouldValidate: false });
-    initedRef.current = true;
+    hydratedLocationRef.current = locationRaw;
   }, [record, setValue]);
 
   return (

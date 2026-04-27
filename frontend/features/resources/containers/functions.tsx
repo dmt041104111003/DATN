@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import MuiButton from "@mui/material/Button";
+import QRCode from "qrcode";
 import {
   ArrayInput,
   BooleanField,
@@ -9,6 +11,7 @@ import {
   DateField,
   DeleteButton,
   Edit,
+  FunctionField,
   List,
   SaveButton,
   SelectField,
@@ -63,6 +66,19 @@ const positiveNumber = (value: unknown) => {
   if (!Number.isFinite(n) || n <= 0) return "Phải lớn hơn 0";
   return undefined;
 };
+
+async function downloadContainerQr(record: any) {
+  const qrText = String(record?.inventoryKey || record?.id || record?.code || "").trim();
+  if (!qrText) return;
+  const dataUrl = await QRCode.toDataURL(qrText, { margin: 1, width: 280 });
+  const filename = `${String(record?.code || record?.id || "container").replace(/[^\w\-]+/g, "_")}_qr.png`;
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
@@ -232,16 +248,7 @@ function ContainerFormSections() {
               ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
-          <AdministrativeAreaFields
-            provinceSource="currentProvinceId"
-            districtSource="currentDistrictId"
-            wardSource="currentWardId"
-            provinceLabel="Tỉnh/Thành hiện tại"
-            districtLabel="Quận/Huyện hiện tại"
-            wardLabel="Phường/Xã hiện tại"
-            requiredAll={false}
-            disabled
-          />
+          <TextInput source="location" label="Địa điểm hiện tại" disabled fullWidth />
           <ArrayInput source="participantRows" label="Danh sách địa chỉ ví tham gia">
             <SimpleFormIterator disableReordering>
               <FormDataConsumer>{() => <AdditionalParticipantRow />}</FormDataConsumer>
@@ -283,6 +290,20 @@ export function ContainerResourceList() {
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="id" label="Mã thùng" />
         <TextField source="containerType" label="Loại thùng" />
+        <FunctionField
+          label="QR"
+          render={(record: any) => (
+            <MuiButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                void downloadContainerQr(record);
+              }}
+            >
+              Tải QR
+            </MuiButton>
+          )}
+        />
         <SelectField
           source="status"
           label="Trạng thái"
@@ -321,9 +342,7 @@ export function ContainerResourceCreate() {
           participantWalletAddresses: participants.participantWalletAddresses,
           participantLocationLabels: participants.participantLocationLabels,
           participantRows: participants.participantRows,
-          currentProvinceId: gps.provinceId,
-          currentDistrictId: gps.districtId,
-          currentWardId: gps.wardId,
+          location: [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", "),
           status: "CREATE",
         };
       }}
@@ -368,9 +387,7 @@ export function ContainerResourceEdit() {
           participantWalletAddresses: participants.participantWalletAddresses,
           participantLocationLabels: participants.participantLocationLabels,
           participantRows: participants.participantRows,
-          currentProvinceId: gps.provinceId,
-          currentDistrictId: gps.districtId,
-          currentWardId: gps.wardId,
+          location: [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", "),
         };
       }}
     >
