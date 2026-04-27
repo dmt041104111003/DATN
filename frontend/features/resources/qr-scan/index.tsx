@@ -1,0 +1,2 @@
+export { QrScanResourcePage } from "./functions";
+

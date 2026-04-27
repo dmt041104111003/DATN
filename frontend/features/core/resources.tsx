@@ -21,6 +21,7 @@ import {
   PartnerResourceEdit,
   PartnerResourceList,
 } from "@/features/resources/partners";
+import { QrScanResourcePage } from "@/features/resources/qr-scan";
 
 export function renderAdminResources(permissions?: string) {
   const role = String(permissions || "").toUpperCase();
@@ -48,6 +49,7 @@ export function renderAdminResources(permissions?: string) {
             create={PartnerResourceCreate}
             edit={PartnerResourceEdit}
           />
+          <Resource name="qr-scan" list={QrScanResourcePage} />
         </>
       ) : null}
       <Resource
