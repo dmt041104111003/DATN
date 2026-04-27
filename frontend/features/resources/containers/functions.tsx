@@ -114,7 +114,7 @@ function parseStringList(value: unknown): string[] {
 
 function normalizeParticipantRows(rowsRaw: unknown) {
   const rows = Array.isArray(rowsRaw) ? rowsRaw : [];
-  const cleaned = rows
+  return rows
     .map((row: any) => ({
       walletAddress: cleanString(row?.walletAddress),
       provinceId: cleanString(row?.provinceId),
@@ -122,15 +122,6 @@ function normalizeParticipantRows(rowsRaw: unknown) {
       wardId: cleanString(row?.wardId),
     }))
     .filter((row: any) => row.walletAddress);
-  const seen = new Set<string>();
-  const uniqueRows: any[] = [];
-  for (const row of cleaned) {
-    const key = row.walletAddress.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    uniqueRows.push(row);
-  }
-  return uniqueRows;
 }
 
 function buildParticipantPayload(rowsRaw: unknown) {
@@ -168,9 +159,9 @@ function ParticipantAdministrativeAreaFields({ index }: { index: number }) {
   }, [districtId]);
   return (
     <>
-      <SelectInput source={provinceName} label="Tỉnh/Thành" choices={provinces} optionValue="id" optionText="name" fullWidth />
-      <SelectInput source={districtName} label="Quận/Huyện" choices={districts} optionValue="id" optionText="name" disabled={!provinceId} fullWidth />
-      <SelectInput source={wardName} label="Phường/Xã" choices={wards} optionValue="id" optionText="name" disabled={!districtId} fullWidth />
+      <SelectInput source="provinceId" label="Tỉnh/Thành" choices={provinces} optionValue="id" optionText="name" validate={[required()]} fullWidth />
+      <SelectInput source="districtId" label="Quận/Huyện" choices={districts} optionValue="id" optionText="name" validate={[required()]} disabled={!provinceId} fullWidth />
+      <SelectInput source="wardId" label="Phường/Xã" choices={wards} optionValue="id" optionText="name" validate={[required()]} disabled={!districtId} fullWidth />
     </>
   );
 }
@@ -183,6 +174,7 @@ function AdditionalParticipantRow() {
         source="walletAddress"
         label="Địa chỉ ví"
         validate={[required()]}
+        disabled={index === 0}
         fullWidth
       />
       <ParticipantAdministrativeAreaFields index={index} />
@@ -191,6 +183,7 @@ function AdditionalParticipantRow() {
 }
 
 function ContainerFormSections() {
+  const { getValues, setValue } = useFormContext();
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
@@ -250,6 +243,42 @@ function ContainerFormSections() {
       id: String(row?.inventoryKey || row?.id || ""),
       name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
     }));
+
+  React.useEffect(() => {
+    let mounted = true;
+    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as any;
+      })
+      .then((meJson) => {
+        if (!mounted || !meJson) return;
+        const creatorWallet = cleanString(
+          meJson?.user?.paymentAddress || meJson?.user?.walletAddress || meJson?.user?.sub || "",
+        );
+        if (!creatorWallet) return;
+        const rowsRaw = getValues("participantRows");
+        const rows = Array.isArray(rowsRaw) ? rowsRaw : [];
+        if (!rows.length) {
+          setValue(
+            "participantRows",
+            [{ walletAddress: creatorWallet, provinceId: "", districtId: "", wardId: "" }],
+            { shouldDirty: false, shouldValidate: false },
+          );
+          return;
+        }
+        const firstWallet = cleanString(rows?.[0]?.walletAddress);
+        if (!firstWallet) {
+          const nextRows = [...rows];
+          nextRows[0] = { ...(nextRows[0] || {}), walletAddress: creatorWallet };
+          setValue("participantRows", nextRows, { shouldDirty: false, shouldValidate: false });
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, [getValues, setValue]);
 
   return (
     <>

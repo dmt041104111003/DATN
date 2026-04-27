@@ -42,9 +42,8 @@ export class ContainerContractService {
     return out;
   }
 
-  private ensureOwnerWhitelistMetadata(metadata: Record<string, string>, ownerWallet: string): Record<string, string> {
+  private normalizeParticipantMetadata(metadata: Record<string, string>): Record<string, string> {
     const out = { ...metadata };
-    const owner = String(ownerWallet || '').trim();
     const incomingWalletsRaw = String(out.participant_wallet_addresses || out.partner_wallet_addresses || '[]');
     const incomingLocationsRaw = String(out.participant_location_labels || out.partner_location_labels || '');
     let incomingWallets: string[] = [];
@@ -54,7 +53,7 @@ export class ContainerContractService {
     } catch {
       incomingWallets = [];
     }
-    const mergedWallets = [owner, ...incomingWallets].filter(Boolean);
+    const mergedWallets = [...incomingWallets].filter(Boolean);
     const seen = new Set<string>();
     const uniqWallets: string[] = [];
     for (const wallet of mergedWallets) {
@@ -68,14 +67,7 @@ export class ContainerContractService {
       .split(';')
       .map((x) => String(x || '').trim())
       .filter(Boolean);
-    const ownerLocation = String(out.current_location || '').trim() || [
-      String(out.current_province || '').trim(),
-      String(out.current_district || '').trim(),
-      String(out.current_ward || '').trim(),
-    ]
-      .filter(Boolean)
-      .join(', ');
-    const mergedLocations = [ownerLocation, ...incomingLocations];
+    const mergedLocations = [...incomingLocations];
     out.participant_wallet_addresses = JSON.stringify(uniqWallets);
     out.participant_location_labels = mergedLocations.slice(0, uniqWallets.length).join('; ');
     delete out.partner_wallet_addresses;
@@ -113,7 +105,7 @@ export class ContainerContractService {
     if (!owners.includes(walletAddress)) owners.push(walletAddress);
     if (!code) throw new BadRequestException('Container code is required.');
 
-    const metadata = this.ensureOwnerWhitelistMetadata(this.stringifyMetadata(dto.metadata), walletAddress);
+    const metadata = this.normalizeParticipantMetadata(this.stringifyMetadata(dto.metadata));
     metadata.container_code = metadata.container_code || code;
     const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, [
       { productName: code, metadata, quantity: '1' },
@@ -134,7 +126,7 @@ export class ContainerContractService {
     if (!onchain) throw new BadRequestException('Container on-chain metadata was not found.');
     const merged: Record<string, string> = {};
     for (const [k, v] of Object.entries(onchain || {})) merged[String(k)] = String(v ?? '').trim();
-    const incoming = this.ensureOwnerWhitelistMetadata(this.stringifyMetadata(dto.metadata), walletAddress);
+    const incoming = this.normalizeParticipantMetadata(this.stringifyMetadata(dto.metadata));
     for (const [k, v] of Object.entries(incoming)) merged[String(k)] = String(v ?? '').trim();
 
     const code = this.decodeAssetNameFromUnit(inventoryKey);

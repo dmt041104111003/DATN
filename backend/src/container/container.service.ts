@@ -7,20 +7,6 @@ function cleanString(v: unknown): string {
   return String(v ?? '').trim();
 }
 
-function uniqWallets(values: string[]) {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of values) {
-    const wallet = cleanString(raw);
-    if (!wallet) continue;
-    const key = wallet.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(wallet);
-  }
-  return out;
-}
-
 function buildLocationLabel(provinceId: unknown, districtId: unknown, wardId: unknown) {
   return [cleanString(provinceId), cleanString(districtId), cleanString(wardId)].filter(Boolean).join(', ');
 }
@@ -101,10 +87,7 @@ export class ContainerService {
     };
   }
 
-  private buildParticipants(data: any, ownerWallet: string, fallbackLocationLabel = '') {
-    const owner = cleanString(ownerWallet);
-    const fallbackLocation = cleanString(fallbackLocationLabel);
-
+  private buildParticipants(data: any) {
     const fromRows = Array.isArray(data?.participantRows)
       ? data.participantRows
           .map((row: any) => ({
@@ -116,9 +99,10 @@ export class ContainerService {
     const fromWalletArray = parseStringArray(data?.participantWalletAddresses);
     const fromLocationArray = parseStringArray(data?.participantLocationLabels);
 
-    const wallets = uniqWallets([owner, ...fromRows.map((x: any) => x.walletAddress), ...fromWalletArray]);
+    const wallets = [...fromRows.map((x: any) => x.walletAddress), ...fromWalletArray]
+      .map((x) => cleanString(x))
+      .filter(Boolean);
     const locationByWallet = new Map<string, string>();
-    if (owner && fallbackLocation) locationByWallet.set(owner.toLowerCase(), fallbackLocation);
     for (const row of fromRows) {
       const key = cleanString(row.walletAddress).toLowerCase();
       if (!key) continue;
@@ -165,8 +149,7 @@ export class ContainerService {
     const inventoryKey = cleanString(data.inventoryKey);
     const txHash = cleanString(data.txHash);
     await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
-    const ownerLocationLabel = cleanString(data?.location);
-    const participants = this.buildParticipants(data, addr, ownerLocationLabel);
+    const participants = this.buildParticipants(data);
     const row = await (this.prisma as any).container.create({
       data: {
         traceSchemeRef: cleanString(data.traceSchemeRef),
@@ -218,12 +201,7 @@ export class ContainerService {
     await this.assertCapacityWithinRemaining(nextProductionInventoryKey, nextActualCapacityKg, key);
 
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
-    const nextLocation = data.location !== undefined ? data.location : existing.location;
-    const participants = this.buildParticipants(
-      data,
-      cleanString(existing.registeringCustodianAddress || createdBy),
-      cleanString(nextLocation),
-    );
+    const participants = this.buildParticipants(data);
     const patch: Record<string, unknown> = {
       status: nextStatus,
       participantWalletAddresses: JSON.stringify(participants.wallets),
