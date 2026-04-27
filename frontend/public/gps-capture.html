@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPS Capture</title>
+  </head>
+  <body>
+    <script>
+      const send = (payload) =>
+        window.parent?.postMessage({ type: "GPS_CAPTURE_RESULT", payload }, window.location.origin);
+
+      (() => {
+        if (!navigator.geolocation) {
+          send({ ok: false, error: "Thiết bị không hỗ trợ GPS." });
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (p) =>
+            send({
+              ok: true,
+              latitude: p.coords.latitude,
+              longitude: p.coords.longitude,
+              accuracy: p.coords.accuracy ?? null,
+            }),
+          (e) => {
+            const msg = e && e.message ? e.message : "Không thể lấy vị trí GPS.";
+            send({ ok: false, error: msg });
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+        );
+      })();
+    </script>
+  </body>
+  </html>

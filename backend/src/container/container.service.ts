@@ -105,11 +105,6 @@ export class ContainerService {
     const addr = cleanString(createdBy);
     const inventoryKey = cleanString(data.inventoryKey);
     const txHash = cleanString(data.txHash);
-
-    const profile = await (this.prisma as any).user.findUnique({
-      where: { address: addr },
-      select: { provinceId: true, districtId: true, wardId: true },
-    });
     await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
 
     const rawPartnerIds = Array.isArray(data?.partnerIds) ? data.partnerIds : [];
@@ -122,9 +117,9 @@ export class ContainerService {
         code: cleanString(data.code) || `THUNG_${Date.now()}`,
         productionInventoryKey: cleanString(data.productionInventoryKey),
         registeringCustodianAddress: addr,
-        currentProvinceId: cleanString(data.currentProvinceId) || cleanString(profile?.provinceId) || null,
-        currentDistrictId: cleanString(data.currentDistrictId) || cleanString(profile?.districtId) || null,
-        currentWardId: cleanString(data.currentWardId) || cleanString(profile?.wardId) || null,
+        currentProvinceId: cleanString(data.currentProvinceId) || null,
+        currentDistrictId: cleanString(data.currentDistrictId) || null,
+        currentWardId: cleanString(data.currentWardId) || null,
         containerType: cleanString(data.containerType) || null,
         capacityKg: cleanString(data.capacityKg) || null,
         actualCapacityKg: cleanString(data.actualCapacityKg) || null,

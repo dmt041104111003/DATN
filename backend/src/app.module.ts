@@ -27,6 +27,7 @@ import {
 } from './container';
 import { PartnerController } from './partner/partner.controller';
 import { PartnerService } from './partner/partner.service';
+import { LocationController } from './location/location.controller';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { PartnerService } from './partner/partner.service';
     ContainerContractController,
     PartnerController,
     HealthController,
+    LocationController,
   ],
   providers: [
     AuthService,

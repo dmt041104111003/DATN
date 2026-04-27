@@ -18,9 +18,6 @@ export class ProfileService {
       roleCode: account.roleCode,
       displayName: account.displayName,
       phoneNumber: account.phoneNumber,
-      provinceId: account.provinceId,
-      districtId: account.districtId,
-      wardId: account.wardId,
       isActive: account.isActive,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
@@ -31,9 +28,6 @@ export class ProfileService {
     roleCode: string;
     displayName: string;
     phoneNumber?: string;
-    provinceId: string;
-    districtId: string;
-    wardId: string;
   }) {
     const addr = (custodianAddress || '').trim();
     const isPayment =
@@ -50,12 +44,6 @@ export class ProfileService {
     if (!role) throw new BadRequestException('Invalid role.');
     const displayName = (data.displayName || '').trim();
     if (!displayName) throw new BadRequestException('Display name is required.');
-    const provinceId = String(data.provinceId || '').trim();
-    const districtId = String(data.districtId || '').trim();
-    const wardId = String(data.wardId || '').trim();
-    if (!provinceId || !districtId || !wardId) {
-      throw new BadRequestException('Province, district and ward are required.');
-    }
     const phoneNumber = (data.phoneNumber || '').trim() || null;
     const existing = await (this.prisma as any).user.findUnique({
       where: { address: addr },
@@ -70,9 +58,6 @@ export class ProfileService {
         roleCode: existing?.roleCode || roleCode,
         displayName,
         phoneNumber,
-        provinceId,
-        districtId,
-        wardId,
         isActive: true,
       } as any,
       select: {
@@ -81,9 +66,6 @@ export class ProfileService {
         roleCode: true,
         displayName: true,
         phoneNumber: true,
-        provinceId: true,
-        districtId: true,
-        wardId: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -102,9 +84,6 @@ export class ProfileService {
       role: account.roleCode,
       displayName: account.displayName,
       phoneNumber: account.phoneNumber,
-      provinceId: account.provinceId,
-      districtId: account.districtId,
-      wardId: account.wardId,
     };
 
     const token = jwt.sign(payload, secret, { expiresIn: '7d' });
@@ -118,16 +97,10 @@ export class ProfileService {
   async updateProfile(accountId: string, data: {
     displayName?: string;
     phoneNumber?: string;
-    provinceId?: string;
-    districtId?: string;
-    wardId?: string;
   }) {
     const displayName = typeof data.displayName === 'string' ? data.displayName.trim() : '';
     const phoneNumber =
       typeof data.phoneNumber === 'string' ? data.phoneNumber.trim() || null : undefined;
-    const provinceId = typeof data.provinceId === 'string' ? data.provinceId.trim() : undefined;
-    const districtId = typeof data.districtId === 'string' ? data.districtId.trim() : undefined;
-    const wardId = typeof data.wardId === 'string' ? data.wardId.trim() : undefined;
     if (!displayName) {
       throw new BadRequestException('Display name is required.');
     }
@@ -137,18 +110,12 @@ export class ProfileService {
       data: {
         displayName,
         ...(phoneNumber !== undefined ? { phoneNumber } : {}),
-        ...(provinceId !== undefined ? { provinceId: provinceId || null } : {}),
-        ...(districtId !== undefined ? { districtId: districtId || null } : {}),
-        ...(wardId !== undefined ? { wardId: wardId || null } : {}),
       } as any,
       select: {
         id: true,
         roleCode: true,
         displayName: true,
         phoneNumber: true,
-        provinceId: true,
-        districtId: true,
-        wardId: true,
       } as any,
     });
 
@@ -181,9 +148,6 @@ export class ProfileService {
         roleCode: true,
         displayName: true,
         phoneNumber: true,
-        provinceId: true,
-        districtId: true,
-        wardId: true,
         isActive: true,
       } as any,
     });
@@ -200,9 +164,6 @@ export class ProfileService {
         roleCode: true,
         displayName: true,
         phoneNumber: true,
-        provinceId: true,
-        districtId: true,
-        wardId: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -231,9 +192,6 @@ export class ProfileService {
         roleCode: true,
         displayName: true,
         phoneNumber: true,
-        provinceId: true,
-        districtId: true,
-        wardId: true,
         isActive: true,
       } as any,
     });
@@ -245,9 +203,6 @@ export class ProfileService {
             roleCode: account.roleCode,
             displayName: account.displayName,
             phoneNumber: account.phoneNumber,
-            provinceId: account.provinceId,
-            districtId: account.districtId,
-            wardId: account.wardId,
             isActive: account.isActive,
           }
         : null,

@@ -61,9 +61,6 @@ export function AdminLoginPage() {
       displayName: "",
       roleCode: roleCode || String(setup?.roles?.[0]?.code || ""),
       phoneNumber: "",
-      provinceId: "",
-      districtId: "",
-      wardId: "",
     }),
     [roleCode, setup?.roles, setup?.walletAddress],
   );
@@ -103,9 +100,6 @@ export function AdminLoginPage() {
                   roleCode: String(data?.roleCode || "").trim().toUpperCase(),
                   displayName: String(data?.displayName || "").trim(),
                   phoneNumber: String(data?.phoneNumber || "").trim() || undefined,
-                  provinceId: String(data?.provinceId || "").trim(),
-                  districtId: String(data?.districtId || "").trim(),
-                  wardId: String(data?.wardId || "").trim(),
                 })}
                 redirect={false}
                 defaultValues={setupDefaults}

@@ -38,9 +38,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       profileId: payload.profileId,
       role: payload.role,
       displayName: payload.displayName,
-      provinceId: payload.provinceId,
-      districtId: payload.districtId,
-      wardId: payload.wardId,
     };
   }
 }

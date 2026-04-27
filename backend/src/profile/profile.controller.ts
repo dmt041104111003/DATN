@@ -20,17 +20,11 @@ export interface CreateProfileDto {
   roleCode: string;
   displayName: string;
   phoneNumber?: string;
-  provinceId: string;
-  districtId: string;
-  wardId: string;
 }
 
 export interface UpdateProfileDto {
   displayName?: string;
   phoneNumber?: string;
-  provinceId?: string;
-  districtId?: string;
-  wardId?: string;
 }
 
 @Controller('profile')

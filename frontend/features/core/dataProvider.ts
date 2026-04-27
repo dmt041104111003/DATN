@@ -246,6 +246,14 @@ function buildContainerMetadata(data: any, previousData: any) {
     current_province: cleanString(data?.currentProvinceId || previousData?.currentProvinceId),
     current_district: cleanString(data?.currentDistrictId || previousData?.currentDistrictId),
     current_ward: cleanString(data?.currentWardId || previousData?.currentWardId),
+    gps_lat: cleanString(data?.locationProofLat || previousData?.locationProofLat),
+    gps_lng: cleanString(data?.locationProofLng || previousData?.locationProofLng),
+    gps_accuracy_m: cleanString(data?.locationProofAccuracyM || previousData?.locationProofAccuracyM),
+    gps_timestamp_iso: cleanString(data?.locationProofTimestampIso || previousData?.locationProofTimestampIso),
+    gps_wallet: cleanString(data?.locationProofWalletAddress || previousData?.locationProofWalletAddress),
+    gps_payload: cleanString(data?.locationProofPayload || previousData?.locationProofPayload),
+    gps_signature: cleanString(data?.locationProofSignature || previousData?.locationProofSignature),
+    gps_signed: cleanString(data?.locationProofSigned || previousData?.locationProofSigned),
     note: cleanString(data?.note || previousData?.note),
   };
 }

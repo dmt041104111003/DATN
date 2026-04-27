@@ -23,11 +23,7 @@ import {
 } from "react-admin";
 import { useFormContext, useWatch } from "react-hook-form";
 import { CREATE_PAGE_SX, EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
-import {
-  getDistrictNameById,
-  getProvinceNameById,
-  getWardNameById,
-} from "@/features/resources/shared/location";
+import { captureCurrentGpsLocation } from "@/features/resources/shared/location";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -151,48 +147,6 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
     );
   }, [getValues, setValue]);
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" });
-        if (!res.ok) return;
-        const json = (await res.json()) as any;
-        const profile = json?.profile || {};
-        const meWalletAddress = String(
-          json?.user?.paymentAddress || json?.user?.walletAddress || json?.user?.sub || "",
-        ).trim();
-        if (!mounted) return;
-        const provinceId = String(
-          getValues("currentProvinceId") || (!isEditForm ? profile?.provinceId : "") || "",
-        ).trim();
-        const districtId = String(
-          getValues("currentDistrictId") || (!isEditForm ? profile?.districtId : "") || "",
-        ).trim();
-        const wardId = String(
-          getValues("currentWardId") || (!isEditForm ? profile?.wardId : "") || "",
-        ).trim();
-        setValue("currentProvinceId", provinceId);
-        setValue("currentDistrictId", districtId);
-        setValue("currentWardId", wardId);
-        const [provinceName, districtName, wardName] = await Promise.all([
-          provinceId ? getProvinceNameById(provinceId) : Promise.resolve(""),
-          districtId ? getDistrictNameById(districtId) : Promise.resolve(""),
-          wardId ? getWardNameById(wardId) : Promise.resolve(""),
-        ]);
-        setValue(
-          "currentLocationLabel",
-          [wardName, districtName, provinceName].map((x) => String(x || "").trim()).filter(Boolean).join(", "),
-        );
-      } catch {
-        // ignore
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [isEditForm, getValues, setValue]);
-
   return (
     <>
       <div className="py-1">
@@ -237,7 +191,6 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
               ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
-          <TextInput source="currentLocationLabel" label="Địa điểm hiện tại" disabled fullWidth />
           <ArrayInput source="partnerRows" label="Đơn vị liên kết">
             <SimpleFormIterator inline>
               <SelectInput
@@ -303,7 +256,7 @@ export function ContainerResourceList() {
 export function ContainerResourceCreate() {
   return (
     <Create
-      transform={(data: any) => {
+      transform={async (data: any) => {
         const partnerIds = Array.isArray(data?.partnerRows)
           ? data.partnerRows.map((row: any) => String(row?.partnerId || "").trim()).filter(Boolean)
           : Array.isArray(data?.partnerIds)
@@ -315,19 +268,26 @@ export function ContainerResourceCreate() {
         if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
           throw new Error("Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.");
         }
-        return fetchCapacitySummary(String(data?.productionInventoryKey || "").trim()).then((summary) => {
-          if (actual > Number(summary?.remainingCapacityKg || 0)) {
-            throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
-          }
-          return {
+        const gps = await captureCurrentGpsLocation();
+        const summary = await fetchCapacitySummary(String(data?.productionInventoryKey || "").trim());
+        if (actual > Number(summary?.remainingCapacityKg || 0)) {
+          throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
+        }
+        return {
           ...data,
           partnerIds,
           partnerRows: undefined,
           code,
-        currentLocationLabel: undefined,
-        status: "CREATE",
-      };
-        });
+          currentLocationLabel: undefined,
+          currentProvinceId: gps.provinceId,
+          currentDistrictId: gps.districtId,
+          currentWardId: gps.wardId,
+          locationProofLat: String(gps.lat),
+          locationProofLng: String(gps.lng),
+          locationProofAccuracyM: gps.accuracyM === null ? "" : String(gps.accuracyM),
+          locationProofTimestampIso: gps.timestampIso,
+          status: "CREATE",
+        };
       }}
       sx={CREATE_PAGE_SX}
     >
@@ -350,7 +310,7 @@ export function ContainerResourceEdit() {
     <Edit
       mutationMode="pessimistic"
       sx={EDIT_PAGE_SX}
-      transform={(data: any) => {
+      transform={async (data: any) => {
         const partnerIds = Array.isArray(data?.partnerRows)
           ? data.partnerRows.map((row: any) => String(row?.partnerId || "").trim()).filter(Boolean)
           : Array.isArray(data?.partnerIds)
@@ -361,20 +321,27 @@ export function ContainerResourceEdit() {
         if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
           throw new Error("Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.");
         }
-        return fetchCapacitySummary(
+        const gps = await captureCurrentGpsLocation();
+        const summary = await fetchCapacitySummary(
           String(data?.productionInventoryKey || "").trim(),
           String(data?.inventoryKey || "").trim(),
-        ).then((summary) => {
-          if (actual > Number(summary?.remainingCapacityKg || 0)) {
-            throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
-          }
-          return {
+        );
+        if (actual > Number(summary?.remainingCapacityKg || 0)) {
+          throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
+        }
+        return {
           ...data,
           partnerIds,
           partnerRows: undefined,
           currentLocationLabel: undefined,
+          currentProvinceId: gps.provinceId,
+          currentDistrictId: gps.districtId,
+          currentWardId: gps.wardId,
+          locationProofLat: String(gps.lat),
+          locationProofLng: String(gps.lng),
+          locationProofAccuracyM: gps.accuracyM === null ? "" : String(gps.accuracyM),
+          locationProofTimestampIso: gps.timestampIso,
         };
-        });
       }}
     >
       <SimpleForm

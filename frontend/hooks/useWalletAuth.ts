@@ -19,9 +19,6 @@ interface VerifyResponse {
     role?: string;
     roleCode?: string;
     displayName: string;
-    provinceId?: string | null;
-    districtId?: string | null;
-    wardId?: string | null;
     coordinates: any;
   };
 }

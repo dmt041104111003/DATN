@@ -15,9 +15,6 @@ model User {
   role      Role?     @relation(fields: [roleCode], references: [code], onDelete: Restrict)
   displayName String?
   phoneNumber String?
-  provinceId String?
-  districtId String?
-  wardId   String?
   isActive  Boolean   @default(true)
   productions Production[]
   containers  Container[]
