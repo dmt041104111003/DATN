@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  ArrayInput,
   BooleanField,
   Create,
   Datagrid,
@@ -11,9 +12,9 @@ import {
   List,
   SaveButton,
   SelectField,
-  SelectArrayInput,
   SelectInput,
   SimpleForm,
+  SimpleFormIterator,
   TextField,
   TextInput,
   Toolbar,
@@ -136,6 +137,21 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
   }));
 
   React.useEffect(() => {
+    const currentRows = getValues("partnerRows");
+    const currentPartnerIds = getValues("partnerIds");
+    const hasRows = Array.isArray(currentRows) && currentRows.length > 0;
+    if (hasRows) return;
+    if (!Array.isArray(currentPartnerIds) || !currentPartnerIds.length) return;
+    setValue(
+      "partnerRows",
+      currentPartnerIds
+        .map((id: unknown) => String(id || "").trim())
+        .filter(Boolean)
+        .map((partnerId: string) => ({ partnerId })),
+    );
+  }, [getValues, setValue]);
+
+  React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
@@ -222,7 +238,17 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
           <TextInput source="currentLocationLabel" label="Địa điểm hiện tại" disabled fullWidth />
-          <SelectArrayInput source="partnerIds" label="Đơn vị liên kết" choices={partnerChoices} fullWidth />
+          <ArrayInput source="partnerRows" label="Đơn vị liên kết">
+            <SimpleFormIterator inline>
+              <SelectInput
+                source="partnerId"
+                label="Đơn vị liên kết"
+                choices={partnerChoices}
+                validate={[required()]}
+                fullWidth
+              />
+            </SimpleFormIterator>
+          </ArrayInput>
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
         </div>
       </div>
@@ -278,6 +304,11 @@ export function ContainerResourceCreate() {
   return (
     <Create
       transform={(data: any) => {
+        const partnerIds = Array.isArray(data?.partnerRows)
+          ? data.partnerRows.map((row: any) => String(row?.partnerId || "").trim()).filter(Boolean)
+          : Array.isArray(data?.partnerIds)
+            ? data.partnerIds.map((x: any) => String(x || "").trim()).filter(Boolean)
+            : [];
         const code = String(data?.code || "").trim() || makeContainerCode();
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
@@ -290,6 +321,8 @@ export function ContainerResourceCreate() {
           }
           return {
           ...data,
+          partnerIds,
+          partnerRows: undefined,
           code,
         currentLocationLabel: undefined,
         status: "CREATE",
@@ -318,6 +351,11 @@ export function ContainerResourceEdit() {
       mutationMode="pessimistic"
       sx={EDIT_PAGE_SX}
       transform={(data: any) => {
+        const partnerIds = Array.isArray(data?.partnerRows)
+          ? data.partnerRows.map((row: any) => String(row?.partnerId || "").trim()).filter(Boolean)
+          : Array.isArray(data?.partnerIds)
+            ? data.partnerIds.map((x: any) => String(x || "").trim()).filter(Boolean)
+            : [];
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
         if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
@@ -332,6 +370,8 @@ export function ContainerResourceEdit() {
           }
           return {
           ...data,
+          partnerIds,
+          partnerRows: undefined,
           currentLocationLabel: undefined,
         };
         });

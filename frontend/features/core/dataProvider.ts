@@ -168,6 +168,20 @@ function buildOwnerList(owner: string, custodianAddress: string) {
   return [owner || custodianAddress];
 }
 
+function uniqWalletsInOrder(values: string[]) {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of values) {
+    const wallet = cleanString(raw);
+    if (!wallet) continue;
+    const key = wallet.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(wallet);
+  }
+  return out;
+}
+
 function endpointFor(resource: string) {
   return resourceToEndpoint[resource] ?? resource;
 }
@@ -242,10 +256,15 @@ async function loadPartnerWallets(partnerIdsRaw: unknown): Promise<string[]> {
     : [];
   if (!partnerIds.length) return [];
   const rows = await fetchResourceRows("partner");
-  const idSet = new Set(partnerIds);
-  return (rows || [])
-    .filter((row: any) => idSet.has(cleanString(row?.id)))
-    .map((row: any) => cleanString(row?.walletAddress))
+  const walletById = new Map<string, string>();
+  for (const row of rows || []) {
+    const id = cleanString((row as any)?.id);
+    const wallet = cleanString((row as any)?.walletAddress);
+    if (!id || !wallet) continue;
+    walletById.set(id, wallet);
+  }
+  return partnerIds
+    .map((id) => cleanString(walletById.get(id)))
     .filter(Boolean);
 }
 
@@ -292,16 +311,15 @@ export const adminDataProvider: DataProvider = {
   async update(resource, params) {
     if (resource === "container") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = String(
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
       const metadata = buildContainerMetadata(params.data, params.previousData);
       const partnerWallets = await loadPartnerWallets(params.data?.partnerIds ?? params.previousData?.partnerIds);
-      if (partnerWallets.length) {
-        (metadata as any).partner_wallets = partnerWallets.join("|");
-      }
+      const orderedWallets = uniqWalletsInOrder([owner, ...partnerWallets]);
+      const owners = uniqWalletsInOrder([...buildOwnerList(owner, custodianAddress), ...partnerWallets]);
+      if (orderedWallets.length) (metadata as any).partner_wallets = orderedWallets.join("|");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -364,12 +382,11 @@ export const adminDataProvider: DataProvider = {
   async create(resource, params) {
     if (resource === "container") {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
       const metadata = buildContainerMetadata(params.data, null);
       const partnerWallets = await loadPartnerWallets(params.data?.partnerIds);
-      if (partnerWallets.length) {
-        (metadata as any).partner_wallets = partnerWallets.join("|");
-      }
+      const orderedWallets = uniqWalletsInOrder([owner, ...partnerWallets]);
+      const owners = uniqWalletsInOrder([...buildOwnerList(owner, custodianAddress), ...partnerWallets]);
+      if (orderedWallets.length) (metadata as any).partner_wallets = orderedWallets.join("|");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/create`, {
         method: "POST",
         body: JSON.stringify({
