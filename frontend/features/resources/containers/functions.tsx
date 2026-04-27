@@ -74,8 +74,7 @@ function buildLocationLabelFromRow(row: any) {
     .join(", ");
 }
 
-function normalizeParticipantRows(rowsRaw: unknown, ownerWalletRaw: unknown) {
-  const ownerWallet = cleanString(ownerWalletRaw);
+function normalizeParticipantRows(rowsRaw: unknown) {
   const rows = Array.isArray(rowsRaw) ? rowsRaw : [];
   const cleaned = rows
     .map((row: any) => ({
@@ -93,36 +92,24 @@ function normalizeParticipantRows(rowsRaw: unknown, ownerWalletRaw: unknown) {
     seen.add(key);
     uniqueRows.push(row);
   }
-  const ownerRow =
-    uniqueRows.find((row) => row.walletAddress.toLowerCase() === ownerWallet.toLowerCase()) ||
-    {
-      walletAddress: ownerWallet,
-      provinceId: "",
-      districtId: "",
-      wardId: "",
-    };
-  const otherRows = uniqueRows.filter((row) => row.walletAddress.toLowerCase() !== ownerWallet.toLowerCase());
-  return ownerWallet ? [ownerRow, ...otherRows] : uniqueRows;
+  return uniqueRows;
 }
 
-function buildParticipantPayload(rowsRaw: unknown, ownerWalletRaw: unknown) {
-  const normalized = normalizeParticipantRows(rowsRaw, ownerWalletRaw);
+function buildParticipantPayload(rowsRaw: unknown) {
+  const normalized = normalizeParticipantRows(rowsRaw);
   const participantWalletAddresses = normalized.map((row: any) => cleanString(row?.walletAddress)).filter(Boolean);
   const participantLocationLabels = normalized.map((row: any) => buildLocationLabelFromRow(row));
   return { participantWalletAddresses, participantLocationLabels, participantRows: normalized };
 }
 
-function AdditionalParticipantRow({ ownerWallet }: { ownerWallet: string }) {
+function AdditionalParticipantRow() {
   const { index } = useSimpleFormIteratorItem();
-  const isOwner = index === 0;
-
   return (
     <>
       <TextInput
         source="walletAddress"
-        label={index === 0 ? "Địa chỉ ví chủ thể" : "Địa chỉ ví"}
+        label="Địa chỉ ví"
         validate={[required()]}
-        disabled={isOwner}
         fullWidth
       />
       <AdministrativeAreaFields
@@ -144,10 +131,6 @@ function ContainerFormSections() {
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
-  const formOwnerWallet = cleanString(useWatch({ name: "registeringCustodianAddress" }) ?? "");
-  const participantRows = useWatch({ name: "participantRows" }) as unknown;
-  const { setValue } = useFormContext();
-  const [ownerWallet, setOwnerWallet] = React.useState("");
   const [capacitySummary, setCapacitySummary] = React.useState<{
     totalCapacityKg: number;
     usedCapacityKg: number;
@@ -205,45 +188,6 @@ function ContainerFormSections() {
       name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
     }));
 
-  React.useEffect(() => {
-    let mounted = true;
-    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Unauthorized");
-        return res.json();
-      })
-      .then((json: any) => {
-        if (!mounted) return;
-        const owner =
-          cleanString(json?.user?.paymentAddress) ||
-          cleanString(json?.user?.walletAddress) ||
-          cleanString(json?.user?.address) ||
-          cleanString(json?.user?.sub) ||
-          formOwnerWallet;
-        setOwnerWallet(owner);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setOwnerWallet(formOwnerWallet);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [formOwnerWallet]);
-
-  React.useEffect(() => {
-    if (!ownerWallet) return;
-    const normalized = normalizeParticipantRows(participantRows, ownerWallet);
-    const nextRows = normalized.length
-      ? normalized.map((row: any, idx: number) =>
-          idx === 0 ? { ...row, walletAddress: ownerWallet } : row,
-        )
-      : [{ walletAddress: ownerWallet, provinceId: "", districtId: "", wardId: "" }];
-    if (JSON.stringify(nextRows) !== JSON.stringify(Array.isArray(participantRows) ? participantRows : [])) {
-      setValue("participantRows", nextRows, { shouldDirty: false, shouldValidate: false });
-    }
-  }, [ownerWallet, participantRows, setValue]);
-
   return (
     <>
       <div className="py-1">
@@ -300,7 +244,7 @@ function ContainerFormSections() {
           />
           <ArrayInput source="participantRows" label="Danh sách địa chỉ ví tham gia">
             <SimpleFormIterator disableReordering>
-              <FormDataConsumer>{() => <AdditionalParticipantRow ownerWallet={ownerWallet} />}</FormDataConsumer>
+              <FormDataConsumer>{() => <AdditionalParticipantRow />}</FormDataConsumer>
             </SimpleFormIterator>
           </ArrayInput>
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
@@ -369,10 +313,7 @@ export function ContainerResourceCreate() {
         if (actual > Number(summary?.remainingCapacityKg || 0)) {
           throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
         }
-        const ownerWallet =
-          cleanString(data?.registeringCustodianAddress) ||
-          cleanString(data?.participantRows?.[0]?.walletAddress);
-        const participants = buildParticipantPayload(data?.participantRows, ownerWallet);
+        const participants = buildParticipantPayload(data?.participantRows);
         return {
           ...data,
           code,
@@ -424,10 +365,7 @@ export function ContainerResourceEdit() {
         if (actual > Number(summary?.remainingCapacityKg || 0)) {
           throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
         }
-        const ownerWallet =
-          cleanString(data?.registeringCustodianAddress) ||
-          cleanString(data?.participantRows?.[0]?.walletAddress);
-        const participants = buildParticipantPayload(data?.participantRows, ownerWallet);
+        const participants = buildParticipantPayload(data?.participantRows);
         return {
           ...data,
           participantWalletAddresses: participants.participantWalletAddresses,
