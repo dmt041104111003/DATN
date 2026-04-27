@@ -6,13 +6,6 @@ function cleanString(v: unknown): string {
   return String(v ?? '').trim();
 }
 
-function toDateOrNull(v: unknown): Date | null {
-  const raw = cleanString(v);
-  if (!raw) return null;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
 @Injectable()
 export class WarehouseStorageService {
   constructor(private readonly prisma: PrismaService) {}
@@ -73,22 +66,16 @@ export class WarehouseStorageService {
       select: { inventoryKey: true },
     });
     if (!container) throw new NotFoundException('Container not found');
-    const entryTime = toDateOrNull(data?.entryTime);
-    if (!entryTime) throw new Error('Entry time is required.');
-    const exitTime = toDateOrNull(data?.exitTime);
     const row = await (this.prisma as any).warehouseStorage.create({
       data: {
         warehouseId,
         containerInventoryKey,
-        entryTime,
-        exitTime,
         conditions: cleanString(data?.conditions) || null,
       } as any,
     });
     await this.writeOperation('CREATE', data?.txHash, cleanString(row?.id), containerInventoryKey, {
       warehouseId,
-      entryTime: entryTime.toISOString(),
-      exitTime: exitTime ? exitTime.toISOString() : null,
+      storageTime: new Date().toISOString(),
       conditions: cleanString(data?.conditions) || null,
     });
     return row;
@@ -110,12 +97,6 @@ export class WarehouseStorageService {
     if (data?.containerInventoryKey !== undefined || data?.productId !== undefined) {
       patch.containerInventoryKey = cleanString(data?.containerInventoryKey || data?.productId);
     }
-    if (data?.entryTime !== undefined) {
-      const entryTime = toDateOrNull(data?.entryTime);
-      if (!entryTime) throw new Error('Entry time is invalid.');
-      patch.entryTime = entryTime;
-    }
-    if (data?.exitTime !== undefined) patch.exitTime = toDateOrNull(data?.exitTime);
     if (data?.conditions !== undefined) patch.conditions = cleanString(data?.conditions) || null;
     const row = await (this.prisma as any).warehouseStorage.update({
       where: { id },
@@ -128,8 +109,7 @@ export class WarehouseStorageService {
       cleanString((row as any)?.containerInventoryKey || data?.containerInventoryKey || data?.productId),
       {
         warehouseId: cleanString((row as any)?.warehouseId || data?.warehouseId),
-        entryTime: (row as any)?.entryTime ? new Date((row as any).entryTime).toISOString() : null,
-        exitTime: (row as any)?.exitTime ? new Date((row as any).exitTime).toISOString() : null,
+        storageTime: new Date().toISOString(),
         conditions: cleanString((row as any)?.conditions),
       },
     );
@@ -144,13 +124,12 @@ export class WarehouseStorageService {
         id,
         warehouse: { registeringCustodianAddress: custodian },
       },
-      select: { id: true, containerInventoryKey: true, warehouseId: true, entryTime: true, exitTime: true, conditions: true },
+      select: { id: true, containerInventoryKey: true, warehouseId: true, conditions: true },
     });
     if (!existing) throw new NotFoundException('Warehouse storage not found');
     await this.writeOperation('DELETE', data?.txHash, id, cleanString((existing as any)?.containerInventoryKey), {
       warehouseId: cleanString((existing as any)?.warehouseId),
-      entryTime: (existing as any)?.entryTime ? new Date((existing as any).entryTime).toISOString() : null,
-      exitTime: (existing as any)?.exitTime ? new Date((existing as any).exitTime).toISOString() : null,
+      storageTime: new Date().toISOString(),
       conditions: cleanString((existing as any)?.conditions),
     });
     await (this.prisma as any).warehouseStorage.delete({ where: { id } });

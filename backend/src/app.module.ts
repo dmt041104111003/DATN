@@ -26,8 +26,10 @@ import {
   ContainerService,
 } from './container';
 import { LocationController } from './location/location.controller';
-import { WarehouseController, WarehouseService } from './warehouse';
-import { WarehouseStorageController, WarehouseStorageService } from './warehouse-storage';
+import { WarehouseController } from './warehouse/warehouse.controller';
+import { WarehouseService } from './warehouse/warehouse.service';
+import { WarehouseStorageController } from './warehouse-storage/warehouse-storage.controller';
+import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.service';
 
 @Module({
   imports: [

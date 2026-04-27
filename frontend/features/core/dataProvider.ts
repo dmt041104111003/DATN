@@ -259,12 +259,15 @@ function buildContainerMetadata(data: any, previousData: any) {
 }
 
 function buildWarehouseStorageMetadata(data: any, previousData: any, opType: "IN" | "OUT" | "UPDATE") {
+  const nowIso = new Date().toISOString();
+  const createdAt = cleanString(previousData?.createdAt || data?.createdAt) || nowIso;
+  const updatedAt = nowIso;
   return {
     storage_op: opType,
     warehouse_id: cleanString(data?.warehouseId || previousData?.warehouseId),
     container_inventory_key: cleanString(data?.containerInventoryKey || data?.productId || previousData?.containerInventoryKey),
-    entry_time: cleanString(data?.entryTime || previousData?.entryTime),
-    exit_time: cleanString(data?.exitTime || previousData?.exitTime),
+    storage_created_at: createdAt,
+    storage_updated_at: updatedAt,
     storage_conditions: cleanString(data?.conditions || previousData?.conditions),
   };
 }
@@ -472,7 +475,8 @@ export const adminDataProvider: DataProvider = {
       const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = cleanString(params.data?.containerInventoryKey || params.data?.productId);
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
-      const metadata = buildWarehouseStorageMetadata(params.data, null, "IN");
+      const createPayload = { ...params.data };
+      const metadata = buildWarehouseStorageMetadata(createPayload, null, "IN");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -482,7 +486,7 @@ export const adminDataProvider: DataProvider = {
       const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
       return baseProvider.create(resource, {
         ...params,
-        data: { ...params.data, txHash, containerInventoryKey: inventoryKey },
+        data: { ...createPayload, txHash, containerInventoryKey: inventoryKey },
       });
     }
 
@@ -546,7 +550,7 @@ export const adminDataProvider: DataProvider = {
       );
       if (!inventoryKey) throw new Error("containerInventoryKey is required.");
       const metadata = buildWarehouseStorageMetadata(
-        { ...(params.previousData as any), exitTime: new Date().toISOString() },
+        { ...(params.previousData as any) },
         params.previousData,
         "OUT",
       );

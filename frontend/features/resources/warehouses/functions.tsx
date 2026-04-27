@@ -69,6 +69,7 @@ export function WarehouseResourceList() {
   return (
     <List exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
+        <TextField source="id" label="Mã kho" />
         <TextField source="name" label="Tên kho" />
         <TextField source="location" label="Vị trí kho" />
         <TextField source="capacity" label="Sức chứa" />
