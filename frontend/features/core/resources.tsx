@@ -16,6 +16,11 @@ import {
   ProfileResourceEdit,
   ProfileResourceList,
 } from "@/features/resources/profile";
+import {
+  PartnerResourceCreate,
+  PartnerResourceEdit,
+  PartnerResourceList,
+} from "@/features/resources/partners";
 
 export function renderAdminResources(permissions?: string) {
   const role = String(permissions || "").toUpperCase();
@@ -36,6 +41,12 @@ export function renderAdminResources(permissions?: string) {
             list={ContainerResourceList}
             create={ContainerResourceCreate}
             edit={ContainerResourceEdit}
+          />
+          <Resource
+            name="partner"
+            list={PartnerResourceList}
+            create={PartnerResourceCreate}
+            edit={PartnerResourceEdit}
           />
         </>
       ) : null}

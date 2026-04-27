@@ -25,6 +25,8 @@ import {
   ContainerContractService,
   ContainerService,
 } from './container';
+import { PartnerController } from './partner/partner.controller';
+import { PartnerService } from './partner/partner.service';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import {
     ProductionContractController,
     ContainerController,
     ContainerContractController,
+    PartnerController,
     HealthController,
   ],
   providers: [
@@ -61,6 +64,7 @@ import {
     ProductionContractService,
     ContainerService,
     ContainerContractService,
+    PartnerService,
   ],
 })
 export class AppModule {}

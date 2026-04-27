@@ -11,6 +11,7 @@ import {
   List,
   SaveButton,
   SelectField,
+  SelectArrayInput,
   SelectInput,
   SimpleForm,
   TextField,
@@ -125,6 +126,15 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
       name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
     }));
 
+  const { data: partnerRows = [] } = useGetList("partner", {
+    pagination: { page: 1, perPage: 1000 },
+    sort: { field: "createdAt", order: "DESC" },
+  });
+  const partnerChoices = (partnerRows || []).map((row: any) => ({
+    id: String(row?.id || ""),
+    name: `${String(row?.displayName || "")} - ${String(row?.walletAddress || "").slice(0, 16)}...`,
+  }));
+
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -212,6 +222,7 @@ function ContainerFormSections({ mode }: { mode: "create" | "edit" }) {
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
           <TextInput source="currentLocationLabel" label="Địa điểm hiện tại" disabled fullWidth />
+          <SelectArrayInput source="partnerIds" label="Đơn vị liên kết" choices={partnerChoices} fullWidth />
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
         </div>
       </div>

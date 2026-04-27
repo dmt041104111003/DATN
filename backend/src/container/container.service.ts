@@ -59,8 +59,16 @@ export class ContainerService {
   }
 
   private toResponse(row: any, latest?: any, txHashOverride?: string | null) {
+    const partnerIds = Array.isArray(row?.containerPartners)
+      ? row.containerPartners
+          .slice()
+          .sort((a: any, b: any) => Number(a?.orderNo || 0) - Number(b?.orderNo || 0))
+          .map((x: any) => cleanString(x?.partnerId))
+          .filter(Boolean)
+      : [];
     return {
       ...row,
+      partnerIds,
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
       verifiedAt: txHashOverride ? null : latest?.verifiedAt ?? null,
@@ -75,7 +83,10 @@ export class ContainerService {
   }
 
   async list(_createdBy: string) {
-    const rows = await (this.prisma as any).container.findMany({ orderBy: { createdAt: 'desc' } });
+    const rows = await (this.prisma as any).container.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { containerPartners: true },
+    });
     const keys = rows.map((r: any) => cleanString(r.inventoryKey)).filter(Boolean);
     const ops = await (this.prisma as any).recordOperation.findMany({
       where: { entityType: ENTITY_TYPE, entityKey: { in: keys } },
@@ -101,6 +112,9 @@ export class ContainerService {
     });
     await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
 
+    const rawPartnerIds = Array.isArray(data?.partnerIds) ? data.partnerIds : [];
+    const partnerIds = rawPartnerIds.map((x: unknown) => cleanString(x)).filter(Boolean);
+
     const row = await (this.prisma as any).container.create({
       data: {
         traceSchemeRef: cleanString(data.traceSchemeRef),
@@ -119,6 +133,15 @@ export class ContainerService {
         status: 'CREATE',
       } as any,
     });
+    if (partnerIds.length) {
+      await (this.prisma as any).containerPartner.createMany({
+        data: partnerIds.map((partnerId: string, idx: number) => ({
+          containerInventoryKey: inventoryKey,
+          partnerId,
+          orderNo: idx,
+        })),
+      });
+    }
 
     await (this.prisma as any).recordOperation.create({
       data: {
@@ -131,12 +154,19 @@ export class ContainerService {
         verifiedAt: null,
       } as any,
     });
-    return this.toResponse(row, undefined, txHash);
+    const fresh = await (this.prisma as any).container.findUnique({
+      where: { inventoryKey },
+      include: { containerPartners: true },
+    });
+    return this.toResponse(fresh || row, undefined, txHash);
   }
 
   async update(createdBy: string, inventoryKey: string, data: any) {
     const key = decodeURIComponent(cleanString(inventoryKey));
-    const existing = await (this.prisma as any).container.findUnique({ where: { inventoryKey: key } });
+    const existing = await (this.prisma as any).container.findUnique({
+      where: { inventoryKey: key },
+      include: { containerPartners: true },
+    });
     if (!existing) throw new NotFoundException('Container not found');
     const nextProductionInventoryKey = cleanString(data?.productionInventoryKey || existing.productionInventoryKey);
     const nextActualCapacityKg = cleanString(data?.actualCapacityKg || existing.actualCapacityKg);
@@ -159,6 +189,24 @@ export class ContainerService {
       where: { inventoryKey: key },
       data: patch as any,
     });
+    if (data?.partnerIds !== undefined) {
+      const rawPartnerIds = Array.isArray(data?.partnerIds) ? data.partnerIds : [];
+      const partnerIds = rawPartnerIds.map((x: unknown) => cleanString(x)).filter(Boolean);
+      await (this.prisma as any).$transaction([
+        (this.prisma as any).containerPartner.deleteMany({ where: { containerInventoryKey: key } }),
+        ...(partnerIds.length
+          ? [
+              (this.prisma as any).containerPartner.createMany({
+                data: partnerIds.map((partnerId: string, idx: number) => ({
+                  containerInventoryKey: key,
+                  partnerId,
+                  orderNo: idx,
+                })),
+              }),
+            ]
+          : []),
+      ]);
+    }
 
     const txHash = cleanString(data.txHash);
     if (txHash) {
@@ -175,7 +223,11 @@ export class ContainerService {
       });
     }
     const latest = txHash ? null : await this.getLatestOp(key);
-    return this.toResponse(updated, latest, txHash || undefined);
+    const fresh = await (this.prisma as any).container.findUnique({
+      where: { inventoryKey: key },
+      include: { containerPartners: true },
+    });
+    return this.toResponse(fresh || updated, latest, txHash || undefined);
   }
 
   async deleteByInventoryKey(_createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {

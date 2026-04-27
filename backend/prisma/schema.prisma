@@ -21,6 +21,7 @@ model User {
   isActive  Boolean   @default(true)
   productions Production[]
   containers  Container[]
+  partners    Partner[]
   media     Media[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -108,9 +109,45 @@ model Container {
   updatedAt                   DateTime @updatedAt
 
   recordOperations            RecordOperation[] @relation("ContainerRecordOperations")
+  containerPartners           ContainerPartner[]
 
   @@index([productionInventoryKey])
   @@index([registeringCustodianAddress])
+}
+
+model Partner {
+  id                          String   @id @default(cuid())
+  code                        String   @unique
+  displayName                 String
+  walletAddress               String
+  registeringCustodianAddress String
+  registeringCustodian        User?    @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  provinceId                  String?
+  districtId                  String?
+  wardId                      String?
+  note                        String?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  containerPartners           ContainerPartner[]
+
+  @@index([registeringCustodianAddress])
+  @@unique([registeringCustodianAddress, walletAddress])
+}
+
+model ContainerPartner {
+  id                   String    @id @default(cuid())
+  containerInventoryKey String
+  partnerId            String
+  orderNo              Int
+  container            Container @relation(fields: [containerInventoryKey], references: [inventoryKey], onDelete: Cascade)
+  partner              Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  createdAt            DateTime  @default(now())
+
+  @@index([containerInventoryKey])
+  @@index([partnerId])
+  @@unique([containerInventoryKey, partnerId])
+  @@unique([containerInventoryKey, orderNo])
 }
 
 enum ProductionStage {

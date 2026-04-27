@@ -15,6 +15,7 @@ const BACKEND_URL =
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
   container: "containers",
+  partner: "partners",
   profile: "profile",
 };
 
@@ -46,6 +47,7 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
   "container",
+  "partner",
 ]);
 
 function cleanString(value: unknown) {
@@ -234,6 +236,19 @@ function buildContainerMetadata(data: any, previousData: any) {
   };
 }
 
+async function loadPartnerWallets(partnerIdsRaw: unknown): Promise<string[]> {
+  const partnerIds = Array.isArray(partnerIdsRaw)
+    ? partnerIdsRaw.map((x) => cleanString(x)).filter(Boolean)
+    : [];
+  if (!partnerIds.length) return [];
+  const rows = await fetchResourceRows("partner");
+  const idSet = new Set(partnerIds);
+  return (rows || [])
+    .filter((row: any) => idSet.has(cleanString(row?.id)))
+    .map((row: any) => cleanString(row?.walletAddress))
+    .filter(Boolean);
+}
+
 export const adminDataProvider: DataProvider = {
   ...baseProvider,
   async getList(resource, params) {
@@ -283,6 +298,10 @@ export const adminDataProvider: DataProvider = {
       ).trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
       const metadata = buildContainerMetadata(params.data, params.previousData);
+      const partnerWallets = await loadPartnerWallets(params.data?.partnerIds ?? params.previousData?.partnerIds);
+      if (partnerWallets.length) {
+        (metadata as any).partner_wallets = partnerWallets.join("|");
+      }
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/save`, {
         method: "POST",
         body: JSON.stringify({ custodianAddress, owners, inventoryKey, metadata }),
@@ -347,6 +366,10 @@ export const adminDataProvider: DataProvider = {
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
       const metadata = buildContainerMetadata(params.data, null);
+      const partnerWallets = await loadPartnerWallets(params.data?.partnerIds);
+      if (partnerWallets.length) {
+        (metadata as any).partner_wallets = partnerWallets.join("|");
+      }
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/create`, {
         method: "POST",
         body: JSON.stringify({
