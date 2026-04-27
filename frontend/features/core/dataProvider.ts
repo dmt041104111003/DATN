@@ -15,7 +15,6 @@ const BACKEND_URL =
 const resourceToEndpoint: Record<string, string> = {
   production: "productions",
   container: "containers",
-  partner: "partners",
   profile: "profile",
 };
 
@@ -47,7 +46,6 @@ const baseProvider = simpleRestProvider(BACKEND_URL, (url, options) =>
 const RESOURCES_WITH_LIST_FALLBACK = new Set([
   "production",
   "container",
-  "partner",
 ]);
 
 function cleanString(value: unknown) {
@@ -240,17 +238,17 @@ function buildContainerMetadata(data: any, previousData: any) {
     gps_payload: cleanString(data?.locationProofPayload || previousData?.locationProofPayload),
     gps_signature: cleanString(data?.locationProofSignature || previousData?.locationProofSignature),
     gps_signed: cleanString(data?.locationProofSigned || previousData?.locationProofSigned),
-    partner_wallet_addresses: JSON.stringify(
-      Array.isArray(data?.partnerWalletAddresses)
-        ? data.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : Array.isArray(previousData?.partnerWalletAddresses)
-          ? previousData.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+    participant_wallet_addresses: JSON.stringify(
+      Array.isArray(data?.participantWalletAddresses)
+        ? data.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : Array.isArray(previousData?.participantWalletAddresses)
+          ? previousData.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
           : [],
     ),
-    partner_location_labels: (Array.isArray(data?.partnerLocationLabels)
-      ? data.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-      : Array.isArray(previousData?.partnerLocationLabels)
-        ? previousData.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+    participant_location_labels: (Array.isArray(data?.participantLocationLabels)
+      ? data.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+      : Array.isArray(previousData?.participantLocationLabels)
+        ? previousData.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
         : []
     ).join("; "),
     note: cleanString(data?.note || previousData?.note),

@@ -14,6 +14,10 @@ type AreaFieldsProps = {
   provinceSource: string;
   districtSource: string;
   wardSource: string;
+  watchProvinceSource?: string;
+  watchDistrictSource?: string;
+  setDistrictSource?: string;
+  setWardSource?: string;
   provinceLabel?: string;
   districtLabel?: string;
   wardLabel?: string;
@@ -21,12 +25,17 @@ type AreaFieldsProps = {
   requiredAll?: boolean;
   disableDistrictUntilProvince?: boolean;
   disableWardUntilDistrict?: boolean;
+  cascadeResetOnParentChange?: boolean;
 };
 
 export function AdministrativeAreaFields({
   provinceSource,
   districtSource,
   wardSource,
+  watchProvinceSource,
+  watchDistrictSource,
+  setDistrictSource,
+  setWardSource,
   provinceLabel = "Tỉnh/Thành",
   districtLabel = "Quận/Huyện",
   wardLabel = "Phường/Xã",
@@ -34,10 +43,15 @@ export function AdministrativeAreaFields({
   requiredAll = true,
   disableDistrictUntilProvince = true,
   disableWardUntilDistrict = true,
+  cascadeResetOnParentChange = true,
 }: AreaFieldsProps) {
   const { setValue } = useFormContext();
-  const provinceId = String(useWatch({ name: provinceSource }) ?? "");
-  const districtId = String(useWatch({ name: districtSource }) ?? "");
+  const provinceWatchName = watchProvinceSource || provinceSource;
+  const districtWatchName = watchDistrictSource || districtSource;
+  const districtSetName = setDistrictSource || districtSource;
+  const wardSetName = setWardSource || wardSource;
+  const provinceId = String(useWatch({ name: provinceWatchName }) ?? "");
+  const districtId = String(useWatch({ name: districtWatchName }) ?? "");
   const [provinces, setProvinces] = React.useState<Option[]>([]);
   const [districts, setDistricts] = React.useState<Option[]>([]);
   const [wards, setWards] = React.useState<Option[]>([]);
@@ -105,23 +119,23 @@ export function AdministrativeAreaFields({
       prevProvinceRef.current = provinceId;
       return;
     }
-    if (prevProvinceRef.current !== provinceId) {
-      setValue(districtSource, "");
-      setValue(wardSource, "");
+    if (cascadeResetOnParentChange && prevProvinceRef.current !== provinceId) {
+      setValue(districtSetName, "");
+      setValue(wardSetName, "");
       prevProvinceRef.current = provinceId;
     }
-  }, [districtSource, provinceId, setValue, wardSource]);
+  }, [cascadeResetOnParentChange, districtSetName, provinceId, setValue, wardSetName]);
 
   React.useEffect(() => {
     if (!prevDistrictRef.current) {
       prevDistrictRef.current = districtId;
       return;
     }
-    if (prevDistrictRef.current !== districtId) {
-      setValue(wardSource, "");
+    if (cascadeResetOnParentChange && prevDistrictRef.current !== districtId) {
+      setValue(wardSetName, "");
       prevDistrictRef.current = districtId;
     }
-  }, [districtId, setValue, wardSource]);
+  }, [cascadeResetOnParentChange, districtId, setValue, wardSetName]);
 
   return (
     <>

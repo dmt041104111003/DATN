@@ -25,8 +25,6 @@ import {
   ContainerContractService,
   ContainerService,
 } from './container';
-import { PartnerController } from './partner/partner.controller';
-import { PartnerService } from './partner/partner.service';
 import { LocationController } from './location/location.controller';
 
 @Module({
@@ -51,7 +49,6 @@ import { LocationController } from './location/location.controller';
     ProductionContractController,
     ContainerController,
     ContainerContractController,
-    PartnerController,
     HealthController,
     LocationController,
   ],
@@ -66,7 +63,6 @@ import { LocationController } from './location/location.controller';
     ProductionContractService,
     ContainerService,
     ContainerContractService,
-    PartnerService,
   ],
 })
 export class AppModule {}

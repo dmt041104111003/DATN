@@ -16,11 +16,6 @@ import {
   ProfileResourceEdit,
   ProfileResourceList,
 } from "@/features/resources/profile";
-import {
-  PartnerResourceCreate,
-  PartnerResourceEdit,
-  PartnerResourceList,
-} from "@/features/resources/partners";
 import { QrScanResourcePage } from "@/features/resources/qr-scan";
 
 export function renderAdminResources(permissions?: string) {
@@ -42,12 +37,6 @@ export function renderAdminResources(permissions?: string) {
             list={ContainerResourceList}
             create={ContainerResourceCreate}
             edit={ContainerResourceEdit}
-          />
-          <Resource
-            name="partner"
-            list={PartnerResourceList}
-            create={PartnerResourceCreate}
-            edit={PartnerResourceEdit}
           />
           <Resource name="qr-scan" list={QrScanResourcePage} />
         </>

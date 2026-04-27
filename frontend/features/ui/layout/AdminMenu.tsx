@@ -9,7 +9,6 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import PersonIcon from "@mui/icons-material/Person";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
-import HandshakeIcon from "@mui/icons-material/Handshake";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 
 export function AdminMenu() {
@@ -31,12 +30,6 @@ export function AdminMenu() {
             to="/container"
             primaryText="Thùng hàng"
             leftIcon={<Inventory2Icon />}
-          />,
-          <MenuItemLink
-            key="partner"
-            to="/partner"
-            primaryText="Đơn vị liên kết"
-            leftIcon={<HandshakeIcon />}
           />,
           <MenuItemLink
             key="qr-scan"

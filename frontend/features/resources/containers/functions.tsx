@@ -64,44 +64,77 @@ const positiveNumber = (value: unknown) => {
   return undefined;
 };
 
-
-function buildLocationLabelFromRow(row: any) {
-  const province = String(row?.provinceId || "").trim();
-  const district = String(row?.districtId || "").trim();
-  const ward = String(row?.wardId || "").trim();
-  return [province, district, ward].filter(Boolean).join(", ");
+function cleanString(value: unknown) {
+  return String(value ?? "").trim();
 }
 
-function AdditionalParticipantRow({ partnerById }: { partnerById: Map<string, any> }) {
-  const { setValue } = useFormContext();
+function buildLocationLabelFromRow(row: any) {
+  return [cleanString(row?.provinceId), cleanString(row?.districtId), cleanString(row?.wardId)]
+    .filter(Boolean)
+    .join(", ");
+}
+
+function normalizeParticipantRows(rowsRaw: unknown, ownerWalletRaw: unknown) {
+  const ownerWallet = cleanString(ownerWalletRaw);
+  const rows = Array.isArray(rowsRaw) ? rowsRaw : [];
+  const cleaned = rows
+    .map((row: any) => ({
+      walletAddress: cleanString(row?.walletAddress),
+      provinceId: cleanString(row?.provinceId),
+      districtId: cleanString(row?.districtId),
+      wardId: cleanString(row?.wardId),
+    }))
+    .filter((row: any) => row.walletAddress);
+  const seen = new Set<string>();
+  const uniqueRows: any[] = [];
+  for (const row of cleaned) {
+    const key = row.walletAddress.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniqueRows.push(row);
+  }
+  const ownerRow =
+    uniqueRows.find((row) => row.walletAddress.toLowerCase() === ownerWallet.toLowerCase()) ||
+    {
+      walletAddress: ownerWallet,
+      provinceId: "",
+      districtId: "",
+      wardId: "",
+    };
+  const otherRows = uniqueRows.filter((row) => row.walletAddress.toLowerCase() !== ownerWallet.toLowerCase());
+  return ownerWallet ? [ownerRow, ...otherRows] : uniqueRows;
+}
+
+function buildParticipantPayload(rowsRaw: unknown, ownerWalletRaw: unknown) {
+  const normalized = normalizeParticipantRows(rowsRaw, ownerWalletRaw);
+  const participantWalletAddresses = normalized.map((row: any) => cleanString(row?.walletAddress)).filter(Boolean);
+  const participantLocationLabels = normalized.map((row: any) => buildLocationLabelFromRow(row));
+  return { participantWalletAddresses, participantLocationLabels, participantRows: normalized };
+}
+
+function AdditionalParticipantRow({ ownerWallet }: { ownerWallet: string }) {
   const { index } = useSimpleFormIteratorItem();
-  const partnerId = String(useWatch({ name: `partnerRows.${index}.partnerId` }) || "").trim();
-  const partner = partnerById.get(partnerId);
-
-  React.useEffect(() => {
-    if (!partnerId || !partner) return;
-    setValue(`partnerRows.${index}.walletAddress`, String(partner?.walletAddress || "").trim());
-    setValue(`partnerRows.${index}.provinceId`, String(partner?.provinceId || "").trim());
-    setValue(`partnerRows.${index}.districtId`, String(partner?.districtId || "").trim());
-    setValue(`partnerRows.${index}.wardId`, String(partner?.wardId || "").trim());
-  }, [index, partner, partnerId, setValue]);
-
-  const partnerChoices = Array.from(partnerById.values()).map((row: any) => ({
-    id: String(row?.id || ""),
-    name: `${String(row?.displayName || "")} - ${String(row?.walletAddress || "").slice(0, 16)}...`,
-  }));
+  const isOwner = index === 0;
 
   return (
     <>
-      <SelectInput source="partnerId" label="Chọn đơn vị liên kết" choices={partnerChoices} fullWidth />
-      <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} disabled={Boolean(partnerId)} fullWidth />
+      <TextInput
+        source="walletAddress"
+        label={index === 0 ? "Địa chỉ ví chủ thể" : "Địa chỉ ví"}
+        validate={[required()]}
+        disabled={isOwner}
+        fullWidth
+      />
       <AdministrativeAreaFields
         provinceSource="provinceId"
         districtSource="districtId"
         wardSource="wardId"
-        provinceLabel="Tỉnh/Thành phố"
+        watchProvinceSource={`participantRows.${index}.provinceId`}
+        watchDistrictSource={`participantRows.${index}.districtId`}
+        setDistrictSource={`participantRows.${index}.districtId`}
+        setWardSource={`participantRows.${index}.wardId`}
         requiredAll={false}
-        disabled
+        cascadeResetOnParentChange={false}
       />
     </>
   );
@@ -111,6 +144,10 @@ function ContainerFormSections() {
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
   const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
+  const formOwnerWallet = cleanString(useWatch({ name: "registeringCustodianAddress" }) ?? "");
+  const participantRows = useWatch({ name: "participantRows" }) as unknown;
+  const { setValue } = useFormContext();
+  const [ownerWallet, setOwnerWallet] = React.useState("");
   const [capacitySummary, setCapacitySummary] = React.useState<{
     totalCapacityKg: number;
     usedCapacityKg: number;
@@ -161,25 +198,51 @@ function ContainerFormSections() {
     pagination: { page: 1, perPage: 1000 },
     sort: { field: "createdAt", order: "DESC" },
   });
-  const { data: partnerRows = [] } = useGetList("partner", {
-    pagination: { page: 1, perPage: 1000 },
-    sort: { field: "createdAt", order: "DESC" },
-  });
-  const partnerById = React.useMemo(() => {
-    const map = new Map<string, any>();
-    for (const row of partnerRows || []) {
-      const id = String((row as any)?.id || "").trim();
-      if (!id) continue;
-      map.set(id, row);
-    }
-    return map;
-  }, [partnerRows]);
   const productionChoices = (productionRows || [])
     .filter((row: any) => String(row?.status || "").toUpperCase() === "CLOSED")
     .map((row: any) => ({
       id: String(row?.inventoryKey || row?.id || ""),
       name: `${String(row?.code || "")} - ${String(row?.inventoryKey || "").slice(0, 16)}...`,
     }));
+
+  React.useEffect(() => {
+    let mounted = true;
+    fetch(`${BACKEND_URL}/auth/me`, { method: "GET", credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then((json: any) => {
+        if (!mounted) return;
+        const owner =
+          cleanString(json?.user?.paymentAddress) ||
+          cleanString(json?.user?.walletAddress) ||
+          cleanString(json?.user?.address) ||
+          cleanString(json?.user?.sub) ||
+          formOwnerWallet;
+        setOwnerWallet(owner);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setOwnerWallet(formOwnerWallet);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [formOwnerWallet]);
+
+  React.useEffect(() => {
+    if (!ownerWallet) return;
+    const normalized = normalizeParticipantRows(participantRows, ownerWallet);
+    const nextRows = normalized.length
+      ? normalized.map((row: any, idx: number) =>
+          idx === 0 ? { ...row, walletAddress: ownerWallet } : row,
+        )
+      : [{ walletAddress: ownerWallet, provinceId: "", districtId: "", wardId: "" }];
+    if (JSON.stringify(nextRows) !== JSON.stringify(Array.isArray(participantRows) ? participantRows : [])) {
+      setValue("participantRows", nextRows, { shouldDirty: false, shouldValidate: false });
+    }
+  }, [ownerWallet, participantRows, setValue]);
 
   return (
     <>
@@ -235,9 +298,9 @@ function ContainerFormSections() {
             requiredAll={false}
             disabled
           />
-          <ArrayInput source="partnerRows" label="Danh sách đơn vị liên kết bổ sung">
-            <SimpleFormIterator>
-              <FormDataConsumer>{() => <AdditionalParticipantRow partnerById={partnerById} />}</FormDataConsumer>
+          <ArrayInput source="participantRows" label="Danh sách địa chỉ ví tham gia">
+            <SimpleFormIterator disableReordering>
+              <FormDataConsumer>{() => <AdditionalParticipantRow ownerWallet={ownerWallet} />}</FormDataConsumer>
             </SimpleFormIterator>
           </ArrayInput>
           <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
@@ -306,20 +369,16 @@ export function ContainerResourceCreate() {
         if (actual > Number(summary?.remainingCapacityKg || 0)) {
           throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
         }
-        const extraRows = Array.isArray(data?.partnerRows) ? data.partnerRows : [];
-        const partnerWalletAddresses = extraRows
-          .map((row: any) => String(row?.walletAddress || "").trim())
-          .filter(Boolean);
-        const partnerLocationLabels = extraRows
-          .map((row: any) => buildLocationLabelFromRow(row))
-          .filter(Boolean);
+        const ownerWallet =
+          cleanString(data?.registeringCustodianAddress) ||
+          cleanString(data?.participantRows?.[0]?.walletAddress);
+        const participants = buildParticipantPayload(data?.participantRows, ownerWallet);
         return {
           ...data,
           code,
-          partnerWalletAddresses,
-          partnerLocationLabels,
-          partnerRows: undefined,
-          currentLocationLabel: undefined,
+          participantWalletAddresses: participants.participantWalletAddresses,
+          participantLocationLabels: participants.participantLocationLabels,
+          participantRows: participants.participantRows,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
           currentWardId: gps.wardId,
@@ -365,19 +424,15 @@ export function ContainerResourceEdit() {
         if (actual > Number(summary?.remainingCapacityKg || 0)) {
           throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`);
         }
-        const extraRows = Array.isArray(data?.partnerRows) ? data.partnerRows : [];
-        const partnerWalletAddresses = extraRows
-          .map((row: any) => String(row?.walletAddress || "").trim())
-          .filter(Boolean);
-        const partnerLocationLabels = extraRows
-          .map((row: any) => buildLocationLabelFromRow(row))
-          .filter(Boolean);
+        const ownerWallet =
+          cleanString(data?.registeringCustodianAddress) ||
+          cleanString(data?.participantRows?.[0]?.walletAddress);
+        const participants = buildParticipantPayload(data?.participantRows, ownerWallet);
         return {
           ...data,
-          partnerWalletAddresses,
-          partnerLocationLabels,
-          partnerRows: undefined,
-          currentLocationLabel: undefined,
+          participantWalletAddresses: participants.participantWalletAddresses,
+          participantLocationLabels: participants.participantLocationLabels,
+          participantRows: participants.participantRows,
           currentProvinceId: gps.provinceId,
           currentDistrictId: gps.districtId,
           currentWardId: gps.wardId,

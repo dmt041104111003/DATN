@@ -7,10 +7,6 @@ function cleanString(v: unknown): string {
   return String(v ?? '').trim();
 }
 
-function buildRootLocationLabel(provinceId: unknown, districtId: unknown, wardId: unknown) {
-  return [cleanString(provinceId), cleanString(districtId), cleanString(wardId)].filter(Boolean).join(', ');
-}
-
 function uniqWallets(values: string[]) {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -23,6 +19,10 @@ function uniqWallets(values: string[]) {
     out.push(wallet);
   }
   return out;
+}
+
+function buildLocationLabel(provinceId: unknown, districtId: unknown, wardId: unknown) {
+  return [cleanString(provinceId), cleanString(districtId), cleanString(wardId)].filter(Boolean).join(', ');
 }
 
 @Injectable()
@@ -79,10 +79,54 @@ export class ContainerService {
   private toResponse(row: any, latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
+      participantWalletAddresses: Array.isArray(row?.participantWalletAddresses)
+        ? row.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : [],
+      participantLocationLabels: Array.isArray(row?.participantLocationLabels)
+        ? row.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+        : [],
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
       verifiedAt: txHashOverride ? null : latest?.verifiedAt ?? null,
     };
+  }
+
+  private buildParticipants(data: any, ownerWallet: string, fallbackLocationLabel = '') {
+    const owner = cleanString(ownerWallet);
+    const fallbackLocation = cleanString(fallbackLocationLabel);
+
+    const fromRows = Array.isArray(data?.participantRows)
+      ? data.participantRows
+          .map((row: any) => ({
+            walletAddress: cleanString(row?.walletAddress),
+            locationLabel: buildLocationLabel(row?.provinceId, row?.districtId, row?.wardId),
+          }))
+          .filter((row: any) => row.walletAddress)
+      : [];
+    const fromWalletArray = Array.isArray(data?.participantWalletAddresses)
+      ? data.participantWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
+      : [];
+    const fromLocationArray = Array.isArray(data?.participantLocationLabels)
+      ? data.participantLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
+      : [];
+
+    const wallets = uniqWallets([owner, ...fromRows.map((x: any) => x.walletAddress), ...fromWalletArray]);
+    const locationByWallet = new Map<string, string>();
+    if (owner && fallbackLocation) locationByWallet.set(owner.toLowerCase(), fallbackLocation);
+    for (const row of fromRows) {
+      const key = cleanString(row.walletAddress).toLowerCase();
+      if (!key) continue;
+      const location = cleanString(row.locationLabel);
+      if (location) locationByWallet.set(key, location);
+    }
+    for (let i = 0; i < fromWalletArray.length; i += 1) {
+      const key = cleanString(fromWalletArray[i]).toLowerCase();
+      const location = cleanString(fromLocationArray[i]);
+      if (!key || !location) continue;
+      locationByWallet.set(key, location);
+    }
+    const locations = wallets.map((wallet) => cleanString(locationByWallet.get(wallet.toLowerCase()) || ''));
+    return { wallets, locations };
   }
 
   private async getLatestOp(inventoryKey: string) {
@@ -115,15 +159,8 @@ export class ContainerService {
     const inventoryKey = cleanString(data.inventoryKey);
     const txHash = cleanString(data.txHash);
     await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
-
-    const rootWallet = cleanString(addr);
-    const rootLocationLabel = buildRootLocationLabel(data?.currentProvinceId, data?.currentDistrictId, data?.currentWardId);
-    const incomingWallets = Array.isArray(data?.partnerWalletAddresses)
-      ? data.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-      : [];
-    const incomingLocations = Array.isArray(data?.partnerLocationLabels)
-      ? data.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-      : [];
+    const ownerLocationLabel = buildLocationLabel(data?.currentProvinceId, data?.currentDistrictId, data?.currentWardId);
+    const participants = this.buildParticipants(data, addr, ownerLocationLabel);
     const row = await (this.prisma as any).container.create({
       data: {
         traceSchemeRef: cleanString(data.traceSchemeRef),
@@ -138,6 +175,8 @@ export class ContainerService {
         capacityKg: cleanString(data.capacityKg) || null,
         actualCapacityKg: cleanString(data.actualCapacityKg) || null,
         productName: cleanString(data.productName) || null,
+        participantWalletAddresses: participants.wallets,
+        participantLocationLabels: participants.locations,
         note: cleanString(data.note) || null,
         status: 'CREATE',
       } as any,
@@ -153,8 +192,8 @@ export class ContainerService {
         verified: false,
         verifiedAt: null,
         payload: {
-          partnerWalletAddresses: uniqWallets([rootWallet, ...incomingWallets]),
-          partnerLocationLabels: [rootLocationLabel, ...incomingLocations].filter(Boolean),
+          participantWalletAddresses: participants.wallets,
+          participantLocationLabels: participants.locations,
         },
       } as any,
     });
@@ -175,8 +214,18 @@ export class ContainerService {
     await this.assertCapacityWithinRemaining(nextProductionInventoryKey, nextActualCapacityKg, key);
 
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
+    const nextProvinceId = data.currentProvinceId !== undefined ? data.currentProvinceId : existing.currentProvinceId;
+    const nextDistrictId = data.currentDistrictId !== undefined ? data.currentDistrictId : existing.currentDistrictId;
+    const nextWardId = data.currentWardId !== undefined ? data.currentWardId : existing.currentWardId;
+    const participants = this.buildParticipants(
+      data,
+      cleanString(existing.registeringCustodianAddress || createdBy),
+      buildLocationLabel(nextProvinceId, nextDistrictId, nextWardId),
+    );
     const patch: Record<string, unknown> = {
       status: nextStatus,
+      participantWalletAddresses: participants.wallets,
+      participantLocationLabels: participants.locations,
     };
     if (data.note !== undefined) patch.note = cleanString(data.note) || null;
     if (data.containerType !== undefined) patch.containerType = cleanString(data.containerType) || null;
@@ -193,17 +242,6 @@ export class ContainerService {
     });
     const txHash = cleanString(data.txHash);
     if (txHash) {
-      const rootWallet = cleanString(createdBy);
-      const nextProvinceId = data.currentProvinceId !== undefined ? data.currentProvinceId : existing.currentProvinceId;
-      const nextDistrictId = data.currentDistrictId !== undefined ? data.currentDistrictId : existing.currentDistrictId;
-      const nextWardId = data.currentWardId !== undefined ? data.currentWardId : existing.currentWardId;
-      const rootLocationLabel = buildRootLocationLabel(nextProvinceId, nextDistrictId, nextWardId);
-      const incomingWallets = Array.isArray(data?.partnerWalletAddresses)
-        ? data.partnerWalletAddresses.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : [];
-      const incomingLocations = Array.isArray(data?.partnerLocationLabels)
-        ? data.partnerLocationLabels.map((x: unknown) => cleanString(x)).filter(Boolean)
-        : [];
       await (this.prisma as any).recordOperation.create({
         data: {
           entityType: ENTITY_TYPE,
@@ -214,8 +252,8 @@ export class ContainerService {
           verified: false,
           verifiedAt: null,
           payload: {
-            partnerWalletAddresses: uniqWallets([rootWallet, ...incomingWallets]),
-            partnerLocationLabels: [rootLocationLabel, ...incomingLocations].filter(Boolean),
+            participantWalletAddresses: participants.wallets,
+            participantLocationLabels: participants.locations,
           },
         } as any,
       });
