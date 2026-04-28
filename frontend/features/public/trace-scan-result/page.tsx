@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Alert, Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import Link from "next/link";
+import { getDistrictOptions, getProvinceOptions, getWardOptions } from "@/features/resources/shared/location";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 const DEFAULT_NFT_IMAGE = "ipfs://bafkreiet2c7tmtcph6qvyoitypfphb7s7t3pnjdiq5bnhsfwby37o5cvaa";
@@ -63,7 +64,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         if (!res.ok) throw new Error("Không gọi được API trace.");
         const json = (await res.json()) as any;
         const lotPassport = (json?.lotPassport || {}) as Record<string, unknown>;
-        const points: Array<{ name: string; walletAddress: string; location: string }> = Array.isArray(json?.points)
+        const pointsRaw: Array<{ name: string; walletAddress: string; location: string }> = Array.isArray(json?.points)
           ? json.points
               .map((x: any) => ({
                 name: cleanString(x?.name),
@@ -72,6 +73,25 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
               }))
               .filter((x: any) => x.walletAddress)
           : [];
+        const points = await Promise.all(pointsRaw.map(async (x) => {
+          const text = cleanString(x.location);
+          const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
+          if (parts.length < 3) return x;
+          const provinceId = parts[0];
+          const districtId = parts[1];
+          const wardId = parts[2];
+          try {
+            const provinces = await getProvinceOptions();
+            const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
+            const districts = await getDistrictOptions(provinceId);
+            const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
+            const wards = await getWardOptions(districtId);
+            const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
+            return { ...x, location: `${wardName}, ${districtName}, ${provinceName}` };
+          } catch {
+            return x;
+          }
+        }));
         const latestSignerWallet = cleanString(json?.latestSignerWallet).toLowerCase();
         if (!points.length) {
           throw new Error(cleanString(json?.message) || "Không có dữ liệu point.");
@@ -86,10 +106,31 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         const containerType = cleanString(lotPassport.container_type);
         const capacityKg = cleanString(lotPassport.capacity_kg);
         const actualCapacityKg = cleanString(lotPassport.actual_capacity_kg);
-        const productionMetadata =
+        const productionMetadataRaw =
           json?.productionMetadata && typeof json.productionMetadata === "object"
             ? (json.productionMetadata as Record<string, unknown>)
             : null;
+        let productionMetadata = productionMetadataRaw;
+        if (productionMetadataRaw) {
+          const text = cleanString(productionMetadataRaw.location);
+          const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
+          if (parts.length >= 3) {
+            const provinceId = parts[0];
+            const districtId = parts[1];
+            const wardId = parts[2];
+            try {
+              const provinces = await getProvinceOptions();
+              const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
+              const districts = await getDistrictOptions(provinceId);
+              const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
+              const wards = await getWardOptions(districtId);
+              const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
+              productionMetadata = { ...productionMetadataRaw, location: `${wardName}, ${districtName}, ${provinceName}` };
+            } catch {
+              productionMetadata = productionMetadataRaw;
+            }
+          }
+        }
         if (!mounted) return;
         setTrace({
           containerTitle,
@@ -146,8 +187,8 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                       </Typography>
                       <Typography variant="body2">Mã thùng: {trace.containerCode || "-"}</Typography>
                       <Typography variant="body2">Loại thùng: {trace.containerType || "-"}</Typography>
-                      <Typography variant="body2">Sản lượng dự kiến: {trace.capacityKg || "-"}</Typography>
-                      <Typography variant="body2">Sản lượng thực tế: {trace.actualCapacityKg || "-"}</Typography>
+                      <Typography variant="body2">Sản lượng dự kiến (kg): {trace.capacityKg || "-"}</Typography>
+                      <Typography variant="body2">Sản lượng thực tế (kg): {trace.actualCapacityKg || "-"}</Typography>
                       <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
                         Thông tin vụ mùa
                       </Typography>
@@ -157,7 +198,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                       <Typography variant="body2">Phương thức: {cleanString(trace.productionMetadata?.farming_method) || "-"}</Typography>
                       <Typography variant="body2">Ngày gieo: {cleanString(trace.productionMetadata?.seeding_date) || "-"}</Typography>
                       <Typography variant="body2">Ngày thu hoạch: {cleanString(trace.productionMetadata?.harvest_date) || "-"}</Typography>
-                      <Typography variant="body2">Sản lượng: {cleanString(trace.productionMetadata?.actual_yield_kg) || "-"}</Typography>
+                      <Typography variant="body2">Sản lượng (kg): {cleanString(trace.productionMetadata?.actual_yield_kg) || "-"}</Typography>
                       <Typography variant="body2">Loại cây: {cleanString(trace.productionMetadata?.crop_type) || "-"}</Typography>
                       <Typography variant="body2">Giống: {cleanString(trace.productionMetadata?.variety) || "-"}</Typography>
                     </Box>
