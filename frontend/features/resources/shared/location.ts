@@ -1,6 +1,7 @@
 "use client";
 import { booleanPointInPolygon, point } from "@turf/turf";
 import gadmVnm3 from "@/gadm41_VNM_3.json";
+import { cleanString } from "@/features/core/metadata/share/cleanString";
 
 export type Option = { id: string; name: string };
 type AreaRow = { code: number; name: string };
@@ -9,6 +10,7 @@ const VIETNAM_PROVINCES_API = "https://provinces.open-api.vn/api";
 const provinceCache: Option[] = [];
 const districtCache = new Map<string, Option[]>();
 const wardCache = new Map<string, Option[]>();
+
 async function fetchJson(path: string): Promise<any> {
   const res = await fetch(`${VIETNAM_PROVINCES_API}${path}`);
   if (!res.ok) return null;
@@ -16,9 +18,30 @@ async function fetchJson(path: string): Promise<any> {
 }
 
 function mapRows(rows?: AreaRow[]): Option[] {
-  return Array.isArray(rows)
-    ? rows.map((row) => ({ id: String(row.code), name: String(row.name) }))
-    : [];
+  const options: Option[] = [];
+  if (!Array.isArray(rows)) return options;
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    options.push({
+      id: String(row.code),
+      name: String(row.name),
+    });
+  }
+
+  return options;
+}
+
+async function getCachedOptions(cache: Map<string, Option[]>, key: string, path: string, field: string) {
+  if (!key) return [];
+
+  const cached = cache.get(key);
+  if (cached) return [...cached];
+
+  const json = (await fetchJson(path)) as Record<string, AreaRow[] | undefined> | null;
+  const mapped = mapRows(json?.[field]);
+  cache.set(key, mapped);
+  return mapped;
 }
 
 export async function getProvinceOptions(): Promise<Option[]> {
@@ -31,41 +54,28 @@ export async function getProvinceOptions(): Promise<Option[]> {
 
 export async function getDistrictOptions(provinceId: string): Promise<Option[]> {
   const key = String(provinceId || "").trim();
-  if (!key) return [];
-  if (districtCache.has(key)) return [...(districtCache.get(key) || [])];
-  const json = (await fetchJson(`/p/${key}?depth=2`)) as { districts?: AreaRow[] } | null;
-  const mapped = mapRows(json?.districts);
-  districtCache.set(key, mapped);
-  return mapped;
+  return getCachedOptions(districtCache, key, `/p/${key}?depth=2`, "districts");
 }
 
 export async function getWardOptions(districtId: string): Promise<Option[]> {
   const key = String(districtId || "").trim();
-  if (!key) return [];
-  if (wardCache.has(key)) return [...(wardCache.get(key) || [])];
-  const json = (await fetchJson(`/d/${key}?depth=2`)) as { wards?: AreaRow[] } | null;
-  const mapped = mapRows(json?.wards);
-  wardCache.set(key, mapped);
-  return mapped;
-}
-
-function cleanString(value: unknown) {
-  return String(value ?? "").trim();
+  return getCachedOptions(wardCache, key, `/d/${key}?depth=2`, "wards");
 }
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 const gadmFeatures: any[] = Array.isArray((gadmVnm3 as any)?.features) ? (gadmVnm3 as any).features : [];
 
 function normalizeText(v: unknown) {
-  return String(v || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .replace(/^(tinh|thanhpho|quan|huyen|thixa|thitran|phuong|xa)/i, "")
-    .replace(/\s+/g, "")
-    .toLowerCase()
-    .trim();
+  let text = String(v || "");
+  text = text.normalize("NFD");
+  text = text.replace(/[\u0300-\u036f]/g, "");
+  text = text.replace(/đ/g, "d");
+  text = text.replace(/Đ/g, "D");
+  text = text.replace(/^(tinh|thanhpho|quan|huyen|thixa|thitran|phuong|xa)/i, "");
+  text = text.replace(/\s+/g, "");
+  text = text.toLowerCase();
+  text = text.trim();
+  return text;
 }
 
 function matchesName(optionName: string, candidate: string) {
@@ -75,29 +85,33 @@ function matchesName(optionName: string, candidate: string) {
   return a.includes(b) || b.includes(a);
 }
 
-function humanName(raw: unknown) {
-  const text = cleanString(raw);
-  if (!text) return "";
-  return text.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim();
+function findMatchedOption(options: Option[], rawName: string) {
+  for (let i = 0; i < options.length; i += 1) {
+    const row = options[i];
+    if (matchesName(row.name, rawName)) return row;
+  }
+
+  return null;
 }
 
 function resolveByPolygon(lat: number, lng: number) {
   const pt = point([lng, lat]);
-  for (const feature of gadmFeatures) {
+  for (let i = 0; i < gadmFeatures.length; i += 1) {
+    const feature = gadmFeatures[i];
     if (!feature?.geometry) continue;
     if (booleanPointInPolygon(pt as any, feature as any)) {
       const props = (feature.properties || {}) as Record<string, unknown>;
       return {
-        provinceName: humanName(props.NAME_1),
-        districtName: humanName(props.NAME_2),
-        wardName: humanName(props.NAME_3),
+        provinceName: cleanString(props.NAME_1).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(),
+        districtName: cleanString(props.NAME_2).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(),
+        wardName: cleanString(props.NAME_3).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(),
       };
     }
   }
   return null;
 }
 
-export async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
+async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
   provinceName: string;
   districtName: string;
   wardName: string;
@@ -110,8 +124,12 @@ export async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error("Không truy vấn được Geoapify reverse geocoding.");
   const json = (await res.json()) as any;
-  const feature = Array.isArray(json?.features) && json.features.length ? json.features[0] : null;
-  const props = feature?.properties || {};
+  let feature = null;
+  if (Array.isArray(json?.features) && json.features.length > 0) {
+    feature = json.features[0];
+  }
+
+  const props = feature && feature.properties ? feature.properties : {};
   const geoapifyProvince = cleanString(props?.state || props?.state_district);
   const geoapifyDistrict = cleanString(props?.city_district || props?.district || props?.county || props?.city || props?.town);
   const geoapifyWard = cleanString(props?.suburb || props?.quarter || props?.city_block || props?.hamlet || props?.village);
@@ -124,23 +142,27 @@ export async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
   }
 
   const provinces = await getProvinceOptions();
-  const province = provinces.find((x) => matchesName(x.name, provinceNameRaw));
+  const province = findMatchedOption(provinces, provinceNameRaw);
+
   if (!province) throw new Error("Không map được Tỉnh/Thành từ GPS.");
   const provinceId = String(province.id);
 
   const districts = await getDistrictOptions(provinceId);
-  const district = districts.find((x) => matchesName(x.name, districtNameRaw));
+  const district = findMatchedOption(districts, districtNameRaw);
+
   if (!district) throw new Error("Không map được Quận/Huyện từ GPS.");
   const districtId = String(district.id);
 
   const wards = await getWardOptions(districtId);
-  const ward = wards.find((x) => matchesName(x.name, wardNameRaw));
+  const ward = findMatchedOption(wards, wardNameRaw);
+
   if (!ward) throw new Error("Không map được Phường/Xã từ GPS.");
   const wardId = String(ward.id);
 
-  const locationLabel = [ward.name, district.name, province.name].map((x) => cleanString(x)).filter(Boolean).join(", ");
+  const locationLabel = `${cleanString(ward.name)}, ${cleanString(district.name)}, ${cleanString(province.name)}`;
   if (!locationLabel) throw new Error("Không dựng được địa điểm từ GPS.");
-  const mapped = {
+
+  return {
     provinceName: province.name,
     districtName: district.name,
     wardName: ward.name,
@@ -149,7 +171,6 @@ export async function resolveAreaIdsFromGps(lat: number, lng: number): Promise<{
     wardId,
     locationLabel,
   };
-  return mapped;
 }
 
 export async function captureCurrentGpsLocation(): Promise<{
@@ -211,12 +232,6 @@ export async function captureCurrentGpsLocation(): Promise<{
     lng,
     accuracyM,
     timestampIso,
-    provinceName: area.provinceName,
-    districtName: area.districtName,
-    wardName: area.wardName,
-    provinceId: area.provinceId,
-    districtId: area.districtId,
-    wardId: area.wardId,
-    locationLabel: area.locationLabel,
+    ...area,
   };
 }

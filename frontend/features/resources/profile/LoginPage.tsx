@@ -1,69 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { Typography } from "@mui/material";
 import { useNotify } from "react-admin";
-import { readSetupProfileState, useWalletAuth } from "@/hooks/useWalletAuth";
-import { ProfileResourceCreate } from "./functions";
-import { homePathForRole } from "@/lib/app-routes";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { ProfileResourceCreate } from "./ProfileResourceCreate";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-
-type RoleRow = { id: number; code: string; name?: string | null };
-
-type SetupFormState = {
-  walletAddress: string;
-  roles: RoleRow[];
-};
+function homePathForRole(role: string | null | undefined) {
+  const code = String(role || "").toUpperCase();
+  if (code === "TRANSIT") return "/transit";
+  if (code === "AGENT") return "/agent";
+  return "/enterprise";
+}
 
 export function AdminLoginPage() {
   const notify = useNotify();
-  const { loginWithEternl, isLoading, error } = useWalletAuth();
-  const [setup, setSetup] = useState<SetupFormState | null>(null);
-  const [roleCode, setRoleCode] = useState("");
-
-  useEffect(() => {
-    const hydrate = async () => {
-      const pending = readSetupProfileState();
-      if (pending) {
-        setSetup(pending);
-        setRoleCode(String(pending.roles?.[0]?.code || ""));
-        return;
-      }
-      const meRes = await fetch(`${BACKEND_URL}/auth/me`, {
-        method: "GET",
-        credentials: "include",
-      }).catch(() => null);
-      if (!meRes?.ok) return;
-      const meJson = (await meRes.json()) as any;
-      if (meJson?.profile?.roleCode || meJson?.user?.roleCode || meJson?.user?.role) {
-        window.location.assign("/admin");
-        return;
-      }
-      const walletAddress = String(
-        meJson?.user?.paymentAddress || meJson?.user?.walletAddress || meJson?.user?.sub || "",
-      ).trim();
-      if (!walletAddress) return;
-      const rolesRes = await fetch(`${BACKEND_URL}/profile/roles`, {
-        method: "GET",
-        credentials: "include",
-      }).catch(() => null);
-      const roles = rolesRes?.ok ? ((await rolesRes.json()) as RoleRow[]) : [];
-      setSetup({ walletAddress, roles: Array.isArray(roles) ? roles : [] });
-      setRoleCode(String(roles?.[0]?.code || ""));
-    };
-    hydrate().catch(() => undefined);
-  }, []);
-
-  const setupDefaults = useMemo(
-    () => ({
-      walletAddress: setup?.walletAddress || "",
-      displayName: "",
-      roleCode: roleCode || String(setup?.roles?.[0]?.code || ""),
-      phoneNumber: "",
-    }),
-    [roleCode, setup?.roles, setup?.walletAddress],
-  );
+  const { loginWithEternl, isLoading, error, setup, setupDefaults } = useWalletAuth();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f6f7fb] px-4">

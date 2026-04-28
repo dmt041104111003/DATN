@@ -110,6 +110,12 @@ export class AuthController {
     return { success: true };
   }
 
+  @Get('roles')
+  @UseGuards(JwtAuthGuard)
+  async getRoles() {
+    return this.authService.getRoles();
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {

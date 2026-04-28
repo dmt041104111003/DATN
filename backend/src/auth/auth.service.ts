@@ -30,6 +30,19 @@ export class AuthService {
     }
   }
 
+  async getRoles() {
+    const roles = await (this.prisma as any).role.findMany({
+      orderBy: { code: 'asc' },
+      select: { code: true, name: true },
+    });
+
+    return (Array.isArray(roles) ? roles : []).map((r: any, idx: number) => ({
+      id: idx + 1,
+      code: r.code,
+      name: r.name ?? null,
+    }));
+  }
+
   async generateNonce(stakeAddress: string): Promise<string> {
     const network = this.config.get<string>('APP_NETWORK') === 'mainnet' ? 'mainnet' : 'preprod';
     const input = this.normalizeStakeAddress(stakeAddress, network);

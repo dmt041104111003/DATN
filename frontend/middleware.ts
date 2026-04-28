@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { APP_ADMIN_SETUP, homePathForRole } from "@/lib/app-routes";
+const APP_ADMIN_SETUP = "/admin";
+
+function homePathForRole(role: string | null | undefined) {
+  const code = String(role || "").toUpperCase();
+  if (code === "TRANSIT") return "/transit";
+  if (code === "AGENT") return "/agent";
+  return "/enterprise";
+}
 
 function base64UrlDecodeToString(input: string): string {
   const b64 = input.replace(/-/g, "+").replace(/_/g, "/");

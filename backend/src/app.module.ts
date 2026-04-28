@@ -17,12 +17,10 @@ import { RecordOperationController } from './record-operation/record-operation.c
 import { RecordOperationVerifierService } from './record-operation/record-operation.verifier.service';
 import { ProductionController } from './production/production.controller';
 import { ProductionService } from './production/production.service';
-import { ProductionContractController } from './production/production.contract.controller';
-import { ProductionContractService } from './production/production.contract.service';
-import {
-  ContainerController,
-  ContainerService,
-} from './container';
+import { ContractController } from './contract/contract.controller';
+import { ContractService } from './contract/contract.service';
+import { ContainerController } from './container/container.controller';
+import { ContainerService } from './container/container.service';
 import { LocationController } from './location/location.controller';
 import { WarehouseController } from './warehouse/warehouse.controller';
 import { WarehouseService } from './warehouse/warehouse.service';
@@ -48,7 +46,7 @@ import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.s
     MediaController,
     RecordOperationController,
     ProductionController,
-    ProductionContractController,
+    ContractController,
     ContainerController,
     WarehouseController,
     WarehouseStorageController,
@@ -63,7 +61,7 @@ import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.s
     TraceService,
     RecordOperationVerifierService,
     ProductionService,
-    ProductionContractService,
+    ContractService,
     ContainerService,
     WarehouseService,
     WarehouseStorageService,

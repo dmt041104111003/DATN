@@ -14,7 +14,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WarehouseStorageService } from './warehouse-storage.service';
 
-@Controller('warehouse-storages')
+@Controller('warehouse-storage')
 @UseGuards(JwtAuthGuard)
 export class WarehouseStorageController {
   constructor(private readonly warehouseStorageService: WarehouseStorageService) {}

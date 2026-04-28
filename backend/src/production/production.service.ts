@@ -22,83 +22,66 @@ export class ProductionService {
     return packed ? packed.split('|').filter(Boolean) : [];
   }
 
-  private async attachEntityMedia(entityKey: string, role: string, ipfsUriRaw: unknown, createdByAddress?: string | null) {
+  private async attachProductionImage(entityKey: string, ipfsUriRaw: unknown, createdByAddress?: string | null) {
     const ipfsUri = cleanString(ipfsUriRaw);
     if (!ipfsUri) return;
-    const media = await (this.prisma as any).media.upsert({
-      where: { ipfsUri },
+    await (this.prisma as any).image.upsert({
+      where: {
+        productionInventoryKey_ipfsUri: {
+          productionInventoryKey: entityKey,
+          ipfsUri,
+        },
+      },
       create: {
+        productionInventoryKey: entityKey,
         ipfsUri,
         ipfsHash: ipfsUri.startsWith('ipfs://') ? ipfsUri.slice('ipfs://'.length) : null,
         createdByAddress: createdByAddress || null,
       } as any,
       update: {} as any,
     });
-    await (this.prisma as any).entityMedia.upsert({
-      where: {
-        entityType_entityKey_role: {
-          entityType: ENTITY_TYPE,
-          entityKey,
-          role,
-        },
-      },
-      create: {
-        entityType: ENTITY_TYPE,
-        entityKey,
-        role,
-        mediaId: String(media.id),
-      } as any,
-      update: { mediaId: String(media.id) } as any,
-    });
   }
 
   private async attachMediaBatch(entityKey: string, addr: string, certFiles: unknown[], evidenceFiles: unknown[]) {
-    for (const uri of certFiles) {
-      await this.attachEntityMedia(entityKey, 'PRODUCTION_CERT_FILE', uri, addr);
-    }
-    for (const uri of evidenceFiles) {
-      await this.attachEntityMedia(entityKey, 'PRODUCTION_EVIDENCE', uri, addr);
+    const all = [...certFiles, ...evidenceFiles];
+    for (const uri of all) {
+      await this.attachProductionImage(entityKey, uri, addr);
     }
   }
 
-  private composeResponse(row: any, media: Record<string, string[]>, latest?: any, txHashOverride?: string | null) {
+  private composeResponse(row: any, media: string[], latest?: any, txHashOverride?: string | null) {
     return {
       ...row,
       certifications: this.certToArray(row?.certifications),
-      certFiles: media.PRODUCTION_CERT_FILE || [],
-      evidenceFiles: media.PRODUCTION_EVIDENCE || [],
+      images: media,
+      certFiles: media,
+      evidenceFiles: media,
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
       verifiedAt: txHashOverride ? null : latest?.verifiedAt ?? null,
     };
   }
 
-  private async getMediaByRole(keys: string[], roles: string[]) {
-    const out: Record<string, Record<string, string[]>> = {};
+  private async getMediaByKey(keys: string[]) {
+    const out: Record<string, string[]> = {};
     const k = (keys || []).map(cleanString).filter(Boolean);
-    const r = (roles || []).map(cleanString).filter(Boolean);
-    if (k.length === 0 || r.length === 0) return out;
-    const rows = await (this.prisma as any).entityMedia.findMany({
+    if (k.length === 0) return out;
+    const rows = await (this.prisma as any).image.findMany({
       where: {
-        entityType: ENTITY_TYPE,
-        entityKey: { in: k },
-        role: { in: r },
+        productionInventoryKey: { in: k },
       },
       select: {
-        entityKey: true,
-        role: true,
-        media: { select: { ipfsUri: true } },
+        productionInventoryKey: true,
+        ipfsUri: true,
       },
       orderBy: { createdAt: 'asc' },
     });
     for (const row of Array.isArray(rows) ? rows : []) {
-      const key = cleanString(row?.entityKey);
-      const role = cleanString(row?.role);
-      const ipfsUri = cleanString(row?.media?.ipfsUri);
-      if (!key || !role || !ipfsUri) continue;
-      out[key] ||= {};
-      out[key][role] ||= [];
-      out[key][role].push(ipfsUri);
+      const key = cleanString((row as any)?.productionInventoryKey);
+      const ipfsUri = cleanString((row as any)?.ipfsUri);
+      if (!key || !ipfsUri) continue;
+      out[key] ||= [];
+      out[key].push(ipfsUri);
     }
     return out;
   }
@@ -115,7 +98,7 @@ export class ProductionService {
       orderBy: { createdAt: 'desc' },
     });
     const keys = (rows || []).map((r: any) => cleanString(r.inventoryKey)).filter(Boolean);
-    const mediaByKey = await this.getMediaByRole(keys, ['PRODUCTION_CERT_FILE', 'PRODUCTION_EVIDENCE']);
+    const mediaByKey = await this.getMediaByKey(keys);
 
     const ops = await (this.prisma as any).recordOperation.findMany({
       where: { entityType: ENTITY_TYPE, entityKey: { in: keys } },
@@ -130,7 +113,7 @@ export class ProductionService {
 
     return (rows || []).map((r: any) => {
       const key = cleanString(r.inventoryKey);
-      const m = mediaByKey[key] || {};
+      const m = mediaByKey[key] || [];
       const latest = latestByKey.get(key);
       return this.composeResponse(r, m, latest);
     });
@@ -184,7 +167,7 @@ export class ProductionService {
     await this.attachMediaBatch(inventoryKey, addr, certFiles, evidenceFiles);
     return this.composeResponse(
       production,
-      { PRODUCTION_CERT_FILE: certFiles as string[], PRODUCTION_EVIDENCE: evidenceFiles as string[] },
+      [...(certFiles as string[]), ...(evidenceFiles as string[])],
       undefined,
       txHash,
     );
@@ -253,7 +236,7 @@ export class ProductionService {
 
     return this.composeResponse(
       updated,
-      { PRODUCTION_CERT_FILE: certFiles as string[], PRODUCTION_EVIDENCE: evidenceFiles as string[] },
+      [...(certFiles as string[]), ...(evidenceFiles as string[])],
       latestOpAfterUpdate,
       txHash || undefined,
     );

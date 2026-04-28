@@ -5,9 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { useWalletAuth } from "../hooks/useWalletAuth";
-import { homePathForRole } from "@/lib/app-routes";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+
+function homePathForRole(role: string | null | undefined) {
+  const code = String(role || "").toUpperCase();
+  if (code === "TRANSIT") return "/transit";
+  if (code === "AGENT") return "/agent";
+  return "/enterprise";
+}
 
 const MENU = [
   { id: "home", label: "Trang chủ", href: "/" },

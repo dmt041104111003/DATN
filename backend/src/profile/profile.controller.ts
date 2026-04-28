@@ -16,20 +16,38 @@ import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProfileService } from './profile.service';
 
-export interface CreateProfileDto {
-  roleCode: string;
-  displayName: string;
-  phoneNumber?: string;
-}
-
-export interface UpdateProfileDto {
-  displayName?: string;
-  phoneNumber?: string;
-}
-
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+
+  private getWalletAddress(req: any) {
+    const user = req?.user || {};
+    const walletAddress = user.walletAddress || user.paymentAddress || user.sub;
+
+    if (!walletAddress) {
+      throw new HttpException(
+        'Unable to determine wallet address from token',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    return walletAddress;
+  }
+
+  private getProfileId(req: any) {
+    const profileId = req?.user?.profileId;
+
+    if (!profileId) {
+      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
+    }
+
+    return profileId;
+  }
+
+  private rethrow(error: unknown): never {
+    if (error instanceof HttpException) throw error;
+    throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
 
   private setAuthCookie(res: Response, token: string) {
     const sameSite =
@@ -50,59 +68,23 @@ export class ProfileController {
   @Get('list')
   @UseGuards(JwtAuthGuard)
   async listProfiles(@Req() req: any) {
-    const walletAddress =
-      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
-
-    if (!walletAddress) {
-      throw new HttpException(
-        'Unable to determine wallet address from token',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    return this.profileService.listProfiles(walletAddress);
+    return this.profileService.listProfiles(this.getWalletAddress(req));
   }
 
   @Get()
   @UseGuards(JwtAuthGuard)
   async listProfilesForAdmin(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-    const walletAddress =
-      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
-    if (!walletAddress) {
-      throw new HttpException(
-        'Unable to determine wallet address from token',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-    const rows = await this.profileService.listProfiles(walletAddress);
+    const rows = await this.profileService.listProfiles(this.getWalletAddress(req));
     const total = rows.length;
     const end = Math.max(total - 1, 0);
     res.setHeader('Content-Range', `profile 0-${end}/${total}`);
     return rows;
   }
 
-  @Get('public/:walletAddress')
-  async getPublicProfile(@Req() req: any) {
-    const walletAddress = (req?.params?.walletAddress || '').trim();
-    if (!walletAddress) {
-      throw new HttpException(
-        'Public profile lookup requires an account reference.',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    return this.profileService.getPublicProfile(walletAddress);
-  }
-
-  @Get('roles')
-  @UseGuards(JwtAuthGuard)
-  async getRoles() {
-    return this.profileService.getRoles();
-  }
-
   @Post()
   @UseGuards(JwtAuthGuard)
   async createProfile(
-    @Body() body: CreateProfileDto,
+    @Body() body: any,
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -114,58 +96,36 @@ export class ProfileController {
       }
       return created?.profile ?? created;
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.rethrow(error);
     }
   }
 
   @Patch()
   @UseGuards(JwtAuthGuard)
-  async updateProfile(@Body() body: UpdateProfileDto, @Req() req: any) {
+  async updateProfile(@Body() body: any, @Req() req: any) {
     try {
-      const profileId = req.user.profileId;
-      if (!profileId) {
-        throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
-      }
-      return this.profileService.updateProfile(profileId, body);
+      return this.profileService.updateProfile(this.getProfileId(req), body);
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+      this.rethrow(error);
     }
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getProfileById(@Req() req: any, @Param('id') _id: string) {
-    const profileId = req.user?.profileId;
-    if (!profileId) {
-      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
-    }
-    return this.profileService.getProfileById(profileId);
+    return this.profileService.getProfileById(this.getProfileId(req));
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  async replaceProfile(@Body() body: UpdateProfileDto, @Req() req: any, @Param('id') _id: string) {
-    const profileId = req.user?.profileId;
-    if (!profileId) {
-      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
-    }
-    return this.profileService.updateProfile(profileId, body);
+  async replaceProfile(@Body() body: any, @Req() req: any, @Param('id') _id: string) {
+    return this.profileService.updateProfile(this.getProfileId(req), body);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  async patchProfile(@Body() body: UpdateProfileDto, @Req() req: any, @Param('id') _id: string) {
-    const profileId = req.user?.profileId;
-    if (!profileId) {
-      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
-    }
-    return this.profileService.updateProfile(profileId, body);
+  async patchProfile(@Body() body: any, @Req() req: any, @Param('id') _id: string) {
+    return this.profileService.updateProfile(this.getProfileId(req), body);
   }
 
 }

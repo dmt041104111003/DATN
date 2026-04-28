@@ -1,0 +1,43 @@
+import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
+import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
+
+export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any) {
+  const { owner } = await deps.getSessionOwner();
+  const containerInventoryKey = deps.cleanString(
+    (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
+  );
+  if (!containerInventoryKey) throw new Error("containerInventoryKey is required.");
+  const gps = await deps.captureCurrentGpsLocation();
+  const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
+  const base = params.previousData || {};
+  const owners = deps.buildOwnerList(base, owner);
+  const inventoryKey = deps.cleanString((base as any)?.productionInventoryKey || containerInventoryKey);
+  const metadata = {
+    ...deps.buildMappedMetadata({
+      storage_op: "OUT",
+      warehouse_id: (base as any)?.warehouseId,
+      container_inventory_key:
+        (base as any)?.containerInventoryKey || (base as any)?.productId,
+      current_location: location,
+      storage_created_at: deps.cleanString((base as any)?.createdAt) || new Date().toISOString(),
+      storage_updated_at: new Date().toISOString(),
+      storage_conditions: (base as any)?.conditions,
+    }),
+  };
+  const unsigned = await saveContractUnsignedTx(
+    deps.httpClient,
+    deps.BACKEND_URL,
+    { owners, inventoryKey, metadata },
+    "Failed to prepare warehouse storage on-chain update.",
+  );
+  const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+  const { json } = await deps.httpClient(
+    `${deps.BACKEND_URL}/warehouse-storage/${encodeURIComponent(String(params.id))}`,
+    {
+      method: "DELETE",
+      body: JSON.stringify({ txHash, location }),
+    },
+  );
+  const row = json as any;
+  return { data: { ...row, id: deps.normalizeId(params.previousData, params.id) } };
+}

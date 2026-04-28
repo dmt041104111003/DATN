@@ -13,7 +13,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import axios from 'axios';
 import FormData = require('form-data');
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * One-off uploads for lot passports (no library / catalog table).
@@ -21,12 +20,10 @@ import { PrismaService } from '../prisma/prisma.service';
 @Controller('media')
 @UseGuards(JwtAuthGuard)
 export class MediaController {
-  constructor(private readonly prisma: PrismaService) {}
-
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
-    @Req() req: any,
+    @Req() _req: any,
     @UploadedFile() file: any,
     @Body() body: { name?: string; mimeType?: string },
   ) {
@@ -81,29 +78,7 @@ export class MediaController {
     const name = (body.name || file.originalname || 'Lot image').trim();
     const mimeType = (body.mimeType || file.mimetype || 'image/*').trim();
 
-    const custodian =
-      req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub || null;
-
-    const media = await (this.prisma as any).media.upsert({
-      where: { ipfsUri: `ipfs://${ipfsHash}` },
-      create: {
-        ipfsUri: `ipfs://${ipfsHash}`,
-        ipfsHash,
-        url,
-        name,
-        mimeType,
-        sizeBytes: typeof file?.size === 'number' ? file.size : null,
-        createdByAddress: custodian ? String(custodian).trim() || null : null,
-      } as any,
-      update: {
-        url,
-        name,
-        mimeType,
-      } as any,
-    });
-
     return {
-      mediaId: String(media?.id || ''),
       ipfsHash,
       url,
       ipfsUri: `ipfs://${ipfsHash}`,

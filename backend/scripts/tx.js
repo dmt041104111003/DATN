@@ -50,14 +50,20 @@ function encodeAssetNameToRefUnit(policyId, assetName) {
 }
 
 function parseOwnersFromMetadata(metadata) {
-  const raw = metadata?.participant_wallet_addresses;
-  if (Array.isArray(raw)) return raw.map((x) => String(x || "").trim()).filter(Boolean);
-  const text = String(raw || "").trim();
-  if (!text) return [];
-  try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed)) return parsed.map((x) => String(x || "").trim()).filter(Boolean);
-  } catch {}
+  const tryParse = (raw) => {
+    if (Array.isArray(raw)) return raw.map((x) => String(x || "").trim()).filter(Boolean);
+    const text = String(raw || "").trim();
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed.map((x) => String(x || "").trim()).filter(Boolean);
+    } catch {}
+    return [];
+  };
+  const fromOwners = tryParse(metadata?.owners);
+  if (fromOwners.length) return fromOwners;
+  const fromParticipants = tryParse(metadata?.participant_wallet_addresses);
+  if (fromParticipants.length) return fromParticipants;
   return [];
 }
 

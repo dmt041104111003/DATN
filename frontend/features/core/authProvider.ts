@@ -20,7 +20,7 @@ type MeResponse = {
   } | null;
 };
 
-async function getMe(): Promise<MeResponse> {
+export async function getMe(): Promise<MeResponse> {
   const res = await fetch(`${BACKEND_URL}/auth/me`, {
     method: "GET",
     credentials: "include",

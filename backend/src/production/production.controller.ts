@@ -14,7 +14,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProductionService } from './production.service';
 
-@Controller('productions')
+@Controller('production')
 @UseGuards(JwtAuthGuard)
 export class ProductionController {
   constructor(private readonly productionService: ProductionService) {}

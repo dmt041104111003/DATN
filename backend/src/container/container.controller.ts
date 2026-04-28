@@ -15,7 +15,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ContainerService } from './container.service';
 
-@Controller('containers')
+@Controller('container')
 @UseGuards(JwtAuthGuard)
 export class ContainerController {
   constructor(private readonly containerService: ContainerService) {}
