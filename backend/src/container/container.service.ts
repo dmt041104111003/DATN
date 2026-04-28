@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const ENTITY_TYPE = 'CONTAINER';
@@ -118,6 +118,34 @@ export class ContainerService {
     });
   }
 
+  private async hasWarehouseStorageHistory(inventoryKeyRaw: unknown): Promise<boolean> {
+    const inventoryKey = cleanString(inventoryKeyRaw);
+    if (!inventoryKey) return false;
+    const activeStorage = await (this.prisma as any).warehouseStorage.findFirst({
+      where: { containerInventoryKey: inventoryKey },
+      select: { id: true },
+    });
+    if (activeStorage) return true;
+    const op = await (this.prisma as any).recordOperation.findFirst({
+      where: {
+        entityType: 'WAREHOUSE_STORAGE',
+        containerInventoryKey: inventoryKey,
+      },
+      select: { id: true },
+    });
+    return Boolean(op);
+  }
+
+  private async assertContainerMutable(inventoryKeyRaw: unknown) {
+    const inventoryKey = cleanString(inventoryKeyRaw);
+    const locked = await this.hasWarehouseStorageHistory(inventoryKey);
+    if (locked) {
+      throw new ConflictException(
+        'Container đã có lịch sử nhập/xuất kho nên không được phép cập nhật hoặc xóa.',
+      );
+    }
+  }
+
   async list(_createdBy: string) {
     const rows = await (this.prisma as any).container.findMany({
       orderBy: { createdAt: 'desc' },
@@ -133,7 +161,38 @@ export class ContainerService {
       if (!key || latestByKey.has(key)) continue;
       latestByKey.set(key, op);
     }
-    return rows.map((r: any) => this.toResponse(r, latestByKey.get(cleanString(r.inventoryKey))));
+    const inStorageRows = keys.length
+      ? await (this.prisma as any).warehouseStorage.findMany({
+          where: { containerInventoryKey: { in: keys } },
+          select: { containerInventoryKey: true },
+        })
+      : [];
+    const historyOps = keys.length
+      ? await (this.prisma as any).recordOperation.findMany({
+          where: {
+            entityType: 'WAREHOUSE_STORAGE',
+            containerInventoryKey: { in: keys },
+          },
+          select: { containerInventoryKey: true },
+        })
+      : [];
+    const inStorageSet = new Set<string>(
+      (inStorageRows || []).map((x: any) => cleanString(x?.containerInventoryKey)).filter(Boolean),
+    );
+    const historySet = new Set<string>([
+      ...Array.from(inStorageSet.values()),
+      ...(historyOps || [])
+        .map((x: any) => cleanString(x?.containerInventoryKey))
+        .filter(Boolean),
+    ]);
+    return rows.map((r: any) => {
+      const inventoryKey = cleanString(r.inventoryKey);
+      return {
+        ...this.toResponse(r, latestByKey.get(inventoryKey)),
+        storageLocked: historySet.has(inventoryKey),
+        inStorage: inStorageSet.has(inventoryKey),
+      };
+    });
   }
 
   async create(createdBy: string, data: any) {
@@ -184,6 +243,7 @@ export class ContainerService {
 
   async update(createdBy: string, inventoryKey: string, data: any) {
     const key = decodeURIComponent(cleanString(inventoryKey));
+    await this.assertContainerMutable(key);
     const existing = await (this.prisma as any).container.findUnique({
       where: { inventoryKey: key },
     });
@@ -237,6 +297,7 @@ export class ContainerService {
 
   async deleteByInventoryKey(_createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
     const key = cleanString(inventoryKeyRaw);
+    await this.assertContainerMutable(key);
     const txHash = cleanString(txHashRaw);
     const existing = await (this.prisma as any).container.findUnique({ where: { inventoryKey: key } });
     if (!existing) throw new NotFoundException('Container not found');

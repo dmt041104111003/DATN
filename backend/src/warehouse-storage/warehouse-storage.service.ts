@@ -89,7 +89,11 @@ export class WarehouseStorageService {
       where: { containerInventoryKey },
       select: { id: true },
     });
-    if (duplicated) throw new ConflictException('Container already stored in warehouse');
+    if (duplicated) {
+      throw new ConflictException(
+        'Container đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.',
+      );
+    }
     const row = await (this.prisma as any).warehouseStorage.create({
       data: {
         warehouseId,
@@ -140,7 +144,11 @@ export class WarehouseStorageService {
         },
         select: { id: true },
       });
-      if (duplicated) throw new ConflictException('Container already stored in warehouse');
+      if (duplicated) {
+        throw new ConflictException(
+          'Container đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.',
+        );
+      }
     }
     const row = await (this.prisma as any).warehouseStorage.update({
       where: { id },

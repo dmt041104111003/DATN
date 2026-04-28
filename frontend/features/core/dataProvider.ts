@@ -478,6 +478,11 @@ export const adminDataProvider: DataProvider = {
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
     if (resource === "container") {
+      if (Boolean((params.previousData as any)?.storageLocked)) {
+        throw new Error(
+          "Container đã có lịch sử nhập/xuất kho nên không được phép cập nhật hoặc xóa.",
+        );
+      }
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const inventoryKey = String(
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
@@ -691,6 +696,11 @@ export const adminDataProvider: DataProvider = {
   },
   async delete(resource, params) {
     if (resource === "container") {
+      if (Boolean((params.previousData as any)?.storageLocked)) {
+        throw new Error(
+          "Thùng hàng đã có lịch sử nhập/xuất kho nên không được phép cập nhật hoặc xóa.",
+        );
+      }
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
       const owners = buildOwnerList(owner, custodianAddress);
       const inventoryKey = String((params.previousData as any)?.inventoryKey ?? params.id ?? "").trim();

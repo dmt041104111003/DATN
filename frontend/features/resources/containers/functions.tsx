@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Alert from "@mui/material/Alert";
 import MuiButton from "@mui/material/Button";
 import QRCode from "qrcode";
 import {
@@ -24,6 +25,7 @@ import {
   FormDataConsumer,
   useSimpleFormIteratorItem,
   useGetList,
+  useRecordContext,
   required,
 } from "react-admin";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -183,6 +185,8 @@ function AdditionalParticipantRow({ disabled = false }: { disabled?: boolean }) 
 }
 
 function ContainerFormSections({ participantsReadOnly = false }: { participantsReadOnly?: boolean }) {
+  const record = useRecordContext<any>();
+  const storageLocked = Boolean(record?.storageLocked);
   const { getValues, setValue } = useFormContext();
   const currentInventoryKey = String(useWatch({ name: "inventoryKey" }) ?? "");
   const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
@@ -282,6 +286,11 @@ function ContainerFormSections({ participantsReadOnly = false }: { participantsR
 
   return (
     <>
+      {storageLocked ? (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Thùng hàng đã có lịch sử nhập/xuất kho nên bị khóa cập nhật và xóa.
+        </Alert>
+      ) : null}
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[1] Thông tin thùng hàng</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -349,16 +358,25 @@ function ContainerCreateToolbar() {
 }
 
 function ContainerEditToolbar() {
+  const record = useRecordContext<any>();
+  const storageLocked = Boolean(record?.storageLocked);
   const { setValue } = useFormContext();
   return (
     <Toolbar>
       <SaveButton
         label="Cập nhật"
+        disabled={storageLocked}
         onClick={() => {
           setValue("status", "UPDATE");
         }}
       />
-      <DeleteButton label="DELETE" mutationMode="pessimistic" redirect="list" color="error" />
+      <DeleteButton
+        label="DELETE"
+        mutationMode="pessimistic"
+        redirect="list"
+        color="error"
+        disabled={storageLocked}
+      />
     </Toolbar>
   );
 }
