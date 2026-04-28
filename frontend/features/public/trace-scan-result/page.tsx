@@ -5,9 +5,34 @@ import { Alert, Box, Card, CardContent, Stack, Typography } from "@mui/material"
 import Link from "next/link";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const DEFAULT_NFT_IMAGE = "ipfs://bafkreiet2c7tmtcph6qvyoitypfphb7s7t3pnjdiq5bnhsfwby37o5cvaa";
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function normalizeIpfsUri(value: string) {
+  const raw = cleanString(value);
+  if (!raw) return "";
+  if (raw.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${raw.slice("ipfs://".length)}`;
+  return raw;
+}
+
+function resolveProductionImage(metadata: Record<string, unknown> | null) {
+  if (!metadata) return normalizeIpfsUri(DEFAULT_NFT_IMAGE);
+  const image = cleanString(metadata.image);
+  if (image) return normalizeIpfsUri(image);
+  const imageCidsRaw = cleanString(metadata.image_cids);
+  if (imageCidsRaw) {
+    try {
+      const parsed = JSON.parse(imageCidsRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const first = cleanString(parsed[0]);
+        if (first) return normalizeIpfsUri(first);
+      }
+    } catch {}
+  }
+  return normalizeIpfsUri(DEFAULT_NFT_IMAGE);
 }
 
 type TraceView = {
@@ -107,55 +132,36 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                   {trace.containerTitle}
                 </Typography>
                 <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 1, px: 1.5, py: 1 }}>
-                <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
+                  <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" }, alignItems: "flex-start" }}>
+                    <Box sx={{ width: { xs: "100%", md: 260 }, flexShrink: 0 }}>
+                      <img
+                        src={resolveProductionImage(trace.productionMetadata)}
+                        alt="Ảnh vụ mùa"
+                        style={{ width: "100%", borderRadius: 8, border: "1px solid #e5e7eb" }}
+                      />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         Thông tin thùng hàng
                       </Typography>
-                  <Typography variant="body2">
-                    Mã thùng: {trace.containerCode || "-"}
-                  </Typography>
-                  <Typography variant="body2">
-                    Loại thùng: {trace.containerType || "-"}
-                  </Typography>
-                  <Typography variant="body2">
-                    Sản lượng dự kiến: {trace.capacityKg || "-"}
-                  </Typography>
-                  <Typography variant="body2">
-                    Sản lượng thực tế: {trace.actualCapacityKg || "-"}
-                  </Typography>
-                  {trace.productionMetadata ? (
-                    <>
+                      <Typography variant="body2">Mã thùng: {trace.containerCode || "-"}</Typography>
+                      <Typography variant="body2">Loại thùng: {trace.containerType || "-"}</Typography>
+                      <Typography variant="body2">Sản lượng dự kiến: {trace.capacityKg || "-"}</Typography>
+                      <Typography variant="body2">Sản lượng thực tế: {trace.actualCapacityKg || "-"}</Typography>
                       <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
                         Thông tin vụ mùa
                       </Typography>
-                      <Typography variant="body2">
-                        Mã vụ mùa: {cleanString(trace.productionMetadata.production_code) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Cơ sở: {cleanString(trace.productionMetadata.facility) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Vị trí: {cleanString(trace.productionMetadata.location) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Phương thức: {cleanString(trace.productionMetadata.farming_method) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Ngày gieo: {cleanString(trace.productionMetadata.seeding_date) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Ngày thu hoạch: {cleanString(trace.productionMetadata.harvest_date) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Sản lượng: {cleanString(trace.productionMetadata.actual_yield_kg) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Loại cây: {cleanString(trace.productionMetadata.crop_type) || "-"}
-                      </Typography>
-                      <Typography variant="body2">
-                        Giống: {cleanString(trace.productionMetadata.variety) || "-"}
-                      </Typography>
-                    </>
-                  ) : null}
+                      <Typography variant="body2">Mã vụ mùa: {cleanString(trace.productionMetadata?.production_code) || "-"}</Typography>
+                      <Typography variant="body2">Cơ sở: {cleanString(trace.productionMetadata?.facility) || "-"}</Typography>
+                      <Typography variant="body2">Vị trí: {cleanString(trace.productionMetadata?.location) || "-"}</Typography>
+                      <Typography variant="body2">Phương thức: {cleanString(trace.productionMetadata?.farming_method) || "-"}</Typography>
+                      <Typography variant="body2">Ngày gieo: {cleanString(trace.productionMetadata?.seeding_date) || "-"}</Typography>
+                      <Typography variant="body2">Ngày thu hoạch: {cleanString(trace.productionMetadata?.harvest_date) || "-"}</Typography>
+                      <Typography variant="body2">Sản lượng: {cleanString(trace.productionMetadata?.actual_yield_kg) || "-"}</Typography>
+                      <Typography variant="body2">Loại cây: {cleanString(trace.productionMetadata?.crop_type) || "-"}</Typography>
+                      <Typography variant="body2">Giống: {cleanString(trace.productionMetadata?.variety) || "-"}</Typography>
+                    </Box>
+                  </Box>
                 </Box>
                 {trace.points.map((point, index) => {
                   const active = trace.matchedIndex >= 0 && index <= trace.matchedIndex;
