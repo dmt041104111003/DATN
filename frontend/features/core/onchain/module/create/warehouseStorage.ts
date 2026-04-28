@@ -10,6 +10,14 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
   const containerRows = Array.isArray(containerRes?.json) ? containerRes.json : [];
   const containerRow =
     containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
+  const storageRes = await deps.httpClient(`${deps.BACKEND_URL}/warehouse-storage`, { method: "GET" });
+  const storageRows = Array.isArray(storageRes?.json) ? storageRes.json : [];
+  const existingStorage = storageRows.find(
+    (x: any) => deps.cleanString(x?.containerInventoryKey || x?.productId) === containerInventoryKey,
+  );
+  if (existingStorage) {
+    throw new Error("Thùng hàng đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.");
+  }
   const containerStatus = deps.cleanString(containerRow?.status).toUpperCase();
   if (containerStatus === "CONSUMED") throw new Error("Thùng hàng đã tiêu thụ, không thể nhập kho lại.");
   const gps = await deps.captureCurrentGpsLocation();

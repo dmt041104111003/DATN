@@ -10,7 +10,6 @@ import { buildMappedMetadata } from "@/features/core/metadata/share/buildMappedM
 import { cleanString } from "@/features/core/metadata/share/cleanString";
 import { updateContainerOnchain } from "@/features/core/onchain/module/update/container";
 import { updateProductionOnchain } from "@/features/core/onchain/module/update/production";
-import { updateWarehouseStorageInOnchain } from "@/features/core/onchain/module/update/warehouseStorageIn";
 import { createContainerOnchain } from "@/features/core/onchain/module/create/container";
 import { createProductionOnchain } from "@/features/core/onchain/module/create/production";
 import { createWarehouseStorageOnchain } from "@/features/core/onchain/module/create/warehouseStorage";
@@ -159,7 +158,7 @@ export const adminDataProvider: DataProvider = {
     }
     if (resource === "container") return updateContainerOnchain(params, getOnchainFlowDeps());
     if (resource === "production") return updateProductionOnchain(params, getOnchainFlowDeps());
-    if (resource === "warehouse-storage") return updateWarehouseStorageInOnchain(params, getOnchainFlowDeps());
+    if (resource === "warehouse-storage") return createWarehouseStorageOnchain({ ...params, data: params.data || {} }, getOnchainFlowDeps());
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
