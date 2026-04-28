@@ -35,7 +35,7 @@ export function ProductionFormSections() {
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[1] Thông tin vụ sản xuất</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextInput source="assetName" label="assetName *" disabled fullWidth />
+          <TextInput source="code" label="Mã vụ mùa *" disabled fullWidth />
           <TextInput
             source="facilityId"
             label="Tên cơ sở sản xuất"

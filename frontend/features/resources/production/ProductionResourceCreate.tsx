@@ -20,8 +20,7 @@ export function ProductionResourceCreate() {
         return {
           ...data,
           location,
-          code: String(data?.assetName || data?.code || "").trim() || makeDailyCode("VU"),
-          assetName: undefined,
+          code: cleanString(data?.code) || makeDailyCode("VU"),
           status: "CREATED",
           harvestDate: null,
           productionProvinceId: undefined,
@@ -34,9 +33,8 @@ export function ProductionResourceCreate() {
       <SimpleForm
         sx={FORM_SX}
         defaultValues={{
-          assetName: makeDailyCode("VU"),
+          code: makeDailyCode("VU"),
           status: "CREATED",
-          certFiles: [],
           evidenceFiles: [],
         }}
         toolbar={<ProductionCreateToolbar />}

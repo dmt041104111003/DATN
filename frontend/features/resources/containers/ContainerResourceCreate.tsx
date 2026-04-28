@@ -11,7 +11,7 @@ export function ContainerResourceCreate() {
   return (
     <Create
       transform={async (data: any) => {
-        const code = String(data?.assetName || data?.code || "").trim() || makeDailyCode("THUNG");
+        const code = String(data?.code || "").trim() || makeDailyCode("THUNG");
         const max = Number(String(data?.capacityKg || "").trim());
         const actual = Number(String(data?.actualCapacityKg || "").trim());
         if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
@@ -27,7 +27,6 @@ export function ContainerResourceCreate() {
         return {
           ...data,
           code,
-          assetName: undefined,
           participantWalletAddresses: participants.participantWalletAddresses,
           participantLocationLabels: participants.participantLocationLabels,
           participantRows: participants.participantRows,
@@ -36,7 +35,7 @@ export function ContainerResourceCreate() {
       }}
       sx={CREATE_PAGE_SX}
     >
-      <SimpleForm sx={FORM_SX} toolbar={<ContainerCreateToolbar />} defaultValues={{ assetName: makeDailyCode("THUNG"), status: "CREATE" }}>
+      <SimpleForm sx={FORM_SX} toolbar={<ContainerCreateToolbar />} defaultValues={{ code: makeDailyCode("THUNG"), status: "CREATE" }}>
         <ContainerFormSections />
       </SimpleForm>
     </Create>

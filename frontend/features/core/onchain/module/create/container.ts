@@ -10,7 +10,7 @@ export async function createContainerOnchain(params: any, deps: any) {
     deps.BACKEND_URL,
     {
       owners,
-      assetName: String(params.data?.assetName || params.data?.code || "").trim(),
+      assetName: String(params.data?.code || "").trim(),
       metadata,
     },
     "Failed to prepare container on-chain transaction.",

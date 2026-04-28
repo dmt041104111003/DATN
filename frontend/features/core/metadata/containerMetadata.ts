@@ -11,7 +11,7 @@ export function buildContainerMetadata(data: any, previousData: any) {
   );
   return buildMappedMetadata({
     status: metadataStatus,
-    container_code: data?.code || data?.assetName || previousData?.code || previousData?.assetName,
+    container_code: data?.code || previousData?.code,
     production_ref_inline: productionRef,
     container_type: data?.containerType || previousData?.containerType,
     capacity_kg: data?.capacityKg || previousData?.capacityKg,

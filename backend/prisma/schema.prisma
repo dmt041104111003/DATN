@@ -183,10 +183,6 @@ model Image {
   productionInventoryKey String
   ipfsUri               String
   ipfsHash              String?
-  url                   String?
-  name                  String?
-  mimeType              String?
-  sizeBytes             Int?
   createdByAddress      String?
   createdAt             DateTime @default(now())
 

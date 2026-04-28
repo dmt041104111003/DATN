@@ -17,9 +17,8 @@ export class ProductionService {
     return packed || null;
   }
 
-  private async attachMediaBatch(entityKey: string, addr: string, certFiles: unknown[], evidenceFiles: unknown[]) {
-    const all = [...certFiles, ...evidenceFiles];
-    for (const uri of all) {
+  private async attachMediaBatch(entityKey: string, addr: string, evidenceFiles: unknown[]) {
+    for (const uri of evidenceFiles) {
       const ipfsUri = cleanString(uri);
       if (!ipfsUri) continue;
 
@@ -47,7 +46,6 @@ export class ProductionService {
       ...row,
       certifications: packed ? packed.split('|').filter(Boolean) : [],
       images: media,
-      certFiles: media,
       evidenceFiles: media,
       txHash: txHashOverride ?? latest?.txHash ?? null,
       verified: txHashOverride ? false : Boolean(latest?.verified),
@@ -148,12 +146,11 @@ export class ProductionService {
       } as any,
     });
 
-    const certFiles = Array.isArray(data?.certFiles) ? data.certFiles : [];
     const evidenceFiles = Array.isArray(data?.evidenceFiles) ? data.evidenceFiles : [];
-    await this.attachMediaBatch(inventoryKey, addr, certFiles, evidenceFiles);
+    await this.attachMediaBatch(inventoryKey, addr, evidenceFiles);
     return this.composeResponse(
       production,
-      [...(certFiles as string[]), ...(evidenceFiles as string[])],
+      [...(evidenceFiles as string[])],
       undefined,
       txHash,
     );
@@ -199,9 +196,8 @@ export class ProductionService {
       data: patch as any,
     });
 
-    const certFiles = Array.isArray(data?.certFiles) ? data.certFiles : [];
     const evidenceFiles = Array.isArray(data?.evidenceFiles) ? data.evidenceFiles : [];
-    await this.attachMediaBatch(key, addr, certFiles, evidenceFiles);
+    await this.attachMediaBatch(key, addr, evidenceFiles);
 
     const txHash = cleanString(data.txHash);
     const opType = nextStatus === 'CLOSED' ? 'HARVEST_CLOSE' : 'UPDATE';
@@ -227,7 +223,7 @@ export class ProductionService {
 
     return this.composeResponse(
       updated,
-      [...(certFiles as string[]), ...(evidenceFiles as string[])],
+      [...(evidenceFiles as string[])],
       latestOpAfterUpdate,
       txHash || undefined,
     );

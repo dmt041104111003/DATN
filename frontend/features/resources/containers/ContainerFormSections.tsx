@@ -78,7 +78,7 @@ export function ContainerFormSections({
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[1] Thông tin thùng hàng</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextInput source="assetName" label="assetName *" disabled fullWidth />
+          <TextInput source="code" label="Mã thùng *" disabled fullWidth />
           <SelectInput source="containerType" label="Loại thùng" choices={[{ id: "CARTON", name: "Carton" }, { id: "PALLET_BOX", name: "Pallet box" }, { id: "PLASTIC_CONTAINER", name: "Container nhựa" }]} optionValue="id" optionText="name" validate={[required()]} fullWidth />
           <TextInput source="capacityKg" label="Dung lượng chứa tối đa (kg)" type="number" validate={[required(), positiveNumber]} fullWidth />
           <TextInput source="actualCapacityKg" label="Dung lượng thực tế (kg)" type="number" validate={[required(), positiveNumber, actualCapacityValidator]} fullWidth />
