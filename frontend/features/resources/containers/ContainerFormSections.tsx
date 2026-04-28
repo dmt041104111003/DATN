@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Alert from "@mui/material/Alert";
 import { ArrayInput, FormDataConsumer, SelectInput,
   SimpleFormIterator,
   TextInput,
@@ -67,36 +66,32 @@ export function ContainerFormSections({
   participantsReadOnly?: boolean;
 }) {
   const { storageLocked, actualCapacityValidator, capacitySummary, productionChoices } = useContainerFormSections();
+  const formLocked = participantsReadOnly || storageLocked;
 
   return (
     <>
-      {storageLocked ? (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Thùng hàng đã có lịch sử nhập/xuất kho nên bị khóa cập nhật và xóa.
-        </Alert>
-      ) : null}
       <div className="py-1">
         <h3 className="mb-4 font-semibold">[1] Thông tin thùng hàng</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextInput source="code" label="Mã thùng *" disabled fullWidth />
-          <SelectInput source="containerType" label="Loại thùng" choices={[{ id: "CARTON", name: "Carton" }, { id: "PALLET_BOX", name: "Pallet box" }, { id: "PLASTIC_CONTAINER", name: "Container nhựa" }]} optionValue="id" optionText="name" validate={[required()]} fullWidth />
-          <TextInput source="capacityKg" label="Dung lượng chứa tối đa (kg)" type="number" validate={[required(), positiveNumber]} fullWidth />
-          <TextInput source="actualCapacityKg" label="Dung lượng thực tế (kg)" type="number" validate={[required(), positiveNumber, actualCapacityValidator]} fullWidth />
-          <TextInput source="productName" label="Tên sản phẩm" validate={[required()]} fullWidth />
-          <SelectInput source="productionInventoryKey" label="Liên kết vụ mùa" choices={productionChoices} optionValue="id" optionText="name" validate={[required()]} fullWidth />
+          <SelectInput source="containerType" label="Loại thùng" choices={[{ id: "CARTON", name: "Carton" }, { id: "PALLET_BOX", name: "Pallet box" }, { id: "PLASTIC_CONTAINER", name: "Container nhựa" }]} optionValue="id" optionText="name" validate={[required()]} disabled={formLocked} fullWidth />
+          <TextInput source="capacityKg" label="Dung lượng chứa tối đa (kg)" type="number" validate={[required(), positiveNumber]} disabled={formLocked} fullWidth />
+          <TextInput source="actualCapacityKg" label="Dung lượng thực tế (kg)" type="number" validate={[required(), positiveNumber, actualCapacityValidator]} disabled={formLocked} fullWidth />
+          <TextInput source="productName" label="Tên sản phẩm" validate={[required()]} disabled={formLocked} fullWidth />
+          <SelectInput source="productionInventoryKey" label="Liên kết vụ mùa" choices={productionChoices} optionValue="id" optionText="name" validate={[required()]} disabled={formLocked} fullWidth />
           <div className="md:col-span-2 text-sm text-slate-700">
             {capacitySummary
               ? `Đã tạo: ${capacitySummary.usedCapacityKg} kg | Còn lại: ${capacitySummary.remainingCapacityKg} kg`
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
           <ArrayInput source="participantRows" label="Danh sách địa chỉ ví tham gia">
-            <SimpleFormIterator disableReordering disableAdd={participantsReadOnly} disableRemove={participantsReadOnly}>
+            <SimpleFormIterator disableReordering disableAdd={formLocked} disableRemove={formLocked}>
               <FormDataConsumer>
-                {() => <ParticipantRow disabled={participantsReadOnly} />}
+                {() => <ParticipantRow disabled={formLocked} />}
               </FormDataConsumer>
             </SimpleFormIterator>
           </ArrayInput>
-          <TextInput source="note" label="Ghi chú" multiline minRows={3} fullWidth />
+          <TextInput source="note" label="Ghi chú" multiline minRows={3} disabled={formLocked} fullWidth />
         </div>
       </div>
     </>

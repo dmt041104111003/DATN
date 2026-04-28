@@ -226,7 +226,7 @@ export class AuthService {
   }
 
   private async resolvePaymentAddress(input: string): Promise<string> {
-    const addr = this.normalizeStakeAddress(input);
+    const addr = input;
     if (this.isPaymentAddress(addr)) return addr;
 
     if (this.isStakeAddress(addr)) {

@@ -1,20 +1,7 @@
 import { Controller, Post, Body, HttpException, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthService, StakeAddressInput } from './auth.service';
+import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-
-type StakeAddressDtoInput = StakeAddressInput | string | null | undefined;
-
-export interface CreateNonceDto {
-  stakeAddress: StakeAddressDtoInput;
-}
-
-export interface VerifySignatureDto {
-  stakeAddress: StakeAddressDtoInput;
-  nonce: string;
-  signature: string;
-  key: string;
-}
 
 @Controller('auth')
 export class AuthController {
@@ -39,7 +26,7 @@ export class AuthController {
   }
 
   @Post('nonce')
-  async createNonce(@Body() body: CreateNonceDto) {
+  async createNonce(@Body() body: any) {
     const addr = this.normalizeAddress(body.stakeAddress);
     if (!addr) throw new HttpException('Missing stakeAddress', HttpStatus.BAD_REQUEST);
     const nonce = await this.authService.generateNonce(addr);
@@ -48,7 +35,7 @@ export class AuthController {
 
   @Post('verify')
   async verifySignature(
-    @Body() body: VerifySignatureDto,
+    @Body() body: any,
     @Res({ passthrough: true }) res: Response,
   ) {
     const addr = this.normalizeAddress(body.stakeAddress);
@@ -83,29 +70,21 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {
-    const account =
-      req.user && req.user.sub
-        ? await (this.authService as any)['prisma'].user.findUnique({
-            where: { address: String(req.user.sub || '').trim() },
-          })
-        : null;
+    const user = req?.user || null;
+    const roleCode = String(user?.role || '').trim() || null;
 
     return {
-      user: req.user,
-      profile: account && account.roleCode ? {
-        id: account.id,
-        walletAddress: account.address,
-        roleCode: account.roleCode,
-        displayName: account.displayName,
-        phoneNumber: account.phoneNumber,
-        isActive: account.isActive,
-        createdAt: account.createdAt,
-        updatedAt: account.updatedAt,
+      user,
+      profile: roleCode ? {
+        id: user?.profileId || null,
+        walletAddress: user?.walletAddress || user?.paymentAddress || user?.sub || null,
+        roleCode,
+        displayName: user?.displayName || null,
       } : null,
     };
   }
 
-  private normalizeAddress(input: StakeAddressDtoInput): string | null {
+  private normalizeAddress(input: any): string | null {
     if (typeof input === 'string') {
       const trimmed = input.trim();
       return trimmed || null;
