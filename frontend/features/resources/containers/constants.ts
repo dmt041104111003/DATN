@@ -1,1 +1,1 @@
-export type ContainerStatus = "CREATE" | "UPDATE";
+export type ContainerStatus = "CREATE" | "UPDATE" | "CONSUMED";
