@@ -49,8 +49,6 @@ type TraceView = {
   actualCapacityKg: string;
   points: string[];
   matchedIndex: number;
-  productionInventoryKey: string;
-  transactions: Array<{ txHash: string; blockTime: number | null }>;
 };
 
 type PointView = {
@@ -63,11 +61,6 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
   const [error, setError] = React.useState("");
   const [trace, setTrace] = React.useState<TraceView | null>(null);
   const [pointViews, setPointViews] = React.useState<PointView[]>([]);
-  const [productionBusy, setProductionBusy] = React.useState(false);
-  const [productionError, setProductionError] = React.useState("");
-  const [productionTransactions, setProductionTransactions] = React.useState<
-    Array<{ txHash: string; blockTime: number | null }>
-  >([]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -97,16 +90,6 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         const containerType = cleanString(lotPassport.container_type);
         const capacityKg = cleanString(lotPassport.capacity_kg);
         const actualCapacityKg = cleanString(lotPassport.actual_capacity_kg);
-        const productionInventoryKey = cleanString(lotPassport.production_inventory_key);
-        const transactions = Array.isArray(json?.transactions)
-          ? json.transactions
-              .map((x: any) => ({
-                txHash: cleanString(x?.txHash),
-                blockTime: typeof x?.blockTime === "number" ? x.blockTime : null,
-              }))
-              .filter((x: any) => x.txHash)
-              .sort((a: any, b: any) => (Number(b.blockTime || 0) - Number(a.blockTime || 0)))
-          : [];
         if (!mounted) return;
         setTrace({
           containerTitle,
@@ -116,8 +99,6 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
           actualCapacityKg,
           points,
           matchedIndex,
-          productionInventoryKey,
-          transactions,
         });
       } catch (e) {
         if (!mounted) return;
@@ -169,35 +150,6 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
       mounted = false;
     };
   }, [trace]);
-
-  const loadProductionTransactions = React.useCallback(async () => {
-    const key = cleanString(trace?.productionInventoryKey);
-    if (!key) return;
-    setProductionBusy(true);
-    setProductionError("");
-    setProductionTransactions([]);
-    try {
-      const res = await fetch(`${BACKEND_URL}/trace/${encodeURIComponent(key)}`, { method: "GET" });
-      const json = (await res.json().catch(() => ({}))) as any;
-      if (!res.ok) {
-        throw new Error(cleanString(json?.message) || "Không lấy được lịch sử vụ mùa.");
-      }
-      const txs = Array.isArray(json?.transactions)
-        ? json.transactions
-            .map((x: any) => ({
-              txHash: cleanString(x?.txHash),
-              blockTime: typeof x?.blockTime === "number" ? x.blockTime : null,
-            }))
-            .filter((x: any) => x.txHash)
-            .sort((a: any, b: any) => Number(b.blockTime || 0) - Number(a.blockTime || 0))
-        : [];
-      setProductionTransactions(txs);
-    } catch (e) {
-      setProductionError(e instanceof Error ? e.message : "Không lấy được lịch sử vụ mùa.");
-    } finally {
-      setProductionBusy(false);
-    }
-  }, [trace?.productionInventoryKey]);
 
   return (
     <Box sx={{ maxWidth: 860, mx: "auto", p: 2 }}>
@@ -264,90 +216,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                     </Box>
                   );
                 })}
-                <Box sx={{ mt: 2 }}>
-                  {trace.productionInventoryKey ? (
-                    <Box sx={{ mb: 1, border: "1px solid #e5e7eb", borderRadius: 1, px: 1, py: 0.75 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                        Mã truy xuất vụ mùa
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        onClick={() => void loadProductionTransactions()}
-                        sx={{
-                          wordBreak: "break-all",
-                          display: "block",
-                          cursor: "pointer",
-                          color: "primary.main",
-                          textDecoration: "underline",
-                        }}
-                      >
-                        {trace.productionInventoryKey}
-                      </Typography>
-                      {productionBusy ? (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.75 }}>
-                          Đang tải lịch sử vụ mùa...
-                        </Typography>
-                      ) : null}
-                      {productionError ? (
-                        <Typography variant="caption" color="error" sx={{ display: "block", mt: 0.75 }}>
-                          {productionError}
-                        </Typography>
-                      ) : null}
-                      {productionTransactions.length ? (
-                        <Stack spacing={0.75} sx={{ mt: 1 }}>
-                          {productionTransactions.map((tx) => (
-                            <Box key={`production-${tx.txHash}`} sx={{ border: "1px solid #e5e7eb", borderRadius: 1, px: 1, py: 0.75 }}>
-                              <Typography variant="caption" sx={{ wordBreak: "break-all", display: "block" }}>
-                                {tx.txHash}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {tx.blockTime
-                                  ? new Date(tx.blockTime * 1000).toLocaleString("vi-VN")
-                                  : "Chưa có thời gian block"}
-                              </Typography>
-                            </Box>
-                          ))}
-                          <Typography
-                            variant="caption"
-                            onClick={() => {
-                              setProductionTransactions([]);
-                              setProductionError("");
-                            }}
-                            sx={{
-                              cursor: "pointer",
-                              color: "primary.main",
-                              textDecoration: "underline",
-                              pt: 0.5,
-                            }}
-                          >
-                            Thu gọn
-                          </Typography>
-                        </Stack>
-                      ) : null}
-                    </Box>
-                  ) : null}
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Lịch sử
-                  </Typography>
-                  <Stack spacing={0.75}>
-                    {trace.transactions.length ? (
-                      trace.transactions.map((tx) => (
-                        <Box key={tx.txHash} sx={{ border: "1px solid #e5e7eb", borderRadius: 1, px: 1, py: 0.75 }}>
-                          <Typography variant="caption" sx={{ wordBreak: "break-all", display: "block" }}>
-                            {tx.txHash}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {tx.blockTime
-                              ? new Date(tx.blockTime * 1000).toLocaleString("vi-VN")
-                              : "Chưa có thời gian block"}
-                          </Typography>
-                        </Box>
-                      ))
-                    ) : (
-                      <Typography variant="caption">Chưa có dữ liệu giao dịch.</Typography>
-                    )}
-                  </Stack>
-                </Box>
+                <Box sx={{ mt: 1 }} />
               </Stack>
             ) : null}
           </Stack>

@@ -52,7 +52,6 @@ function isAssetNotFoundError(err: unknown): boolean {
 
 export interface TraceResult {
   lotPassport: Record<string, unknown>;
-  transactions?: Array<{ txHash: string; blockTime: number | null }>;
   latestSignerWallet?: string | null;
   message?: string;
 }
@@ -177,29 +176,11 @@ export class TraceService {
     }
     const chainUnit = resolved.unit;
 
-    const assetTxRefs = await this.blockfrost.assetsTransactions(chainUnit, { count: 100, page: 1, order: 'desc' as any });
-    const transactions = await Promise.all(
-      (assetTxRefs || []).map(async (tx: any) => {
-        const txHash = String(tx?.tx_hash || '').trim();
-        if (!txHash) return null;
-        try {
-          const txInfo = await this.blockfrost.txs(txHash);
-          return {
-            txHash,
-            blockTime: typeof txInfo?.block_time === 'number' ? txInfo.block_time : null,
-          };
-        } catch {
-          return { txHash, blockTime: null };
-        }
-      }),
-    );
-    const txList = transactions.filter(Boolean) as Array<{ txHash: string; blockTime: number | null }>;
-
+    const assetTxRefs = await this.blockfrost.assetsTransactions(chainUnit, { count: 1, page: 1, order: 'desc' as any });
     const latestTxHash = String(assetTxRefs?.[0]?.tx_hash || '').trim();
     if (!latestTxHash) {
       return {
         lotPassport: {},
-        transactions: txList,
         latestSignerWallet: null,
         message: 'No transaction found for this inventory key.',
       };
@@ -213,7 +194,6 @@ export class TraceService {
       if (!rawDatum) {
         return {
           lotPassport: {},
-          transactions: txList,
           message: 'Latest transaction has no inline datum on output.',
         };
       }
@@ -226,12 +206,11 @@ export class TraceService {
         lotPassport?.participant_wallet_addresses,
       );
       const latestSignerWallet = this.extractLatestSignerWallet(utxos, participantWallets);
-      return { lotPassport, transactions: txList, latestSignerWallet };
+      return { lotPassport, latestSignerWallet };
     } catch (err) {
       console.error(`Error processing latest record ${latestTxHash}:`, err);
       return {
         lotPassport: {},
-        transactions: txList,
         latestSignerWallet: null,
         message: 'Failed to decode latest on-chain passport.',
       };
