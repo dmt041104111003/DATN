@@ -19,64 +19,44 @@ import { ProductionService } from './production.service';
 export class ProductionController {
   constructor(private readonly productionService: ProductionService) {}
 
-  private getCustodian(req: any): string {
-    const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
-    if (!custodian) {
-      throw new HttpException(
-        'Unable to determine account identity from session.',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-    return custodian;
-  }
-
-  private getRole(req: any): string {
-    return String(req?.user?.role || '').trim();
+  private fail(error: unknown, fallback: string): never {
+    throw new HttpException(
+      error instanceof Error ? error.message : fallback,
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   @Get()
-  async list(@Req() req: any) {
-    return this.productionService.list(this.getCustodian(req));
+  async list() {
+    return this.productionService.list();
   }
 
   @Post()
   async create(@Req() req: any, @Body() body: any) {
     try {
-      return await this.productionService.create(this.getCustodian(req), body);
+      const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+      return await this.productionService.create(custodian, body);
     } catch (e) {
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to register production.',
-        HttpStatus.BAD_REQUEST,
-      );
+      this.fail(e, 'Failed to register production.');
     }
   }
 
   @Patch(':inventoryKey')
   async update(@Req() req: any, @Param('inventoryKey') inventoryKey: string, @Body() body: any) {
     try {
-      return await this.productionService.update(this.getCustodian(req), inventoryKey, body);
+      const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
+      return await this.productionService.update(custodian, inventoryKey, body);
     } catch (e) {
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to update production.',
-        HttpStatus.BAD_REQUEST,
-      );
+      this.fail(e, 'Failed to update production.');
     }
   }
 
   @Delete(':inventoryKey')
-  async remove(@Req() req: any, @Param('inventoryKey') inventoryKey: string, @Body() body: any) {
+  async remove(@Param('inventoryKey') inventoryKey: string, @Body() body: any) {
     try {
-      return await this.productionService.deleteByInventoryKey(
-        this.getCustodian(req),
-        this.getRole(req),
-        inventoryKey,
-        body?.txHash,
-      );
+      return await this.productionService.deleteByInventoryKey(inventoryKey, body?.txHash);
     } catch (e) {
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to delete production.',
-        HttpStatus.BAD_REQUEST,
-      );
+      this.fail(e, 'Failed to delete production.');
     }
   }
 }

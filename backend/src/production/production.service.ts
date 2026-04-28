@@ -17,42 +17,35 @@ export class ProductionService {
     return packed || null;
   }
 
-  private certToArray(value: unknown): string[] {
-    const packed = cleanString(value);
-    return packed ? packed.split('|').filter(Boolean) : [];
-  }
-
-  private async attachProductionImage(entityKey: string, ipfsUriRaw: unknown, createdByAddress?: string | null) {
-    const ipfsUri = cleanString(ipfsUriRaw);
-    if (!ipfsUri) return;
-    await (this.prisma as any).image.upsert({
-      where: {
-        productionInventoryKey_ipfsUri: {
-          productionInventoryKey: entityKey,
-          ipfsUri,
-        },
-      },
-      create: {
-        productionInventoryKey: entityKey,
-        ipfsUri,
-        ipfsHash: ipfsUri.startsWith('ipfs://') ? ipfsUri.slice('ipfs://'.length) : null,
-        createdByAddress: createdByAddress || null,
-      } as any,
-      update: {} as any,
-    });
-  }
-
   private async attachMediaBatch(entityKey: string, addr: string, certFiles: unknown[], evidenceFiles: unknown[]) {
     const all = [...certFiles, ...evidenceFiles];
     for (const uri of all) {
-      await this.attachProductionImage(entityKey, uri, addr);
+      const ipfsUri = cleanString(uri);
+      if (!ipfsUri) continue;
+
+      await (this.prisma as any).image.upsert({
+        where: {
+          productionInventoryKey_ipfsUri: {
+            productionInventoryKey: entityKey,
+            ipfsUri,
+          },
+        },
+        create: {
+          productionInventoryKey: entityKey,
+          ipfsUri,
+          ipfsHash: ipfsUri.startsWith('ipfs://') ? ipfsUri.slice('ipfs://'.length) : null,
+          createdByAddress: addr || null,
+        } as any,
+        update: {} as any,
+      });
     }
   }
 
   private composeResponse(row: any, media: string[], latest?: any, txHashOverride?: string | null) {
+    const packed = cleanString(row?.certifications);
     return {
       ...row,
-      certifications: this.certToArray(row?.certifications),
+      certifications: packed ? packed.split('|').filter(Boolean) : [],
       images: media,
       certFiles: media,
       evidenceFiles: media,
@@ -86,14 +79,7 @@ export class ProductionService {
     return out;
   }
 
-  private async getLatestOp(inventoryKey: string) {
-    return await (this.prisma as any).recordOperation.findFirst({
-      where: { entityType: ENTITY_TYPE, entityKey: inventoryKey },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async list(createdBy: string) {
+  async list() {
     const rows = await (this.prisma as any).production.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -232,7 +218,12 @@ export class ProductionService {
         } as any,
       });
     }
-    const latestOpAfterUpdate = txHash ? null : await this.getLatestOp(key);
+    const latestOpAfterUpdate = txHash
+      ? null
+      : await (this.prisma as any).recordOperation.findFirst({
+          where: { entityType: ENTITY_TYPE, entityKey: key },
+          orderBy: { createdAt: 'desc' },
+        });
 
     return this.composeResponse(
       updated,
@@ -242,7 +233,7 @@ export class ProductionService {
     );
   }
 
-  async deleteByInventoryKey(_createdBy: string, _roleRaw: unknown, inventoryKeyRaw: unknown, txHashRaw: unknown) {
+  async deleteByInventoryKey(inventoryKeyRaw: unknown, txHashRaw: unknown) {
     const key = cleanString(inventoryKeyRaw);
     const txHash = cleanString(txHashRaw);
 
