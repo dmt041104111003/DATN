@@ -8,12 +8,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   private cookieConfig(maxAge: number) {
-    const sameSite =
-      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
-    const secure =
-      (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
-        ? true
-        : process.env.NODE_ENV === 'production';
+    const envSameSite = String(process.env.COOKIE_SAMESITE || '').trim().toLowerCase();
+    const sameSite = (envSameSite || (process.env.NODE_ENV === 'production' ? 'none' : 'lax')) as
+      | 'lax'
+      | 'strict'
+      | 'none';
+    const envSecure = (process.env.COOKIE_SECURE || '').toLowerCase();
+    const secure = envSecure ? envSecure === 'true' : process.env.NODE_ENV === 'production' || sameSite === 'none';
     return { httpOnly: true, secure, sameSite, path: '/', maxAge };
   }
 
