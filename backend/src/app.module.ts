@@ -21,8 +21,6 @@ import { ProductionContractController } from './production/production.contract.c
 import { ProductionContractService } from './production/production.contract.service';
 import {
   ContainerController,
-  ContainerContractController,
-  ContainerContractService,
   ContainerService,
 } from './container';
 import { LocationController } from './location/location.controller';
@@ -52,7 +50,6 @@ import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.s
     ProductionController,
     ProductionContractController,
     ContainerController,
-    ContainerContractController,
     WarehouseController,
     WarehouseStorageController,
     HealthController,
@@ -68,7 +65,6 @@ import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.s
     ProductionService,
     ProductionContractService,
     ContainerService,
-    ContainerContractService,
     WarehouseService,
     WarehouseStorageService,
   ],
