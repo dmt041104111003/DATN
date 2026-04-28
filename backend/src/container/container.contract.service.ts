@@ -38,40 +38,9 @@ export class ContainerContractService {
 
   private stringifyMetadata(metadata: Record<string, string> | undefined) {
     const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries(metadata || {})) out[String(k)] = String(v ?? '').trim();
-    return out;
-  }
-
-  private normalizeParticipantMetadata(metadata: Record<string, string>): Record<string, string> {
-    const out = { ...metadata };
-    const incomingWalletsRaw = String(out.participant_wallet_addresses || out.partner_wallet_addresses || '[]');
-    const incomingLocationsRaw = String(out.participant_location_labels || out.partner_location_labels || '');
-    let incomingWallets: string[] = [];
-    try {
-      const parsed = JSON.parse(incomingWalletsRaw);
-      incomingWallets = Array.isArray(parsed) ? parsed.map((x) => String(x || '').trim()).filter(Boolean) : [];
-    } catch {
-      incomingWallets = [];
+    for (const [k, v] of Object.entries(metadata || {})) {
+      out[String(k)] = String(v ?? '').trim();
     }
-    const mergedWallets = [...incomingWallets].filter(Boolean);
-    const seen = new Set<string>();
-    const uniqWallets: string[] = [];
-    for (const wallet of mergedWallets) {
-      const key = wallet.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      uniqWallets.push(wallet);
-    }
-
-    const incomingLocations = incomingLocationsRaw
-      .split(';')
-      .map((x) => String(x || '').trim())
-      .filter(Boolean);
-    const mergedLocations = [...incomingLocations];
-    out.participant_wallet_addresses = JSON.stringify(uniqWallets);
-    out.participant_location_labels = mergedLocations.slice(0, uniqWallets.length).join('; ');
-    delete out.partner_wallet_addresses;
-    delete out.partner_location_labels;
     return out;
   }
 
@@ -101,31 +70,43 @@ export class ContainerContractService {
     const walletAddress = String(dto.custodianAddress || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const code = String(dto.assetName || '').trim();
-    if (owners.length === 0) throw new BadRequestException('Container owners are required.');
+    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
     if (!code) throw new BadRequestException('Container code is required.');
 
-    const metadata = this.normalizeParticipantMetadata(this.stringifyMetadata(dto.metadata));
+    const metadata = this.stringifyMetadata(dto.metadata);
     metadata.container_code = metadata.container_code || code;
     const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, [
       { productName: code, metadata, quantity: '1' },
     ]);
     const { policyId } = this.plutusHelper.getScripts(owners);
     const inventoryKey = policyId + CIP68_100(stringToHex(code));
-    return { result: true, data: unsignedTx, traceSchemeRef: policyId, assetName: code, inventoryKey };
+    return {
+      result: true,
+      data: unsignedTx,
+      message: 'Container record prepared.',
+      traceSchemeRef: policyId,
+      assetName: code,
+      inventoryKey,
+    };
   }
 
   async createUnsignedSaveTx(dto: ContainerContractSaveDto) {
     const walletAddress = String(dto.custodianAddress || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const inventoryKey = String(dto.inventoryKey || '').trim();
-    if (owners.length === 0) throw new BadRequestException('Container owners are required.');
+    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
+    if (!owners.includes(walletAddress)) owners.push(walletAddress);
 
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
     if (!onchain) throw new BadRequestException('Container on-chain metadata was not found.');
     const merged: Record<string, string> = {};
-    for (const [k, v] of Object.entries(onchain || {})) merged[String(k)] = String(v ?? '').trim();
-    const incoming = this.normalizeParticipantMetadata(this.stringifyMetadata(dto.metadata));
-    for (const [k, v] of Object.entries(incoming)) merged[String(k)] = String(v ?? '').trim();
+    for (const [k, v] of Object.entries(onchain || {})) {
+      merged[String(k)] = String(v ?? '').trim();
+    }
+    for (const [k, v] of Object.entries(this.stringifyMetadata(dto.metadata))) {
+      merged[String(k)] = String(v ?? '').trim();
+    }
 
     const code = this.decodeAssetNameFromUnit(inventoryKey);
     if (!code) throw new BadRequestException('Unable to decode asset name from inventoryKey.');
@@ -133,7 +114,7 @@ export class ContainerContractService {
     const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, owners, [
       { productName: code, metadata: merged },
     ]);
-    return { result: true, data: unsignedTx };
+    return { result: true, data: unsignedTx, message: 'Container refresh record prepared.' };
   }
 
   async createUnsignedBurnTx(dto: any) {
@@ -153,6 +134,6 @@ export class ContainerContractService {
       .map((x: any) => ({ productName: String(x?.code || '').trim() }))
       .filter((x: any) => String(x?.productName || '').trim());
     const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
-    return { result: true, data: unsignedTx };
+    return { result: true, data: unsignedTx, message: 'Container burn prepared.' };
   }
 }

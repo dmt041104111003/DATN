@@ -26,41 +26,6 @@ function parsePositiveNumber(value: unknown) {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function normalizeTripleKey(raw: unknown): string {
-  const parts = cleanString(raw)
-    .split(",")
-    .map((x) => cleanString(x))
-    .filter(Boolean);
-  if (parts.length < 3) return "";
-  return `${parts[0]},${parts[1]},${parts[2]}`;
-}
-
-function parseParticipantLocationLabels(raw: unknown): string[] {
-  const text = cleanString(raw);
-  if (!text) return [];
-  return Array.from(
-    new Set(
-      text
-        .split(";")
-        .map((x) => normalizeTripleKey(x))
-        .filter(Boolean),
-    ),
-  );
-}
-
-function parseParticipantWalletAddresses(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
-  const text = cleanString(raw);
-  if (!text) return [];
-  try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed)) {
-      return Array.from(new Set(parsed.map((x) => cleanString(x).toLowerCase()).filter(Boolean)));
-    }
-  } catch {}
-  return [];
-}
-
 function parseLocationTriple(raw: unknown): string {
   const value = cleanString(raw);
   if (!value) return "";
@@ -198,56 +163,6 @@ export function QrScanResourcePage() {
         const gpsTriple = `${cleanString(gps?.provinceId)}, ${cleanString(gps?.districtId)}, ${cleanString(gps?.wardId)}`;
         if (!gpsTriple.replace(/[,\s]/g, "")) {
           throw new Error("Không đọc được GPS location hiện tại.");
-        }
-
-        const [traceRes, meRes] = await Promise.all([
-          fetch(`${BACKEND_URL}/trace/${encodeURIComponent(inventoryKey)}`, {
-            method: "GET",
-            credentials: "include",
-          }),
-          fetch(`${BACKEND_URL}/auth/me`, {
-            method: "GET",
-            credentials: "include",
-          }),
-        ]);
-        if (!traceRes.ok) {
-          throw new Error("Không lấy được roadmap onchain từ NFT.");
-        }
-        if (!meRes.ok) {
-          throw new Error("Không lấy được thông tin ví hiện tại.");
-        }
-        const traceJson = (await traceRes.json()) as any;
-        const meJson = (await meRes.json()) as any;
-        const lotPassport = (traceJson?.lotPassport || {}) as Record<string, unknown>;
-
-        const roadmapRaw = lotPassport.participant_location_labels;
-        const roadmapTriples = parseParticipantLocationLabels(roadmapRaw);
-        if (roadmapTriples.length === 0) {
-          throw new Error(cleanString(traceJson?.message) );
-        }
-
-        const gpsMatched = roadmapTriples.includes(normalizeTripleKey(gpsTriple));
-        if (!gpsMatched) {
-          throw new Error("GPS hiện tại không khớp roadmap NFT.");
-        }
-
-        const warehouseMatched = roadmapTriples.includes(normalizeTripleKey(warehouseLocationTriple));
-        if (!warehouseMatched) {
-          throw new Error("Location kho không khớp roadmap NFT.");
-        }
-
-        const whitelistRaw = lotPassport.participant_wallet_addresses;
-        const whitelist = parseParticipantWalletAddresses(whitelistRaw);
-        const currentWallet =
-          cleanString(meJson?.user?.paymentAddress) ||
-          cleanString(meJson?.user?.walletAddress) ||
-          cleanString(meJson?.user?.sub);
-        if (!currentWallet) {
-          throw new Error("Không xác định được ví người dùng hiện tại.");
-        }
-        const isOwnerWhitelisted = whitelist.includes(currentWallet.toLowerCase());
-        if (!isOwnerWhitelisted) {
-          throw new Error("Ví hiện tại không thuộc participant_wallet_addresses.");
         }
 
         await dataProvider.create("warehouse-storage", {

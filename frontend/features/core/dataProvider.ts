@@ -62,18 +62,6 @@ function cleanString(value: unknown) {
   return String(value ?? "").trim();
 }
 
-function toCip68SafeText(value: unknown) {
-  const raw = cleanString(value);
-  if (!raw) return "";
-  if (/^[0-9a-f]+$/i.test(raw) && raw.length % 2 === 0) {
-    const num = Number(raw);
-    if (Number.isFinite(num)) {
-      return `${raw}.0`;
-    }
-  }
-  return raw;
-}
-
 function parseStringList(value: unknown): string[] {
   if (Array.isArray(value)) return value.map((x) => cleanString(x)).filter(Boolean);
   const raw = cleanString(value);
@@ -392,8 +380,8 @@ function buildContainerMetadata(data: any, previousData: any) {
     container_code: cleanString(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
     production_inventory_key: cleanString(data?.productionInventoryKey || previousData?.productionInventoryKey),
     container_type: cleanString(data?.containerType || previousData?.containerType),
-    capacity_kg: toCip68SafeText(data?.capacityKg || previousData?.capacityKg),
-    actual_capacity_kg: toCip68SafeText(data?.actualCapacityKg || previousData?.actualCapacityKg),
+    capacity_kg: cleanString(data?.capacityKg || previousData?.capacityKg),
+    actual_capacity_kg: cleanString(data?.actualCapacityKg || previousData?.actualCapacityKg),
     product_name: cleanString(data?.productName || previousData?.productName),
     participant_wallet_addresses: JSON.stringify(
       parseStringList(
@@ -702,7 +690,11 @@ export const adminDataProvider: DataProvider = {
         );
       }
       const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnerList(owner, custodianAddress);
+      const owners = buildOwnersFromParticipantData(
+        params.previousData || {},
+        owner,
+        custodianAddress,
+      );
       const inventoryKey = String((params.previousData as any)?.inventoryKey ?? params.id ?? "").trim();
       if (!inventoryKey) throw new Error("inventoryKey is required.");
       const contractRes = await httpClient(`${BACKEND_URL}/containers/contract/burn`, {
