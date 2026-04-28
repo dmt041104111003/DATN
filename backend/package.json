@@ -10,7 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
-    "seed:roles": "node prisma/seed.roles.js"
+    "seed:roles": "node prisma/seed.roles.js",
+    "inspect:tx": "node scripts/tx.js",
+    "tx": "node scripts/tx.js"
   },
   "dependencies": {
     "@blockfrost/blockfrost-js": "^6.1.1",

@@ -61,6 +61,23 @@ function cleanString(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function formatProductionRefInline(inventoryKeyRaw: unknown) {
+  const key = cleanString(inventoryKeyRaw).replace(/^0x/, "");
+  if (!key) return "";
+  if (!/^[0-9a-f]+$/i.test(key) || key.length <= 56) return key;
+  const policyId = key.slice(0, 56);
+  const rest = key.slice(56);
+  const cip68RefPrefix = "000643b0";
+  const assetHex = rest.startsWith(cip68RefPrefix) ? rest.slice(cip68RefPrefix.length) : rest;
+  if (!assetHex || assetHex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(assetHex)) return key;
+  try {
+    const assetName = Buffer.from(assetHex, "hex").toString("utf-8");
+    return `${policyId}.${assetName}`;
+  } catch {
+    return key;
+  }
+}
+
 function toCip68SafeText(value: unknown) {
   const raw = cleanString(value);
   if (!raw) return "";
@@ -350,7 +367,13 @@ function mapRowsWithId(resource: string, rows: any[]) {
   }));
 }
 
-function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: string[], evidenceFilesIpfs: string[]) {
+function buildProductionMetadata(
+  data: any,
+  previousData: any,
+  certFilesIpfs: string[],
+  evidenceFilesIpfs: string[],
+  owners?: string[],
+) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
   const metadataStatus =
     rawStatus === "CLOSED"
@@ -375,18 +398,7 @@ function buildProductionMetadata(data: any, previousData: any, certFilesIpfs: st
     certifications: toCip68SafeText(JSON.stringify(data?.certifications || previousData?.certifications || [])),
     cert_file_cids: toCip68SafeText(JSON.stringify(certFilesIpfs)),
     image_cids: toCip68SafeText(JSON.stringify(evidenceFilesIpfs)),
-    participant_wallet_addresses: toCip68SafeText(JSON.stringify(
-      parseStringList(
-        data?.participantWalletAddresses !== undefined
-          ? data?.participantWalletAddresses
-          : previousData?.participantWalletAddresses,
-      ),
-    )),
-    participant_location_labels: toCip68SafeText(parseStringList(
-      data?.participantLocationLabels !== undefined
-        ? data?.participantLocationLabels
-        : previousData?.participantLocationLabels,
-    ).join("; ")),
+    owners: toCip68SafeText(JSON.stringify(Array.isArray(owners) ? owners : [])),
   };
 }
 
@@ -422,10 +434,13 @@ async function buildProductionMetadataFromContainerSource(
 function buildContainerMetadata(data: any, previousData: any) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
   const metadataStatus = rawStatus === "UPDATE" ? "UPDATE" : "CREATE";
+  const productionRef = formatProductionRefInline(
+    data?.productionInventoryKey || previousData?.productionInventoryKey,
+  );
   return {
     status: toCip68SafeText(metadataStatus),
     container_code: toCip68SafeText(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
-    production_inventory_key: toCip68SafeText(data?.productionInventoryKey || previousData?.productionInventoryKey),
+    production_ref_inline: toCip68SafeText(productionRef),
     container_type: toCip68SafeText(data?.containerType || previousData?.containerType),
     capacity_kg: toCip68SafeText(data?.capacityKg || previousData?.capacityKg),
     actual_capacity_kg: toCip68SafeText(data?.actualCapacityKg || previousData?.actualCapacityKg),
@@ -571,13 +586,14 @@ export const adminDataProvider: DataProvider = {
       const evidenceFiles = pickRawFiles((params.data as any)?.evidenceFiles);
       const certFilesIpfs = await uploadMany(certFiles);
       const evidenceFilesIpfs = await uploadMany(evidenceFiles);
+      const owners = buildOwnerList(owner);
       const metadata = buildProductionMetadata(
         mergedForMetadata,
         base,
         certFilesIpfs,
         evidenceFilesIpfs,
+        owners,
       );
-      const owners = buildOwnerList(owner);
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
         method: "POST",
         body: JSON.stringify({
@@ -689,8 +705,8 @@ export const adminDataProvider: DataProvider = {
       const evidenceFiles = pickRawFiles((params.data as any)?.evidenceFiles);
       const certFilesIpfs = await uploadMany(certFiles);
       const evidenceFilesIpfs = await uploadMany(evidenceFiles);
-      const metadata = buildProductionMetadata(params.data, null, certFilesIpfs, evidenceFilesIpfs);
       const owners = buildOwnerList(owner);
+      const metadata = buildProductionMetadata(params.data, null, certFilesIpfs, evidenceFilesIpfs, owners);
 
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/create`, {
         method: "POST",
