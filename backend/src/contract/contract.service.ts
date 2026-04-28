@@ -61,6 +61,7 @@ export class ContractService {
     return await deserializeDatum(datumHex.startsWith('0x') ? datumHex.slice(2) : datumHex);
   }
 
+
   private stringifyMetadata(metadata: Record<string, string> | undefined) {
     const out: Record<string, string> = {};
     for (const [k, v] of Object.entries(metadata || {})) {
@@ -112,8 +113,6 @@ export class ContractService {
     if (owners.length === 0) throw new BadRequestException('owners is required.');
 
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
-    if (!onchain) throw new BadRequestException('Production on-chain metadata was not found.');
-
     const merged: Record<string, string> = {};
     for (const [k, v] of Object.entries(onchain || {})) {
       merged[String(k)] = String(v ?? '').trim();
@@ -129,7 +128,7 @@ export class ContractService {
     const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, owners, [
       { productName: code, metadata: merged },
     ]);
-    return { result: true, data: unsignedTx, message: 'Production refresh record prepared.' };
+    return { result: true, data: unsignedTx, message: 'Contract refresh record prepared.' };
   }
 
   async createUnsignedBurnTx(dto: ContractBurnDto, signerAddressRaw: unknown) {

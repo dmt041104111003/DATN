@@ -61,12 +61,13 @@ function ParticipantRow({ disabled = false }: { disabled?: boolean }) {
 }
 
 export function ContainerFormSections({
-  participantsReadOnly = false,
+  participantsReadOnly = true,
 }: {
   participantsReadOnly?: boolean;
 }) {
   const { storageLocked, actualCapacityValidator, capacitySummary, productionChoices } = useContainerFormSections();
-  const formLocked = participantsReadOnly || storageLocked;
+  const formLocked = storageLocked;
+  const participantLocked = participantsReadOnly || storageLocked;
 
   return (
     <>
@@ -85,9 +86,9 @@ export function ContainerFormSections({
               : "Đã tạo: 0 kg | Còn lại: 0 kg"}
           </div>
           <ArrayInput source="participantRows" label="Danh sách địa chỉ ví tham gia">
-            <SimpleFormIterator disableReordering disableAdd={formLocked} disableRemove={formLocked}>
+            <SimpleFormIterator disableReordering disableAdd={participantLocked} disableRemove={participantLocked}>
               <FormDataConsumer>
-                {() => <ParticipantRow disabled={formLocked} />}
+                {() => <ParticipantRow disabled={participantLocked} />}
               </FormDataConsumer>
             </SimpleFormIterator>
           </ArrayInput>

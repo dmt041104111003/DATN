@@ -21,7 +21,7 @@ export async function fetchCapacitySummary(
     query.set("excludeContainerInventoryKey", excludeContainerInventoryKey.trim());
   }
 
-  const res = await fetch(`${BACKEND_URL}/containers/capacity/summary?${query}`, {
+  const res = await fetch(`${BACKEND_URL}/container/capacity/summary?${query}`, {
     credentials: "include",
   });
   if (!res.ok) throw new Error(await res.text());

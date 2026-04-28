@@ -26,17 +26,18 @@ export function ContainerResourceEdit() {
             `Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`,
           );
         }
-        const participants = buildParticipantPayload(data?.participantRows);
+        const hasParticipantRows = Array.isArray(data?.participantRows) && data.participantRows.length > 0;
+        const participants = hasParticipantRows ? buildParticipantPayload(data?.participantRows) : null;
         return {
           ...data,
-          participantWalletAddresses: participants.participantWalletAddresses,
-          participantLocationLabels: participants.participantLocationLabels,
-          participantRows: participants.participantRows,
+          participantWalletAddresses: participants ? participants.participantWalletAddresses : data?.participantWalletAddresses,
+          participantLocationLabels: participants ? participants.participantLocationLabels : data?.participantLocationLabels,
+          participantRows: participants ? participants.participantRows : data?.participantRows,
         };
       }}
     >
       <SimpleForm sx={FORM_SX} defaultValues={parseParticipantRows} toolbar={<ContainerEditToolbar />}>
-        <ContainerFormSections participantsReadOnly />
+        <ContainerFormSections />
       </SimpleForm>
     </Edit>
   );
