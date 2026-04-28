@@ -60,6 +60,20 @@ export interface TraceResult {
   message?: string;
 }
 
+type TraceHistoryItem = {
+  source: 'PRODUCTION' | 'CONTAINER';
+  txHash: string;
+  time: string;
+  metadata: Record<string, unknown> | null;
+};
+
+export interface TraceHistoryResult {
+  items: TraceHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 @Injectable()
 export class TraceService {
   private blockfrost: BlockFrostAPI;
@@ -168,6 +182,102 @@ export class TraceService {
     const rawDatum = String(outputWithDatum?.inline_datum || '').trim();
     if (!rawDatum) return null;
     return (await deserializeDatum(rawDatum)) as Record<string, unknown>;
+  }
+
+  private async listAssetTxHashes(unit: string): Promise<string[]> {
+    const hashes: string[] = [];
+    let page = 1;
+    while (true) {
+      const refs = await this.blockfrost.assetsTransactions(unit, { count: 100, page, order: 'desc' as any });
+      if (!Array.isArray(refs) || refs.length === 0) break;
+      for (let i = 0; i < refs.length; i += 1) {
+        const txHash = String(refs[i]?.tx_hash || '').trim();
+        if (txHash) hashes.push(txHash);
+      }
+      if (refs.length < 100) break;
+      page += 1;
+    }
+    return hashes;
+  }
+
+  private async readMetadataByTxHashAndUnit(txHash: string, unit: string): Promise<Record<string, unknown> | null> {
+    const utxos = await this.blockfrost.txsUtxos(txHash);
+    const outputs = Array.isArray(utxos?.outputs) ? utxos.outputs : [];
+    const outputWithDatum = outputs.find((o: any) => {
+      const datum = String(o?.inline_datum || '').trim();
+      const amounts = Array.isArray(o?.amount) ? o.amount : [];
+      if (!datum) return false;
+      for (let i = 0; i < amounts.length; i += 1) {
+        if (String(amounts[i]?.unit || '').trim().toLowerCase() === String(unit).toLowerCase()) return true;
+      }
+      return false;
+    });
+    const rawDatum = String(outputWithDatum?.inline_datum || '').trim();
+    if (!rawDatum) return null;
+    return (await deserializeDatum(rawDatum)) as Record<string, unknown>;
+  }
+
+  private async buildHistory(containerUnit: string, productionUnit: string): Promise<TraceHistoryItem[]> {
+    const productionHashes = productionUnit ? await this.listAssetTxHashes(productionUnit) : [];
+    const containerHashes = containerUnit ? await this.listAssetTxHashes(containerUnit) : [];
+    const merged: Array<{ source: 'PRODUCTION' | 'CONTAINER'; txHash: string }> = [];
+    for (let i = 0; i < productionHashes.length; i += 1) {
+      merged.push({ source: 'PRODUCTION', txHash: productionHashes[i] });
+    }
+    for (let i = 0; i < containerHashes.length; i += 1) {
+      merged.push({ source: 'CONTAINER', txHash: containerHashes[i] });
+    }
+    const uniqByHash = new Map<string, { source: 'PRODUCTION' | 'CONTAINER'; txHash: string }>();
+    for (let i = 0; i < merged.length; i += 1) {
+      const row = merged[i];
+      if (!uniqByHash.has(row.txHash)) uniqByHash.set(row.txHash, row);
+    }
+    const uniqueRows = Array.from(uniqByHash.values());
+    const out: TraceHistoryItem[] = [];
+    for (let i = 0; i < uniqueRows.length; i += 1) {
+      const row = uniqueRows[i];
+      const unit = row.source === 'PRODUCTION' ? productionUnit : containerUnit;
+      try {
+        const tx = await this.blockfrost.txs(row.txHash as any);
+        const blockTime = Number((tx as any)?.block_time || 0);
+        const time = blockTime > 0 ? new Date(blockTime * 1000).toISOString() : '';
+        const metadata = await this.readMetadataByTxHashAndUnit(row.txHash, unit);
+        out.push({ source: row.source, txHash: row.txHash, time, metadata });
+      } catch {
+        out.push({ source: row.source, txHash: row.txHash, time: '', metadata: null });
+      }
+    }
+    out.sort((a, b) => {
+      const at = new Date(String(a.time || '')).getTime();
+      const bt = new Date(String(b.time || '')).getTime();
+      return (Number.isFinite(bt) ? bt : 0) - (Number.isFinite(at) ? at : 0);
+    });
+    return out;
+  }
+
+  private async resolveHistoryUnits(inventoryKey: string): Promise<{ containerUnit: string; productionUnit: string }> {
+    const resolved = await this.resolveBlockfrostAssetUnit(inventoryKey);
+    if ('error' in resolved) return { containerUnit: '', productionUnit: '' };
+    const containerUnit = resolved.unit;
+    let productionUnit = '';
+    try {
+      const refs = await this.blockfrost.assetsTransactions(containerUnit, { count: 1, page: 1, order: 'desc' as any });
+      const latestTxHash = String(refs?.[0]?.tx_hash || '').trim();
+      if (!latestTxHash) return { containerUnit, productionUnit };
+      const utxos = await this.blockfrost.txsUtxos(latestTxHash);
+      const outputWithAsset = utxos.outputs.find((output: { amount: { unit: string; quantity: string }[] }) =>
+        output.amount.some((a) => a.unit === containerUnit),
+      );
+      const rawDatum = String((outputWithAsset as { inline_datum?: string } | undefined)?.inline_datum || '').trim();
+      if (!rawDatum) return { containerUnit, productionUnit };
+      const lotPassport = (await deserializeDatum(rawDatum)) as Record<string, unknown>;
+      const productionRef = this.parseProductionRefInline(lotPassport?.production_ref_inline);
+      if (!productionRef) return { containerUnit, productionUnit };
+      productionUnit = this.encodeRefUnit(productionRef.policyId, productionRef.assetName);
+      return { containerUnit, productionUnit };
+    } catch {
+      return { containerUnit, productionUnit };
+    }
   }
 
   constructor(private readonly prisma: PrismaService) {
@@ -288,9 +398,10 @@ export class TraceService {
       const latestSignerWallet = this.extractLatestSignerWallet(utxos, participantWallets);
       const points = await this.buildPointDetails(lotPassport);
       let productionMetadata: Record<string, unknown> | null = null;
+      let productionUnit = '';
       const productionRef = this.parseProductionRefInline(lotPassport?.production_ref_inline);
       if (productionRef) {
-        const productionUnit = this.encodeRefUnit(productionRef.policyId, productionRef.assetName);
+        productionUnit = this.encodeRefUnit(productionRef.policyId, productionRef.assetName);
         if (productionUnit) {
           try {
             productionMetadata = await this.readLatestMetadataByUnit(productionUnit);
@@ -312,5 +423,18 @@ export class TraceService {
 
   async getProductTrace(inventoryKey: string): Promise<TraceResult> {
     return this.readLatestPassport(inventoryKey);
+  }
+
+  async getTraceHistory(inventoryKey: string, pageRaw: number, limitRaw: number): Promise<TraceHistoryResult> {
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
+    const limitUnsafe = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.floor(limitRaw) : 10;
+    const limit = limitUnsafe > 10 ? 10 : limitUnsafe;
+    const units = await this.resolveHistoryUnits(inventoryKey);
+    if (!units.containerUnit) return { items: [], total: 0, page, limit };
+    const full = (await this.buildHistory(units.containerUnit, units.productionUnit)) || [];
+    const total = full.length;
+    const start = (page - 1) * limit;
+    const items = full.slice(start, start + limit);
+    return { items, total, page, limit };
   }
 }

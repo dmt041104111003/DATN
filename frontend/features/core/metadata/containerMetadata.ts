@@ -5,7 +5,14 @@ import { formatProductionRefInline } from "./share/formatProductionRefInline";
 
 export function buildContainerMetadata(data: any, previousData: any) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
-  const metadataStatus = rawStatus === "UPDATE" ? "UPDATE" : "CREATE";
+  let metadataStatus = "CREATE";
+  if (rawStatus === "CONSUMED") {
+    metadataStatus = "CONSUMED";
+  } else if (previousData) {
+    metadataStatus = "UPDATE";
+  } else if (rawStatus === "UPDATE") {
+    metadataStatus = "UPDATE";
+  }
   const productionRef = formatProductionRefInline(
     data?.productionInventoryKey || previousData?.productionInventoryKey,
   );

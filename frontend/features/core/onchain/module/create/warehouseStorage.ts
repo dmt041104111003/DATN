@@ -37,6 +37,7 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
   const inventoryKey = containerInventoryKey;
   const metadata = {
     ...deps.buildMappedMetadata({
+      status: "UPDATE",
       storage_op: currentStorageId ? "UPDATE" : "IN",
       warehouse_id: createPayload?.warehouseId || params.previousData?.warehouseId,
       container_ref_inline: formatProductionRefInline(containerInventoryKey),

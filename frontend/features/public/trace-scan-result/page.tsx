@@ -4,40 +4,19 @@ import * as React from "react";
 import { Alert, Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 import { getDistrictOptions, getProvinceOptions, getWardOptions } from "@/features/resources/shared/location";
+import TraceHistory from "./history";
+import TracePoints from "./points";
+import TraceInfo from "./traceInfo";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
-const DEFAULT_NFT_IMAGE = "ipfs://bafkreiet2c7tmtcph6qvyoitypfphb7s7t3pnjdiq5bnhsfwby37o5cvaa";
-
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
 }
 
-function normalizeIpfsUri(value: string) {
-  const raw = cleanString(value);
-  if (!raw) return "";
-  if (raw.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${raw.slice("ipfs://".length)}`;
-  return raw;
-}
-
-function resolveProductionImage(metadata: Record<string, unknown> | null) {
-  if (!metadata) return normalizeIpfsUri(DEFAULT_NFT_IMAGE);
-  const image = cleanString(metadata.image);
-  if (image) return normalizeIpfsUri(image);
-  const imageCidsRaw = cleanString(metadata.image_cids);
-  if (imageCidsRaw) {
-    try {
-      const parsed = JSON.parse(imageCidsRaw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const first = cleanString(parsed[0]);
-        if (first) return normalizeIpfsUri(first);
-      }
-    } catch {}
-  }
-  return normalizeIpfsUri(DEFAULT_NFT_IMAGE);
-}
-
 type TraceView = {
   containerTitle: string;
+  isConsumed: boolean;
+  consumedAt: string;
   containerCode: string;
   containerType: string;
   capacityKg: string;
@@ -102,6 +81,11 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
             : -1;
         const matchedIndex = signerIndex >= 0 && signerIndex < points.length ? signerIndex : -1;
         const containerTitle = cleanString(lotPassport.product_name) || "Chưa có tên sản phẩm";
+        const statusRaw = cleanString(lotPassport.container_status || lotPassport.status).toUpperCase();
+        const isConsumed = statusRaw === "CONSUMED";
+        const consumedAt = cleanString(
+          lotPassport.storage_updated_at || lotPassport.updated_at || lotPassport.storage_created_at,
+        );
         const containerCode = cleanString(lotPassport.container_code);
         const containerType = cleanString(lotPassport.container_type);
         const capacityKg = cleanString(lotPassport.capacity_kg);
@@ -134,6 +118,8 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         if (!mounted) return;
         setTrace({
           containerTitle,
+          isConsumed,
+          consumedAt,
           containerCode,
           containerType,
           capacityKg,
@@ -171,81 +157,23 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
               <Stack spacing={1}>
                 <Typography variant="h4" sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}>
                   {trace.containerTitle}
+                  {trace.isConsumed ? (
+                    <Typography component="span" sx={{ ml: 1, color: "error.main", fontWeight: 700 }}>
+                      (ĐÃ TIÊU THỤ)
+                    </Typography>
+                  ) : null}
                 </Typography>
-                <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 1, px: 1.5, py: 1 }}>
-                  <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" }, alignItems: "flex-start" }}>
-                    <Box sx={{ width: { xs: "100%", md: 260 }, flexShrink: 0 }}>
-                      <img
-                        src={resolveProductionImage(trace.productionMetadata)}
-                        alt="Ảnh vụ mùa"
-                        style={{ width: "100%", borderRadius: 8, border: "1px solid #e5e7eb" }}
-                      />
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Thông tin thùng hàng
-                      </Typography>
-                      <Typography variant="body2">Mã thùng: {trace.containerCode || "-"}</Typography>
-                      <Typography variant="body2">Loại thùng: {trace.containerType || "-"}</Typography>
-                      <Typography variant="body2">Sản lượng dự kiến (kg): {trace.capacityKg || "-"}</Typography>
-                      <Typography variant="body2">Sản lượng thực tế (kg): {trace.actualCapacityKg || "-"}</Typography>
-                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
-                        Thông tin vụ mùa
-                      </Typography>
-                      <Typography variant="body2">Mã vụ mùa: {cleanString(trace.productionMetadata?.production_code) || "-"}</Typography>
-                      <Typography variant="body2">Cơ sở: {cleanString(trace.productionMetadata?.facility) || "-"}</Typography>
-                      <Typography variant="body2">Vị trí: {cleanString(trace.productionMetadata?.location) || "-"}</Typography>
-                      <Typography variant="body2">Phương thức: {cleanString(trace.productionMetadata?.farming_method) || "-"}</Typography>
-                      <Typography variant="body2">Ngày gieo: {cleanString(trace.productionMetadata?.seeding_date) || "-"}</Typography>
-                      <Typography variant="body2">Ngày thu hoạch: {cleanString(trace.productionMetadata?.harvest_date) || "-"}</Typography>
-                      <Typography variant="body2">Sản lượng (kg): {cleanString(trace.productionMetadata?.actual_yield_kg) || "-"}</Typography>
-                      <Typography variant="body2">Loại cây: {cleanString(trace.productionMetadata?.crop_type) || "-"}</Typography>
-                      <Typography variant="body2">Giống: {cleanString(trace.productionMetadata?.variety) || "-"}</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-                {trace.points.map((point, index) => {
-                  const active = trace.matchedIndex >= 0 && index <= trace.matchedIndex;
-                  const lineActive = trace.matchedIndex >= 0 && index < trace.matchedIndex;
-                  return (
-                    <Box key={`${point.walletAddress}-${index}`} sx={{ display: "flex", alignItems: "stretch", minHeight: 52 }}>
-                      <Box sx={{ width: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <Box
-                          sx={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: "50%",
-                            border: "2px solid",
-                            borderColor: active ? "primary.main" : "grey.500",
-                            bgcolor: active ? "primary.main" : "transparent",
-                            mt: 0.25,
-                          }}
-                        />
-                        {index < trace.points.length - 1 ? (
-                          <Box
-                            sx={{
-                              width: 2,
-                              flex: 1,
-                              bgcolor: lineActive ? "primary.main" : "grey.400",
-                              mt: 0.25,
-                            }}
-                          />
-                        ) : null}
-                      </Box>
-                      <Box sx={{ pl: 1, pb: 0.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {point.name || "Chưa có tên"}
-                        </Typography>
-                        <Typography variant="caption" sx={{ display: "block", wordBreak: "break-all" }}>
-                          {point.walletAddress}
-                        </Typography>
-                        <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
-                          {point.location || "-"}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  );
-                })}
+                <TraceInfo
+                  isConsumed={trace.isConsumed}
+                  consumedAt={trace.consumedAt}
+                  containerCode={trace.containerCode}
+                  containerType={trace.containerType}
+                  capacityKg={trace.capacityKg}
+                  actualCapacityKg={trace.actualCapacityKg}
+                  productionMetadata={trace.productionMetadata}
+                />
+                <TracePoints points={trace.points} matchedIndex={trace.matchedIndex} />
+                <TraceHistory inventoryKey={inventoryKey} />
                 <Box sx={{ mt: 1 }} />
               </Stack>
             ) : null}

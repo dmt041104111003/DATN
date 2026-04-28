@@ -23,8 +23,8 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
   const inventoryKey = containerInventoryKey;
   const metadata = {
     ...deps.buildMappedMetadata({
+      status: isAgent ? "CONSUMED" : "UPDATE",
       storage_op: isAgent ? "CONSUMED" : "OUT",
-      container_status: isAgent ? "CONSUMED" : "UPDATE",
       warehouse_id: (base as any)?.warehouseId,
       container_ref_inline: formatProductionRefInline(
         (base as any)?.containerInventoryKey || (base as any)?.productId,
