@@ -79,12 +79,12 @@ export class ProductionContractService {
     }
   }
 
-  async createUnsignedCreateTx(dto: ProductionContractCreateDto) {
-    const walletAddress = String(dto.custodianAddress || '').trim();
+  async createUnsignedCreateTx(dto: ProductionContractCreateDto, signerAddressRaw: unknown) {
+    const walletAddress = String(signerAddressRaw || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const code = String(dto.assetName || '').trim() || this.generateCode();
-    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
-    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
+    if (owners.length === 0) throw new BadRequestException('owners is required.');
 
     const metadata = this.stringifyMetadata(dto.metadata);
     metadata.production_code = metadata.production_code || code;
@@ -104,12 +104,12 @@ export class ProductionContractService {
     };
   }
 
-  async createUnsignedSaveTx(dto: ProductionContractSaveDto) {
-    const walletAddress = String(dto.custodianAddress || '').trim();
+  async createUnsignedSaveTx(dto: ProductionContractSaveDto, signerAddressRaw: unknown) {
+    const walletAddress = String(signerAddressRaw || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const inventoryKey = String(dto.inventoryKey || '').trim();
-    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
-    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
+    if (owners.length === 0) throw new BadRequestException('owners is required.');
 
     const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
     if (!onchain) throw new BadRequestException('Production on-chain metadata was not found.');
@@ -132,14 +132,14 @@ export class ProductionContractService {
     return { result: true, data: unsignedTx, message: 'Production refresh record prepared.' };
   }
 
-  async createUnsignedBurnTx(dto: any) {
-    const walletAddress = String(dto?.custodianAddress || '').trim();
+  async createUnsignedBurnTx(dto: any, signerAddressRaw: unknown) {
+    const walletAddress = String(signerAddressRaw || '').trim();
     const owners = Array.isArray(dto?.owners) ? dto.owners.map((s: unknown) => String(s || '').trim()).filter(Boolean) : [];
     const productionInventoryKeys = Array.isArray(dto?.productionInventoryKeys)
       ? dto.productionInventoryKeys.map((s: unknown) => String(s || '').trim()).filter(Boolean)
       : [];
-    if (owners.length === 0 && walletAddress) owners.push(walletAddress);
-    if (!owners.includes(walletAddress)) owners.push(walletAddress);
+    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
+    if (owners.length === 0) throw new BadRequestException('owners is required.');
 
     const rows = await (this.prisma as any).production.findMany({
       where: {

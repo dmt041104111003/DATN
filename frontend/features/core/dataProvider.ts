@@ -4,7 +4,6 @@ import { fetchUtils } from "react-admin";
 import type { DataProvider } from "react-admin";
 import simpleRestProvider from "ra-data-simple-rest";
 import {
-  getCustodianSettlementAddress,
   publishAttestedRecord,
   signOutgoingAttestation,
 } from "@/lib/wallet";
@@ -225,15 +224,14 @@ async function uploadEvidence(file: File): Promise<string> {
   return uri;
 }
 
-async function getSessionOwnerAndCustodian() {
+async function getSessionOwner() {
   const meRes = await httpClient(`${BACKEND_URL}/auth/me`, { method: "GET" });
   const me = meRes.json as any;
   const owner =
     String(me?.user?.paymentAddress || "").trim() ||
     String(me?.user?.walletAddress || "").trim() ||
     String(me?.user?.sub || "").trim();
-  const custodianAddress = await getCustodianSettlementAddress();
-  return { me, owner, custodianAddress };
+  return { me, owner };
 }
 
 async function uploadMany(files: File[]) {
@@ -251,15 +249,14 @@ async function signAndPublishUnsignedTx(unsignedCbor: string) {
   return publishAttestedRecord(signed);
 }
 
-function buildOwnerList(owner: string, custodianAddress: string) {
-  const values = [cleanString(owner), cleanString(custodianAddress)].filter(Boolean);
+function buildOwnerList(owner: string) {
+  const values = [cleanString(owner)].filter(Boolean);
   return Array.from(new Set(values));
 }
 
 function buildOwnersFromParticipantData(
   source: any,
   fallbackOwner: string,
-  fallbackCustodian: string,
 ) {
   const fromRows = Array.isArray(source?.participantRows)
     ? source.participantRows
@@ -271,7 +268,7 @@ function buildOwnersFromParticipantData(
   );
   const participants = Array.from(new Set([...fromRows, ...fromField].filter(Boolean)));
   if (participants.length) return participants;
-  return buildOwnerList(fallbackOwner, fallbackCustodian);
+  return buildOwnerList(fallbackOwner);
 }
 
 function endpointFor(resource: string) {
@@ -422,6 +419,37 @@ async function buildProductionMetadataFromContainerSource(
   };
 }
 
+function buildContainerMetadata(data: any, previousData: any) {
+  const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
+  const metadataStatus = rawStatus === "UPDATE" ? "UPDATE" : "CREATE";
+  return {
+    status: toCip68SafeText(metadataStatus),
+    container_code: toCip68SafeText(data?.code || data?.assetName || previousData?.code || previousData?.assetName),
+    production_inventory_key: toCip68SafeText(data?.productionInventoryKey || previousData?.productionInventoryKey),
+    container_type: toCip68SafeText(data?.containerType || previousData?.containerType),
+    capacity_kg: toCip68SafeText(data?.capacityKg || previousData?.capacityKg),
+    actual_capacity_kg: toCip68SafeText(data?.actualCapacityKg || previousData?.actualCapacityKg),
+    product_name: toCip68SafeText(data?.productName || previousData?.productName),
+    participant_wallet_addresses: toCip68SafeText(
+      JSON.stringify(
+        parseStringList(
+          data?.participantWalletAddresses !== undefined
+            ? data?.participantWalletAddresses
+            : previousData?.participantWalletAddresses,
+        ),
+      ),
+    ),
+    participant_location_labels: toCip68SafeText(
+      parseStringList(
+        data?.participantLocationLabels !== undefined
+          ? data?.participantLocationLabels
+          : previousData?.participantLocationLabels,
+      ).join("; "),
+    ),
+    note: toCip68SafeText(data?.note || previousData?.note),
+  };
+}
+
 function buildWarehouseStorageMetadata(data: any, previousData: any, opType: "IN" | "OUT" | "UPDATE") {
   const nowIso = new Date().toISOString();
   const createdAt = cleanString(previousData?.createdAt || data?.createdAt) || nowIso;
@@ -491,10 +519,46 @@ export const adminDataProvider: DataProvider = {
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
     if (resource === "container") {
-      throw new Error("Module thùng hàng đã bị xóa.");
+      if (Boolean((params.previousData as any)?.storageLocked)) {
+        throw new Error(
+          "Container đã có lịch sử nhập/xuất kho nên không được phép cập nhật hoặc xóa.",
+        );
+      }
+      const { owner } = await getSessionOwner();
+      const inventoryKey = String(
+        params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
+      ).trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const currentContainer = await fetchContainerByInventoryKey(inventoryKey);
+      const base = currentContainer || params.previousData || {};
+      const merged = { ...base, ...(params.data || {}) };
+      const productionCtx = await buildProductionMetadataFromContainerSource(
+        merged,
+        base,
+        "UPDATED",
+      );
+      const owners = buildOwnersFromParticipantData(merged, owner);
+      const metadata = buildContainerMetadata(merged, base);
+      const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({
+          owners,
+          inventoryKey: productionCtx.productionInventoryKey,
+          metadata,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare container save transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const patchRes = await httpClient(`${BACKEND_URL}/containers/${encodeURIComponent(inventoryKey)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ...params.data, txHash }),
+      });
+      const row = patchRes.json as any;
+      return { data: { ...row, id: normalizeId(row, params.id) } };
     }
     if (resource === "production") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const { owner } = await getSessionOwner();
       const inventoryKey = String(
         params.data?.inventoryKey || params.previousData?.inventoryKey || params.id || "",
       ).trim();
@@ -513,11 +577,10 @@ export const adminDataProvider: DataProvider = {
         certFilesIpfs,
         evidenceFilesIpfs,
       );
-      const owners = buildOwnersFromParticipantData(mergedForMetadata, owner, custodianAddress);
+      const owners = buildOwnerList(owner);
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
         method: "POST",
         body: JSON.stringify({
-          custodianAddress,
           owners,
           inventoryKey,
           metadata,
@@ -540,7 +603,7 @@ export const adminDataProvider: DataProvider = {
       return { data: { ...row, id: normalizeId(row, params.id) } };
     }
     if (resource === "warehouse-storage") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const { owner } = await getSessionOwner();
       const containerInventoryKey = cleanString(
         params.data?.containerInventoryKey ||
         params.data?.productId ||
@@ -550,6 +613,11 @@ export const adminDataProvider: DataProvider = {
       if (!containerInventoryKey) throw new Error("containerInventoryKey is required.");
       const gps = await captureCurrentGpsLocation();
       const gpsTriple = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
+      const updatePayload = {
+        ...(params.previousData || {}),
+        ...(params.data || {}),
+        location: gpsTriple,
+      };
       await enforceWarehouseStorageRoadmapGuards(
         containerInventoryKey,
         params.data?.warehouseId || params.previousData?.warehouseId,
@@ -557,15 +625,14 @@ export const adminDataProvider: DataProvider = {
       );
       const containerBase = (await fetchContainerByInventoryKey(containerInventoryKey)) || {};
       const productionCtx = await buildProductionMetadataFromContainerSource(containerBase, containerBase, "UPDATED");
-      const owners = buildOwnersFromParticipantData(productionCtx.productionBase, owner, custodianAddress);
+      const owners = buildOwnersFromParticipantData(containerBase, owner);
       const metadata = {
-        ...productionCtx.metadata,
-        ...buildWarehouseStorageMetadata(params.data, params.previousData, "UPDATE"),
+        ...buildContainerMetadata(containerBase, containerBase),
+        ...buildWarehouseStorageMetadata(updatePayload, params.previousData, "UPDATE"),
       };
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
         method: "POST",
         body: JSON.stringify({
-          custodianAddress,
           owners,
           inventoryKey: productionCtx.productionInventoryKey,
           metadata,
@@ -590,21 +657,44 @@ export const adminDataProvider: DataProvider = {
   },
   async create(resource, params) {
     if (resource === "container") {
-      throw new Error("Module thùng hàng đã bị xóa.");
+      const { owner } = await getSessionOwner();
+      const owners = buildOwnersFromParticipantData(params.data, owner);
+      const metadata = buildContainerMetadata(params.data, null);
+      const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/create`, {
+        method: "POST",
+        body: JSON.stringify({
+          owners,
+          assetName: String(params.data?.assetName || params.data?.code || "").trim(),
+          metadata,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare container on-chain transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const dbRes = await httpClient(`${BACKEND_URL}/containers`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...params.data,
+          traceSchemeRef: String(unsigned.traceSchemeRef || "").trim(),
+          inventoryKey: String(unsigned.inventoryKey || "").trim(),
+          txHash,
+        }),
+      });
+      const row = dbRes.json as any;
+      return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
     }
     if (resource === "production") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const { owner } = await getSessionOwner();
       const certFiles = pickRawFiles((params.data as any)?.certFiles);
       const evidenceFiles = pickRawFiles((params.data as any)?.evidenceFiles);
       const certFilesIpfs = await uploadMany(certFiles);
       const evidenceFilesIpfs = await uploadMany(evidenceFiles);
       const metadata = buildProductionMetadata(params.data, null, certFilesIpfs, evidenceFilesIpfs);
-      const owners = buildOwnersFromParticipantData(params.data, owner, custodianAddress);
+      const owners = buildOwnerList(owner);
 
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/create`, {
         method: "POST",
         body: JSON.stringify({
-          custodianAddress,
           owners,
           assetName: String(params.data?.assetName || params.data?.code || "").trim(),
           metadata,
@@ -629,7 +719,7 @@ export const adminDataProvider: DataProvider = {
       return { data: { ...row, id: normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
     }
     if (resource === "warehouse-storage") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const { owner } = await getSessionOwner();
       const containerInventoryKey = cleanString(params.data?.containerInventoryKey || params.data?.productId);
       if (!containerInventoryKey) throw new Error("containerInventoryKey is required.");
       const gps = await captureCurrentGpsLocation();
@@ -638,15 +728,14 @@ export const adminDataProvider: DataProvider = {
       const createPayload = { ...params.data, location };
       const containerBase = (await fetchContainerByInventoryKey(containerInventoryKey)) || {};
       const productionCtx = await buildProductionMetadataFromContainerSource(containerBase, containerBase, "UPDATED");
-      const owners = buildOwnersFromParticipantData(productionCtx.productionBase, owner, custodianAddress);
+      const owners = buildOwnersFromParticipantData(containerBase, owner);
       const metadata = {
-        ...productionCtx.metadata,
+        ...buildContainerMetadata(containerBase, containerBase),
         ...buildWarehouseStorageMetadata(createPayload, null, "IN"),
       };
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
         method: "POST",
         body: JSON.stringify({
-          custodianAddress,
           owners,
           inventoryKey: productionCtx.productionInventoryKey,
           metadata,
@@ -666,11 +755,39 @@ export const adminDataProvider: DataProvider = {
   },
   async delete(resource, params) {
     if (resource === "container") {
-      throw new Error("Module thùng hàng đã bị xóa.");
+      if (Boolean((params.previousData as any)?.storageLocked)) {
+        throw new Error(
+          "Thùng hàng đã có lịch sử nhập/xuất kho nên không được phép cập nhật hoặc xóa.",
+        );
+      }
+      const { owner } = await getSessionOwner();
+      const base = params.previousData || {};
+      const inventoryKey = String((base as any)?.inventoryKey ?? params.id ?? "").trim();
+      if (!inventoryKey) throw new Error("inventoryKey is required.");
+      const productionCtx = await buildProductionMetadataFromContainerSource(base, base, "UPDATED");
+      const owners = buildOwnersFromParticipantData(base, owner);
+      const metadata = buildContainerMetadata(base, base);
+      const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
+        method: "POST",
+        body: JSON.stringify({
+          owners,
+          inventoryKey: productionCtx.productionInventoryKey,
+          metadata,
+        }),
+      });
+      const unsigned = contractRes.json as any;
+      ensureUnsignedTxResponse(unsigned, "Failed to prepare container delete transaction.");
+      const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
+      const { json } = await httpClient(`${BACKEND_URL}/containers/${encodeURIComponent(inventoryKey)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ txHash }),
+      });
+      const row = json as any;
+      return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
     }
     if (resource === "production") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
-      const owners = buildOwnersFromParticipantData(params.previousData || {}, owner, custodianAddress);
+      const { owner } = await getSessionOwner();
+      const owners = buildOwnerList(owner);
       const inventoryKey = String(
         (params.previousData as any)?.inventoryKey ?? params.id ?? "",
       ).trim();
@@ -678,7 +795,6 @@ export const adminDataProvider: DataProvider = {
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/burn`, {
         method: "POST",
         body: JSON.stringify({
-          custodianAddress,
           owners,
           productionInventoryKeys: [inventoryKey],
         }),
@@ -694,7 +810,7 @@ export const adminDataProvider: DataProvider = {
       return { data: { ...row, id: normalizeId(params.previousData, params.id) } };
     }
     if (resource === "warehouse-storage") {
-      const { owner, custodianAddress } = await getSessionOwnerAndCustodian();
+      const { owner } = await getSessionOwner();
       const containerInventoryKey = cleanString(
         (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
       );
@@ -708,9 +824,9 @@ export const adminDataProvider: DataProvider = {
       );
       const containerBase = (await fetchContainerByInventoryKey(containerInventoryKey)) || {};
       const productionCtx = await buildProductionMetadataFromContainerSource(containerBase, containerBase, "UPDATED");
-      const owners = buildOwnersFromParticipantData(productionCtx.productionBase, owner, custodianAddress);
+      const owners = buildOwnersFromParticipantData(containerBase, owner);
       const metadata = {
-        ...productionCtx.metadata,
+        ...buildContainerMetadata(containerBase, containerBase),
         ...buildWarehouseStorageMetadata(
         { ...(params.previousData as any), location },
         params.previousData,
@@ -720,7 +836,6 @@ export const adminDataProvider: DataProvider = {
       const contractRes = await httpClient(`${BACKEND_URL}/productions/contract/save`, {
         method: "POST",
         body: JSON.stringify({
-          custodianAddress,
           owners,
           inventoryKey: productionCtx.productionInventoryKey,
           metadata,

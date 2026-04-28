@@ -1,10 +1,6 @@
 import { IsArray, IsNotEmpty, IsObject, IsString } from 'class-validator';
 
 export class ProductionContractSaveDto {
-  @IsString()
-  @IsNotEmpty()
-  custodianAddress: string;
-
   @IsArray()
   owners: string[];
 

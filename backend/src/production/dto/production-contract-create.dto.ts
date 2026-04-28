@@ -1,10 +1,6 @@
-import { IsArray, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class ProductionContractCreateDto {
-  @IsString()
-  @IsNotEmpty()
-  custodianAddress: string;
-
   @IsArray()
   owners: string[];
 
