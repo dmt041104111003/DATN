@@ -5,11 +5,17 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
   const { owner } = await deps.getSessionOwner();
   const containerInventoryKey = deps.cleanString(params.data?.containerInventoryKey || params.data?.productId);
   if (!containerInventoryKey) throw new Error("containerInventoryKey is required.");
+  const containerRes = await deps.httpClient(`${deps.BACKEND_URL}/container`, { method: "GET" });
+  const containerRows = Array.isArray(containerRes?.json) ? containerRes.json : [];
+  const containerRow =
+    containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
   const gps = await deps.captureCurrentGpsLocation();
   const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const createPayload: any = { ...(params.data as any), location };
-  const owners = deps.buildOwnerList(createPayload, owner);
-  const inventoryKey = deps.cleanString(createPayload?.productionInventoryKey || containerInventoryKey);
+  const owners = deps.buildOwnerList(containerRow || createPayload, owner);
+  const inventoryKey = deps.cleanString(
+    createPayload?.productionInventoryKey || containerRow?.productionInventoryKey || containerInventoryKey,
+  );
   const metadata = {
     ...deps.buildMappedMetadata({
       storage_op: "IN",

@@ -36,7 +36,7 @@ export function ContainerResourceCreate() {
       sx={CREATE_PAGE_SX}
     >
       <SimpleForm sx={FORM_SX} toolbar={<ContainerCreateToolbar />} defaultValues={{ code: makeDailyCode("THUNG"), status: "CREATE" }}>
-        <ContainerFormSections />
+        <ContainerFormSections participantsReadOnly={false} />
       </SimpleForm>
     </Create>
   );

@@ -9,11 +9,17 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
     (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
   );
   if (!containerInventoryKey) throw new Error("containerInventoryKey is required.");
+  const containerRes = await deps.httpClient(`${deps.BACKEND_URL}/container`, { method: "GET" });
+  const containerRows = Array.isArray(containerRes?.json) ? containerRes.json : [];
+  const containerRow =
+    containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
   const gps = await deps.captureCurrentGpsLocation();
   const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const base = params.previousData || {};
-  const owners = deps.buildOwnerList(base, owner);
-  const inventoryKey = deps.cleanString((base as any)?.productionInventoryKey || containerInventoryKey);
+  const owners = deps.buildOwnerList(containerRow || base, owner);
+  const inventoryKey = deps.cleanString(
+    (base as any)?.productionInventoryKey || containerRow?.productionInventoryKey || containerInventoryKey,
+  );
   const metadata = {
     ...deps.buildMappedMetadata({
       storage_op: isAgent ? "CONSUMED" : "OUT",

@@ -10,11 +10,17 @@ export async function updateWarehouseStorageInOnchain(params: any, deps: any) {
       params.previousData?.productId,
   );
   if (!containerInventoryKey) throw new Error("containerInventoryKey is required.");
+  const containerRes = await deps.httpClient(`${deps.BACKEND_URL}/container`, { method: "GET" });
+  const containerRows = Array.isArray(containerRes?.json) ? containerRes.json : [];
+  const containerRow =
+    containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
   const gps = await deps.captureCurrentGpsLocation();
   const gpsTriple = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const updatePayload = { ...(params.previousData || {}), ...(params.data || {}), location: gpsTriple };
-  const owners = deps.buildOwnerList(updatePayload, owner);
-  const inventoryKey = deps.cleanString(updatePayload?.productionInventoryKey || containerInventoryKey);
+  const owners = deps.buildOwnerList(containerRow || updatePayload, owner);
+  const inventoryKey = deps.cleanString(
+    updatePayload?.productionInventoryKey || containerRow?.productionInventoryKey || containerInventoryKey,
+  );
   const metadata = {
     ...deps.buildMappedMetadata({
       storage_op: "UPDATE",
