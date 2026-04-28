@@ -143,5 +143,48 @@ export function useQrScanPage() {
     }
   };
 
-  return { busy, statusText, statusError, warehouseId, setWarehouseId, warehouseChoices, insertFromQr };
+  const consumeFromQr = async (inventoryKeyRaw: string) => {
+    const inventoryKey = cleanString(inventoryKeyRaw);
+    if (!inventoryKey) return void setStatusError("QR không có mã thùng hàng.");
+    if (!warehouseId) return void setStatusError("Chọn kho mặc định trước khi quét.");
+    if (busy || scanGuardRef.current || lastInventoryKeyRef.current === inventoryKey) return;
+
+    let targetRow: any = null;
+    for (let i = 0; i < storageRows.length; i += 1) {
+      const row = storageRows[i];
+      const rowWarehouseId = cleanString(row?.warehouseId);
+      if (rowWarehouseId !== warehouseId) continue;
+      const key = getStorageKey(row);
+      if (key === inventoryKey) {
+        targetRow = row;
+        break;
+      }
+    }
+    if (!targetRow) return void setStatusError("Thùng hàng không nằm trong kho để tiêu thụ.");
+
+    scanGuardRef.current = true;
+    lastInventoryKeyRef.current = inventoryKey;
+    setBusy(true);
+    setStatusError("");
+    setStatusText("");
+    try {
+      await dataProvider.delete("warehouse-storage", { id: cleanString(targetRow?.id), previousData: targetRow });
+      setStatusText(`Đã tiêu thụ: ${inventoryKey}`);
+      void refetchStorageRows();
+    } catch (e) {
+      setStatusError(e instanceof Error ? e.message : "Tiêu thụ thất bại.");
+    } finally {
+      setBusy(false);
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = window.setTimeout(() => {
+        setStatusText("");
+        setStatusError("");
+        lastInventoryKeyRef.current = "";
+        scanGuardRef.current = false;
+        resetTimerRef.current = null;
+      }, 1200);
+    }
+  };
+
+  return { busy, statusText, statusError, warehouseId, setWarehouseId, warehouseChoices, insertFromQr, consumeFromQr };
 }

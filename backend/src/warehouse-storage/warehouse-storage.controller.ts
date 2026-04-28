@@ -27,6 +27,10 @@ export class WarehouseStorageController {
     return custodian;
   }
 
+  private getRole(req: any): string {
+    return String(req?.user?.role || req?.user?.roleCode || '').trim();
+  }
+
   @Get()
   async list(@Req() req: any) {
     return this.warehouseStorageService.list(this.getCustodian(req));
@@ -59,7 +63,7 @@ export class WarehouseStorageController {
   @Delete(':id')
   async remove(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     try {
-      return await this.warehouseStorageService.remove(this.getCustodian(req), id, body);
+      return await this.warehouseStorageService.remove(this.getCustodian(req), this.getRole(req), id, body);
     } catch (e) {
       throw new HttpException(
         e instanceof Error ? e.message : 'Failed to delete warehouse storage.',

@@ -2,7 +2,9 @@ import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveCon
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 
 export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any) {
-  const { owner } = await deps.getSessionOwner();
+  const { me, owner } = await deps.getSessionOwner();
+  const role = deps.cleanString((me as any)?.user?.role || (me as any)?.user?.roleCode).toUpperCase();
+  const isAgent = role === "AGENT";
   const containerInventoryKey = deps.cleanString(
     (params.previousData as any)?.containerInventoryKey || (params.previousData as any)?.productId,
   );
@@ -14,7 +16,8 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
   const inventoryKey = deps.cleanString((base as any)?.productionInventoryKey || containerInventoryKey);
   const metadata = {
     ...deps.buildMappedMetadata({
-      storage_op: "OUT",
+      storage_op: isAgent ? "CONSUMED" : "OUT",
+      container_status: isAgent ? "CONSUMED" : "UPDATE",
       warehouse_id: (base as any)?.warehouseId,
       container_inventory_key:
         (base as any)?.containerInventoryKey || (base as any)?.productId,

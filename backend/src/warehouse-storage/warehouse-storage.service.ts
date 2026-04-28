@@ -11,7 +11,7 @@ export class WarehouseStorageService {
   constructor(private readonly prisma: PrismaService) {}
 
   private async writeOperation(
-    opType: 'CREATE' | 'UPDATE' | 'DELETE',
+    opType: 'CREATE' | 'UPDATE' | 'DELETE' | 'CONSUME',
     txHashRaw: unknown,
     storageId: string,
     containerInventoryKey: string,
@@ -168,8 +168,10 @@ export class WarehouseStorageService {
     return row;
   }
 
-  async remove(createdBy: string, idRaw: unknown, data?: any) {
+  async remove(createdBy: string, roleRaw: unknown, idRaw: unknown, data?: any) {
     const custodian = cleanString(createdBy);
+    const role = cleanString(roleRaw).toUpperCase();
+    const isAgent = role === 'AGENT';
     const id = cleanString(idRaw);
     const existing = await (this.prisma as any).warehouseStorage.findFirst({
       where: {
@@ -180,11 +182,17 @@ export class WarehouseStorageService {
     });
     if (!existing) throw new NotFoundException('Warehouse storage not found');
 
-    await this.writeOperation('DELETE', data?.txHash, id, cleanString((existing as any)?.containerInventoryKey), {
+    await this.writeOperation(isAgent ? 'CONSUME' : 'DELETE', data?.txHash, id, cleanString((existing as any)?.containerInventoryKey), {
       warehouseId: cleanString((existing as any)?.warehouseId),
       storageTime: new Date().toISOString(),
       conditions: cleanString((existing as any)?.conditions),
     });
+    if (isAgent) {
+      await (this.prisma as any).container.update({
+        where: { inventoryKey: cleanString((existing as any)?.containerInventoryKey) },
+        data: { status: 'CONSUMED' } as any,
+      });
+    }
     await (this.prisma as any).warehouseStorage.delete({
       where: { id },
     });

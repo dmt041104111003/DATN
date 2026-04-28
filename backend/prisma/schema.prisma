@@ -149,6 +149,7 @@ enum ProductionStage {
 enum ContainerStage {
   CREATE
   UPDATE
+  CONSUMED
 }
 
 model RecordOperation {
