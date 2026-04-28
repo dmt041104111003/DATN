@@ -20,10 +20,10 @@ export function QrScanResourcePage() {
   const { permissions } = usePermissions();
   const role = cleanString(permissions).toUpperCase();
   const isAgent = role === "AGENT";
-  const [scanType, setScanType] = React.useState(isAgent ? "CONSUME" : "WAREHOUSE_IN");
+  const [scanType, setScanType] = React.useState("WAREHOUSE_IN");
   const { busy, statusText, statusError, warehouseId, setWarehouseId, warehouseChoices, insertFromQr, consumeFromQr } = useQrScanPage();
   const scanTypeChoices = isAgent
-    ? QR_SCAN_TYPE_CHOICES.filter((x) => x.id === "CONSUME")
+    ? QR_SCAN_TYPE_CHOICES
     : QR_SCAN_TYPE_CHOICES.filter((x) => x.id === "WAREHOUSE_IN");
 
   return (

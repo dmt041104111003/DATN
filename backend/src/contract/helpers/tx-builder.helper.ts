@@ -167,9 +167,13 @@ export class TxBuilderHelper {
 
     for (const { productName, metadata } of products) {
       const referenceUnit = policyId + CIP68_100(stringToHex(productName));
-      const referenceUtxo = await this.getAddressUTXOAsset(contractAddress, referenceUnit);
+      const referenceUtxos = await this.blockfrostProvider.fetchAddressUTxOs(contractAddress, referenceUnit);
+      const referenceUtxo = referenceUtxos.length > 0 ? referenceUtxos[referenceUtxos.length - 1] : null;
       if (!referenceUtxo) {
-        throw new Error(`Vault deposit for agri lot "${productName}" was not found.`);
+        const ownersRaw = owners.map((x) => String(x || '').trim()).filter(Boolean).join(',');
+        throw new Error(
+          `Vault deposit not found. productName=${productName}; policyId=${policyId}; contractAddress=${contractAddress}; referenceUnit=${referenceUnit}; owners=${ownersRaw}; utxoCount=${referenceUtxos.length}`,
+        );
       }
       unsignedTx
         .spendingPlutusScriptV3()

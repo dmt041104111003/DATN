@@ -61,6 +61,69 @@ export class ContractService {
     return await deserializeDatum(datumHex.startsWith('0x') ? datumHex.slice(2) : datumHex);
   }
 
+  private blockfrostBaseUrl(): string {
+    const network = String(process.env.APP_NETWORK || 'preprod').trim().toLowerCase();
+    if (network === 'mainnet') return 'https://cardano-mainnet.blockfrost.io/api/v0';
+    if (network === 'preview') return 'https://cardano-preview.blockfrost.io/api/v0';
+    return 'https://cardano-preprod.blockfrost.io/api/v0';
+  }
+
+  private parseOwners(raw: unknown): string[] {
+    if (Array.isArray(raw)) return raw.map((x) => String(x || '').trim()).filter(Boolean);
+    const text = String(raw || '').trim();
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed.map((x) => String(x || '').trim()).filter(Boolean);
+    } catch {}
+    return [];
+  }
+
+  private parseOwnersFromMetadata(metadata: any): string[] {
+    const fromOwners = this.parseOwners(metadata?.owners);
+    if (fromOwners.length > 0) return fromOwners;
+    return this.parseOwners(metadata?.participant_wallet_addresses);
+  }
+
+  private async loadOwnersFromInventoryKey(inventoryKey: string): Promise<string[]> {
+    const unit = String(inventoryKey || '').trim().toLowerCase();
+    const apiKey = String(process.env.BLOCKFROST_API_KEY || '').trim();
+    if (!unit || !apiKey) return [];
+    const txRes = await fetch(
+      `${this.blockfrostBaseUrl()}/assets/${encodeURIComponent(unit)}/transactions?count=1&page=1&order=desc`,
+      { headers: { project_id: apiKey } },
+    );
+    if (txRes.status !== 200) return [];
+    const txRows = (await txRes.json().catch(() => [])) as any[];
+    const txHash = String(txRows?.[0]?.tx_hash || '').trim();
+    if (!txHash) return [];
+    const utxoRes = await fetch(
+      `${this.blockfrostBaseUrl()}/txs/${encodeURIComponent(txHash)}/utxos`,
+      { headers: { project_id: apiKey } },
+    );
+    if (utxoRes.status !== 200) return [];
+    const utxos = (await utxoRes.json().catch(() => null)) as any;
+    const outputs = Array.isArray(utxos?.outputs) ? utxos.outputs : [];
+    for (let i = 0; i < outputs.length; i += 1) {
+      const output = outputs[i];
+      const amounts = Array.isArray(output?.amount) ? output.amount : [];
+      let hasUnit = false;
+      for (let j = 0; j < amounts.length; j += 1) {
+        if (String(amounts[j]?.unit || '').trim().toLowerCase() === unit) {
+          hasUnit = true;
+          break;
+        }
+      }
+      if (!hasUnit) continue;
+      const datumHex = String(output?.inline_datum || '').trim();
+      if (!datumHex) continue;
+      const metadata = (await deserializeDatum(datumHex.startsWith('0x') ? datumHex.slice(2) : datumHex)) as any;
+      const owners = this.parseOwnersFromMetadata(metadata);
+      if (owners.length > 0) return Array.from(new Set(owners));
+    }
+    return [];
+  }
+
 
   private stringifyMetadata(metadata: Record<string, string> | undefined) {
     const out: Record<string, string> = {};
@@ -112,7 +175,15 @@ export class ContractService {
     if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
     if (owners.length === 0) throw new BadRequestException('owners is required.');
 
-    const onchain = await this.loadOnchainMetadata(owners, inventoryKey);
+    let ownersForSave = owners;
+    let onchain = await this.loadOnchainMetadata(ownersForSave, inventoryKey);
+    if (!onchain) {
+      const fallbackOwners = await this.loadOwnersFromInventoryKey(inventoryKey);
+      if (fallbackOwners.length > 0) {
+        ownersForSave = fallbackOwners;
+        onchain = await this.loadOnchainMetadata(ownersForSave, inventoryKey);
+      }
+    }
     const merged: Record<string, string> = {};
     for (const [k, v] of Object.entries(onchain || {})) {
       merged[String(k)] = String(v ?? '').trim();
@@ -125,7 +196,7 @@ export class ContractService {
     if (!code) throw new BadRequestException('Unable to decode asset name from inventoryKey.');
     merged.production_code = merged.production_code || code;
 
-    const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, owners, [
+    const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, ownersForSave, [
       { productName: code, metadata: merged },
     ]);
     return { result: true, data: unsignedTx, message: 'Contract refresh record prepared.' };

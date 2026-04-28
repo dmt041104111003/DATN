@@ -1,5 +1,6 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
+import { formatProductionRefInline } from "@/features/core/metadata/share/formatProductionRefInline";
 
 export async function updateWarehouseStorageInOnchain(params: any, deps: any) {
   const { owner } = await deps.getSessionOwner();
@@ -18,15 +19,14 @@ export async function updateWarehouseStorageInOnchain(params: any, deps: any) {
   const gpsTriple = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const updatePayload = { ...(params.previousData || {}), ...(params.data || {}), location: gpsTriple };
   const owners = deps.buildOwnerList(containerRow || updatePayload, owner);
-  const inventoryKey = deps.cleanString(
-    updatePayload?.productionInventoryKey || containerRow?.productionInventoryKey || containerInventoryKey,
-  );
+  const inventoryKey = containerInventoryKey;
   const metadata = {
     ...deps.buildMappedMetadata({
       storage_op: "UPDATE",
       warehouse_id: updatePayload?.warehouseId || params.previousData?.warehouseId,
-      container_inventory_key:
+      container_ref_inline: formatProductionRefInline(
         updatePayload?.containerInventoryKey || updatePayload?.productId || params.previousData?.containerInventoryKey,
+      ),
       current_location: updatePayload?.location || params.previousData?.location,
       storage_created_at:
         deps.cleanString(params.previousData?.createdAt || updatePayload?.createdAt) || new Date().toISOString(),

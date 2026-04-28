@@ -1,5 +1,6 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
+import { formatProductionRefInline } from "@/features/core/metadata/share/formatProductionRefInline";
 
 export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any) {
   const { me, owner } = await deps.getSessionOwner();
@@ -17,16 +18,15 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
   const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const base = params.previousData || {};
   const owners = deps.buildOwnerList(containerRow || base, owner);
-  const inventoryKey = deps.cleanString(
-    (base as any)?.productionInventoryKey || containerRow?.productionInventoryKey || containerInventoryKey,
-  );
+  const inventoryKey = containerInventoryKey;
   const metadata = {
     ...deps.buildMappedMetadata({
       storage_op: isAgent ? "CONSUMED" : "OUT",
       container_status: isAgent ? "CONSUMED" : "UPDATE",
       warehouse_id: (base as any)?.warehouseId,
-      container_inventory_key:
+      container_ref_inline: formatProductionRefInline(
         (base as any)?.containerInventoryKey || (base as any)?.productId,
+      ),
       current_location: location,
       storage_created_at: deps.cleanString((base as any)?.createdAt) || new Date().toISOString(),
       storage_updated_at: new Date().toISOString(),
