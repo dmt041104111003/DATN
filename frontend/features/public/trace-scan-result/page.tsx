@@ -3,42 +3,11 @@
 import * as React from "react";
 import { Alert, Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import Link from "next/link";
-import { getDistrictOptions, getProvinceOptions, getWardOptions } from "@/features/resources/shared/location";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
-}
-
-function normalizeTriple(raw: unknown) {
-  const parts = cleanString(raw)
-    .split(",")
-    .map((x) => cleanString(x))
-    .filter(Boolean);
-  if (parts.length < 3) return "";
-  return `${parts[0]}, ${parts[1]}, ${parts[2]}`;
-}
-
-function parseTripleList(raw: unknown): string[] {
-  const text = cleanString(raw);
-  if (!text) return [];
-  return text
-    .split(";")
-    .map((x) => normalizeTriple(x))
-    .filter(Boolean);
-}
-
-function parseWalletList(raw: unknown): string[] {
-  if (Array.isArray(raw)) return raw.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
-  const text = cleanString(raw);
-  if (!text) return [];
-  try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed)) return parsed.map((x) => cleanString(x).toLowerCase()).filter(Boolean);
-  } catch {}
-  const matched = text.match(/addr_[a-z0-9]+/gi) || [];
-  return Array.from(new Set(matched.map((x) => cleanString(x).toLowerCase()).filter(Boolean)));
 }
 
 type TraceView = {
@@ -47,20 +16,15 @@ type TraceView = {
   containerType: string;
   capacityKg: string;
   actualCapacityKg: string;
-  points: string[];
+  points: Array<{ name: string; walletAddress: string; location: string }>;
   matchedIndex: number;
-};
-
-type PointView = {
-  idTriple: string;
-  label: string;
+  productionMetadata: Record<string, unknown> | null;
 };
 
 export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryKey: string }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [trace, setTrace] = React.useState<TraceView | null>(null);
-  const [pointViews, setPointViews] = React.useState<PointView[]>([]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -74,15 +38,22 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         if (!res.ok) throw new Error("Không gọi được API trace.");
         const json = (await res.json()) as any;
         const lotPassport = (json?.lotPassport || {}) as Record<string, unknown>;
-        const points = parseTripleList(lotPassport.participant_location_labels);
-        const wallets = parseWalletList(lotPassport.participant_wallet_addresses);
+        const points: Array<{ name: string; walletAddress: string; location: string }> = Array.isArray(json?.points)
+          ? json.points
+              .map((x: any) => ({
+                name: cleanString(x?.name),
+                walletAddress: cleanString(x?.walletAddress).toLowerCase(),
+                location: cleanString(x?.location),
+              }))
+              .filter((x: any) => x.walletAddress)
+          : [];
         const latestSignerWallet = cleanString(json?.latestSignerWallet).toLowerCase();
         if (!points.length) {
-          throw new Error(cleanString(json?.message) || "Không có participant_location_labels để vẽ point.");
+          throw new Error(cleanString(json?.message) || "Không có dữ liệu point.");
         }
         const signerIndex =
-          latestSignerWallet && wallets.length
-            ? wallets.findIndex((w) => w === latestSignerWallet)
+          latestSignerWallet && points.length
+            ? points.findIndex((p) => p.walletAddress === latestSignerWallet)
             : -1;
         const matchedIndex = signerIndex >= 0 && signerIndex < points.length ? signerIndex : -1;
         const containerTitle = cleanString(lotPassport.product_name) || "Chưa có tên sản phẩm";
@@ -90,6 +61,10 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         const containerType = cleanString(lotPassport.container_type);
         const capacityKg = cleanString(lotPassport.capacity_kg);
         const actualCapacityKg = cleanString(lotPassport.actual_capacity_kg);
+        const productionMetadata =
+          json?.productionMetadata && typeof json.productionMetadata === "object"
+            ? (json.productionMetadata as Record<string, unknown>)
+            : null;
         if (!mounted) return;
         setTrace({
           containerTitle,
@@ -99,6 +74,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
           actualCapacityKg,
           points,
           matchedIndex,
+          productionMetadata,
         });
       } catch (e) {
         if (!mounted) return;
@@ -113,43 +89,6 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
       mounted = false;
     };
   }, [inventoryKey]);
-
-  React.useEffect(() => {
-    let mounted = true;
-    const toLabel = async (triple: string): Promise<PointView> => {
-      const parts = cleanString(triple).split(",").map((x) => cleanString(x));
-      const provinceId = parts[0] || "";
-      const districtId = parts[1] || "";
-      const wardId = parts[2] || "";
-      if (!provinceId || !districtId || !wardId) {
-        return { idTriple: triple, label: triple };
-      }
-      try {
-        const provinces = await getProvinceOptions();
-        const provinceName = provinces.find((x) => cleanString(x.id) === provinceId)?.name || provinceId;
-        const districts = await getDistrictOptions(provinceId);
-        const districtName = districts.find((x) => cleanString(x.id) === districtId)?.name || districtId;
-        const wards = await getWardOptions(districtId);
-        const wardName = wards.find((x) => cleanString(x.id) === wardId)?.name || wardId;
-        return { idTriple: triple, label: `${wardName}, ${districtName}, ${provinceName}` };
-      } catch {
-        return { idTriple: triple, label: triple };
-      }
-    };
-
-    const loadLabels = async () => {
-      if (!trace?.points?.length) {
-        if (mounted) setPointViews([]);
-        return;
-      }
-      const labels = await Promise.all(trace.points.map((p) => toLabel(p)));
-      if (mounted) setPointViews(labels);
-    };
-    void loadLabels();
-    return () => {
-      mounted = false;
-    };
-  }, [trace]);
 
   return (
     <Box sx={{ maxWidth: 860, mx: "auto", p: 2 }}>
@@ -168,6 +107,9 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                   {trace.containerTitle}
                 </Typography>
                 <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 1, px: 1.5, py: 1 }}>
+                <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
+                        Thông tin thùng hàng
+                      </Typography>
                   <Typography variant="body2">
                     Mã thùng: {trace.containerCode || "-"}
                   </Typography>
@@ -180,13 +122,46 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                   <Typography variant="body2">
                     Sản lượng thực tế: {trace.actualCapacityKg || "-"}
                   </Typography>
+                  {trace.productionMetadata ? (
+                    <>
+                      <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
+                        Thông tin vụ mùa
+                      </Typography>
+                      <Typography variant="body2">
+                        Mã vụ mùa: {cleanString(trace.productionMetadata.production_code) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Cơ sở: {cleanString(trace.productionMetadata.facility) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Vị trí: {cleanString(trace.productionMetadata.location) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Phương thức: {cleanString(trace.productionMetadata.farming_method) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Ngày gieo: {cleanString(trace.productionMetadata.seeding_date) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Ngày thu hoạch: {cleanString(trace.productionMetadata.harvest_date) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Sản lượng: {cleanString(trace.productionMetadata.actual_yield_kg) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Loại cây: {cleanString(trace.productionMetadata.crop_type) || "-"}
+                      </Typography>
+                      <Typography variant="body2">
+                        Giống: {cleanString(trace.productionMetadata.variety) || "-"}
+                      </Typography>
+                    </>
+                  ) : null}
                 </Box>
                 {trace.points.map((point, index) => {
                   const active = trace.matchedIndex >= 0 && index <= trace.matchedIndex;
                   const lineActive = trace.matchedIndex >= 0 && index < trace.matchedIndex;
-                  const pointLabel = pointViews[index]?.label || point;
                   return (
-                    <Box key={`${point}-${index}`} sx={{ display: "flex", alignItems: "stretch", minHeight: 36 }}>
+                    <Box key={`${point.walletAddress}-${index}`} sx={{ display: "flex", alignItems: "stretch", minHeight: 52 }}>
                       <Box sx={{ width: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
                         <Box
                           sx={{
@@ -211,7 +186,15 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
                         ) : null}
                       </Box>
                       <Box sx={{ pl: 1, pb: 0.5 }}>
-                        <Typography variant="body2">{pointLabel}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {point.name || "Chưa có tên"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ display: "block", wordBreak: "break-all" }}>
+                          {point.walletAddress}
+                        </Typography>
+                        <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+                          {point.location || "-"}
+                        </Typography>
                       </Box>
                     </Box>
                   );

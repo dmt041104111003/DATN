@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { BlockFrostAPI, BlockfrostServerError } from '@blockfrost/blockfrost-js';
 import * as cbor from 'cbor';
 import { deserializeDatum } from '../utils/deserialize-datum';
+import { PrismaService } from '../prisma/prisma.service';
 
 const POLICY_ID_HEX_LEN = 56;
 const CIP68_100_PREFIX = '000643b0';
 const CIP68_222_PREFIX = '000de140';
+const HEX_RE = /^[0-9a-f]+$/i;
 
 function buildNativeAssetUnitCandidates(inventoryKey: string): string[] {
   const raw = (inventoryKey || '').trim();
@@ -52,6 +54,8 @@ function isAssetNotFoundError(err: unknown): boolean {
 
 export interface TraceResult {
   lotPassport: Record<string, unknown>;
+  productionMetadata?: Record<string, unknown> | null;
+  points?: Array<{ name: string; walletAddress: string; location: string }>;
   latestSignerWallet?: string | null;
   message?: string;
 }
@@ -74,6 +78,15 @@ export class TraceService {
     } catch {}
     return (text.match(/addr_[a-z0-9]+/gi) || [])
       .map((x) => String(x || '').trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  private parseParticipantLocations(raw: unknown): string[] {
+    const text = String(raw || '').trim();
+    if (!text) return [];
+    return text
+      .split(';')
+      .map((x) => String(x || '').trim())
       .filter(Boolean);
   }
 
@@ -118,7 +131,46 @@ export class TraceService {
     }
   }
 
-  constructor() {
+  private parseProductionRefInline(value: unknown): { policyId: string; assetName: string } | null {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const dot = raw.indexOf('.');
+    if (dot <= 0) return null;
+    const policyId = raw.slice(0, dot).trim().toLowerCase();
+    const assetName = raw.slice(dot + 1).trim();
+    if (!policyId || !assetName || policyId.length !== POLICY_ID_HEX_LEN || !HEX_RE.test(policyId)) return null;
+    return { policyId, assetName };
+  }
+
+  private encodeRefUnit(policyId: string, assetName: string): string {
+    const policy = String(policyId || '').trim().toLowerCase();
+    const name = String(assetName || '').trim();
+    if (!policy || !name || policy.length !== POLICY_ID_HEX_LEN || !HEX_RE.test(policy)) return '';
+    const assetHex = Buffer.from(name, 'utf8').toString('hex').toLowerCase();
+    return `${policy}${CIP68_100_PREFIX}${assetHex}`;
+  }
+
+  private async readLatestMetadataByUnit(unit: string): Promise<Record<string, unknown> | null> {
+    const refs = await this.blockfrost.assetsTransactions(unit, { count: 1, page: 1, order: 'desc' as any });
+    const latestTxHash = String(refs?.[0]?.tx_hash || '').trim();
+    if (!latestTxHash) return null;
+    const utxos = await this.blockfrost.txsUtxos(latestTxHash);
+    const outputs = Array.isArray(utxos?.outputs) ? utxos.outputs : [];
+    const outputWithDatum = outputs.find((o: any) => {
+      const datum = String(o?.inline_datum || '').trim();
+      const amounts = Array.isArray(o?.amount) ? o.amount : [];
+      if (!datum) return false;
+      for (let i = 0; i < amounts.length; i += 1) {
+        if (String(amounts[i]?.unit || '').trim().toLowerCase() === String(unit).toLowerCase()) return true;
+      }
+      return false;
+    });
+    const rawDatum = String(outputWithDatum?.inline_datum || '').trim();
+    if (!rawDatum) return null;
+    return (await deserializeDatum(rawDatum)) as Record<string, unknown>;
+  }
+
+  constructor(private readonly prisma: PrismaService) {
     const projectId = process.env.BLOCKFROST_API_KEY || '';
     if (!projectId) {
       throw new Error('BLOCKFROST_API_KEY is not set');
@@ -132,6 +184,34 @@ export class TraceService {
       projectId,
       network,
     });
+  }
+
+  private async buildPointDetails(lotPassport: Record<string, unknown>) {
+    const wallets = this.parseParticipantWallets(lotPassport?.participant_wallet_addresses);
+    const locations = this.parseParticipantLocations(lotPassport?.participant_location_labels);
+    const uniqueWallets = Array.from(new Set(wallets));
+    const users = uniqueWallets.length
+      ? await (this.prisma as any).user.findMany({
+          where: { address: { in: uniqueWallets } },
+          select: { address: true, displayName: true },
+        })
+      : [];
+    const userNameByAddress = new Map<string, string>();
+    for (let i = 0; i < users.length; i += 1) {
+      const row = users[i] as any;
+      const address = String(row?.address || '').trim().toLowerCase();
+      const name = String(row?.displayName || '').trim();
+      if (address) userNameByAddress.set(address, name);
+    }
+    const points: Array<{ name: string; walletAddress: string; location: string }> = [];
+    for (let i = 0; i < wallets.length; i += 1) {
+      const walletAddress = String(wallets[i] || '').trim().toLowerCase();
+      if (!walletAddress) continue;
+      const location = String(locations[i] || '').trim();
+      const name = userNameByAddress.get(walletAddress) || '';
+      points.push({ name, walletAddress, location });
+    }
+    return points;
   }
 
   private async resolveBlockfrostAssetUnit(
@@ -206,7 +286,20 @@ export class TraceService {
         lotPassport?.participant_wallet_addresses,
       );
       const latestSignerWallet = this.extractLatestSignerWallet(utxos, participantWallets);
-      return { lotPassport, latestSignerWallet };
+      const points = await this.buildPointDetails(lotPassport);
+      let productionMetadata: Record<string, unknown> | null = null;
+      const productionRef = this.parseProductionRefInline(lotPassport?.production_ref_inline);
+      if (productionRef) {
+        const productionUnit = this.encodeRefUnit(productionRef.policyId, productionRef.assetName);
+        if (productionUnit) {
+          try {
+            productionMetadata = await this.readLatestMetadataByUnit(productionUnit);
+          } catch {
+            productionMetadata = null;
+          }
+        }
+      }
+      return { lotPassport, productionMetadata, points, latestSignerWallet };
     } catch (err) {
       console.error(`Error processing latest record ${latestTxHash}:`, err);
       return {
