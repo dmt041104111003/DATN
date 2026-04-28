@@ -71,18 +71,12 @@ export function middleware(req: NextRequest) {
 
   if (isSetupPath) {
     if (!token) return NextResponse.redirect(new URL("/", req.url));
-    if (profileId) {
-      return NextResponse.redirect(new URL(roleHome, req.url));
-    }
+    if (profileId) return NextResponse.redirect(new URL(roleHome, req.url));
     return NextResponse.next();
   }
 
   if (isRolePath) {
     if (!token) return NextResponse.redirect(new URL("/", req.url));
-    if (!profileId) return NextResponse.redirect(new URL(APP_ADMIN_SETUP, req.url));
-    if (!pathname.startsWith(roleHome)) {
-      return NextResponse.redirect(new URL(roleHome, req.url));
-    }
     return NextResponse.next();
   }
 
