@@ -44,8 +44,7 @@ export class AuthService {
   }
 
   async generateNonce(stakeAddress: string): Promise<string> {
-    const network = this.config.get<string>('APP_NETWORK') === 'mainnet' ? 'mainnet' : 'preprod';
-    const input = this.normalizeStakeAddress(stakeAddress, network);
+    const input = this.normalizeStakeAddress(stakeAddress);
 
     if (!this.isSupportedAddress(input)) {
       throw new BadRequestException(
@@ -79,8 +78,7 @@ export class AuthService {
     signature: string;
     key: string;
   }) {
-    const network = this.config.get<string>('APP_NETWORK') === 'mainnet' ? 'mainnet' : 'preprod';
-    const input = this.normalizeStakeAddress(data.stakeAddress, network);
+    const input = this.normalizeStakeAddress(data.stakeAddress);
 
     if (!this.isSupportedAddress(input)) {
       throw new BadRequestException(
@@ -111,7 +109,7 @@ export class AuthService {
       data: { usedAt: new Date() } as any,
     });
 
-    const paymentAddr = await this.resolvePaymentAddress(input, network);
+    const paymentAddr = await this.resolvePaymentAddress(input);
     if (!this.isPaymentAddress(paymentAddr)) {
       throw new BadRequestException(
         `Could not resolve to a payment address. Please provide a payment address (addr... / addr_test...), or configure BLOCKFROST_API_KEY to resolve stake -> payment. Received: ${data.stakeAddress}`,
@@ -147,10 +145,6 @@ export class AuthService {
     }
 
     if (!account?.roleCode) {
-      const roles = await (this.prisma as any).role.findMany({
-        orderBy: { code: 'asc' },
-        select: { code: true, name: true },
-      });
       const setupPayload = {
         sub: paymentAddr,
         stakeAddress: input,
@@ -161,11 +155,7 @@ export class AuthService {
 
       return {
         needProfile: true,
-        roles: (Array.isArray(roles) ? roles : []).map((r, idx) => ({
-          id: idx + 1,
-          code: r.code,
-          name: r.name ?? null,
-        })),
+        roles: await this.getRoles(),
         token: setupToken,
       };
     }
@@ -201,7 +191,7 @@ export class AuthService {
     };
   }
 
-  private normalizeStakeAddress(address: string, _network: 'mainnet' | 'preprod'): string {
+  private normalizeStakeAddress(address: string): string {
     const raw = (address || '').trim();
     if (!raw) return raw;
 
@@ -235,8 +225,8 @@ export class AuthService {
     );
   }
 
-  private async resolvePaymentAddress(input: string, network: 'mainnet' | 'preprod'): Promise<string> {
-    const addr = this.normalizeStakeAddress(input, network);
+  private async resolvePaymentAddress(input: string): Promise<string> {
+    const addr = this.normalizeStakeAddress(input);
     if (this.isPaymentAddress(addr)) return addr;
 
     if (this.isStakeAddress(addr)) {

@@ -20,58 +20,30 @@ export interface VerifySignatureDto {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  private setAuthCookie(res: Response, token: string) {
+  private cookieConfig(maxAge: number) {
     const sameSite =
       (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
     const secure =
       (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
         ? true
         : process.env.NODE_ENV === 'production';
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure,
-      sameSite,
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    return { httpOnly: true, secure, sameSite, path: '/', maxAge };
+  }
+
+  private setAuthCookie(res: Response, token: string) {
+    res.cookie('auth_token', token, this.cookieConfig(7 * 24 * 60 * 60 * 1000));
   }
 
   private clearAuthCookie(res: Response) {
-    const sameSite =
-      (process.env.COOKIE_SAMESITE as any) || ('lax' as 'lax' | 'strict' | 'none');
-    const secure =
-      (process.env.COOKIE_SECURE || '').toLowerCase() === 'true'
-        ? true
-        : process.env.NODE_ENV === 'production';
-    res.cookie('auth_token', '', {
-      httpOnly: true,
-      secure,
-      sameSite,
-      path: '/',
-      maxAge: 0,
-    });
+    res.cookie('auth_token', '', this.cookieConfig(0));
   }
 
   @Post('nonce')
   async createNonce(@Body() body: CreateNonceDto) {
-    try {
-      const addr = this.normalizeAddress(body.stakeAddress);
-      
-      if (!addr) {
-        throw new HttpException('Missing stakeAddress', HttpStatus.BAD_REQUEST);
-      }
-
-      const nonce = await this.authService.generateNonce(addr);
-      return { nonce };
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Internal server error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const addr = this.normalizeAddress(body.stakeAddress);
+    if (!addr) throw new HttpException('Missing stakeAddress', HttpStatus.BAD_REQUEST);
+    const nonce = await this.authService.generateNonce(addr);
+    return { nonce };
   }
 
   @Post('verify')
@@ -79,29 +51,21 @@ export class AuthController {
     @Body() body: VerifySignatureDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    try {
-      const addr = this.normalizeAddress(body.stakeAddress);
-      
-      if (!addr || !body.nonce || !body.signature || !body.key) {
-        throw new HttpException('Missing authentication parameters', HttpStatus.BAD_REQUEST);
-      }
-
-      const result = await this.authService.verifyAndIssueToken({
-        stakeAddress: addr,
-        nonce: body.nonce,
-        signature: body.signature,
-        key: body.key,
-      });
-      if (result?.token && typeof result.token === 'string') {
-        this.setAuthCookie(res, result.token);
-      }
-      return result;
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    const addr = this.normalizeAddress(body.stakeAddress);
+    if (!addr || !body.nonce || !body.signature || !body.key) {
+      throw new HttpException('Missing authentication parameters', HttpStatus.BAD_REQUEST);
     }
+
+    const result = await this.authService.verifyAndIssueToken({
+      stakeAddress: addr,
+      nonce: body.nonce,
+      signature: body.signature,
+      key: body.key,
+    });
+    if (result?.token && typeof result.token === 'string') {
+      this.setAuthCookie(res, result.token);
+    }
+    return result;
   }
 
   @Post('logout')
@@ -141,7 +105,6 @@ export class AuthController {
     };
   }
 
-  // Helper function to normalize address input
   private normalizeAddress(input: StakeAddressDtoInput): string | null {
     if (typeof input === 'string') {
       const trimmed = input.trim();
