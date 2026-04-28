@@ -28,11 +28,12 @@ export function ContainerResourceEdit() {
         }
         const hasParticipantRows = Array.isArray(data?.participantRows) && data.participantRows.length > 0;
         const participants = hasParticipantRows ? buildParticipantPayload(data?.participantRows) : null;
+        if (!participants) return { ...data };
         return {
           ...data,
-          participantWalletAddresses: participants ? participants.participantWalletAddresses : data?.participantWalletAddresses,
-          participantLocationLabels: participants ? participants.participantLocationLabels : data?.participantLocationLabels,
-          participantRows: participants ? participants.participantRows : data?.participantRows,
+          participantWalletAddresses: participants.participantWalletAddresses,
+          participantLocationLabels: participants.participantLocationLabels,
+          participantRows: participants.participantRows,
         };
       }}
     >
