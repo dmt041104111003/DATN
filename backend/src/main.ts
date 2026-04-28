@@ -10,6 +10,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    exposedHeaders: ['Content-Range', 'X-Total-Count'],
   });
 
   // Global validation pipe

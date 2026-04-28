@@ -102,10 +102,18 @@ export const adminDataProvider: DataProvider = {
     }
     const url = `${BACKEND_URL}/${resource}${query && query.size ? `?${query.toString()}` : ""}`;
     const { json } = await httpClient(url, { method: "GET" });
-    const rows = Array.isArray(json) ? json : [];
+    const payload = (json as any) || {};
+    const rows = Array.isArray(payload) ? payload : Array.isArray(payload.data) ? payload.data : [];
+    const totalFromPayload = Number(payload.total);
+    const total = Number.isFinite(totalFromPayload) ? totalFromPayload : rows.length;
+    const page = Number(params.pagination?.page || 1);
+    const perPage = Number(params.pagination?.perPage || rows.length || 1);
+    const start = (page - 1) * perPage;
+    const end = start + perPage;
+    const pagedRows = rows.slice(start, end);
     return {
-      data: (rows || []).map((row: any) => ({ ...row, id: resolveId(row) })),
-      total: rows.length,
+      data: (pagedRows || []).map((row: any) => ({ ...row, id: resolveId(row) })),
+      total,
     };
   },
   async getOne(resource, params) {

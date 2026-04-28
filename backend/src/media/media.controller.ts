@@ -22,19 +22,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class MediaController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async upload(
-    @Req() _req: any,
-    @UploadedFile() file: any,
-    @Body() body: { name?: string; mimeType?: string },
-  ) {
+  async upload(@Req() _req: any, @UploadedFile() file: any, @Body() _body: any) {
     if (!file) {
       throw new HttpException('File is required', HttpStatus.BAD_REQUEST);
     }
 
     const PINATA_API_KEY = process.env.PINATA_API_KEY;
     const PINATA_SECRET_KEY = process.env.PINATA_SECRET_KEY;
-    const PINATA_GATEWAY =
-      process.env.PINATA_GATEWAY || process.env.NEXT_PUBLIC_PINATA_GATEWAY;
 
     if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
       throw new HttpException(
@@ -71,19 +65,10 @@ export class MediaController {
     }
 
     const ipfsHash = data.IpfsHash;
-    const url = PINATA_GATEWAY
-      ? `https://${PINATA_GATEWAY}/ipfs/${ipfsHash}`
-      : `https://ipfs.io/ipfs/${ipfsHash}`;
-
-    const name = (body.name || file.originalname || 'Lot image').trim();
-    const mimeType = (body.mimeType || file.mimetype || 'image/*').trim();
 
     return {
       ipfsHash,
-      url,
       ipfsUri: `ipfs://${ipfsHash}`,
-      mimeType,
-      name,
     };
   }
 }
