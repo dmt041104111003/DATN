@@ -22,70 +22,6 @@ function formatDateTimeVi(value: unknown) {
   return date.toLocaleString("vi-VN");
 }
 
-function formatDateVi(value: unknown) {
-  const raw = cleanString(value);
-  if (!raw) return "-";
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return raw;
-  return date.toLocaleDateString("vi-VN");
-}
-
-function formatAny(value: unknown) {
-  if (value === null || value === undefined) return "-";
-  if (Array.isArray(value)) return value.join(", ");
-  if (typeof value === "object") return JSON.stringify(value);
-  const text = cleanString(value);
-  return text || "-";
-}
-
-function MetadataDetail({ item }: { item: HistoryItem }) {
-  const metadata = item.metadata || {};
-  const farmingMethodRaw = cleanString(metadata.farming_method).toUpperCase();
-  const farmingMethod =
-    farmingMethodRaw === "OUTDOOR" ? "Ngoài trời" : farmingMethodRaw === "HYDROPONIC" ? "Thủy canh" : cleanString(metadata.farming_method) || "-";
-
-  return (
-    <Box sx={{ mt: 1, p: 1, bgcolor: "#f8fafc", borderRadius: 1 }}>
-      {item.source === "CONTAINER" ? (
-        <>
-          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-            Thông tin thùng hàng
-          </Typography>
-          <Typography variant="body2">Mã thùng: {formatAny(metadata.container_code)}</Typography>
-          <Typography variant="body2">Loại thùng: {formatAny(metadata.container_type)}</Typography>
-          <Typography variant="body2">Sản lượng dự kiến (kg): {formatAny(metadata.capacity_kg)}</Typography>
-          <Typography variant="body2">Sản lượng thực tế (kg): {formatAny(metadata.actual_capacity_kg)}</Typography>
-          <Typography variant="body2">Thời gian tiêu thụ: {formatDateTimeVi(metadata.storage_updated_at)}</Typography>
-        </>
-      ) : (
-        <>
-          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-            Thông tin vụ mùa
-          </Typography>
-          <Typography variant="body2">Mã vụ mùa: {formatAny(metadata.production_code)}</Typography>
-          <Typography variant="body2">Cơ sở: {formatAny(metadata.facility)}</Typography>
-          <Typography variant="body2">Vị trí: {formatAny(metadata.location)}</Typography>
-          <Typography variant="body2">Phương thức: {farmingMethod}</Typography>
-          <Typography variant="body2">Ngày gieo: {formatDateVi(metadata.seeding_date)}</Typography>
-          <Typography variant="body2">Ngày thu hoạch: {formatDateVi(metadata.harvest_date)}</Typography>
-          <Typography variant="body2">Sản lượng (kg): {formatAny(metadata.actual_yield_kg)}</Typography>
-          <Typography variant="body2">Loại cây: {formatAny(metadata.crop_type)}</Typography>
-          <Typography variant="body2">Giống: {formatAny(metadata.variety)}</Typography>
-        </>
-      )}
-      <Typography variant="body2" sx={{ mt: 1, fontWeight: 700 }}>
-        Metadata đầy đủ
-      </Typography>
-      {Object.keys(metadata).map((key) => (
-        <Typography key={key} variant="body2">
-          {key}: {formatAny(metadata[key])}
-        </Typography>
-      ))}
-      {Object.keys(metadata).length === 0 ? <Typography variant="body2">-</Typography> : null}
-    </Box>
-  );
-}
-
 type HistoryResponse = {
   items: HistoryItem[];
   total: number;
@@ -192,7 +128,9 @@ export default function TraceHistory({
                   {item.txHash}
                 </Typography>
                 {isOpen ? (
-                  <MetadataDetail item={item} />
+                  <Box sx={{ mt: 1, p: 1, bgcolor: "#f8fafc", borderRadius: 1, overflowX: "auto" }}>
+                    <pre style={{ margin: 0, fontSize: 12 }}>{JSON.stringify(item.metadata || {}, null, 2)}</pre>
+                  </Box>
                 ) : null}
               </Box>
             );

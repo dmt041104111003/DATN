@@ -81,7 +81,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
             : -1;
         const matchedIndex = signerIndex >= 0 && signerIndex < points.length ? signerIndex : -1;
         const containerTitle = cleanString(lotPassport.product_name) || "Chưa có tên sản phẩm";
-        const statusRaw = cleanString(lotPassport.container_status || lotPassport.status).toUpperCase();
+        const statusRaw = cleanString(lotPassport.status).toUpperCase();
         const isConsumed = statusRaw === "CONSUMED";
         const consumedAt = cleanString(
           lotPassport.storage_updated_at || lotPassport.updated_at || lotPassport.storage_created_at,
