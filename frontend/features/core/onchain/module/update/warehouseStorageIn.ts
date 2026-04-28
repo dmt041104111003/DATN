@@ -15,6 +15,8 @@ export async function updateWarehouseStorageInOnchain(params: any, deps: any) {
   const containerRows = Array.isArray(containerRes?.json) ? containerRes.json : [];
   const containerRow =
     containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
+  const containerStatus = deps.cleanString(containerRow?.status).toUpperCase();
+  if (containerStatus === "CONSUMED") throw new Error("Thùng hàng đã tiêu thụ, không thể nhập kho lại.");
   const gps = await deps.captureCurrentGpsLocation();
   const gpsTriple = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const updatePayload = { ...(params.previousData || {}), ...(params.data || {}), location: gpsTriple };

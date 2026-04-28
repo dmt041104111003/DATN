@@ -14,6 +14,8 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
   const containerRows = Array.isArray(containerRes?.json) ? containerRes.json : [];
   const containerRow =
     containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
+  const containerStatus = deps.cleanString(containerRow?.status).toUpperCase();
+  if (containerStatus === "CONSUMED") throw new Error("Thùng hàng đã tiêu thụ trước đó.");
   const gps = await deps.captureCurrentGpsLocation();
   const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const base = params.previousData || {};

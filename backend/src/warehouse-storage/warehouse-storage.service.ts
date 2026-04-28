@@ -82,16 +82,19 @@ export class WarehouseStorageService {
     if (!warehouse) throw new NotFoundException('Warehouse not found');
     const container = await (this.prisma as any).container.findUnique({
       where: { inventoryKey: containerInventoryKey },
-      select: { inventoryKey: true },
+      select: { inventoryKey: true, status: true },
     });
-    if (!container) throw new NotFoundException('Container not found');
+    if (!container) throw new NotFoundException('Thùng hàng không tồn tại');
+    if (cleanString((container as any)?.status).toUpperCase() === 'CONSUMED') {
+      throw new ConflictException('Thùng hàng đã tiêu thụ, không thể nhập kho lại.');
+    }
     const duplicated = await (this.prisma as any).warehouseStorage.findFirst({
       where: { containerInventoryKey },
       select: { id: true },
     });
     if (duplicated) {
       throw new ConflictException(
-        'Container đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.',
+        'Thùng hàng đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.',
       );
     }
     const row = await (this.prisma as any).warehouseStorage.create({
@@ -137,6 +140,13 @@ export class WarehouseStorageService {
       patch.containerInventoryKey ?? (data?.containerInventoryKey || data?.productId),
     );
     if (nextContainerInventoryKey) {
+      const targetContainer = await (this.prisma as any).container.findUnique({
+        where: { inventoryKey: nextContainerInventoryKey },
+        select: { status: true },
+      });
+      if (cleanString((targetContainer as any)?.status).toUpperCase() === 'CONSUMED') {
+        throw new ConflictException('Thùng hàng đã tiêu thụ, không thể nhập kho lại.');
+      }
       const duplicated = await (this.prisma as any).warehouseStorage.findFirst({
         where: {
           containerInventoryKey: nextContainerInventoryKey,
@@ -146,7 +156,7 @@ export class WarehouseStorageService {
       });
       if (duplicated) {
         throw new ConflictException(
-          'Container đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.',
+          'Thùng hàng đang ở trong kho lưu trữ, cần xuất kho trước khi nhập kho mới.',
         );
       }
     }
@@ -181,6 +191,13 @@ export class WarehouseStorageService {
       select: { id: true, containerInventoryKey: true, warehouseId: true, conditions: true },
     });
     if (!existing) throw new NotFoundException('Warehouse storage not found');
+    const container = await (this.prisma as any).container.findUnique({
+      where: { inventoryKey: cleanString((existing as any)?.containerInventoryKey) },
+      select: { status: true },
+    });
+    if (cleanString((container as any)?.status).toUpperCase() === 'CONSUMED') {
+      throw new ConflictException('Thùng hàng đã tiêu thụ trước đó.');
+    }
 
     await this.writeOperation(isAgent ? 'CONSUME' : 'DELETE', data?.txHash, id, cleanString((existing as any)?.containerInventoryKey), {
       warehouseId: cleanString((existing as any)?.warehouseId),
