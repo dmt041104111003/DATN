@@ -49,16 +49,18 @@ export const adminAuthProvider: AuthProvider = {
   async checkAuth() {
     const data = await getMe();
     const hasProfile = Boolean(data?.user?.profileId);
-    const onSetupPage =
-      typeof window !== "undefined" &&
-      (window.location.pathname.startsWith("/admin") ||
-        window.location.pathname.startsWith("/enterprise") ||
-        window.location.pathname.startsWith("/transit") ||
-        window.location.pathname.startsWith("/agent")) &&
-      window.location.hash.includes("/login");
+    if (!hasProfile && typeof window !== "undefined") {
+      const pathname = window.location.pathname;
+      const onRolePage =
+        pathname.startsWith("/enterprise") ||
+        pathname.startsWith("/transit") ||
+        pathname.startsWith("/agent");
+      const onSetupPage =
+        pathname.startsWith("/admin") && window.location.hash.includes("/login");
 
-    if (!hasProfile && !onSetupPage) {
-      throw new Error("Missing profile");
+      if (onRolePage && !onSetupPage) {
+        window.location.assign("/admin#/login");
+      }
     }
     return Promise.resolve();
   },
