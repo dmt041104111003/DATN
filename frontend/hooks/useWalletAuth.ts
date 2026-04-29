@@ -171,7 +171,14 @@ export function useWalletAuth() {
       const meJson = await meResponse.json();
       const hasRole = meJson?.profile?.roleCode || meJson?.user?.roleCode || meJson?.user?.role;
       if (hasRole) {
-        window.location.assign("/admin");
+        const target = homePathForRole(hasRole);
+        const currentPath = window.location.pathname;
+        const isAuthEntry =
+          currentPath === "/" ||
+          currentPath.startsWith("/admin");
+        if (isAuthEntry && currentPath !== target) {
+          window.location.assign(target);
+        }
         return;
       }
 

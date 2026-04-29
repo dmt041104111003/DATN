@@ -6,28 +6,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const explicitOrigins = [
-    process.env.FRONTEND_URL,
-  ]
-    .filter(Boolean)
-    .flatMap((value) => String(value).split(','))
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  const allowVercelPreview = String(
-    process.env.ALLOW_VERCEL_PREVIEW ?? 'true',
-  ).toLowerCase() !== 'false';
-
   // Enable CORS
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (explicitOrigins.includes(origin)) return callback(null, true);
-      if (allowVercelPreview && /\.vercel\.app$/i.test(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
-    },
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
     exposedHeaders: ['Content-Range', 'X-Total-Count'],
   });
