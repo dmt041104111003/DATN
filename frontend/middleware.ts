@@ -64,20 +64,8 @@ export function middleware(req: NextRequest) {
 
   const roleHome = homePathForRole(role);
   const isSetupPath = pathname.startsWith("/admin");
-  const isRolePath =
-    pathname.startsWith("/enterprise") ||
-    pathname.startsWith("/transit") ||
-    pathname.startsWith("/agent");
-
-  if (isSetupPath) {
-    if (!token) return NextResponse.redirect(new URL("/", req.url));
-    if (profileId) return NextResponse.redirect(new URL(roleHome, req.url));
-    return NextResponse.next();
-  }
-
-  if (isRolePath) {
-    if (!token) return NextResponse.redirect(new URL("/", req.url));
-    return NextResponse.next();
+  if (isSetupPath && token && profileId) {
+    return NextResponse.redirect(new URL(roleHome, req.url));
   }
 
   return NextResponse.next();
