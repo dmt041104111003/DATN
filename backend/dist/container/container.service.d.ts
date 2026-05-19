@@ -2,14 +2,8 @@ import { PrismaService } from '../prisma/prisma.service';
 export declare class ContainerService {
     private readonly prisma;
     constructor(prisma: PrismaService);
-    private parseKg;
-    getCapacitySummary(productionInventoryKeyRaw: unknown, excludeContainerInventoryKeyRaw?: unknown): Promise<{
-        productionInventoryKey: string;
-        totalCapacityKg: number;
-        usedCapacityKg: any;
-        remainingCapacityKg: number;
-    }>;
-    private assertCapacityWithinRemaining;
+    startBatch(createdBy: string, totalBoxesRaw: unknown): Promise<any>;
+    updateBatchProgress(batchIdRaw: unknown, completedBoxesRaw: unknown, statusRaw?: unknown): Promise<any>;
     private toResponse;
     private buildParticipants;
     private getLatestOp;

@@ -26,7 +26,7 @@ export class RecordOperationController {
     const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
     if (!custodian) {
       throw new HttpException(
-        'Unable to determine account identity from session.',
+        'Không xác định được tài khoản từ phiên đăng nhập.',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -50,9 +50,9 @@ export class RecordOperationController {
     const entityKey = decodeURIComponent(String(entityKeyParam || '').trim());
 
     if (!entityType || (entityType !== 'PRODUCTION' && entityType !== 'CONTAINER')) {
-      throw new HttpException('entityType is required.', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Thiếu entityType.', HttpStatus.BAD_REQUEST);
     }
-    if (!entityKey) throw new HttpException('entityKey is required.', HttpStatus.BAD_REQUEST);
+    if (!entityKey) throw new HttpException('Thiếu entityKey.', HttpStatus.BAD_REQUEST);
 
     if (entityType === 'PRODUCTION') {
       const production = await (this.prisma as any).production.findUnique({
@@ -63,7 +63,7 @@ export class RecordOperationController {
         !production ||
         String(production.registeringCustodianAddress || '').trim() !== custodian
       ) {
-        throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
+        throw new HttpException('Không tìm thấy bản ghi.', HttpStatus.NOT_FOUND);
       }
     }
     if (entityType === 'CONTAINER') {
@@ -75,7 +75,7 @@ export class RecordOperationController {
         !container ||
         String(container.registeringCustodianAddress || '').trim() !== custodian
       ) {
-        throw new HttpException('Record not found.', HttpStatus.NOT_FOUND);
+        throw new HttpException('Không tìm thấy bản ghi.', HttpStatus.NOT_FOUND);
       }
     }
     const ops = await (this.prisma as any).recordOperation.findMany({

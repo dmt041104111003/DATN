@@ -80,7 +80,7 @@ let AuthService = class AuthService {
     async generateNonce(stakeAddress) {
         const input = this.normalizeStakeAddress(stakeAddress);
         if (!this.isSupportedAddress(input)) {
-            throw new common_1.BadRequestException(`Invalid address format. Please provide a payment address (addr... / addr_test...) or a stake address (stake... / stake_test...). Received: ${stakeAddress}`);
+            throw new common_1.BadRequestException(`Địa chỉ ví không hợp lệ. Dùng địa chỉ thanh toán (addr... / addr_test...) hoặc stake (stake... / stake_test...). Nhận được: ${stakeAddress}`);
         }
         const nonce = (0, crypto_1.randomBytes)(32).toString('hex');
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -103,7 +103,7 @@ let AuthService = class AuthService {
     async verifyAndIssueToken(data) {
         const input = this.normalizeStakeAddress(data.stakeAddress);
         if (!this.isSupportedAddress(input)) {
-            throw new common_1.BadRequestException(`Invalid address format. Please provide a payment address (addr... / addr_test...) or a stake address (stake... / stake_test...). Received: ${data.stakeAddress}`);
+            throw new common_1.BadRequestException(`Địa chỉ ví không hợp lệ. Dùng địa chỉ thanh toán (addr... / addr_test...) hoặc stake (stake... / stake_test...). Nhận được: ${data.stakeAddress}`);
         }
         const stored = await this.prisma.walletNonce.findUnique({
             where: { address: input },
@@ -111,14 +111,14 @@ let AuthService = class AuthService {
         });
         const expMs = stored?.expiresAt ? new Date(stored.expiresAt).getTime() : 0;
         if (!stored || stored.usedAt || String(stored.nonce || '') !== String(data.nonce || '') || expMs < Date.now()) {
-            throw new common_1.UnauthorizedException('Invalid or expired nonce.');
+            throw new common_1.UnauthorizedException('Nonce không hợp lệ hoặc đã hết hạn.');
         }
         if (!data.signature || !data.key) {
-            throw new common_1.UnauthorizedException('Missing signature or public key.');
+            throw new common_1.UnauthorizedException('Thiếu chữ ký hoặc khóa công khai.');
         }
         const signatureValid = this.verifyWalletSignature(String(stored.nonce || ''), data.signature, data.key);
         if (!signatureValid) {
-            throw new common_1.UnauthorizedException('Invalid wallet signature.');
+            throw new common_1.UnauthorizedException('Chữ ký ví không hợp lệ.');
         }
         await this.prisma.walletNonce.update({
             where: { address: input },
@@ -126,7 +126,7 @@ let AuthService = class AuthService {
         });
         const paymentAddr = await this.resolvePaymentAddress(input);
         if (!this.isPaymentAddress(paymentAddr)) {
-            throw new common_1.BadRequestException(`Could not resolve to a payment address. Please provide a payment address (addr... / addr_test...), or configure BLOCKFROST_API_KEY to resolve stake -> payment. Received: ${data.stakeAddress}`);
+            throw new common_1.BadRequestException(`Không chuyển được sang địa chỉ thanh toán. Dùng addr... / addr_test..., hoặc cấu hình BLOCKFROST_API_KEY để resolve stake → payment. Nhận được: ${data.stakeAddress}`);
         }
         await this.prisma.user.upsert({
             where: { address: paymentAddr },
@@ -151,7 +151,7 @@ let AuthService = class AuthService {
         });
         const secret = this.config.get('JWT_SECRET');
         if (!secret) {
-            throw new common_1.UnauthorizedException('JWT secret not configured');
+            throw new common_1.UnauthorizedException('Chưa cấu hình JWT_SECRET trên server.');
         }
         if (!account?.roleCode) {
             const setupPayload = {
@@ -230,12 +230,12 @@ let AuthService = class AuthService {
             return addr;
         if (this.isStakeAddress(addr)) {
             if (!this.blockfrost) {
-                throw new common_1.BadRequestException('Cannot resolve stake address to payment address: BLOCKFROST_API_KEY is not configured on backend.');
+                throw new common_1.BadRequestException('Không resolve stake sang địa chỉ thanh toán: server chưa cấu hình BLOCKFROST_API_KEY.');
             }
             const addresses = await this.blockfrost.accountsAddresses(addr);
             const first = addresses?.[0]?.address;
             if (!first) {
-                throw new common_1.BadRequestException('No payment addresses found for this stake address.');
+                throw new common_1.BadRequestException('Không tìm thấy địa chỉ thanh toán cho stake này.');
             }
             return first;
         }

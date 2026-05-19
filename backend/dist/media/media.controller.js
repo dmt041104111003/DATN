@@ -24,12 +24,12 @@ const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 let MediaController = class MediaController {
     async upload(_req, file, _body) {
         if (!file) {
-            throw new common_1.HttpException('File is required', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Thiếu file tải lên.', common_1.HttpStatus.BAD_REQUEST);
         }
         const PINATA_API_KEY = process.env.PINATA_API_KEY;
         const PINATA_SECRET_KEY = process.env.PINATA_SECRET_KEY;
         if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
-            throw new common_1.HttpException('File storage credentials are not configured on the server.', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Server chưa cấu hình thông tin lưu trữ file (Pinata).', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
         const form = new FormData();
         form.append('file', file.buffer, {
@@ -46,7 +46,7 @@ let MediaController = class MediaController {
         });
         const data = res.data;
         if (!data?.IpfsHash) {
-            throw new common_1.HttpException(data?.message || 'Failed to store file.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(data?.message || 'Không lưu được file.', common_1.HttpStatus.BAD_REQUEST);
         }
         const ipfsHash = data.IpfsHash;
         return {

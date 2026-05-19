@@ -19,10 +19,10 @@ let ContractService = class ContractService {
     constructor() {
         const apiKey = process.env.BLOCKFROST_API_KEY;
         if (!apiKey)
-            throw new Error('BLOCKFROST_API_KEY is not set');
+            throw new Error('Chưa cấu hình BLOCKFROST_API_KEY trên server.');
         this.blockfrostProvider = new core_1.BlockfrostProvider(apiKey);
         this.plutusHelper = new plutus_helper_1.PlutusHelper();
-        this.txBuilderHelper = new tx_builder_helper_1.TxBuilderHelper(this.blockfrostProvider, this.plutusHelper);
+        this.txBuilderHelper = new tx_builder_helper_1.TxBuilderHelper(this.blockfrostProvider, this.plutusHelper, apiKey);
     }
     generateCode() {
         const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -144,7 +144,7 @@ let ContractService = class ContractService {
             return { schemeReference: policyId, custodyVaultAddress: contractAddress };
         }
         catch (error) {
-            throw new common_1.BadRequestException(`Unable to resolve custody configuration: ${error.message}`);
+            throw new common_1.BadRequestException(`Không lấy được cấu hình custody: ${error.message}`);
         }
     }
     async createUnsignedCreateTx(dto, signerAddressRaw) {
@@ -152,23 +152,51 @@ let ContractService = class ContractService {
         const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
         const code = String(dto.assetName || '').trim() || this.generateCode();
         if (!walletAddress)
-            throw new common_1.BadRequestException('Unable to determine signer address from session.');
+            throw new common_1.BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
         if (owners.length === 0)
-            throw new common_1.BadRequestException('owners is required.');
+            throw new common_1.BadRequestException('Danh sách owners là bắt buộc.');
         const metadata = this.stringifyMetadata(dto.metadata);
         metadata.production_code = metadata.production_code || code;
-        const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, [
-            { productName: code, metadata, quantity: '1' },
-        ]);
+        return this.buildUnsignedMintResult(walletAddress, owners, [{ productName: code, metadata }]);
+    }
+    async createUnsignedBatchCreateTx(dto, signerAddressRaw) {
+        const walletAddress = String(signerAddressRaw || '').trim();
+        const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
+        if (!walletAddress)
+            throw new common_1.BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
+        if (owners.length === 0)
+            throw new common_1.BadRequestException('Danh sách owners là bắt buộc.');
+        const rawItems = Array.isArray(dto.items) ? dto.items : [];
+        if (rawItems.length === 0 || rawItems.length > 5) {
+            throw new common_1.BadRequestException('items phải có từ 1 đến 5 mục.');
+        }
+        const products = rawItems.map((item, index) => {
+            const code = String(item?.assetName || '').trim() || `${this.generateCode()}_${index + 1}`;
+            const metadata = this.stringifyMetadata(item?.metadata);
+            metadata.production_code = metadata.production_code || metadata.container_code || code;
+            return { productName: code, metadata };
+        });
+        return this.buildUnsignedMintResult(walletAddress, owners, products);
+    }
+    async buildUnsignedMintResult(walletAddress, owners, products) {
+        const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, products.map((product) => ({ ...product, quantity: '1' })));
         const { policyId } = this.plutusHelper.getScripts(owners);
-        const inventoryKey = policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(code));
+        const items = products.map((product) => {
+            const assetName = String(product.productName || '').trim();
+            return {
+                assetName,
+                inventoryKey: policyId + (0, core_1.CIP68_100)((0, core_1.stringToHex)(assetName)),
+            };
+        });
+        const first = items[0];
         return {
             result: true,
             data: unsignedTx,
-            message: 'Production record prepared.',
+            message: 'Đã chuẩn bị bản ghi sản xuất.',
             traceSchemeRef: policyId,
-            assetName: code,
-            inventoryKey,
+            assetName: first?.assetName || '',
+            inventoryKey: first?.inventoryKey || '',
+            items,
         };
     }
     async createUnsignedSaveTx(dto, signerAddressRaw) {
@@ -176,9 +204,9 @@ let ContractService = class ContractService {
         const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
         const inventoryKey = String(dto.inventoryKey || '').trim();
         if (!walletAddress)
-            throw new common_1.BadRequestException('Unable to determine signer address from session.');
+            throw new common_1.BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
         if (owners.length === 0)
-            throw new common_1.BadRequestException('owners is required.');
+            throw new common_1.BadRequestException('Danh sách owners là bắt buộc.');
         let ownersForSave = owners;
         let onchain = await this.loadOnchainMetadata(ownersForSave, inventoryKey);
         if (!onchain) {
@@ -197,12 +225,12 @@ let ContractService = class ContractService {
         }
         const code = this.decodeAssetNameFromUnit(inventoryKey);
         if (!code)
-            throw new common_1.BadRequestException('Unable to decode asset name from inventoryKey.');
+            throw new common_1.BadRequestException('Không giải mã được tên asset từ inventoryKey.');
         merged.production_code = merged.production_code || code;
         const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, ownersForSave, [
             { productName: code, metadata: merged },
         ]);
-        return { result: true, data: unsignedTx, message: 'Contract refresh record prepared.' };
+        return { result: true, data: unsignedTx, message: 'Đã chuẩn bị bản ghi cập nhật hợp đồng.' };
     }
     async createUnsignedBurnTx(dto, signerAddressRaw) {
         const walletAddress = String(signerAddressRaw || '').trim();
@@ -211,18 +239,18 @@ let ContractService = class ContractService {
             ? dto.productionInventoryKeys.map((s) => String(s || '').trim()).filter(Boolean)
             : [];
         if (!walletAddress)
-            throw new common_1.BadRequestException('Unable to determine signer address from session.');
+            throw new common_1.BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
         if (owners.length === 0)
-            throw new common_1.BadRequestException('owners is required.');
+            throw new common_1.BadRequestException('Danh sách owners là bắt buộc.');
         const products = Array.from(new Set(productionInventoryKeys))
             .map((inventoryKey) => this.decodeAssetNameFromUnit(inventoryKey))
             .filter((productName) => String(productName || '').trim())
             .map((productName) => ({ productName }));
         if (products.length === 0) {
-            throw new common_1.BadRequestException('productionInventoryKeys is required.');
+            throw new common_1.BadRequestException('productionInventoryKeys là bắt buộc.');
         }
         const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
-        return { result: true, data: unsignedTx, message: 'Contract burn prepared.' };
+        return { result: true, data: unsignedTx, message: 'Đã chuẩn bị giao dịch burn hợp đồng.' };
     }
 };
 exports.ContractService = ContractService;

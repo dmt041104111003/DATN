@@ -22,7 +22,7 @@ export class WarehouseStorageController {
   private getCustodian(req: any): string {
     const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
     if (!custodian) {
-      throw new HttpException('Unable to determine account identity from session.', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Không xác định được tài khoản từ phiên đăng nhập.', HttpStatus.UNAUTHORIZED);
     }
     return custodian;
   }
@@ -42,7 +42,7 @@ export class WarehouseStorageController {
       return await this.warehouseStorageService.create(this.getCustodian(req), body);
     } catch (e) {
       throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to create warehouse storage.',
+        e instanceof Error ? e.message : 'Không tạo được bản ghi nhập kho.',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -54,7 +54,7 @@ export class WarehouseStorageController {
       return await this.warehouseStorageService.update(this.getCustodian(req), id, body);
     } catch (e) {
       throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to update warehouse storage.',
+        e instanceof Error ? e.message : 'Không cập nhật được bản ghi nhập kho.',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -66,7 +66,7 @@ export class WarehouseStorageController {
       return await this.warehouseStorageService.remove(this.getCustodian(req), this.getRole(req), id, body);
     } catch (e) {
       throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to delete warehouse storage.',
+        e instanceof Error ? e.message : 'Không xóa được bản ghi nhập kho.',
         HttpStatus.BAD_REQUEST,
       );
     }

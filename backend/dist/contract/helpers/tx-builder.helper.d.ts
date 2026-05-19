@@ -4,8 +4,13 @@ export declare class TxBuilderHelper {
     private blockfrostProvider;
     private plutusHelper;
     private readonly appNetworkId;
-    constructor(blockfrostProvider: BlockfrostProvider, plutusHelper: PlutusHelper);
+    private readonly blockfrostApiKey;
+    private readonly appNetwork;
+    private costmdlsPromise?;
+    constructor(blockfrostProvider: BlockfrostProvider, plutusHelper: PlutusHelper, blockfrostApiKey: string);
     private newTxBuilder;
+    private getCostmdls;
+    private completeTx;
     getUtxosForAddress(address: string): Promise<UTxO[]>;
     getCollateralForAddress(address: string): Promise<UTxO[]>;
     getAddressUTXOAsset(address: string, unit: string): Promise<UTxO | null>;

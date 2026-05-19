@@ -16,26 +16,32 @@ exports.RecordOperationController = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const prisma_service_1 = require("../prisma/prisma.service");
+const record_operation_verifier_service_1 = require("./record-operation.verifier.service");
 let RecordOperationController = class RecordOperationController {
-    constructor(prisma) {
+    constructor(prisma, verifier) {
         this.prisma = prisma;
+        this.verifier = verifier;
     }
     getCustodian(req) {
         const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
         if (!custodian) {
-            throw new common_1.HttpException('Unable to determine account identity from session.', common_1.HttpStatus.UNAUTHORIZED);
+            throw new common_1.HttpException('Không xác định được tài khoản từ phiên đăng nhập.', common_1.HttpStatus.UNAUTHORIZED);
         }
         return String(custodian || '').trim();
+    }
+    async verifyPending() {
+        await this.verifier.verifyPendingNow();
+        return { ok: true };
     }
     async list(req, entityTypeParam, entityKeyParam) {
         const custodian = this.getCustodian(req);
         const entityType = String(entityTypeParam || '').trim().toUpperCase();
         const entityKey = decodeURIComponent(String(entityKeyParam || '').trim());
         if (!entityType || (entityType !== 'PRODUCTION' && entityType !== 'CONTAINER')) {
-            throw new common_1.HttpException('entityType is required.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Thiếu entityType.', common_1.HttpStatus.BAD_REQUEST);
         }
         if (!entityKey)
-            throw new common_1.HttpException('entityKey is required.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Thiếu entityKey.', common_1.HttpStatus.BAD_REQUEST);
         if (entityType === 'PRODUCTION') {
             const production = await this.prisma.production.findUnique({
                 where: { inventoryKey: entityKey },
@@ -43,7 +49,7 @@ let RecordOperationController = class RecordOperationController {
             });
             if (!production ||
                 String(production.registeringCustodianAddress || '').trim() !== custodian) {
-                throw new common_1.HttpException('Record not found.', common_1.HttpStatus.NOT_FOUND);
+                throw new common_1.HttpException('Không tìm thấy bản ghi.', common_1.HttpStatus.NOT_FOUND);
             }
         }
         if (entityType === 'CONTAINER') {
@@ -53,7 +59,7 @@ let RecordOperationController = class RecordOperationController {
             });
             if (!container ||
                 String(container.registeringCustodianAddress || '').trim() !== custodian) {
-                throw new common_1.HttpException('Record not found.', common_1.HttpStatus.NOT_FOUND);
+                throw new common_1.HttpException('Không tìm thấy bản ghi.', common_1.HttpStatus.NOT_FOUND);
             }
         }
         const ops = await this.prisma.recordOperation.findMany({
@@ -64,6 +70,12 @@ let RecordOperationController = class RecordOperationController {
     }
 };
 exports.RecordOperationController = RecordOperationController;
+__decorate([
+    (0, common_1.Post)('verify-pending'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], RecordOperationController.prototype, "verifyPending", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Req)()),
@@ -76,6 +88,7 @@ __decorate([
 exports.RecordOperationController = RecordOperationController = __decorate([
     (0, common_1.Controller)('record-operations'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        record_operation_verifier_service_1.RecordOperationVerifierService])
 ], RecordOperationController);
 //# sourceMappingURL=record-operation.controller.js.map

@@ -3,7 +3,7 @@
 import { Datagrid, EditButton, TextField } from "react-admin";
 import { MilList } from "@/features/ui/military/MilList";
 
-function warehouseStoragePath(record: { id?: string }) {
+function warehouseStoragePath(record: { id?: string | number }) {
   const warehouseId = String(record?.id ?? "").trim();
   if (!warehouseId) return "/warehouse-storage";
   const filter = encodeURIComponent(JSON.stringify({ warehouseId }));

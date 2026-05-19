@@ -59,10 +59,10 @@ export class ContainerService {
 
   async updateBatchProgress(batchIdRaw: unknown, completedBoxesRaw: unknown, statusRaw?: unknown) {
     const batchId = cleanString(batchIdRaw);
-    if (!batchId) throw new NotFoundException('Batch not found');
+    if (!batchId) throw new NotFoundException('Không tìm thấy lô thùng.');
     const completedBoxes = Number(completedBoxesRaw);
     const existing = await (this.prisma as any).containerBatch.findUnique({ where: { id: batchId } });
-    if (!existing) throw new NotFoundException('Batch not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy lô thùng.');
     const totalBoxes = Number(existing.totalBoxes || 0);
     const nextCompleted = Number.isFinite(completedBoxes)
       ? Math.max(0, Math.min(Math.floor(completedBoxes), totalBoxes))
@@ -242,7 +242,7 @@ export class ContainerService {
     const existing = await (this.prisma as any).container.findUnique({
       where: { inventoryKey: key },
     });
-    if (!existing) throw new NotFoundException('Container not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy thùng.');
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
     const participants = this.buildParticipants(data);
     const patch: Record<string, unknown> = {
@@ -290,7 +290,7 @@ export class ContainerService {
     await this.assertContainerMutable(key);
     const txHash = cleanString(txHashRaw);
     const existing = await (this.prisma as any).container.findUnique({ where: { inventoryKey: key } });
-    if (!existing) throw new NotFoundException('Container not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy thùng.');
     await (this.prisma as any).recordOperation.create({
       data: {
         entityType: ENTITY_TYPE,

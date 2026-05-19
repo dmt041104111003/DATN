@@ -35,6 +35,8 @@ const warehouse_controller_1 = require("./warehouse/warehouse.controller");
 const warehouse_service_1 = require("./warehouse/warehouse.service");
 const warehouse_storage_controller_1 = require("./warehouse-storage/warehouse-storage.controller");
 const warehouse_storage_service_1 = require("./warehouse-storage/warehouse-storage.service");
+const dashboard_controller_1 = require("./dashboard/dashboard.controller");
+const dashboard_service_1 = require("./dashboard/dashboard.service");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -62,6 +64,7 @@ exports.AppModule = AppModule = __decorate([
             container_controller_1.ContainerController,
             warehouse_controller_1.WarehouseController,
             warehouse_storage_controller_1.WarehouseStorageController,
+            dashboard_controller_1.DashboardController,
             health_controller_1.HealthController,
             location_controller_1.LocationController,
         ],
@@ -77,6 +80,7 @@ exports.AppModule = AppModule = __decorate([
             container_service_1.ContainerService,
             warehouse_service_1.WarehouseService,
             warehouse_storage_service_1.WarehouseStorageService,
+            dashboard_service_1.DashboardService,
         ],
     })
 ], AppModule);

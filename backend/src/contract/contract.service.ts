@@ -16,10 +16,10 @@ export class ContractService {
 
   constructor() {
     const apiKey = process.env.BLOCKFROST_API_KEY;
-    if (!apiKey) throw new Error('BLOCKFROST_API_KEY is not set');
+    if (!apiKey) throw new Error('Chưa cấu hình BLOCKFROST_API_KEY trên server.');
     this.blockfrostProvider = new BlockfrostProvider(apiKey);
     this.plutusHelper = new PlutusHelper();
-    this.txBuilderHelper = new TxBuilderHelper(this.blockfrostProvider, this.plutusHelper);
+    this.txBuilderHelper = new TxBuilderHelper(this.blockfrostProvider, this.plutusHelper, apiKey);
   }
 
   private generateCode(): string {
@@ -140,7 +140,7 @@ export class ContractService {
       const { policyId, contractAddress } = this.plutusHelper.getScripts(custodyParties);
       return { schemeReference: policyId, custodyVaultAddress: contractAddress };
     } catch (error: any) {
-      throw new BadRequestException(`Unable to resolve custody configuration: ${error.message}`);
+      throw new BadRequestException(`Không lấy được cấu hình custody: ${error.message}`);
     }
   }
 
@@ -148,8 +148,8 @@ export class ContractService {
     const walletAddress = String(signerAddressRaw || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const code = String(dto.assetName || '').trim() || this.generateCode();
-    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
+    if (!walletAddress) throw new BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
+    if (owners.length === 0) throw new BadRequestException('Danh sách owners là bắt buộc.');
 
     const metadata = this.stringifyMetadata(dto.metadata);
     metadata.production_code = metadata.production_code || code;
@@ -160,12 +160,12 @@ export class ContractService {
   async createUnsignedBatchCreateTx(dto: ContractBatchCreateDto, signerAddressRaw: unknown) {
     const walletAddress = String(signerAddressRaw || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
-    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
+    if (!walletAddress) throw new BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
+    if (owners.length === 0) throw new BadRequestException('Danh sách owners là bắt buộc.');
 
     const rawItems = Array.isArray(dto.items) ? dto.items : [];
     if (rawItems.length === 0 || rawItems.length > 5) {
-      throw new BadRequestException('items must contain between 1 and 5 entries.');
+      throw new BadRequestException('items phải có từ 1 đến 5 mục.');
     }
 
     const products = rawItems.map((item, index) => {
@@ -200,7 +200,7 @@ export class ContractService {
     return {
       result: true,
       data: unsignedTx,
-      message: 'Production record prepared.',
+      message: 'Đã chuẩn bị bản ghi sản xuất.',
       traceSchemeRef: policyId,
       assetName: first?.assetName || '',
       inventoryKey: first?.inventoryKey || '',
@@ -212,8 +212,8 @@ export class ContractService {
     const walletAddress = String(signerAddressRaw || '').trim();
     const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
     const inventoryKey = String(dto.inventoryKey || '').trim();
-    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
+    if (!walletAddress) throw new BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
+    if (owners.length === 0) throw new BadRequestException('Danh sách owners là bắt buộc.');
 
     let ownersForSave = owners;
     let onchain = await this.loadOnchainMetadata(ownersForSave, inventoryKey);
@@ -233,13 +233,13 @@ export class ContractService {
     }
 
     const code = this.decodeAssetNameFromUnit(inventoryKey);
-    if (!code) throw new BadRequestException('Unable to decode asset name from inventoryKey.');
+    if (!code) throw new BadRequestException('Không giải mã được tên asset từ inventoryKey.');
     merged.production_code = merged.production_code || code;
 
     const unsignedTx = await this.txBuilderHelper.buildUpdateTx(walletAddress, ownersForSave, [
       { productName: code, metadata: merged },
     ]);
-    return { result: true, data: unsignedTx, message: 'Contract refresh record prepared.' };
+    return { result: true, data: unsignedTx, message: 'Đã chuẩn bị bản ghi cập nhật hợp đồng.' };
   }
 
   async createUnsignedBurnTx(dto: ContractBurnDto, signerAddressRaw: unknown) {
@@ -248,17 +248,17 @@ export class ContractService {
     const productionInventoryKeys = Array.isArray(dto?.productionInventoryKeys)
       ? dto.productionInventoryKeys.map((s: unknown) => String(s || '').trim()).filter(Boolean)
       : [];
-    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
-    if (owners.length === 0) throw new BadRequestException('owners is required.');
+    if (!walletAddress) throw new BadRequestException('Không xác định được địa chỉ ký từ phiên đăng nhập.');
+    if (owners.length === 0) throw new BadRequestException('Danh sách owners là bắt buộc.');
 
     const products = Array.from(new Set(productionInventoryKeys))
       .map((inventoryKey) => this.decodeAssetNameFromUnit(inventoryKey))
       .filter((productName) => String(productName || '').trim())
       .map((productName) => ({ productName }));
     if (products.length === 0) {
-      throw new BadRequestException('productionInventoryKeys is required.');
+      throw new BadRequestException('productionInventoryKeys là bắt buộc.');
     }
     const unsignedTx = await this.txBuilderHelper.buildBurnTx(walletAddress, owners, products);
-    return { result: true, data: unsignedTx, message: 'Contract burn prepared.' };
+    return { result: true, data: unsignedTx, message: 'Đã chuẩn bị giao dịch burn hợp đồng.' };
   }
 }

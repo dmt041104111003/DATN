@@ -23,7 +23,7 @@ let WarehouseController = class WarehouseController {
     getCustodian(req) {
         const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
         if (!custodian) {
-            throw new common_1.HttpException('Unable to determine account identity from session.', common_1.HttpStatus.UNAUTHORIZED);
+            throw new common_1.HttpException('Không xác định được tài khoản từ phiên đăng nhập.', common_1.HttpStatus.UNAUTHORIZED);
         }
         return custodian;
     }
@@ -35,7 +35,7 @@ let WarehouseController = class WarehouseController {
             return await this.warehouseService.create(this.getCustodian(req), body);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to create warehouse.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không tạo được kho.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async update(req, id, body) {
@@ -43,7 +43,7 @@ let WarehouseController = class WarehouseController {
             return await this.warehouseService.update(this.getCustodian(req), id, body);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to update warehouse.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không cập nhật được kho.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async remove(req, id) {
@@ -51,7 +51,7 @@ let WarehouseController = class WarehouseController {
             return await this.warehouseService.remove(this.getCustodian(req), id);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to delete warehouse.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không xóa được kho.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
 };

@@ -24,21 +24,21 @@ let ProfileController = class ProfileController {
         const user = req?.user || {};
         const walletAddress = user.walletAddress || user.paymentAddress || user.sub;
         if (!walletAddress) {
-            throw new common_1.HttpException('Unable to determine wallet address from token', common_1.HttpStatus.UNAUTHORIZED);
+            throw new common_1.HttpException('Không xác định được địa chỉ ví từ token', common_1.HttpStatus.UNAUTHORIZED);
         }
         return walletAddress;
     }
     getProfileId(req) {
         const profileId = req?.user?.profileId;
         if (!profileId) {
-            throw new common_1.HttpException('Profile not found for this user', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Không tìm thấy hồ sơ cho người dùng này', common_1.HttpStatus.BAD_REQUEST);
         }
         return profileId;
     }
     rethrow(error) {
         if (error instanceof common_1.HttpException)
             throw error;
-        throw new common_1.HttpException('Internal server error', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new common_1.HttpException('Lỗi máy chủ nội bộ', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
     }
     setAuthCookie(res, token) {
         const sameSite = process.env.COOKIE_SAMESITE || 'lax';

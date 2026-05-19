@@ -23,7 +23,7 @@ let ContainerController = class ContainerController {
     getCustodian(req) {
         const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
         if (!custodian) {
-            throw new common_1.HttpException('Unable to determine account identity from session.', common_1.HttpStatus.UNAUTHORIZED);
+            throw new common_1.HttpException('Không xác định được tài khoản từ phiên đăng nhập.', common_1.HttpStatus.UNAUTHORIZED);
         }
         return custodian;
     }
@@ -33,12 +33,20 @@ let ContainerController = class ContainerController {
     async list(req) {
         return this.containerService.list(this.getCustodian(req));
     }
-    async capacitySummary(_req, productionInventoryKey, excludeContainerInventoryKey) {
+    async startBatch(req, body) {
         try {
-            return await this.containerService.getCapacitySummary(productionInventoryKey, excludeContainerInventoryKey);
+            return await this.containerService.startBatch(this.getCustodian(req), body?.totalBoxes);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to calculate remaining capacity.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không tạo được lô thùng.', common_1.HttpStatus.BAD_REQUEST);
+        }
+    }
+    async updateBatch(req, batchId, body) {
+        try {
+            return await this.containerService.updateBatchProgress(batchId, body?.completedBoxes, body?.status);
+        }
+        catch (e) {
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không cập nhật được lô thùng.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async create(req, body) {
@@ -46,7 +54,7 @@ let ContainerController = class ContainerController {
             return await this.containerService.create(this.getCustodian(req), body);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to register container.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không đăng ký được thùng.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async update(req, inventoryKey, body) {
@@ -54,7 +62,7 @@ let ContainerController = class ContainerController {
             return await this.containerService.update(this.getCustodian(req), inventoryKey, body);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to update container.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không cập nhật được thùng.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
     async remove(req, inventoryKey, body) {
@@ -62,7 +70,7 @@ let ContainerController = class ContainerController {
             return await this.containerService.deleteByInventoryKey(this.getCustodian(req), this.getRole(req), inventoryKey, body?.txHash);
         }
         catch (e) {
-            throw new common_1.HttpException(e instanceof Error ? e.message : 'Failed to delete container.', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException(e instanceof Error ? e.message : 'Không xóa được thùng.', common_1.HttpStatus.BAD_REQUEST);
         }
     }
 };
@@ -75,14 +83,22 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ContainerController.prototype, "list", null);
 __decorate([
-    (0, common_1.Get)('capacity/summary'),
+    (0, common_1.Post)('batches'),
     __param(0, (0, common_1.Req)()),
-    __param(1, (0, common_1.Query)('productionInventoryKey')),
-    __param(2, (0, common_1.Query)('excludeContainerInventoryKey')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
-], ContainerController.prototype, "capacitySummary", null);
+], ContainerController.prototype, "startBatch", null);
+__decorate([
+    (0, common_1.Patch)('batches/:batchId'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('batchId')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", Promise)
+], ContainerController.prototype, "updateBatch", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Req)()),

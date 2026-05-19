@@ -1,4 +1,5 @@
 import { ContractCreateDto } from './dto/contract-create.dto';
+import { ContractBatchCreateDto } from './dto/contract-batch-create.dto';
 import { ContractSaveDto } from './dto/contract-save.dto';
 import { ContractBurnDto } from './dto/contract-burn.dto';
 export declare class ContractService {
@@ -25,7 +26,24 @@ export declare class ContractService {
         traceSchemeRef: string;
         assetName: string;
         inventoryKey: string;
+        items: {
+            assetName: string;
+            inventoryKey: string;
+        }[];
     }>;
+    createUnsignedBatchCreateTx(dto: ContractBatchCreateDto, signerAddressRaw: unknown): Promise<{
+        result: boolean;
+        data: string;
+        message: string;
+        traceSchemeRef: string;
+        assetName: string;
+        inventoryKey: string;
+        items: {
+            assetName: string;
+            inventoryKey: string;
+        }[];
+    }>;
+    private buildUnsignedMintResult;
     createUnsignedSaveTx(dto: ContractSaveDto, signerAddressRaw: unknown): Promise<{
         result: boolean;
         data: string;

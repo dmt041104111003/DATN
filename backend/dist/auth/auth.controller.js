@@ -36,14 +36,14 @@ let AuthController = class AuthController {
     async createNonce(body) {
         const addr = this.normalizeAddress(body.stakeAddress);
         if (!addr)
-            throw new common_1.HttpException('Missing stakeAddress', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Thiếu stakeAddress.', common_1.HttpStatus.BAD_REQUEST);
         const nonce = await this.authService.generateNonce(addr);
         return { nonce };
     }
     async verifySignature(body, res) {
         const addr = this.normalizeAddress(body.stakeAddress);
         if (!addr || !body.nonce || !body.signature || !body.key) {
-            throw new common_1.HttpException('Missing authentication parameters', common_1.HttpStatus.BAD_REQUEST);
+            throw new common_1.HttpException('Thiếu tham số xác thực.', common_1.HttpStatus.BAD_REQUEST);
         }
         const result = await this.authService.verifyAndIssueToken({
             stakeAddress: addr,

@@ -48,7 +48,7 @@ export class AuthService {
 
     if (!this.isSupportedAddress(input)) {
       throw new BadRequestException(
-        `Invalid address format. Please provide a payment address (addr... / addr_test...) or a stake address (stake... / stake_test...). Received: ${stakeAddress}`,
+        `Địa chỉ ví không hợp lệ. Dùng địa chỉ thanh toán (addr... / addr_test...) hoặc stake (stake... / stake_test...). Nhận được: ${stakeAddress}`,
       );
     }
 
@@ -82,7 +82,7 @@ export class AuthService {
 
     if (!this.isSupportedAddress(input)) {
       throw new BadRequestException(
-        `Invalid address format. Please provide a payment address (addr... / addr_test...) or a stake address (stake... / stake_test...). Received: ${data.stakeAddress}`,
+        `Địa chỉ ví không hợp lệ. Dùng địa chỉ thanh toán (addr... / addr_test...) hoặc stake (stake... / stake_test...). Nhận được: ${data.stakeAddress}`,
       );
     }
 
@@ -92,16 +92,16 @@ export class AuthService {
     });
     const expMs = stored?.expiresAt ? new Date(stored.expiresAt).getTime() : 0;
     if (!stored || stored.usedAt || String(stored.nonce || '') !== String(data.nonce || '') || expMs < Date.now()) {
-      throw new UnauthorizedException('Invalid or expired nonce.');
+      throw new UnauthorizedException('Nonce không hợp lệ hoặc đã hết hạn.');
     }
 
     if (!data.signature || !data.key) {
-      throw new UnauthorizedException('Missing signature or public key.');
+      throw new UnauthorizedException('Thiếu chữ ký hoặc khóa công khai.');
     }
 
     const signatureValid = this.verifyWalletSignature(String(stored.nonce || ''), data.signature, data.key);
     if (!signatureValid) {
-      throw new UnauthorizedException('Invalid wallet signature.');
+      throw new UnauthorizedException('Chữ ký ví không hợp lệ.');
     }
 
     await (this.prisma as any).walletNonce.update({
@@ -112,7 +112,7 @@ export class AuthService {
     const paymentAddr = await this.resolvePaymentAddress(input);
     if (!this.isPaymentAddress(paymentAddr)) {
       throw new BadRequestException(
-        `Could not resolve to a payment address. Please provide a payment address (addr... / addr_test...), or configure BLOCKFROST_API_KEY to resolve stake -> payment. Received: ${data.stakeAddress}`,
+        `Không chuyển được sang địa chỉ thanh toán. Dùng addr... / addr_test..., hoặc cấu hình BLOCKFROST_API_KEY để resolve stake → payment. Nhận được: ${data.stakeAddress}`,
       );
     }
 
@@ -141,7 +141,7 @@ export class AuthService {
 
     const secret = this.config.get<string>('JWT_SECRET');
     if (!secret) {
-      throw new UnauthorizedException('JWT secret not configured');
+      throw new UnauthorizedException('Chưa cấu hình JWT_SECRET trên server.');
     }
 
     if (!account?.roleCode) {
@@ -232,13 +232,13 @@ export class AuthService {
     if (this.isStakeAddress(addr)) {
       if (!this.blockfrost) {
         throw new BadRequestException(
-          'Cannot resolve stake address to payment address: BLOCKFROST_API_KEY is not configured on backend.',
+          'Không resolve stake sang địa chỉ thanh toán: server chưa cấu hình BLOCKFROST_API_KEY.',
         );
       }
       const addresses = await this.blockfrost.accountsAddresses(addr as any);
       const first = addresses?.[0]?.address;
       if (!first) {
-        throw new BadRequestException('No payment addresses found for this stake address.');
+        throw new BadRequestException('Không tìm thấy địa chỉ thanh toán cho stake này.');
       }
       return first;
     }

@@ -37,7 +37,7 @@ export class ProductionController {
       const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
       return await this.productionService.create(custodian, body);
     } catch (e) {
-      this.fail(e, 'Failed to register production.');
+      this.fail(e, 'Không đăng ký được sản xuất.');
     }
   }
 
@@ -47,7 +47,7 @@ export class ProductionController {
       const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
       return await this.productionService.update(custodian, inventoryKey, body);
     } catch (e) {
-      this.fail(e, 'Failed to update production.');
+      this.fail(e, 'Không cập nhật được sản xuất.');
     }
   }
 
@@ -56,7 +56,7 @@ export class ProductionController {
     try {
       return await this.productionService.deleteByInventoryKey(inventoryKey, body?.txHash);
     } catch (e) {
-      this.fail(e, 'Failed to delete production.');
+      this.fail(e, 'Không xóa được sản xuất.');
     }
   }
 }

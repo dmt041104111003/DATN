@@ -161,7 +161,7 @@ export class ProductionService {
     const key = decodeURIComponent(cleanString(inventoryKey));
 
     const existing = await (this.prisma as any).production.findUnique({ where: { inventoryKey: key } });
-    if (!existing) throw new NotFoundException('Production not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy bản ghi sản xuất.');
 
     const nextStatus = cleanString(data.status || existing.status).toUpperCase();
 
@@ -236,7 +236,7 @@ export class ProductionService {
     const existing = await (this.prisma as any).production.findUnique({
       where: { inventoryKey: key },
     });
-    if (!existing) throw new NotFoundException('Production not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy bản ghi sản xuất.');
     await (this.prisma as any).recordOperation.create({
       data: {
         entityType: ENTITY_TYPE,

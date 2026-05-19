@@ -17,7 +17,7 @@ if (fs.existsSync(plutusPath)) {
 } else if (fs.existsSync(plutusPathAlt)) {
   plutus = JSON.parse(fs.readFileSync(plutusPathAlt, 'utf-8'));
 } else {
-  throw new Error(`plutus.json not found. Tried: ${plutusPath}, ${plutusPathAlt}`);
+  throw new Error(`Không tìm thấy plutus.json. Đã thử: ${plutusPath}, ${plutusPathAlt}`);
 }
 
 export interface PlutusValidator {
@@ -44,7 +44,7 @@ export class PlutusHelper {
   readValidator(title: string): string {
     const validator = this.plutusJson.validators.find((v) => v.title === title);
     if (!validator) {
-      throw new Error(`Validator ${title} not found`);
+      throw new Error(`Không tìm thấy validator "${title}".`);
     }
     return validator.compiledCode;
   }

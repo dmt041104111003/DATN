@@ -157,7 +157,7 @@ let ProductionService = class ProductionService {
         const key = decodeURIComponent(cleanString(inventoryKey));
         const existing = await this.prisma.production.findUnique({ where: { inventoryKey: key } });
         if (!existing)
-            throw new common_1.NotFoundException('Production not found');
+            throw new common_1.NotFoundException('Không tìm thấy bản ghi sản xuất.');
         const nextStatus = cleanString(data.status || existing.status).toUpperCase();
         const patch = {};
         if (nextStatus === 'CREATED' || nextStatus === 'UPDATED') {
@@ -222,7 +222,7 @@ let ProductionService = class ProductionService {
             where: { inventoryKey: key },
         });
         if (!existing)
-            throw new common_1.NotFoundException('Production not found');
+            throw new common_1.NotFoundException('Không tìm thấy bản ghi sản xuất.');
         await this.prisma.recordOperation.create({
             data: {
                 entityType: ENTITY_TYPE,

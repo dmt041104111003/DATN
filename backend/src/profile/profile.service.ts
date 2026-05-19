@@ -41,7 +41,7 @@ export class ProfileService {
 
   private getSecret() {
     const secret = this.config.get<string>('JWT_SECRET');
-    if (!secret) throw new UnauthorizedException('JWT secret not configured');
+    if (!secret) throw new UnauthorizedException('Chưa cấu hình JWT_SECRET trên server.');
     return secret;
   }
 
@@ -52,7 +52,7 @@ export class ProfileService {
 
     if (!isPayment) {
       throw new BadRequestException(
-        `Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${custodianAddress}`,
+        `Địa chỉ ví không hợp lệ. Dùng addr... / addr_test.... Nhận được: ${custodianAddress}`,
       );
     }
 
@@ -67,18 +67,18 @@ export class ProfileService {
     const addr = this.validatePaymentAddress(custodianAddress);
 
     const roleCode = (data.roleCode || '').trim().toUpperCase();
-    if (!roleCode) throw new BadRequestException('Role is required.');
+    if (!roleCode) throw new BadRequestException('Vai trò là bắt buộc.');
     const role = await (this.prisma as any).role.findUnique({ where: { code: roleCode } });
-    if (!role) throw new BadRequestException('Invalid role.');
+    if (!role) throw new BadRequestException('Vai trò không hợp lệ.');
     const displayName = (data.displayName || '').trim();
-    if (!displayName) throw new BadRequestException('Display name is required.');
+    if (!displayName) throw new BadRequestException('Tên hiển thị là bắt buộc.');
     const phoneNumber = (data.phoneNumber || '').trim() || null;
     const existing = await (this.prisma as any).user.findUnique({
       where: { address: addr },
       select: { roleCode: true },
     });
     if (existing?.roleCode && existing.roleCode !== roleCode) {
-      throw new BadRequestException('Role cannot be changed after profile creation.');
+      throw new BadRequestException('Không thể đổi vai trò sau khi tạo hồ sơ.');
     }
 
     const account = await (this.prisma as any).user.update({
@@ -113,7 +113,7 @@ export class ProfileService {
     const phoneNumber = typeof data.phoneNumber === 'string' ? data.phoneNumber.trim() || null : undefined;
 
     if (!displayName) {
-      throw new BadRequestException('Display name is required.');
+      throw new BadRequestException('Tên hiển thị là bắt buộc.');
     }
 
     const account = await (this.prisma as any).user.update({
@@ -131,7 +131,7 @@ export class ProfileService {
   async listProfiles(custodianAddress: string) {
     const addr = this.getAddress(custodianAddress);
     if (!addr) {
-      throw new BadRequestException('Account reference is required.');
+      throw new BadRequestException('Thiếu tham chiếu tài khoản.');
     }
 
     const account = await (this.prisma as any).user.findUnique({
@@ -148,7 +148,7 @@ export class ProfileService {
       select: this.userSelect,
     });
     if (!account || !account.roleCode) {
-      throw new BadRequestException('Profile not found.');
+      throw new BadRequestException('Không tìm thấy hồ sơ.');
     }
     return this.mapProfileRow(account);
   }

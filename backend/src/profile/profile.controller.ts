@@ -26,7 +26,7 @@ export class ProfileController {
 
     if (!walletAddress) {
       throw new HttpException(
-        'Unable to determine wallet address from token',
+        'Không xác định được địa chỉ ví từ token',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -38,7 +38,7 @@ export class ProfileController {
     const profileId = req?.user?.profileId;
 
     if (!profileId) {
-      throw new HttpException('Profile not found for this user', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Không tìm thấy hồ sơ cho người dùng này', HttpStatus.BAD_REQUEST);
     }
 
     return profileId;
@@ -46,7 +46,7 @@ export class ProfileController {
 
   private rethrow(error: unknown): never {
     if (error instanceof HttpException) throw error;
-    throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+    throw new HttpException('Lỗi máy chủ nội bộ', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   private setAuthCookie(res: Response, token: string) {

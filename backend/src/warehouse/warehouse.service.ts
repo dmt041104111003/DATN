@@ -36,7 +36,7 @@ export class WarehouseService {
       where: { id, registeringCustodianAddress: custodian },
       select: { id: true },
     });
-    if (!existing) throw new NotFoundException('Warehouse not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy kho.');
     return await (this.prisma as any).warehouse.update({
       where: { id },
       data: {
@@ -54,7 +54,7 @@ export class WarehouseService {
       where: { id, registeringCustodianAddress: custodian },
       select: { id: true },
     });
-    if (!existing) throw new NotFoundException('Warehouse not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy kho.');
     await (this.prisma as any).warehouse.delete({ where: { id } });
     return { id };
   }

@@ -79,7 +79,7 @@ export class WarehouseStorageService {
       where: { id: warehouseId, registeringCustodianAddress: custodian },
       select: { id: true },
     });
-    if (!warehouse) throw new NotFoundException('Warehouse not found');
+    if (!warehouse) throw new NotFoundException('Không tìm thấy kho.');
     const container = await (this.prisma as any).container.findUnique({
       where: { inventoryKey: containerInventoryKey },
       select: { inventoryKey: true, status: true },
@@ -122,7 +122,7 @@ export class WarehouseStorageService {
       },
       select: { id: true },
     });
-    if (!existing) throw new NotFoundException('Warehouse storage not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy bản ghi nhập kho.');
     const patch: Record<string, unknown> = {};
     if (data?.warehouseId !== undefined) patch.warehouseId = cleanString(data?.warehouseId);
     if (data?.containerInventoryKey !== undefined || data?.productId !== undefined) {
@@ -183,7 +183,7 @@ export class WarehouseStorageService {
       },
       select: { id: true, containerInventoryKey: true, warehouseId: true, conditions: true },
     });
-    if (!existing) throw new NotFoundException('Warehouse storage not found');
+    if (!existing) throw new NotFoundException('Không tìm thấy bản ghi nhập kho.');
     const container = await (this.prisma as any).container.findUnique({
       where: { inventoryKey: cleanString((existing as any)?.containerInventoryKey) },
       select: { status: true },

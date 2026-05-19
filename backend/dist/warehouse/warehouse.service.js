@@ -45,7 +45,7 @@ let WarehouseService = class WarehouseService {
             select: { id: true },
         });
         if (!existing)
-            throw new common_1.NotFoundException('Warehouse not found');
+            throw new common_1.NotFoundException('Không tìm thấy kho.');
         return await this.prisma.warehouse.update({
             where: { id },
             data: {
@@ -63,7 +63,7 @@ let WarehouseService = class WarehouseService {
             select: { id: true },
         });
         if (!existing)
-            throw new common_1.NotFoundException('Warehouse not found');
+            throw new common_1.NotFoundException('Không tìm thấy kho.');
         await this.prisma.warehouse.delete({ where: { id } });
         return { id };
     }

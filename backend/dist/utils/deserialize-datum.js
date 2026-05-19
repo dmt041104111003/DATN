@@ -40,7 +40,7 @@ async function deserializeDatum(datum) {
     const decoded = await cbor.decodeFirst(cborDatum);
     const datumMap = Array.isArray(decoded) ? decoded[0] : decoded?.value?.[0];
     if (!(datumMap instanceof Map)) {
-        throw new Error('Invalid Datum');
+        throw new Error('Datum không hợp lệ.');
     }
     const obj = {};
     datumMap.forEach((value, key) => {

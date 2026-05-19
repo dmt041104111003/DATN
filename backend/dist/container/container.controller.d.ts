@@ -5,12 +5,8 @@ export declare class ContainerController {
     private getCustodian;
     private getRole;
     list(req: any): Promise<any>;
-    capacitySummary(_req: any, productionInventoryKey: string, excludeContainerInventoryKey?: string): Promise<{
-        productionInventoryKey: string;
-        totalCapacityKg: number;
-        usedCapacityKg: any;
-        remainingCapacityKg: number;
-    }>;
+    startBatch(req: any, body: any): Promise<any>;
+    updateBatch(req: any, batchId: string, body: any): Promise<any>;
     create(req: any, body: any): Promise<any>;
     update(req: any, inventoryKey: string, body: any): Promise<any>;
     remove(req: any, inventoryKey: string, body: any): Promise<{

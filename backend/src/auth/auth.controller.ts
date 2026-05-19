@@ -29,7 +29,7 @@ export class AuthController {
   @Post('nonce')
   async createNonce(@Body() body: any) {
     const addr = this.normalizeAddress(body.stakeAddress);
-    if (!addr) throw new HttpException('Missing stakeAddress', HttpStatus.BAD_REQUEST);
+    if (!addr) throw new HttpException('Thiếu stakeAddress.', HttpStatus.BAD_REQUEST);
     const nonce = await this.authService.generateNonce(addr);
     return { nonce };
   }
@@ -41,7 +41,7 @@ export class AuthController {
   ) {
     const addr = this.normalizeAddress(body.stakeAddress);
     if (!addr || !body.nonce || !body.signature || !body.key) {
-      throw new HttpException('Missing authentication parameters', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Thiếu tham số xác thực.', HttpStatus.BAD_REQUEST);
     }
 
     const result = await this.authService.verifyAndIssueToken({

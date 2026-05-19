@@ -13,7 +13,7 @@ export class RecordOperationVerifierService {
   private getBlockfrost(): BlockFrostAPI {
     if (this.blockfrost) return this.blockfrost;
     const apiKey = String(process.env.BLOCKFROST_API_KEY || '').trim();
-    if (!apiKey) throw new Error('BLOCKFROST_API_KEY is not set');
+    if (!apiKey) throw new Error('Chưa cấu hình BLOCKFROST_API_KEY trên server.');
     const networkRaw = String(process.env.APP_NETWORK || 'preprod').trim().toLowerCase();
     const network =
       networkRaw === 'mainnet' ? 'mainnet' : networkRaw === 'preview' ? 'preview' : 'preprod';

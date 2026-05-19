@@ -84,7 +84,7 @@ let WarehouseStorageService = class WarehouseStorageService {
             select: { id: true },
         });
         if (!warehouse)
-            throw new common_1.NotFoundException('Warehouse not found');
+            throw new common_1.NotFoundException('Không tìm thấy kho.');
         const container = await this.prisma.container.findUnique({
             where: { inventoryKey: containerInventoryKey },
             select: { inventoryKey: true, status: true },
@@ -108,13 +108,6 @@ let WarehouseStorageService = class WarehouseStorageService {
                 conditions: cleanString(data?.conditions) || null,
             },
         });
-        const location = cleanString(data?.location);
-        if (location) {
-            await this.prisma.container.update({
-                where: { inventoryKey: containerInventoryKey },
-                data: { location },
-            });
-        }
         await this.writeOperation('CREATE', data?.txHash, cleanString(row?.id), containerInventoryKey, {
             warehouseId,
             storageTime: new Date().toISOString(),
@@ -133,7 +126,7 @@ let WarehouseStorageService = class WarehouseStorageService {
             select: { id: true },
         });
         if (!existing)
-            throw new common_1.NotFoundException('Warehouse storage not found');
+            throw new common_1.NotFoundException('Không tìm thấy bản ghi nhập kho.');
         const patch = {};
         if (data?.warehouseId !== undefined)
             patch.warehouseId = cleanString(data?.warehouseId);
@@ -186,7 +179,7 @@ let WarehouseStorageService = class WarehouseStorageService {
             select: { id: true, containerInventoryKey: true, warehouseId: true, conditions: true },
         });
         if (!existing)
-            throw new common_1.NotFoundException('Warehouse storage not found');
+            throw new common_1.NotFoundException('Không tìm thấy bản ghi nhập kho.');
         const container = await this.prisma.container.findUnique({
             where: { inventoryKey: cleanString(existing?.containerInventoryKey) },
             select: { status: true },

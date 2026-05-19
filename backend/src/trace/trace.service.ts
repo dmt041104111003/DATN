@@ -283,7 +283,7 @@ export class TraceService {
   constructor(private readonly prisma: PrismaService) {
     const projectId = process.env.BLOCKFROST_API_KEY || '';
     if (!projectId) {
-      throw new Error('BLOCKFROST_API_KEY is not set');
+      throw new Error('Chưa cấu hình BLOCKFROST_API_KEY trên server.');
     }
     const network =
       (process.env.APP_NETWORK || process.env.BLOCKFROST_NETWORK || 'preprod')
@@ -334,7 +334,7 @@ export class TraceService {
       return {
         error: {
           lotPassport: {},
-          message: 'Invalid inventory key for chain lookup.',
+          message: 'Mã inventory không hợp lệ để tra cứu on-chain.',
         },
       };
     }
@@ -355,8 +355,8 @@ export class TraceService {
         lotPassport: {},
         message:
           lastErr instanceof Error
-            ? `Blockfrost could not find this asset (tried CIP-68 unit variants). ${lastErr.message}`
-            : 'Blockfrost could not find this asset for the given inventory key.',
+            ? `Blockfrost không tìm thấy asset (đã thử biến thể CIP-68). ${lastErr.message}`
+            : 'Blockfrost không tìm thấy asset cho mã inventory này.',
       },
     };
   }
@@ -374,7 +374,7 @@ export class TraceService {
       return {
         lotPassport: {},
         latestSignerWallet: null,
-        message: 'No transaction found for this inventory key.',
+        message: 'Không tìm thấy giao dịch cho mã inventory này.',
       };
     }
     try {
@@ -386,7 +386,7 @@ export class TraceService {
       if (!rawDatum) {
         return {
           lotPassport: {},
-          message: 'Latest transaction has no inline datum on output.',
+          message: 'Giao dịch mới nhất không có inline datum trên output.',
         };
       }
       const lotPassport = (await deserializeDatum(rawDatum)) as Record<string, unknown>;
@@ -418,7 +418,7 @@ export class TraceService {
       return {
         lotPassport: {},
         latestSignerWallet: null,
-        message: 'Failed to decode latest on-chain passport.',
+        message: 'Không giải mã được passport on-chain mới nhất.',
       };
     }
   }

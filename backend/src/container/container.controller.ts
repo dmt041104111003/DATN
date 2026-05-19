@@ -22,7 +22,7 @@ export class ContainerController {
   private getCustodian(req: any): string {
     const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
     if (!custodian) {
-      throw new HttpException('Unable to determine account identity from session.', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Không xác định được tài khoản từ phiên đăng nhập.', HttpStatus.UNAUTHORIZED);
     }
     return custodian;
   }
@@ -41,7 +41,7 @@ export class ContainerController {
     try {
       return await this.containerService.startBatch(this.getCustodian(req), body?.totalBoxes);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to start container batch.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không tạo được lô thùng.', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -50,7 +50,7 @@ export class ContainerController {
     try {
       return await this.containerService.updateBatchProgress(batchId, body?.completedBoxes, body?.status);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to update container batch.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không cập nhật được lô thùng.', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -59,7 +59,7 @@ export class ContainerController {
     try {
       return await this.containerService.create(this.getCustodian(req), body);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to register container.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không đăng ký được thùng.', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -68,7 +68,7 @@ export class ContainerController {
     try {
       return await this.containerService.update(this.getCustodian(req), inventoryKey, body);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to update container.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không cập nhật được thùng.', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -82,7 +82,7 @@ export class ContainerController {
         body?.txHash,
       );
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to delete container.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không xóa được thùng.', HttpStatus.BAD_REQUEST);
     }
   }
 }

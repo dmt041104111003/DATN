@@ -10,25 +10,49 @@ import {
   mConStr1,
   type UTxO,
 } from '@meshsdk/core';
+import type * as CSL from '@emurgo/cardano-serialization-lib-nodejs';
 import { PlutusHelper } from './plutus.helper';
+import { fetchOnChainCostmdls } from './protocol-params.helper';
+import { fixScriptDataHashInTx } from './fix-script-data-hash.helper';
 
 export class TxBuilderHelper {
   private blockfrostProvider: BlockfrostProvider;
   private plutusHelper: PlutusHelper;
   private readonly appNetworkId: number;
+  private readonly blockfrostApiKey: string;
+  private readonly appNetwork: string;
+  private costmdlsPromise?: Promise<CSL.Costmdls>;
 
-  constructor(blockfrostProvider: BlockfrostProvider, plutusHelper: PlutusHelper) {
+  constructor(blockfrostProvider: BlockfrostProvider, plutusHelper: PlutusHelper, blockfrostApiKey: string) {
     this.blockfrostProvider = blockfrostProvider;
     this.plutusHelper = plutusHelper;
+    this.blockfrostApiKey = blockfrostApiKey;
     const network = process.env.APP_NETWORK || 'preprod';
-    this.appNetworkId = network === 'mainnet' ? 1 : 0;
+    this.appNetwork = network === 'mainnet' ? 'mainnet' : 'preprod';
+    this.appNetworkId = this.appNetwork === 'mainnet' ? 1 : 0;
   }
 
-  private newTxBuilder(): MeshTxBuilder {
-    return new MeshTxBuilder({
+  private async newTxBuilder(): Promise<MeshTxBuilder> {
+    const builder = new MeshTxBuilder({
       fetcher: this.blockfrostProvider,
       evaluator: this.blockfrostProvider,
     });
+    const params = await this.blockfrostProvider.fetchProtocolParameters();
+    builder.protocolParams(params);
+    return builder;
+  }
+
+  private getCostmdls(): Promise<CSL.Costmdls> {
+    if (!this.costmdlsPromise) {
+      this.costmdlsPromise = fetchOnChainCostmdls(this.blockfrostApiKey, this.appNetwork);
+    }
+    return this.costmdlsPromise;
+  }
+
+  private async completeTx(builder: MeshTxBuilder): Promise<string> {
+    const txHex = await builder.complete();
+    const costmdls = await this.getCostmdls();
+    return fixScriptDataHashInTx(txHex, costmdls);
   }
 
   async getUtxosForAddress(address: string): Promise<UTxO[]> {
@@ -57,7 +81,7 @@ export class TxBuilderHelper {
     const utxos = await this.getUtxosForAddress(walletAddress);
     const collaterals = await this.getCollateralForAddress(walletAddress);
     if (utxos.length === 0 || collaterals.length === 0) {
-      throw new Error('Insufficient settlement capacity on this custodian account.');
+      throw new Error('Ví custodian không đủ UTxO hoặc collateral để thực hiện giao dịch.');
     }
 
     const collateral = collaterals[0];
@@ -75,12 +99,12 @@ export class TxBuilderHelper {
 
     if (!feePayerUtxo) {
       throw new Error(
-        'Add a small, spendable balance on this custodian account so record fees can be covered, then try again.',
+        'Nạp thêm ADA khả dụng vào ví custodian để trả phí giao dịch, rồi thử lại.',
       );
     }
 
     const { policyId, contractAddress, mintScriptCbor } = this.plutusHelper.getScripts(owners);
-    const unsignedTx = this.newTxBuilder();
+    const unsignedTx = await this.newTxBuilder();
     unsignedTx.txIn(
       feePayerUtxo.input.txHash,
       feePayerUtxo.input.outputIndex,
@@ -94,7 +118,7 @@ export class TxBuilderHelper {
         policyId + CIP68_100(stringToHex(productName)),
       );
       if (existingUtxo) {
-        throw new Error(`A registration already exists for agri lot "${productName}".`);
+        throw new Error(`Lô hàng "${productName}" đã được đăng ký trên chuỗi.`);
       }
 
       unsignedTx
@@ -123,7 +147,7 @@ export class TxBuilderHelper {
       )
       .setNetwork(this.appNetworkId === 1 ? 'mainnet' : 'preprod');
 
-    return await unsignedTx.complete();
+    return await this.completeTx(unsignedTx);
   }
 
   async buildUpdateTx(
@@ -134,7 +158,7 @@ export class TxBuilderHelper {
     const utxos = await this.getUtxosForAddress(walletAddress);
     const collaterals = await this.getCollateralForAddress(walletAddress);
     if (utxos.length === 0 || collaterals.length === 0) {
-      throw new Error('Insufficient settlement capacity on this custodian account.');
+      throw new Error('Ví custodian không đủ UTxO hoặc collateral để thực hiện giao dịch.');
     }
 
     const collateral = collaterals[0];
@@ -152,12 +176,12 @@ export class TxBuilderHelper {
 
     if (!feePayerUtxo) {
       throw new Error(
-        'Add a small, spendable balance on this custodian account so the refresh fees can be covered, then try again.',
+        'Nạp thêm ADA khả dụng vào ví custodian để trả phí cập nhật, rồi thử lại.',
       );
     }
 
     const { policyId, contractAddress, spendScriptCbor } = this.plutusHelper.getScripts(owners);
-    const unsignedTx = this.newTxBuilder();
+    const unsignedTx = await this.newTxBuilder();
     unsignedTx.txIn(
       feePayerUtxo.input.txHash,
       feePayerUtxo.input.outputIndex,
@@ -172,7 +196,7 @@ export class TxBuilderHelper {
       if (!referenceUtxo) {
         const ownersRaw = owners.map((x) => String(x || '').trim()).filter(Boolean).join(',');
         throw new Error(
-          `Vault deposit not found. productName=${productName}; policyId=${policyId}; contractAddress=${contractAddress}; referenceUnit=${referenceUnit}; owners=${ownersRaw}; utxoCount=${referenceUtxos.length}`,
+          `Không tìm thấy UTxO tham chiếu trên vault. Lô: ${productName}; policyId=${policyId}; contract=${contractAddress}; owners=${ownersRaw}`,
         );
       }
       unsignedTx
@@ -197,19 +221,19 @@ export class TxBuilderHelper {
       )
       .setNetwork(this.appNetworkId === 1 ? 'mainnet' : 'preprod');
 
-    return await unsignedTx.complete();
+    return await this.completeTx(unsignedTx);
   }
 
   async buildBurnTx(walletAddress: string, owners: string[], products: Array<{ productName: string }>): Promise<string> {
     const utxos = await this.getUtxosForAddress(walletAddress);
     const collaterals = await this.getCollateralForAddress(walletAddress);
     if (utxos.length === 0 || collaterals.length === 0) {
-      throw new Error('Insufficient settlement capacity on this custodian account.');
+      throw new Error('Ví custodian không đủ UTxO hoặc collateral để thực hiện giao dịch.');
     }
 
     const collateral = collaterals[0];
     const { policyId, contractAddress, mintScriptCbor, spendScriptCbor } = this.plutusHelper.getScripts(owners);
-    const unsignedTx = this.newTxBuilder();
+    const unsignedTx = await this.newTxBuilder();
 
     for (const { productName } of products) {
       const userUnit = policyId + CIP68_222(stringToHex(productName));
@@ -217,7 +241,7 @@ export class TxBuilderHelper {
       const userUtxos = await this.blockfrostProvider.fetchAddressUTxOs(walletAddress, userUnit);
       const referenceUtxo = await this.getAddressUTXOAsset(contractAddress, referenceUnit);
       if (!referenceUtxo) {
-        throw new Error(`Vault deposit for agri lot "${productName}" was not found.`);
+        throw new Error(`Không tìm thấy deposit vault cho lô "${productName}".`);
       }
       const amount = userUtxos
         .flatMap((u) => u.output.amount)
@@ -256,6 +280,6 @@ export class TxBuilderHelper {
       )
       .setNetwork(this.appNetworkId === 1 ? 'mainnet' : 'preprod');
 
-    return await unsignedTx.complete();
+    return await this.completeTx(unsignedTx);
   }
 }

@@ -36,45 +36,55 @@ function parseStringArray(value) {
         .map((x) => cleanString(x))
         .filter(Boolean);
 }
+function makeContainerCode(seq) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const rand = String(Math.floor(Math.random() * 900) + 100);
+    return `THUNG_${y}${m}${d}_${rand}_${String(seq).padStart(3, '0')}`;
+}
 let ContainerService = class ContainerService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    parseKg(value) {
-        const n = Number(cleanString(value).replace(",", "."));
-        return Number.isFinite(n) && n > 0 ? n : 0;
-    }
-    async getCapacitySummary(productionInventoryKeyRaw, excludeContainerInventoryKeyRaw) {
-        const productionInventoryKey = cleanString(productionInventoryKeyRaw);
-        const excludeContainerInventoryKey = cleanString(excludeContainerInventoryKeyRaw);
-        if (!productionInventoryKey)
-            throw new common_1.NotFoundException('Production not found');
-        const production = await this.prisma.production.findUnique({
-            where: { inventoryKey: productionInventoryKey },
-            select: { actualYieldKg: true },
-        });
-        if (!production)
-            throw new common_1.NotFoundException('Production not found');
-        const totalCapacityKg = this.parseKg(production?.actualYieldKg);
-        const rows = await this.prisma.container.findMany({
-            where: {
-                productionInventoryKey,
-                ...(excludeContainerInventoryKey ? { inventoryKey: { not: excludeContainerInventoryKey } } : {}),
-            },
-            select: { actualCapacityKg: true },
-        });
-        const usedCapacityKg = (rows || []).reduce((sum, row) => sum + this.parseKg(row?.actualCapacityKg), 0);
-        const remainingCapacityKg = Math.max(totalCapacityKg - usedCapacityKg, 0);
-        return { productionInventoryKey, totalCapacityKg, usedCapacityKg, remainingCapacityKg };
-    }
-    async assertCapacityWithinRemaining(productionInventoryKeyRaw, actualCapacityKgRaw, excludeContainerInventoryKeyRaw) {
-        const actualCapacityKg = this.parseKg(actualCapacityKgRaw);
-        if (!actualCapacityKg)
-            return;
-        const summary = await this.getCapacitySummary(productionInventoryKeyRaw, excludeContainerInventoryKeyRaw);
-        if (actualCapacityKg > summary.remainingCapacityKg) {
-            throw new Error(`Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary.remainingCapacityKg} kg.`);
+    async startBatch(createdBy, totalBoxesRaw) {
+        const addr = cleanString(createdBy);
+        const totalBoxes = Number(totalBoxesRaw);
+        if (!Number.isFinite(totalBoxes) || totalBoxes < 1) {
+            throw new Error('Số lượng thùng phải lớn hơn 0.');
         }
+        if (totalBoxes > 100) {
+            throw new Error('Số lượng thùng tối đa là 100.');
+        }
+        return await this.prisma.containerBatch.create({
+            data: {
+                registeringCustodianAddress: addr,
+                totalBoxes: Math.floor(totalBoxes),
+                completedBoxes: 0,
+                status: 'IN_PROGRESS',
+            },
+        });
+    }
+    async updateBatchProgress(batchIdRaw, completedBoxesRaw, statusRaw) {
+        const batchId = cleanString(batchIdRaw);
+        if (!batchId)
+            throw new common_1.NotFoundException('Không tìm thấy lô thùng.');
+        const completedBoxes = Number(completedBoxesRaw);
+        const existing = await this.prisma.containerBatch.findUnique({ where: { id: batchId } });
+        if (!existing)
+            throw new common_1.NotFoundException('Không tìm thấy lô thùng.');
+        const totalBoxes = Number(existing.totalBoxes || 0);
+        const nextCompleted = Number.isFinite(completedBoxes)
+            ? Math.max(0, Math.min(Math.floor(completedBoxes), totalBoxes))
+            : Number(existing.completedBoxes || 0);
+        let status = cleanString(statusRaw || existing.status) || 'IN_PROGRESS';
+        if (nextCompleted >= totalBoxes)
+            status = 'DONE';
+        return await this.prisma.containerBatch.update({
+            where: { id: batchId },
+            data: { completedBoxes: nextCompleted, status },
+        });
     }
     toResponse(row, latest, txHashOverride) {
         return {
@@ -95,10 +105,7 @@ let ContainerService = class ContainerService {
             }))
                 .filter((row) => row.walletAddress)
             : [];
-        const wallets = fromRows
-            .map((x) => x.walletAddress)
-            .map((x) => cleanString(x))
-            .filter(Boolean);
+        const wallets = fromRows.map((x) => x.walletAddress).filter(Boolean);
         const locationByWallet = new Map();
         for (const row of fromRows) {
             const key = cleanString(row.walletAddress).toLowerCase();
@@ -194,19 +201,17 @@ let ContainerService = class ContainerService {
         const addr = cleanString(createdBy);
         const inventoryKey = cleanString(data.inventoryKey);
         const txHash = cleanString(data.txHash);
-        await this.assertCapacityWithinRemaining(data?.productionInventoryKey, data?.actualCapacityKg);
         const participants = this.buildParticipants(data);
         const row = await this.prisma.container.create({
             data: {
                 traceSchemeRef: cleanString(data.traceSchemeRef),
                 inventoryKey,
-                code: cleanString(data.code) || `THUNG_${Date.now()}`,
+                code: cleanString(data.code) || makeContainerCode(Date.now() % 1000),
                 productionInventoryKey: cleanString(data.productionInventoryKey),
                 registeringCustodianAddress: addr,
-                location: cleanString(data.location) || null,
+                batchId: cleanString(data.batchId) || null,
                 containerType: cleanString(data.containerType) || null,
-                capacityKg: cleanString(data.capacityKg) || null,
-                actualCapacityKg: cleanString(data.actualCapacityKg) || null,
+                weightPerBoxKg: cleanString(data.weightPerBoxKg) || null,
                 productName: cleanString(data.productName) || null,
                 participantWalletAddresses: JSON.stringify(participants.wallets),
                 participantLocationLabels: participants.locations.join('; '),
@@ -226,6 +231,7 @@ let ContainerService = class ContainerService {
                 payload: {
                     participantWalletAddresses: participants.wallets,
                     participantLocationLabels: participants.locations,
+                    verifiedWalletAddresses: participants.wallets,
                 },
             },
         });
@@ -241,10 +247,7 @@ let ContainerService = class ContainerService {
             where: { inventoryKey: key },
         });
         if (!existing)
-            throw new common_1.NotFoundException('Container not found');
-        const nextProductionInventoryKey = cleanString(data?.productionInventoryKey || existing.productionInventoryKey);
-        const nextActualCapacityKg = cleanString(data?.actualCapacityKg || existing.actualCapacityKg);
-        await this.assertCapacityWithinRemaining(nextProductionInventoryKey, nextActualCapacityKg, key);
+            throw new common_1.NotFoundException('Không tìm thấy thùng.');
         const nextStatus = cleanString(data.status || existing.status).toUpperCase();
         const participants = this.buildParticipants(data);
         const patch = {
@@ -256,14 +259,10 @@ let ContainerService = class ContainerService {
             patch.note = cleanString(data.note) || null;
         if (data.containerType !== undefined)
             patch.containerType = cleanString(data.containerType) || null;
-        if (data.capacityKg !== undefined)
-            patch.capacityKg = cleanString(data.capacityKg) || null;
-        if (data.actualCapacityKg !== undefined)
-            patch.actualCapacityKg = cleanString(data.actualCapacityKg) || null;
+        if (data.weightPerBoxKg !== undefined)
+            patch.weightPerBoxKg = cleanString(data.weightPerBoxKg) || null;
         if (data.productName !== undefined)
             patch.productName = cleanString(data.productName) || null;
-        if (data.location !== undefined)
-            patch.location = cleanString(data.location) || null;
         const updated = await this.prisma.container.update({
             where: { inventoryKey: key },
             data: patch,
@@ -282,6 +281,7 @@ let ContainerService = class ContainerService {
                     payload: {
                         participantWalletAddresses: participants.wallets,
                         participantLocationLabels: participants.locations,
+                        verifiedWalletAddresses: participants.wallets,
                     },
                 },
             });
@@ -298,7 +298,7 @@ let ContainerService = class ContainerService {
         const txHash = cleanString(txHashRaw);
         const existing = await this.prisma.container.findUnique({ where: { inventoryKey: key } });
         if (!existing)
-            throw new common_1.NotFoundException('Container not found');
+            throw new common_1.NotFoundException('Không tìm thấy thùng.');
         await this.prisma.recordOperation.create({
             data: {
                 entityType: ENTITY_TYPE,

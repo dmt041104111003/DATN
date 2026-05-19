@@ -5,7 +5,7 @@ export async function deserializeDatum(datum: string): Promise<Record<string, un
   const decoded = await cbor.decodeFirst(cborDatum) as { value?: unknown[] } | unknown[];
   const datumMap = Array.isArray(decoded) ? decoded[0] : decoded?.value?.[0];
   if (!(datumMap instanceof Map)) {
-    throw new Error('Invalid Datum');
+    throw new Error('Datum không hợp lệ.');
   }
   const obj: Record<string, unknown> = {};
   datumMap.forEach((value: unknown, key: unknown) => {

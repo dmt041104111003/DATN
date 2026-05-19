@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const contract_service_1 = require("./contract.service");
 const contract_create_dto_1 = require("./dto/contract-create.dto");
+const contract_batch_create_dto_1 = require("./dto/contract-batch-create.dto");
 const contract_save_dto_1 = require("./dto/contract-save.dto");
 const contract_burn_dto_1 = require("./dto/contract-burn.dto");
 let ContractController = class ContractController {
@@ -32,6 +33,9 @@ let ContractController = class ContractController {
     }
     async create(req, dto) {
         return this.svc.createUnsignedCreateTx(dto, this.getSignerAddress(req));
+    }
+    async createBatch(req, dto) {
+        return this.svc.createUnsignedBatchCreateTx(dto, this.getSignerAddress(req));
     }
     async save(req, dto) {
         return this.svc.createUnsignedSaveTx(dto, this.getSignerAddress(req));
@@ -56,6 +60,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, contract_create_dto_1.ContractCreateDto]),
     __metadata("design:returntype", Promise)
 ], ContractController.prototype, "create", null);
+__decorate([
+    (0, common_1.Post)('create-batch'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, contract_batch_create_dto_1.ContractBatchCreateDto]),
+    __metadata("design:returntype", Promise)
+], ContractController.prototype, "createBatch", null);
 __decorate([
     (0, common_1.Post)('save'),
     __param(0, (0, common_1.Req)()),

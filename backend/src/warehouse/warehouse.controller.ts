@@ -22,7 +22,7 @@ export class WarehouseController {
   private getCustodian(req: any): string {
     const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
     if (!custodian) {
-      throw new HttpException('Unable to determine account identity from session.', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Không xác định được tài khoản từ phiên đăng nhập.', HttpStatus.UNAUTHORIZED);
     }
     return custodian;
   }
@@ -37,7 +37,7 @@ export class WarehouseController {
     try {
       return await this.warehouseService.create(this.getCustodian(req), body);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to create warehouse.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không tạo được kho.', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -46,7 +46,7 @@ export class WarehouseController {
     try {
       return await this.warehouseService.update(this.getCustodian(req), id, body);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to update warehouse.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không cập nhật được kho.', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -55,7 +55,7 @@ export class WarehouseController {
     try {
       return await this.warehouseService.remove(this.getCustodian(req), id);
     } catch (e) {
-      throw new HttpException(e instanceof Error ? e.message : 'Failed to delete warehouse.', HttpStatus.BAD_REQUEST);
+      throw new HttpException(e instanceof Error ? e.message : 'Không xóa được kho.', HttpStatus.BAD_REQUEST);
     }
   }
 }

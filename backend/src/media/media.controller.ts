@@ -24,7 +24,7 @@ export class MediaController {
   @UseInterceptors(FileInterceptor('file'))
   async upload(@Req() _req: any, @UploadedFile() file: any, @Body() _body: any) {
     if (!file) {
-      throw new HttpException('File is required', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Thiếu file tải lên.', HttpStatus.BAD_REQUEST);
     }
 
     const PINATA_API_KEY = process.env.PINATA_API_KEY;
@@ -32,7 +32,7 @@ export class MediaController {
 
     if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
       throw new HttpException(
-        'File storage credentials are not configured on the server.',
+        'Server chưa cấu hình thông tin lưu trữ file (Pinata).',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -59,7 +59,7 @@ export class MediaController {
     const data = res.data as { IpfsHash?: string; error?: unknown; message?: string };
     if (!data?.IpfsHash) {
       throw new HttpException(
-        data?.message || 'Failed to store file.',
+        data?.message || 'Không lưu được file.',
         HttpStatus.BAD_REQUEST,
       );
     }

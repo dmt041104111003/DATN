@@ -82,14 +82,14 @@ let ProfileService = class ProfileService {
     getSecret() {
         const secret = this.config.get('JWT_SECRET');
         if (!secret)
-            throw new common_1.UnauthorizedException('JWT secret not configured');
+            throw new common_1.UnauthorizedException('Chưa cấu hình JWT_SECRET trên server.');
         return secret;
     }
     validatePaymentAddress(custodianAddress) {
         const addr = this.getAddress(custodianAddress);
         const isPayment = /^addr1[0-9a-z]+$/.test(addr) || /^addr_test1[0-9a-z]+$/.test(addr);
         if (!isPayment) {
-            throw new common_1.BadRequestException(`Invalid wallet address. Please use a payment address (addr... / addr_test...). Received: ${custodianAddress}`);
+            throw new common_1.BadRequestException(`Địa chỉ ví không hợp lệ. Dùng addr... / addr_test.... Nhận được: ${custodianAddress}`);
         }
         return addr;
     }
@@ -97,20 +97,20 @@ let ProfileService = class ProfileService {
         const addr = this.validatePaymentAddress(custodianAddress);
         const roleCode = (data.roleCode || '').trim().toUpperCase();
         if (!roleCode)
-            throw new common_1.BadRequestException('Role is required.');
+            throw new common_1.BadRequestException('Vai trò là bắt buộc.');
         const role = await this.prisma.role.findUnique({ where: { code: roleCode } });
         if (!role)
-            throw new common_1.BadRequestException('Invalid role.');
+            throw new common_1.BadRequestException('Vai trò không hợp lệ.');
         const displayName = (data.displayName || '').trim();
         if (!displayName)
-            throw new common_1.BadRequestException('Display name is required.');
+            throw new common_1.BadRequestException('Tên hiển thị là bắt buộc.');
         const phoneNumber = (data.phoneNumber || '').trim() || null;
         const existing = await this.prisma.user.findUnique({
             where: { address: addr },
             select: { roleCode: true },
         });
         if (existing?.roleCode && existing.roleCode !== roleCode) {
-            throw new common_1.BadRequestException('Role cannot be changed after profile creation.');
+            throw new common_1.BadRequestException('Không thể đổi vai trò sau khi tạo hồ sơ.');
         }
         const account = await this.prisma.user.update({
             where: { address: addr },
@@ -138,7 +138,7 @@ let ProfileService = class ProfileService {
         const displayName = typeof data.displayName === 'string' ? data.displayName.trim() : '';
         const phoneNumber = typeof data.phoneNumber === 'string' ? data.phoneNumber.trim() || null : undefined;
         if (!displayName) {
-            throw new common_1.BadRequestException('Display name is required.');
+            throw new common_1.BadRequestException('Tên hiển thị là bắt buộc.');
         }
         const account = await this.prisma.user.update({
             where: { id: accountId },
@@ -153,7 +153,7 @@ let ProfileService = class ProfileService {
     async listProfiles(custodianAddress) {
         const addr = this.getAddress(custodianAddress);
         if (!addr) {
-            throw new common_1.BadRequestException('Account reference is required.');
+            throw new common_1.BadRequestException('Thiếu tham chiếu tài khoản.');
         }
         const account = await this.prisma.user.findUnique({
             where: { address: addr },
@@ -169,7 +169,7 @@ let ProfileService = class ProfileService {
             select: this.userSelect,
         });
         if (!account || !account.roleCode) {
-            throw new common_1.BadRequestException('Profile not found.');
+            throw new common_1.BadRequestException('Không tìm thấy hồ sơ.');
         }
         return this.mapProfileRow(account);
     }

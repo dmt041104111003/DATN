@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import type { ValidationError } from 'class-validator';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -40,11 +41,37 @@ async function bootstrap() {
     exposedHeaders: ['Content-Range', 'X-Total-Count'],
   });
 
-  // Global validation pipe
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-  }));
+  const formatValidationErrors = (items: ValidationError[], parent = ''): string[] => {
+    const lines: string[] = [];
+    for (const err of items) {
+      const path = parent ? `${parent}.${err.property}` : err.property;
+      if (err.constraints) {
+        const key = Object.keys(err.constraints)[0] || '';
+        if (key.includes('whitelistValidation')) {
+          lines.push(`Trường "${path}" không được phép.`);
+        } else if (key.includes('isNotEmpty') || key.includes('isString')) {
+          lines.push(`Trường "${path}" không hợp lệ hoặc bị thiếu.`);
+        } else if (key.includes('arrayMinSize') || key.includes('arrayMaxSize')) {
+          lines.push(`Trường "${path}" phải có số phần tử hợp lệ.`);
+        } else {
+          lines.push(`Trường "${path}" không hợp lệ.`);
+        }
+      }
+      if (err.children?.length) lines.push(...formatValidationErrors(err.children, path));
+    }
+    return lines;
+  };
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      exceptionFactory: (errors) =>
+        new BadRequestException(
+          formatValidationErrors(errors).join(' ') || 'Dữ liệu gửi lên không hợp lệ.',
+        ),
+    }),
+  );
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
