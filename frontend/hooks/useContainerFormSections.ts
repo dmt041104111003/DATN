@@ -2,51 +2,19 @@
 
 import * as React from "react";
 import { useGetList, useRecordContext } from "react-admin";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
 import { EMPTY_PARTICIPANT_ROW } from "@/features/resources/shared/locationHelpers";
-import { fetchCapacitySummary } from "@/features/resources/containers/fetchCapacitySummary";
-
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 export function useContainerFormSections() {
   const record = useRecordContext<any>();
   const { getValues, setValue } = useFormContext();
   const storageLocked = Boolean(record?.storageLocked);
-  const productionInventoryKey = String(useWatch({ name: "productionInventoryKey" }) ?? "");
-  const capacityKg = String(useWatch({ name: "capacityKg" }) ?? "");
-  const [capacitySummary, setCapacitySummary] = React.useState<{ totalCapacityKg: number; usedCapacityKg: number; remainingCapacityKg: number } | null>(null);
   const { data: productionRows = [] } = useGetList("production", {
     pagination: { page: 1, perPage: 1000 },
     sort: { field: "createdAt", order: "DESC" },
   });
-
-  const actualCapacityValidator = (value: unknown) => {
-    const rawValue = String(value ?? "").trim();
-    const actual = Number(rawValue);
-    const max = Number(capacityKg.trim());
-    if (!rawValue) return undefined;
-    if (!Number.isFinite(actual)) return undefined;
-    if (!Number.isFinite(max)) return undefined;
-    if (actual <= max) return undefined;
-    return "Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.";
-  };
-
-  React.useEffect(() => {
-    const key = productionInventoryKey.trim();
-    if (!key) {
-      setCapacitySummary(null);
-      return;
-    }
-
-    fetchCapacitySummary(key)
-      .then((summary) => {
-        setCapacitySummary(summary);
-      })
-      .catch(() => {
-        setCapacitySummary(null);
-      });
-  }, [productionInventoryKey]);
 
   const productionChoices = [];
 
@@ -99,5 +67,5 @@ export function useContainerFormSections() {
       .catch(() => undefined);
   }, [getValues, setValue]);
 
-  return { storageLocked, actualCapacityValidator, capacitySummary, productionChoices };
+  return { storageLocked, productionChoices };
 }

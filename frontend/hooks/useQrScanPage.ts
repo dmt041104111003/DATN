@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useDataProvider, useGetList } from "react-admin";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
-import { captureCurrentGpsLocation } from "@/features/resources/shared/location";
 import { parsePositiveNumber } from "@/features/resources/shared/numberHelpers";
 
 const DEFAULT_WAREHOUSE_KEY = "qr-scan-default-warehouse-id";
@@ -13,7 +12,7 @@ function getStorageKey(row: any) {
 }
 
 function getContainerCapacity(row: any) {
-  return parsePositiveNumber(row?.actualCapacityKg || row?.capacityKg);
+  return parsePositiveNumber(row?.weightPerBoxKg || row?.actualCapacityKg || row?.capacityKg);
 }
 
 export function useQrScanPage() {
@@ -84,10 +83,6 @@ export function useQrScanPage() {
 
     if (!warehouse) return void setStatusError("Kho mặc định không hợp lệ.");
 
-    const warehouseLocation = cleanString(warehouse?.location);
-    const warehouseParts = warehouseLocation.split(",").map((x) => cleanString(x)).filter(Boolean);
-    if (warehouseParts.length < 3) return void setStatusError("Kho chưa có location hợp lệ dạng 'tỉnh, quận, xã'.");
-
     const selectedContainerCapacity = getContainerCapacity(selectedContainer);
     const warehouseCapacity = parsePositiveNumber(warehouse?.capacity);
 
@@ -121,9 +116,6 @@ export function useQrScanPage() {
     setStatusError("");
     setStatusText("");
     try {
-      const gps = await captureCurrentGpsLocation();
-      const gpsTriple = `${cleanString(gps?.provinceId)}, ${cleanString(gps?.districtId)}, ${cleanString(gps?.wardId)}`;
-      if (!gpsTriple.replace(/[,\s]/g, "")) throw new Error("Không đọc được GPS location hiện tại.");
       const data = { warehouseId, containerInventoryKey: inventoryKey, conditions: "" };
       await dataProvider.create("warehouse-storage", { data });
       setStatusText(`Đã nhập kho: ${inventoryKey}`);

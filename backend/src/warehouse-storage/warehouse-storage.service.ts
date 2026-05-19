@@ -104,13 +104,6 @@ export class WarehouseStorageService {
         conditions: cleanString(data?.conditions) || null,
       } as any,
     });
-    const location = cleanString(data?.location);
-    if (location) {
-      await (this.prisma as any).container.update({
-        where: { inventoryKey: containerInventoryKey },
-        data: { location } as any,
-      });
-    }
     await this.writeOperation('CREATE', data?.txHash, cleanString(row?.id), containerInventoryKey, {
       warehouseId,
       storageTime: new Date().toISOString(),

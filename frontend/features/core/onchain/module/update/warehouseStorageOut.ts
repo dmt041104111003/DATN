@@ -16,8 +16,6 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
     containerRows.find((x: any) => deps.cleanString(x?.inventoryKey) === containerInventoryKey) || null;
   const containerStatus = deps.cleanString(containerRow?.status).toUpperCase();
   if (containerStatus === "CONSUMED") throw new Error("Thùng hàng đã tiêu thụ trước đó.");
-  const gps = await deps.captureCurrentGpsLocation();
-  const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
   const base = params.previousData || {};
   const owners = deps.buildOwnerList(containerRow || base, owner);
   const inventoryKey = containerInventoryKey;
@@ -29,7 +27,6 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
       container_ref_inline: formatProductionRefInline(
         (base as any)?.containerInventoryKey || (base as any)?.productId,
       ),
-      current_location: location,
       storage_created_at: deps.cleanString((base as any)?.createdAt) || new Date().toISOString(),
       storage_updated_at: new Date().toISOString(),
       storage_conditions: (base as any)?.conditions,
@@ -46,7 +43,7 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
     `${deps.BACKEND_URL}/warehouse-storage/${encodeURIComponent(String(params.id))}`,
     {
       method: "DELETE",
-      body: JSON.stringify({ txHash, location }),
+      body: JSON.stringify({ txHash }),
     },
   );
   const row = json as any;

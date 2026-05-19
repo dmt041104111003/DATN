@@ -1,0 +1,14 @@
+[[packages]]
+name = "aiken-lang/stdlib"
+version = "v3.0.0"
+source = "github"
+
+[[packages]]
+name = "logical-mechanism/assist"
+version = "v0.5.1"
+source = "github"
+
+[[packages]]
+name = "sidan-lab/vodka"
+version = "0.1.22"
+source = "github"

@@ -10,6 +10,7 @@ import {
   TextInput,
 } from "react-admin";
 import { useWatch } from "react-hook-form";
+import { MilGrid, MilSection } from "@/features/ui/military/MilSection";
 import { positiveNumber } from "@/features/resources/shared/numberHelpers";
 import { CERTIFICATIONS } from "./constants";
 import { ProductionAdministrativeAreaFields } from "./ProductionAdministrativeAreaFields";
@@ -27,15 +28,11 @@ export function ProductionFormSections() {
 
   return (
     <>
-      {fullyLocked ? (
-        <div className="mb-3 inline-flex rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-          Đã thu hoạch
-        </div>
-      ) : null}
-      <div className="py-1">
-        <h3 className="mb-4 font-semibold">[1] Thông tin vụ sản xuất</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <TextInput source="code" label="Mã vụ mùa *" disabled fullWidth />
+      {fullyLocked ? <span className="mil-badge">Đã thu hoạch</span> : null}
+
+      <MilSection index={1} title="Thông tin vụ sản xuất">
+        <MilGrid>
+          <TextInput source="code" label="Mã vụ mùa" disabled fullWidth />
           <TextInput
             source="facilityId"
             label="Tên cơ sở sản xuất"
@@ -64,19 +61,13 @@ export function ProductionFormSections() {
             fullWidth
           />
           {fullyLocked ? (
-            <DateInput
-              source="harvestDate"
-              label="Ngày thu hoạch"
-              disabled
-              fullWidth
-            />
+            <DateInput source="harvestDate" label="Ngày thu hoạch" disabled fullWidth />
           ) : null}
-        </div>
-      </div>
+        </MilGrid>
+      </MilSection>
 
-      <div className="py-1">
-        <h3 className="mb-4 font-semibold">[2] Thông tin cây trồng</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <MilSection index={2} title="Thông tin cây trồng">
+        <MilGrid>
           <TextInput
             source="cropType"
             label="Loại cây"
@@ -107,13 +98,12 @@ export function ProductionFormSections() {
               fullWidth
             />
           ) : null}
-        </div>
-      </div>
+        </MilGrid>
+      </MilSection>
 
-      <div id="production-evidence-section" className="py-1">
-        <h3 className="mb-4 font-semibold">[3] Thông tin chứng nhận & minh chứng</h3>
-        <div className="grid grid-cols-1 gap-4">
-          <div id="production-cert-section">
+      <MilSection index={3} title="Chứng nhận & minh chứng">
+        <MilGrid>
+          <div id="production-cert-section" className="md:col-span-2">
             <CheckboxGroupInput
               source="certifications"
               label="Chứng nhận"
@@ -132,18 +122,21 @@ export function ProductionFormSections() {
               fullWidth
             />
           ) : null}
-          <FileInput
-            source="evidenceFiles"
-            label="Ảnh minh chứng (nhiều ảnh)"
-            multiple
-            disabled={fullyLocked}
-          >
-            <FileField source="title" title="title" />
-          </FileInput>
-          <TextInput source="note" label="Ghi chú" multiline disabled={fullyLocked} fullWidth />
-        </div>
-      </div>
+          <div className="md:col-span-2">
+            <FileInput
+              source="evidenceFiles"
+              label="Ảnh minh chứng (nhiều ảnh)"
+              multiple
+              disabled={fullyLocked}
+            >
+              <FileField source="title" title="title" />
+            </FileInput>
+          </div>
+          <div className="md:col-span-2">
+            <TextInput source="note" label="Ghi chú" multiline disabled={fullyLocked} fullWidth />
+          </div>
+        </MilGrid>
+      </MilSection>
     </>
   );
 }
-

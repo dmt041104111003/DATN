@@ -82,6 +82,20 @@ model Production {
   @@index([registeringCustodianAddress])
 }
 
+model ContainerBatch {
+  id                          String   @id @default(cuid())
+  registeringCustodianAddress String
+  totalBoxes                  Int
+  completedBoxes              Int      @default(0)
+  status                      String   @default("IN_PROGRESS")
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  containers                  Container[]
+
+  @@index([registeringCustodianAddress])
+}
+
 model Container {
   id                          String   @id @default(cuid())
   traceSchemeRef              String
@@ -91,10 +105,11 @@ model Container {
   production                  Production @relation(fields: [productionInventoryKey], references: [inventoryKey], onDelete: Restrict)
   registeringCustodianAddress String
   registeringCustodian        User? @relation(fields: [registeringCustodianAddress], references: [address], onDelete: Restrict)
+  batchId                     String?
+  batch                       ContainerBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
   location                    String?
   containerType               String?
-  capacityKg                  String?
-  actualCapacityKg            String?
+  weightPerBoxKg              String?
   productName                 String?
   participantWalletAddresses  String   @default("[]")
   participantLocationLabels   String   @default("")
@@ -108,6 +123,7 @@ model Container {
 
   @@index([productionInventoryKey])
   @@index([registeringCustodianAddress])
+  @@index([batchId])
 }
 
 model Warehouse {

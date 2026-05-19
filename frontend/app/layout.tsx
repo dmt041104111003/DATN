@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Traceability",
+  title: "UTC",
   description:
-    "A Cardano-based traceability solution for products using NFTs and QR codes.",
+    "Truy xuất nguồn gốc sản phẩm",
   icons: {
-    icon: "/logo.svg",
+    icon: "/gov.png",
   },
 };
 

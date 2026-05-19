@@ -2,7 +2,8 @@
 
 import { Create, required, SimpleForm, TextInput } from "react-admin";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
-import { CREATE_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
+import { MilGrid, MilSection } from "@/features/ui/military/MilSection";
+import { CREATE_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
 import { WarehouseAdministrativeAreaFields } from "./WarehouseAdministrativeAreaFields";
 
 export function WarehouseResourceCreate() {
@@ -25,10 +26,18 @@ export function WarehouseResourceCreate() {
         };
       }}
     >
-      <SimpleForm sx={FORM_SX}>
-        <TextInput source="name" label="Tên kho" validate={[required()]} fullWidth />
-        <WarehouseAdministrativeAreaFields />
-        <TextInput source="capacity" label="Sức chứa (kg)" type="number" validate={[required()]} fullWidth />
+      <SimpleForm sx={MIL_FORM_SX}>
+        <MilSection index={1} title="Thông tin kho">
+          <MilGrid>
+            <TextInput source="name" label="Tên kho" validate={[required()]} fullWidth />
+            <TextInput source="capacity" label="Sức chứa (kg)" type="number" validate={[required()]} fullWidth />
+          </MilGrid>
+        </MilSection>
+        <MilSection index={2} title="Vị trí kho">
+          <MilGrid>
+            <WarehouseAdministrativeAreaFields />
+          </MilGrid>
+        </MilSection>
       </SimpleForm>
     </Create>
   );

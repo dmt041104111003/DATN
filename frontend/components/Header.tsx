@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { useWalletAuth } from "../hooks/useWalletAuth";
+import { WalletPickerModal } from "./WalletPickerModal";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -23,7 +24,8 @@ const MENU = [
 export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const { loginWithEternl, isLoading, error } = useWalletAuth();
+  const { loginWithWallet, isLoading, error } = useWalletAuth();
+  const [walletPickerOpen, setWalletPickerOpen] = React.useState(false);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [hasRole, setHasRole] = React.useState(false);
 
@@ -56,7 +58,12 @@ export function Header() {
   }, [fetchMe]);
 
   const handleLogin = () => {
-    loginWithEternl();
+    setWalletPickerOpen(true);
+  };
+
+  const handleWalletSelect = async (walletId: string) => {
+    setWalletPickerOpen(false);
+    await loginWithWallet(walletId);
   };
 
   const handleDashboardClick = async () => {
@@ -78,13 +85,13 @@ export function Header() {
     pathname === "/"
       ? "home"
       : pathname.startsWith("/trace-scan")
-      ? "trace-scan"
-      : pathname.startsWith("/admin") ||
-        pathname.startsWith("/enterprise") ||
-        pathname.startsWith("/transit") ||
-        pathname.startsWith("/agent")
-      ? "dashboard"
-      : null;
+        ? "trace-scan"
+        : pathname.startsWith("/admin") ||
+            pathname.startsWith("/enterprise") ||
+            pathname.startsWith("/transit") ||
+            pathname.startsWith("/agent")
+          ? "dashboard"
+          : null;
 
   React.useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -95,170 +102,100 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   React.useEffect(() => {
-    if (error) {
-      alert(error);
-    }
+    if (error) alert(error);
   }, [error]);
 
+  const navLinkClass = (active: boolean) =>
+    `text-sm md:text-base font-semibold tracking-wide transition-colors ${
+      active ? "underline underline-offset-4 text-[#ffd89b]" : "text-white hover:text-[#ffd89b]"
+    }`;
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 m-0 p-0 bg-white">
-      <div className="max-w-[1920px] mx-auto flex items-center justify-between px-4 md:px-10 py-3.5 md:py-5">
+    <div className="gov-header fixed top-0 left-0 right-0 z-50 m-0 p-0">
+      <div className="max-w-[1920px] mx-auto flex items-center justify-between px-4 md:px-10 py-3.5 md:py-4">
         <div className="flex items-center justify-between w-full md:w-auto gap-3">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image src="/logo.png" alt="Logo" width={56} height={56} className="w-12 h-12 object-contain" priority />
-            <span className="hidden sm:inline text-base md:text-lg font-semibold text-gray-900">
-              Truy xuất nguồn gốc
+          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+            <Image src="/gov.png" alt="Logo" width={52} height={52} className="w-11 h-11 object-contain rounded-sm" priority />
+            <span className="hidden sm:inline text-base md:text-lg font-bold text-white tracking-wide">
+              UTC
             </span>
           </Link>
-
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            className="md:hidden flex-shrink-0 p-2 rounded-full hover:bg-black/10"
+            className="md:hidden flex-shrink-0 p-2 rounded-sm hover:bg-white/10"
             aria-label="Mở menu"
           >
-            <span className="material-icons text-2xl text-gray-800">
-              menu
-            </span>
+            <span className="material-icons text-2xl text-white">menu</span>
           </button>
         </div>
 
-        <nav className="hidden md:flex items-center">
-          <div className="flex gap-2 md:gap-3">
-            {MENU.map((item) => {
-              const isActive = activeId === item.id;
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className="header-nav-item flex items-center gap-1 px-3 py-1 md:py-1.5 text-sm md:text-base font-medium transition-all"
-                >
-                    <span
-                      className={`${
-                        isActive
-                          ? "underline underline-offset-4 text-red-400"
-                          : "text-gray-800"
-                      } hover:underline hover:underline-offset-4`}
-                    >
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-            <button
-              onClick={isAuthenticated ? handleDashboardClick : handleLogin}
-              className="header-nav-item flex items-center gap-1 px-3 py-1 md:py-1.5 text-sm md:text-base font-medium transition-all bg-transparent border-none cursor-pointer"
-              disabled={isLoading}
-            >
-              <span
-                className={`${
-                  pathname.startsWith("/admin") ||
-                  pathname.startsWith("/enterprise") ||
-                  pathname.startsWith("/transit") ||
-                  pathname.startsWith("/agent")
-                    ? "underline underline-offset-4 text-red-400"
-                    : "text-gray-800"
-                } hover:underline hover:underline-offset-4 ${isLoading ? "opacity-50" : ""}`}
-              >
-                {isLoading ? '...' : (isAuthenticated ? (hasRole ? 'Quản trị' : 'Hoàn tất hồ sơ') : 'Đăng nhập')}
-              </span>
-            </button>
-          </div>
+        <nav className="hidden md:flex items-center gap-1">
+          {MENU.map((item) => (
+            <Link key={item.id} href={item.href} className="header-nav-item px-3 py-1.5">
+              <span className={navLinkClass(activeId === item.id)}>{item.label}</span>
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={isAuthenticated ? handleDashboardClick : handleLogin}
+            className="header-nav-item px-3 py-1.5 bg-transparent border-none cursor-pointer"
+            disabled={isLoading}
+          >
+            <span className={`${navLinkClass(activeId === "dashboard")} ${isLoading ? "opacity-60" : ""}`}>
+              {isLoading ? "..." : isAuthenticated ? (hasRole ? "Quản trị" : "Hoàn tất hồ sơ") : "Đăng nhập"}
+            </span>
+          </button>
         </nav>
       </div>
 
-      {mobileMenuOpen && (
+      {mobileMenuOpen ? (
         <>
-          <div
-            className="fixed inset-0 z-40 bg-black/30 md:hidden"
-            aria-hidden
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="fixed top-0 right-0 z-50 w-full h-full md:hidden flex flex-col header-drawer-right bg-white">
-            <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-gray-200">
-              <Link
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-              >
-                <Image src="/logo.png" alt="Logo" width={48} height={48} className="w-12 h-12 object-contain" />
-                <span className="text-base font-semibold text-gray-900">
-                  Truy xuất nguồn gốc
-                </span>
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" aria-hidden onClick={() => setMobileMenuOpen(false)} />
+          <div className="gov-header gov-header-mobile fixed top-0 right-0 z-50 w-full max-w-sm h-full md:hidden flex flex-col header-drawer-right bg-gradient-to-b from-[#8f1529] to-[#6b1020]">
+            <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-[#d4af37]/40">
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
+                <Image src="/gov.png" alt="Logo" width={44} height={44} className="w-10 h-10 object-contain rounded-sm" />
+                <span className="text-sm font-bold text-white">Truy xuất nguồn gốc</span>
               </Link>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-full hover:bg-gray-100"
-                aria-label="Đóng"
-              >
-                <span className="material-icons text-xl">
-                  close
-                </span>
+              <button type="button" onClick={() => setMobileMenuOpen(false)} className="p-2 text-white" aria-label="Đóng">
+                <span className="material-icons">close</span>
               </button>
             </div>
-
-            <nav className="flex-1 p-4 flex flex-col gap-1 overflow-auto">
-              {MENU.map((item) => {
-                const isActive = activeId === item.id;
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between w-full px-4 py-3 text-left rounded-lg transition-colors text-gray-800 hover:bg-gray-100 ${
-                      isActive ? "bg-gray-100" : ""
-                    }`}
-                  >
-                    <span className={`font-medium ${isActive ? "text-red-400 underline underline-offset-4" : ""}`}>
-                      {item.label}
-                    </span>
-                    <span className="material-icons text-lg text-gray-500">
-                      chevron_right
-                    </span>
-                  </Link>
-                );
-              })}
+            <nav className="flex-1 p-3 flex flex-col gap-1 overflow-auto">
+              {MENU.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-4 py-3 rounded-sm text-white font-medium ${activeId === item.id ? "bg-white/15" : "hover:bg-white/10"}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
               <button
+                type="button"
                 onClick={() => {
-                  if (isAuthenticated) {
-                    handleDashboardClick();
-                  } else {
-                    handleLogin();
-                  }
+                  if (isAuthenticated) handleDashboardClick();
+                  else handleLogin();
                   setMobileMenuOpen(false);
                 }}
-                className={`flex items-center justify-between w-full px-4 py-3 text-left rounded-lg transition-colors text-gray-800 hover:bg-gray-100 ${
-                  pathname.startsWith("/admin") ||
-                  pathname.startsWith("/enterprise") ||
-                  pathname.startsWith("/transit") ||
-                  pathname.startsWith("/agent")
-                    ? "bg-gray-100"
-                    : ""
-                } ${isLoading ? "opacity-50" : ""}`}
+                className="px-4 py-3 rounded-sm text-left text-white font-medium hover:bg-white/10"
                 disabled={isLoading}
               >
-                <span
-                  className={`font-medium ${
-                    pathname.startsWith("/admin") ||
-                    pathname.startsWith("/enterprise") ||
-                    pathname.startsWith("/transit") ||
-                    pathname.startsWith("/agent")
-                      ? "text-red-400 underline underline-offset-4"
-                      : ""
-                  }`}
-                >
-                  {isLoading ? '...' : (isAuthenticated ? (hasRole ? 'Quản trị' : 'Hoàn tất hồ sơ') : 'Đăng nhập')}
-                </span>
-                <span className="material-icons text-lg text-gray-500">
-                  chevron_right
-                </span>
+                {isLoading ? "..." : isAuthenticated ? (hasRole ? "Quản trị" : "Hoàn tất hồ sơ") : "Đăng nhập"}
               </button>
             </nav>
           </div>
         </>
-      )}
+      ) : null}
+
+      <WalletPickerModal
+        open={walletPickerOpen}
+        onClose={() => setWalletPickerOpen(false)}
+        onSelect={(walletId) => void handleWalletSelect(walletId)}
+        isLoading={isLoading}
+      />
     </div>
   );
 }
-

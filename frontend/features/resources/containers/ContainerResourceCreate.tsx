@@ -1,44 +1,58 @@
 "use client";
 
-import { Create, SimpleForm } from "react-admin";
-import { CREATE_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
-import { makeDailyCode } from "@/features/resources/shared/code";
-import { fetchCapacitySummary } from "./fetchCapacitySummary";
+import * as React from "react";
+import { Create, SimpleForm, useNotify, useRedirect } from "react-admin";
+import { CREATE_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
 import { buildParticipantPayload, ContainerFormSections } from "./ContainerFormSections";
 import { ContainerCreateToolbar } from "./ContainerToolbar";
+import { createContainerBatchOnchain } from "@/features/core/onchain/module/create/containerBatch";
+import { getOnchainFlowDeps } from "@/features/core/onchain/getOnchainFlowDeps";
 
 export function ContainerResourceCreate() {
+  const notify = useNotify();
+  const redirect = useRedirect();
+  const [progress, setProgress] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const handleSubmit = async (data: any) => {
+    if (submitting) return;
+    setSubmitting(true);
+    setProgress("Đang bắt đầu tạo thùng hàng...");
+    try {
+      const participants = buildParticipantPayload(data?.participantRows);
+      const payload = {
+        ...data,
+        participantWalletAddresses: participants.participantWalletAddresses,
+        participantLocationLabels: participants.participantLocationLabels,
+        participantRows: participants.participantRows,
+        status: "CREATE",
+      };
+      const result = await createContainerBatchOnchain(
+        { data: payload },
+        getOnchainFlowDeps(),
+        setProgress,
+      );
+      const created = Number((result.data as any)?.batchCreated || 0);
+      notify(created > 1 ? `Đã tạo ${created} thùng hàng.` : "Đã tạo thùng hàng.", { type: "success" });
+      redirect("list", "container");
+    } catch (e) {
+      notify(e instanceof Error ? e.message : "Tạo thùng hàng thất bại.", { type: "error" });
+    } finally {
+      setSubmitting(false);
+      setProgress("");
+    }
+  };
+
   return (
-    <Create
-      transform={async (data: any) => {
-        const code = String(data?.code || "").trim() || makeDailyCode("THUNG");
-        const max = Number(String(data?.capacityKg || "").trim());
-        const actual = Number(String(data?.actualCapacityKg || "").trim());
-        if (Number.isFinite(max) && Number.isFinite(actual) && actual > max) {
-          throw new Error("Dung lượng thực tế phải nhỏ hơn hoặc bằng dung lượng chứa tối đa.");
-        }
-        const summary = await fetchCapacitySummary(String(data?.productionInventoryKey || "").trim());
-        if (actual > Number(summary?.remainingCapacityKg || 0)) {
-          throw new Error(
-            `Dung lượng thực tế vượt mức còn lại của vụ mùa. Còn lại: ${summary?.remainingCapacityKg || 0} kg.`,
-          );
-        }
-        const participants = buildParticipantPayload(data?.participantRows);
-        return {
-          ...data,
-          code,
-          participantWalletAddresses: participants.participantWalletAddresses,
-          participantLocationLabels: participants.participantLocationLabels,
-          participantRows: participants.participantRows,
-          status: "CREATE",
-        };
-      }}
-      sx={CREATE_PAGE_SX}
-    >
-      <SimpleForm sx={FORM_SX} toolbar={<ContainerCreateToolbar />} defaultValues={{ code: makeDailyCode("THUNG"), status: "CREATE" }}>
-        <ContainerFormSections participantsReadOnly={false} />
+    <Create sx={CREATE_PAGE_SX} redirect={false}>
+      <SimpleForm
+        sx={MIL_FORM_SX}
+        toolbar={<ContainerCreateToolbar progress={progress} submitting={submitting} />}
+        defaultValues={{ boxQuantity: 1, status: "CREATE" }}
+        onSubmit={handleSubmit}
+      >
+        <ContainerFormSections participantsReadOnly={false} showBoxQuantity />
       </SimpleForm>
     </Create>
   );
 }
-

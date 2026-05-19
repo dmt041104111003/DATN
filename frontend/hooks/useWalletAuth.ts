@@ -114,22 +114,22 @@ export function useWalletAuth() {
   const [error, setError] = useState<string | null>(null);
   const [setup, setSetup] = useState<SetupProfileState | null>(null);
 
-  const loginWithEternl = async () => {
+  const loginWithWallet = async (walletId: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
       const cardano = (window as any).cardano;
       if (!cardano) {
-        throw new Error("No Cardano wallet found. Please install a Cardano wallet like Eternl, Nami, or Flint.");
+        throw new Error("Không tìm thấy ví Cardano. Hãy cài extension ví (Eternl, Nami, Lace, Flint…).");
       }
 
-      const eternl = cardano.eternl as WalletAPI | undefined;
-      if (!eternl || typeof eternl.enable !== "function") {
-        throw new Error("Eternl wallet not found. Please install and enable the Eternl extension.");
+      const walletEntry = cardano[walletId] as WalletAPI | undefined;
+      if (!walletEntry || typeof walletEntry.enable !== "function") {
+        throw new Error(`Không kết nối được ví "${walletId}". Kiểm tra extension đã bật.`);
       }
 
-      const api = (await cardano.eternl.enable()) as WalletAPI;
+      const api = (await walletEntry.enable()) as WalletAPI;
       const walletAddress = getAddress(await api.getChangeAddress());
       if (!walletAddress) throw new Error("Unable to get wallet address");
       const nonce = await getNonce(walletAddress);
@@ -211,7 +211,7 @@ export function useWalletAuth() {
   const setupDefaults = { walletAddress, displayName: "", roleCode: firstRoleCode, phoneNumber: "" };
 
   return {
-    loginWithEternl,
+    loginWithWallet,
     isLoading,
     error,
     setup,

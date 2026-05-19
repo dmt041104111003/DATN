@@ -297,7 +297,9 @@ export class TraceService {
   }
 
   private async buildPointDetails(lotPassport: Record<string, unknown>) {
-    const wallets = this.parseParticipantWallets(lotPassport?.participant_wallet_addresses);
+    const wallets = this.parseParticipantWallets(
+      lotPassport?.verified_wallet_addresses || lotPassport?.participant_wallet_addresses,
+    );
     const locations = this.parseParticipantLocations(lotPassport?.participant_location_labels);
     const uniqueWallets = Array.from(new Set(wallets));
     const users = uniqueWallets.length

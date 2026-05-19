@@ -4,6 +4,7 @@ import { deserializeDatum } from '../utils/deserialize-datum';
 import { TxBuilderHelper } from './helpers/tx-builder.helper';
 import { PlutusHelper } from './helpers/plutus.helper';
 import { ContractCreateDto } from './dto/contract-create.dto';
+import { ContractBatchCreateDto } from './dto/contract-batch-create.dto';
 import { ContractSaveDto } from './dto/contract-save.dto';
 import { ContractBurnDto } from './dto/contract-burn.dto';
 
@@ -153,18 +154,57 @@ export class ContractService {
     const metadata = this.stringifyMetadata(dto.metadata);
     metadata.production_code = metadata.production_code || code;
 
-    const unsignedTx = await this.txBuilderHelper.buildMintTx(walletAddress, owners, [
-      { productName: code, metadata, quantity: '1' },
-    ]);
+    return this.buildUnsignedMintResult(walletAddress, owners, [{ productName: code, metadata }]);
+  }
+
+  async createUnsignedBatchCreateTx(dto: ContractBatchCreateDto, signerAddressRaw: unknown) {
+    const walletAddress = String(signerAddressRaw || '').trim();
+    const owners = (dto.owners || []).map((s) => String(s || '').trim()).filter(Boolean);
+    if (!walletAddress) throw new BadRequestException('Unable to determine signer address from session.');
+    if (owners.length === 0) throw new BadRequestException('owners is required.');
+
+    const rawItems = Array.isArray(dto.items) ? dto.items : [];
+    if (rawItems.length === 0 || rawItems.length > 5) {
+      throw new BadRequestException('items must contain between 1 and 5 entries.');
+    }
+
+    const products = rawItems.map((item, index) => {
+      const code = String(item?.assetName || '').trim() || `${this.generateCode()}_${index + 1}`;
+      const metadata = this.stringifyMetadata(item?.metadata);
+      metadata.production_code = metadata.production_code || metadata.container_code || code;
+      return { productName: code, metadata };
+    });
+
+    return this.buildUnsignedMintResult(walletAddress, owners, products);
+  }
+
+  private async buildUnsignedMintResult(
+    walletAddress: string,
+    owners: string[],
+    products: Array<{ productName: string; metadata: Record<string, string> }>,
+  ) {
+    const unsignedTx = await this.txBuilderHelper.buildMintTx(
+      walletAddress,
+      owners,
+      products.map((product) => ({ ...product, quantity: '1' })),
+    );
     const { policyId } = this.plutusHelper.getScripts(owners);
-    const inventoryKey = policyId + CIP68_100(stringToHex(code));
+    const items = products.map((product) => {
+      const assetName = String(product.productName || '').trim();
+      return {
+        assetName,
+        inventoryKey: policyId + CIP68_100(stringToHex(assetName)),
+      };
+    });
+    const first = items[0];
     return {
       result: true,
       data: unsignedTx,
       message: 'Production record prepared.',
       traceSchemeRef: policyId,
-      assetName: code,
-      inventoryKey,
+      assetName: first?.assetName || '',
+      inventoryKey: first?.inventoryKey || '',
+      items,
     };
   }
 

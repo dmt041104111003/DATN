@@ -1,7 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Alert, Box, Pagination, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
+import { GOV_RED, GOV_GOLD } from "@/features/public/shared/govTheme";
+import { TraceSection } from "@/features/public/shared/TracePageShell";
 
 export type HistoryItem = {
   source: "PRODUCTION" | "CONTAINER";
@@ -31,11 +44,18 @@ type HistoryResponse = {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
-export default function TraceHistory({
-  inventoryKey,
-}: {
-  inventoryKey: string;
-}) {
+const headCellSx = {
+  bgcolor: GOV_RED,
+  color: "#fff",
+  fontWeight: 700,
+  fontSize: "0.72rem",
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  borderBottom: `2px solid ${GOV_GOLD}`,
+  py: 1,
+};
+
+export default function TraceHistory({ inventoryKey }: { inventoryKey: string }) {
   const [enabled, setEnabled] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -59,7 +79,9 @@ export default function TraceHistory({
       setError("");
       try {
         const key = encodeURIComponent(cleanString(inventoryKey));
-        const res = await fetch(`${BACKEND_URL}/trace/${key}/history?page=${safePage}&limit=${pageSize}`, { method: "GET" });
+        const res = await fetch(`${BACKEND_URL}/trace/${key}/history?page=${safePage}&limit=${pageSize}`, {
+          method: "GET",
+        });
         if (!res.ok) throw new Error("Không tải được lịch sử.");
         const json = (await res.json()) as HistoryResponse;
         if (!mounted) return;
@@ -81,14 +103,11 @@ export default function TraceHistory({
   }, [enabled, inventoryKey, safePage]);
 
   return (
-    <Box sx={{ border: "1px solid #e5e7eb", borderRadius: 1, p: 1.5 }}>
-      <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
-        Lịch sử giao dịch
-      </Typography>
+    <TraceSection title="Lịch sử giao dịch on-chain">
       {!enabled ? (
         <Typography
           variant="body2"
-          sx={{ color: "primary.main", textDecoration: "underline", cursor: "pointer", width: "fit-content" }}
+          sx={{ color: GOV_RED, textDecoration: "underline", cursor: "pointer", fontWeight: 600 }}
           onClick={() => {
             setEnabled(true);
             setPage(1);
@@ -100,52 +119,81 @@ export default function TraceHistory({
       {enabled && busy ? <Alert severity="info">Đang tải lịch sử...</Alert> : null}
       {enabled && error ? <Alert severity="error">{error}</Alert> : null}
       {enabled && !busy && !error && items.length === 0 ? (
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+        <Typography variant="body2" color="text.secondary">
           Chưa có lịch sử.
         </Typography>
-      ) : (
-        enabled && !busy && !error ? <Stack spacing={1}>
-          {items.map((item) => {
-            const isOpen = activeHash === item.txHash;
-            return (
-              <Box key={`${item.source}-${item.txHash}`} sx={{ border: "1px solid #e5e7eb", borderRadius: 1, p: 1 }}>
-                <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
-                  {item.source === "PRODUCTION" ? "Vụ mùa" : "Thùng hàng"} - {formatDateTimeVi(item.time)}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    wordBreak: "break-all",
-                    color: "primary.main",
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                    fontWeight: isOpen ? 700 : 400,
-                  }}
-                  onClick={() => {
-                    setActiveHash(item.txHash);
-                  }}
-                >
-                  {item.txHash}
-                </Typography>
-                {isOpen ? (
-                  <Box sx={{ mt: 1, p: 1, bgcolor: "#f8fafc", borderRadius: 1, overflowX: "auto" }}>
-                    <pre style={{ margin: 0, fontSize: 12 }}>{JSON.stringify(item.metadata || {}, null, 2)}</pre>
-                  </Box>
-                ) : null}
-              </Box>
-            );
-          })}
-          <Box sx={{ display: "flex", justifyContent: "center", pt: 0.5, visibility: total > pageSize ? "visible" : "hidden" }}>
-            <Pagination
-              page={safePage}
-              count={pageCount}
-              color="primary"
-              size="small"
-              onChange={(_, value) => setPage(value)}
-            />
-          </Box>
-        </Stack> : null
-      )}
-    </Box>
+      ) : null}
+      {enabled && !busy && !error && items.length > 0 ? (
+        <>
+          <TableContainer sx={{ border: "1px solid #e8c4ca", borderRadius: "2px" }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={headCellSx}>Nguồn</TableCell>
+                  <TableCell sx={headCellSx}>Thời gian</TableCell>
+                  <TableCell sx={headCellSx}>Tx Hash</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {items.map((item, idx) => {
+                  const isOpen = activeHash === item.txHash;
+                  return (
+                    <React.Fragment key={`${item.source}-${item.txHash}`}>
+                      <TableRow
+                        hover
+                        sx={{
+                          bgcolor: idx % 2 === 0 ? "#fff" : "#fdf5f6",
+                          cursor: "pointer",
+                          "&:hover": { bgcolor: "#fae8eb" },
+                        }}
+                        onClick={() => setActiveHash(isOpen ? "" : item.txHash)}
+                      >
+                        <TableCell sx={{ fontWeight: 600 }}>
+                          {item.source === "PRODUCTION" ? "Vụ mùa" : "Thùng hàng"}
+                        </TableCell>
+                        <TableCell>{formatDateTimeVi(item.time)}</TableCell>
+                        <TableCell
+                          sx={{
+                            wordBreak: "break-all",
+                            color: GOV_RED,
+                            fontWeight: isOpen ? 700 : 500,
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {item.txHash}
+                        </TableCell>
+                      </TableRow>
+                      {isOpen ? (
+                        <TableRow>
+                          <TableCell colSpan={3} sx={{ bgcolor: "#fdf5f6", py: 1 }}>
+                            <Box component="pre" sx={{ m: 0, fontSize: 12, overflowX: "auto" }}>
+                              {JSON.stringify(item.metadata || {}, null, 2)}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          {total > pageSize ? (
+            <Box sx={{ display: "flex", justifyContent: "center", pt: 1.5, borderTop: `2px solid ${GOV_RED}`, mt: 1 }}>
+              <Pagination
+                page={safePage}
+                count={pageCount}
+                onChange={(_, value) => setPage(value)}
+                size="small"
+                sx={{
+                  "& .MuiPaginationItem-root": { fontWeight: 600, borderRadius: "2px" },
+                  "& .Mui-selected": { bgcolor: `${GOV_RED} !important`, color: "#fff" },
+                }}
+              />
+            </Box>
+          ) : null}
+        </>
+      ) : null}
+    </TraceSection>
   );
 }

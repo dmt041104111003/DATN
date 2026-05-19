@@ -2,7 +2,7 @@
 
 import { Edit, SimpleForm } from "react-admin";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
-import { EDIT_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
+import { EDIT_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
 import { ProductionEditToolbar } from "./ProductionEditToolbar";
 import { ProductionFormSections } from "./ProductionFormSections";
 
@@ -28,7 +28,7 @@ export function ProductionResourceEdit() {
       }}
     >
       <SimpleForm
-        sx={FORM_SX}
+        sx={MIL_FORM_SX}
         defaultValues={(record: any) => {
           const parts = cleanString(record?.location).split(",").map((x) => cleanString(x));
           return {

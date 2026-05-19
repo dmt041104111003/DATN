@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Alert, Box, Card, CardContent, Stack, Typography } from "@mui/material";
-import Link from "next/link";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import { getDistrictOptions, getProvinceOptions, getWardOptions } from "@/features/resources/shared/location";
+import { GOV_RED } from "@/features/public/shared/govTheme";
+import { TracePageShell } from "@/features/public/shared/TracePageShell";
 import TraceHistory from "./history";
 import TracePoints from "./points";
 import TraceInfo from "./traceInfo";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
 }
@@ -19,8 +21,7 @@ type TraceView = {
   consumedAt: string;
   containerCode: string;
   containerType: string;
-  capacityKg: string;
-  actualCapacityKg: string;
+  weightPerBoxKg: string;
   points: Array<{ name: string; walletAddress: string; location: string }>;
   matchedIndex: number;
   productionMetadata: Record<string, unknown> | null;
@@ -52,29 +53,27 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
               }))
               .filter((x: any) => x.walletAddress)
           : [];
-        const points = await Promise.all(pointsRaw.map(async (x) => {
-          const text = cleanString(x.location);
-          const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
-          if (parts.length < 3) return x;
-          const provinceId = parts[0];
-          const districtId = parts[1];
-          const wardId = parts[2];
-          try {
-            const provinces = await getProvinceOptions();
-            const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
-            const districts = await getDistrictOptions(provinceId);
-            const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
-            const wards = await getWardOptions(districtId);
-            const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
-            return { ...x, location: `${wardName}, ${districtName}, ${provinceName}` };
-          } catch {
-            return x;
-          }
-        }));
+        const points = await Promise.all(
+          pointsRaw.map(async (x) => {
+            const text = cleanString(x.location);
+            const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
+            if (parts.length < 3) return x;
+            const [provinceId, districtId, wardId] = parts;
+            try {
+              const provinces = await getProvinceOptions();
+              const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
+              const districts = await getDistrictOptions(provinceId);
+              const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
+              const wards = await getWardOptions(districtId);
+              const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
+              return { ...x, location: `${wardName}, ${districtName}, ${provinceName}` };
+            } catch {
+              return x;
+            }
+          }),
+        );
         const latestSignerWallet = cleanString(json?.latestSignerWallet).toLowerCase();
-        if (!points.length) {
-          throw new Error(cleanString(json?.message) || "Không có dữ liệu point.");
-        }
+        if (!points.length) throw new Error(cleanString(json?.message) || "Không có dữ liệu point.");
         const signerIndex =
           latestSignerWallet && points.length
             ? points.findIndex((p) => p.walletAddress === latestSignerWallet)
@@ -88,8 +87,9 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         );
         const containerCode = cleanString(lotPassport.container_code);
         const containerType = cleanString(lotPassport.container_type);
-        const capacityKg = cleanString(lotPassport.capacity_kg);
-        const actualCapacityKg = cleanString(lotPassport.actual_capacity_kg);
+        const weightPerBoxKg = cleanString(
+          lotPassport.weight_per_box_kg || lotPassport.actual_capacity_kg || lotPassport.capacity_kg,
+        );
         const productionMetadataRaw =
           json?.productionMetadata && typeof json.productionMetadata === "object"
             ? (json.productionMetadata as Record<string, unknown>)
@@ -99,9 +99,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
           const text = cleanString(productionMetadataRaw.location);
           const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
           if (parts.length >= 3) {
-            const provinceId = parts[0];
-            const districtId = parts[1];
-            const wardId = parts[2];
+            const [provinceId, districtId, wardId] = parts;
             try {
               const provinces = await getProvinceOptions();
               const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
@@ -109,7 +107,10 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
               const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
               const wards = await getWardOptions(districtId);
               const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
-              productionMetadata = { ...productionMetadataRaw, location: `${wardName}, ${districtName}, ${provinceName}` };
+              productionMetadata = {
+                ...productionMetadataRaw,
+                location: `${wardName}, ${districtName}, ${provinceName}`,
+              };
             } catch {
               productionMetadata = productionMetadataRaw;
             }
@@ -122,8 +123,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
           consumedAt,
           containerCode,
           containerType,
-          capacityKg,
-          actualCapacityKg,
+          weightPerBoxKg,
           points,
           matchedIndex,
           productionMetadata,
@@ -143,44 +143,31 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
   }, [inventoryKey]);
 
   return (
-    <Box sx={{ maxWidth: 860, mx: "auto", p: 2 }}>
-      <Card>
-        <CardContent>
-          <Stack spacing={2}>
-            <Link href="/trace-scan" className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900">
-              Trở lại trang quét
-            </Link>
-            <Typography variant="h6">Kết quả truy xuất nguồn gốc</Typography>
-            {busy ? <Alert severity="info">Đang truy xuất...</Alert> : null}
-            {error ? <Alert severity="error">{error}</Alert> : null}
-            {trace ? (
-              <Stack spacing={1}>
-                <Typography variant="h4" sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}>
-                  {trace.containerTitle}
-                  {trace.isConsumed ? (
-                    <Typography component="span" sx={{ ml: 1, color: "error.main", fontWeight: 700 }}>
-                      (ĐÃ TIÊU THỤ)
-                    </Typography>
-                  ) : null}
-                </Typography>
-                <TraceInfo
-                  isConsumed={trace.isConsumed}
-                  consumedAt={trace.consumedAt}
-                  containerCode={trace.containerCode}
-                  containerType={trace.containerType}
-                  capacityKg={trace.capacityKg}
-                  actualCapacityKg={trace.actualCapacityKg}
-                  productionMetadata={trace.productionMetadata}
-                />
-                <TracePoints points={trace.points} matchedIndex={trace.matchedIndex} />
-                <TraceHistory inventoryKey={inventoryKey} />
-                <Box sx={{ mt: 1 }} />
-              </Stack>
+    <TracePageShell title="Kết quả truy xuất" backHref="/trace-scan" backLabel="← Trở lại trang quét">
+      {busy ? <Alert severity="info">Đang truy xuất...</Alert> : null}
+      {error ? <Alert severity="error">{error}</Alert> : null}
+      {trace ? (
+        <Stack spacing={0}>
+          <Typography variant="h5" sx={{ textAlign: "center", fontWeight: 700, color: GOV_RED, py: 1 }}>
+            {trace.containerTitle}
+            {trace.isConsumed ? (
+              <Typography component="span" sx={{ ml: 1, color: GOV_RED, fontWeight: 700, fontSize: "0.9rem" }}>
+                (ĐÃ TIÊU THỤ)
+              </Typography>
             ) : null}
-          </Stack>
-        </CardContent>
-      </Card>
-    </Box>
+          </Typography>
+          <TraceInfo
+            isConsumed={trace.isConsumed}
+            consumedAt={trace.consumedAt}
+            containerCode={trace.containerCode}
+            containerType={trace.containerType}
+            weightPerBoxKg={trace.weightPerBoxKg}
+            productionMetadata={trace.productionMetadata}
+          />
+          <TracePoints points={trace.points} matchedIndex={trace.matchedIndex} />
+          <TraceHistory inventoryKey={inventoryKey} />
+        </Stack>
+      ) : null}
+    </TracePageShell>
   );
 }
-

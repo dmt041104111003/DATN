@@ -8,3 +8,7 @@ export function makeDailyCode(prefix: string) {
   const seq = String(Math.floor(Math.random() * 900) + 100);
   return `${String(prefix || "").trim().toUpperCase()}_${y}${m}${d}_${seq}`;
 }
+
+export function makeContainerCode(seq: number) {
+  return `${makeDailyCode("THUNG")}_${String(seq).padStart(3, "0")}`;
+}

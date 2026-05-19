@@ -75,7 +75,7 @@ export function ProductionEditToolbar() {
             Xác nhận thu hoạch
           </Button>
         ) : null}
-        {!isClosed ? <DeleteButton label="DELETE" mutationMode="pessimistic" redirect="list" color="error" /> : null}
+        {!isClosed ? <DeleteButton mutationMode="pessimistic" redirect="list" color="error" /> : null}
       </Toolbar>
       {!isClosed && harvestModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">

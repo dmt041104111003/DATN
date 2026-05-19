@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/comm
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ContractService } from './contract.service';
 import { ContractCreateDto } from './dto/contract-create.dto';
+import { ContractBatchCreateDto } from './dto/contract-batch-create.dto';
 import { ContractSaveDto } from './dto/contract-save.dto';
 import { ContractBurnDto } from './dto/contract-burn.dto';
 
@@ -23,6 +24,11 @@ export class ContractController {
   @Post('create')
   async create(@Req() req: any, @Body() dto: ContractCreateDto) {
     return this.svc.createUnsignedCreateTx(dto, this.getSignerAddress(req));
+  }
+
+  @Post('create-batch')
+  async createBatch(@Req() req: any, @Body() dto: ContractBatchCreateDto) {
+    return this.svc.createUnsignedBatchCreateTx(dto, this.getSignerAddress(req));
   }
 
   @Post('save')

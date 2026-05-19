@@ -3,7 +3,7 @@
 import { Create, SimpleForm } from "react-admin";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
 import { makeDailyCode } from "@/features/resources/shared/code";
-import { CREATE_PAGE_SX, FORM_SX } from "@/features/resources/shared/styles";
+import { CREATE_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
 import { ProductionCreateToolbar } from "./ProductionCreateToolbar";
 import { ProductionFormSections } from "./ProductionFormSections";
 
@@ -31,7 +31,7 @@ export function ProductionResourceCreate() {
       sx={CREATE_PAGE_SX}
     >
       <SimpleForm
-        sx={FORM_SX}
+        sx={MIL_FORM_SX}
         defaultValues={{
           code: makeDailyCode("VU"),
           status: "CREATED",

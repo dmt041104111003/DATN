@@ -30,9 +30,7 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
   }
   const containerStatus = deps.cleanString(containerRow?.status).toUpperCase();
   if (containerStatus === "CONSUMED") throw new Error("Thùng hàng đã tiêu thụ, không thể nhập kho lại.");
-  const gps = await deps.captureCurrentGpsLocation();
-  const location = [gps.provinceId, gps.districtId, gps.wardId].filter(Boolean).join(", ");
-  const createPayload: any = { ...(params.data as any), location };
+  const createPayload: any = { ...(params.data as any) };
   const owners = deps.buildOwnerList(containerRow || createPayload, owner);
   const inventoryKey = containerInventoryKey;
   const metadata = {
@@ -41,7 +39,6 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
       storage_op: currentStorageId ? "UPDATE" : "IN",
       warehouse_id: createPayload?.warehouseId || params.previousData?.warehouseId,
       container_ref_inline: formatProductionRefInline(containerInventoryKey),
-      current_location: createPayload?.location,
       storage_created_at: deps.cleanString(createPayload?.createdAt) || new Date().toISOString(),
       storage_updated_at: new Date().toISOString(),
       storage_conditions: createPayload?.conditions,

@@ -26,6 +26,8 @@ import { WarehouseController } from './warehouse/warehouse.controller';
 import { WarehouseService } from './warehouse/warehouse.service';
 import { WarehouseStorageController } from './warehouse-storage/warehouse-storage.controller';
 import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.service';
+import { DashboardController } from './dashboard/dashboard.controller';
+import { DashboardService } from './dashboard/dashboard.service';
 
 @Module({
   imports: [
@@ -50,6 +52,7 @@ import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.s
     ContainerController,
     WarehouseController,
     WarehouseStorageController,
+    DashboardController,
     HealthController,
     LocationController,
   ],
@@ -65,6 +68,7 @@ import { WarehouseStorageService } from './warehouse-storage/warehouse-storage.s
     ContainerService,
     WarehouseService,
     WarehouseStorageService,
+    DashboardService,
   ],
 })
 export class AppModule {}

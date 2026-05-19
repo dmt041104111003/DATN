@@ -3,19 +3,24 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  Post,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecordOperationVerifierService } from './record-operation.verifier.service';
 
 type EntityType = 'PRODUCTION' | 'CONTAINER';
 
 @Controller('record-operations')
 @UseGuards(JwtAuthGuard)
 export class RecordOperationController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly verifier: RecordOperationVerifierService,
+  ) {}
 
   private getCustodian(req: any): string {
     const custodian = req.user?.walletAddress || req.user?.paymentAddress || req.user?.sub;
@@ -26,6 +31,12 @@ export class RecordOperationController {
       );
     }
     return String(custodian || '').trim();
+  }
+
+  @Post('verify-pending')
+  async verifyPending() {
+    await this.verifier.verifyPendingNow();
+    return { ok: true };
   }
 
   @Get()

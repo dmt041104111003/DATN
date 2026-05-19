@@ -10,7 +10,6 @@ import PersonIcon from "@mui/icons-material/Person";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
-import StorageIcon from "@mui/icons-material/Storage";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 
 export function AdminMenu() {
@@ -40,12 +39,6 @@ export function AdminMenu() {
       to="/warehouse"
       primaryText="Kho lưu trữ"
       leftIcon={<WarehouseIcon />}
-    />,
-    <MenuItemLink
-      key="warehouse-storage"
-      to="/warehouse-storage"
-      primaryText="Lưu trữ kho"
-      leftIcon={<StorageIcon />}
     />,
     <MenuItemLink
       key="qr-scan"

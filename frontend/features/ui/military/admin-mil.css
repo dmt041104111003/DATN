@@ -1,0 +1,104 @@
+.mil-admin .MuiAppBar-root,
+.mil-admin .RaAppBar-root {
+  background: linear-gradient(90deg, #8f1529 0%, #c41e3a 55%, #a81830 100%) !important;
+  color: #fff !important;
+  border-bottom: 2px solid #d4af37;
+  box-shadow: 0 2px 6px rgba(143, 21, 41, 0.35);
+}
+
+.mil-admin .MuiAppBar-root .MuiIconButton-root,
+.mil-admin .MuiAppBar-root .MuiTypography-root,
+.mil-admin .MuiAppBar-root .RaAppBar-title,
+.mil-admin .RaUserMenu-root .MuiButton-root {
+  color: #fff !important;
+}
+
+.mil-admin .mil-section {
+  border: 1px solid #e8c4ca;
+  margin-bottom: 1rem;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(196, 30, 58, 0.08);
+}
+
+.mil-admin .mil-section__head {
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(90deg, #8f1529 0%, #c41e3a 55%, #a81830 100%);
+  color: #fff;
+  border-left: 4px solid #d4af37;
+}
+
+.mil-admin .mil-section__index {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.22);
+  letter-spacing: 0.05em;
+}
+
+.mil-admin .mil-section__title {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mil-admin .mil-section__body {
+  padding: 1rem 1rem 0.25rem;
+}
+
+.mil-admin .mil-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .mil-admin .mil-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mil-admin .mil-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #c41e3a;
+  background: #fde8ec;
+  color: #8f1529;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.mil-admin .RaList-main .MuiPaper-root {
+  border: 1px solid #e8c4ca;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mil-admin .RaDatagrid-table {
+  border-collapse: collapse;
+}
+
+.mil-admin .RaDatagrid-headerCell {
+  font-weight: 700 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.72rem !important;
+}
+
+.mil-admin .RaList-pagination {
+  border-top: 2px solid #c41e3a;
+  background: #fdf5f6;
+  font-weight: 600;
+}

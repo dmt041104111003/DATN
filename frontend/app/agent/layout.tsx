@@ -1,10 +1,6 @@
+import { GovRouteLayout } from "@/features/public/shared/GovRouteLayout";
 import type { ReactNode } from "react";
 
-export default function AgentLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return <>{children}</>;
+export default function AgentRouteLayout({ children }: { children: ReactNode }) {
+  return <GovRouteLayout>{children}</GovRouteLayout>;
 }
-

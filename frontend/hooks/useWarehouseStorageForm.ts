@@ -72,7 +72,9 @@ export function useWarehouseStorageForm() {
     }
 
     const warehouseCapacity = parsePositiveNumber(warehouse?.capacity);
-    const selectedContainerCapacity = parsePositiveNumber(selectedContainer?.actualCapacityKg || selectedContainer?.capacityKg);
+    const selectedContainerCapacity = parsePositiveNumber(
+      selectedContainer?.weightPerBoxKg || selectedContainer?.actualCapacityKg || selectedContainer?.capacityKg,
+    );
 
     let usedCapacity = 0;
 
@@ -95,7 +97,9 @@ export function useWarehouseStorageForm() {
         }
       }
 
-      const capacity = parsePositiveNumber(container?.actualCapacityKg || container?.capacityKg);
+      const capacity = parsePositiveNumber(
+        container?.weightPerBoxKg || container?.actualCapacityKg || container?.capacityKg,
+      );
       usedCapacity += capacity;
     }
 

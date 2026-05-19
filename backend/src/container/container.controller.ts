@@ -8,7 +8,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -37,22 +36,21 @@ export class ContainerController {
     return this.containerService.list(this.getCustodian(req));
   }
 
-  @Get('capacity/summary')
-  async capacitySummary(
-    @Req() _req: any,
-    @Query('productionInventoryKey') productionInventoryKey: string,
-    @Query('excludeContainerInventoryKey') excludeContainerInventoryKey?: string,
-  ) {
+  @Post('batches')
+  async startBatch(@Req() req: any, @Body() body: any) {
     try {
-      return await this.containerService.getCapacitySummary(
-        productionInventoryKey,
-        excludeContainerInventoryKey,
-      );
+      return await this.containerService.startBatch(this.getCustodian(req), body?.totalBoxes);
     } catch (e) {
-      throw new HttpException(
-        e instanceof Error ? e.message : 'Failed to calculate remaining capacity.',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException(e instanceof Error ? e.message : 'Failed to start container batch.', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Patch('batches/:batchId')
+  async updateBatch(@Req() req: any, @Param('batchId') batchId: string, @Body() body: any) {
+    try {
+      return await this.containerService.updateBatchProgress(batchId, body?.completedBoxes, body?.status);
+    } catch (e) {
+      throw new HttpException(e instanceof Error ? e.message : 'Failed to update container batch.', HttpStatus.BAD_REQUEST);
     }
   }
 

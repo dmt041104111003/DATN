@@ -3,7 +3,6 @@
 import { fetchUtils } from "react-admin";
 import type { DataProvider } from "react-admin";
 import simpleRestProvider from "ra-data-simple-rest";
-import { captureCurrentGpsLocation } from "@/features/resources/shared/location";
 import { buildProductionMetadata, buildProductionMetadataPatch } from "@/features/core/metadata/productionMetadata";
 import { buildContainerMetadata } from "@/features/core/metadata/containerMetadata";
 import { buildMappedMetadata } from "@/features/core/metadata/share/buildMappedMetadata";
@@ -55,7 +54,6 @@ function getOnchainFlowDeps() {
     httpClient,
     cleanString,
     normalizeId: resolveId,
-    captureCurrentGpsLocation,
     getSessionOwner: async () => {
       const me = (await getMe()) as any;
       const owner =
@@ -104,7 +102,11 @@ export const adminDataProvider: DataProvider = {
     const url = `${BACKEND_URL}/${resource}${query && query.size ? `?${query.toString()}` : ""}`;
     const { json } = await httpClient(url, { method: "GET" });
     const payload = (json as any) || {};
-    const rows = Array.isArray(payload) ? payload : Array.isArray(payload.data) ? payload.data : [];
+    let rows = Array.isArray(payload) ? payload : Array.isArray(payload.data) ? payload.data : [];
+    const filterWarehouseId = cleanString(params.filter?.warehouseId);
+    if (resource === "warehouse-storage" && filterWarehouseId) {
+      rows = rows.filter((row: any) => cleanString(row?.warehouseId) === filterWarehouseId);
+    }
     const totalFromPayload = Number(payload.total);
     const total = Number.isFinite(totalFromPayload) ? totalFromPayload : rows.length;
     const page = Number(params.pagination?.page || 1);

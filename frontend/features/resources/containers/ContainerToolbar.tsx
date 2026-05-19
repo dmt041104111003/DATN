@@ -3,8 +3,19 @@
 import { DeleteButton, SaveButton, Toolbar, useRecordContext } from "react-admin";
 import { useFormContext } from "react-hook-form";
 
-export function ContainerCreateToolbar() {
-  return <Toolbar><SaveButton label="Tạo thùng hàng" /></Toolbar>;
+export function ContainerCreateToolbar({
+  progress = "",
+  submitting = false,
+}: {
+  progress?: string;
+  submitting?: boolean;
+}) {
+  return (
+    <Toolbar sx={{ flexWrap: "wrap", gap: 1 }}>
+      {progress ? <span className="w-full text-sm text-slate-600">{progress}</span> : null}
+      <SaveButton label={submitting ? "Đang xử lý..." : "Tạo thùng hàng"} disabled={submitting} />
+    </Toolbar>
+  );
 }
 
 export function ContainerEditToolbar() {
@@ -15,7 +26,7 @@ export function ContainerEditToolbar() {
   return (
     <Toolbar>
       <SaveButton label="Cập nhật" disabled={storageLocked} onClick={() => setValue("status", "UPDATE")} />
-      <DeleteButton label="DELETE" mutationMode="pessimistic" redirect="list" color="error" disabled={storageLocked} />
+      <DeleteButton mutationMode="pessimistic" redirect="list" color="error" disabled={storageLocked} />
     </Toolbar>
   );
 }

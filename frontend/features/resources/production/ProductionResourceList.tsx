@@ -4,14 +4,14 @@ import {
   BooleanField,
   Datagrid,
   DateField,
-  List,
   SelectField,
   TextField,
 } from "react-admin";
+import { MilList } from "@/features/ui/military/MilList";
 
 export function ProductionResourceList() {
   return (
-    <List exporter={false}>
+    <MilList exporter={false}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="id" label="Mã vụ" />
         <TextField source="facilityId" label="Cơ sở" />
@@ -31,7 +31,6 @@ export function ProductionResourceList() {
         <DateField source="harvestDate" label="Ngày thu hoạch" />
         <TextField source="actualYieldKg" label="Sản lượng thực tế (kg)" />
       </Datagrid>
-    </List>
+    </MilList>
   );
 }
-
