@@ -208,7 +208,17 @@ export function useWalletAuth() {
   }
 
   const walletAddress = setup ? setup.walletAddress : "";
-  const setupDefaults = { walletAddress, displayName: "", roleCode: firstRoleCode, phoneNumber: "" };
+  const setupDefaults = {
+    walletAddress,
+    displayName: "",
+    roleCode: firstRoleCode,
+    phoneNumber: "",
+    name: "",
+    capacity: "",
+    warehouseProvinceId: "",
+    warehouseDistrictId: "",
+    warehouseWardId: "",
+  };
 
   return {
     loginWithWallet,

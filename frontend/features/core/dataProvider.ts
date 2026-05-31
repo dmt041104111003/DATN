@@ -164,12 +164,18 @@ export const adminDataProvider: DataProvider = {
     return baseProvider.update(resource, params);
   },
   async create(resource, params) {
+    if (resource === "warehouse") {
+      throw new Error("Tạo kho chỉ khi đăng ký tài khoản. Vào mục Kho lưu trữ để sửa kho hiện có.");
+    }
     if (resource === "container") return createContainerOnchain(params, getOnchainFlowDeps());
     if (resource === "production") return createProductionOnchain(params, getOnchainFlowDeps());
     if (resource === "warehouse-storage") return createWarehouseStorageOnchain(params, getOnchainFlowDeps());
     return baseProvider.create(resource, params);
   },
   async delete(resource, params) {
+    if (resource === "warehouse") {
+      throw new Error("Không thể xóa kho. Mỗi tài khoản chỉ có một kho — hãy cập nhật thông tin kho.");
+    }
     if (resource === "container") return deleteContainerOnchain(params, getOnchainFlowDeps());
     if (resource === "production") return deleteProductionOnchain(params, getOnchainFlowDeps());
     if (resource === "warehouse-storage") return deleteWarehouseStorageViaOutOnchain(params, getOnchainFlowDeps());

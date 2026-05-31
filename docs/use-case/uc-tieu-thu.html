@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Use Case — Tiêu thụ thùng hàng</title>
+  <link rel="stylesheet" href="use-case-shared.css" />
+  <style>
+    .diagram-wrap--large {
+      max-width: 1100px;
+    }
+    .diagram-wrap--large svg {
+      min-width: 1000px;
+      min-height: 480px;
+    }
+    .diagram-wrap--large .uc-text { font-size: 14px; }
+    .diagram-wrap--large .actor-text { font-size: 14px; }
+    .diagram-wrap--large .rel-text { font-size: 12px; }
+    h1 { font-size: 18px; }
+    .caption { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <p class="nav"><a href="index.html">← Danh mục</a></p>
+  <h1>Tiêu thụ thùng hàng</h1>
+  <p class="caption">Hình 3.x.6 — Đại lý xác nhận tiêu thụ (cuối chuỗi truy xuất)</p>
+  <div class="diagram-wrap diagram-wrap--large">
+    <svg viewBox="0 0 1080 520" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="inc" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#000" />
+        </marker>
+      </defs>
+
+      <g transform="translate(90,200)">
+        <circle cx="0" cy="0" r="16" fill="none" stroke="#000" stroke-width="1.8" />
+        <line x1="0" y1="16" x2="0" y2="54" stroke="#000" stroke-width="1.8" />
+        <line x1="0" y1="30" x2="-20" y2="46" stroke="#000" stroke-width="1.8" />
+        <line x1="0" y1="30" x2="20" y2="46" stroke="#000" stroke-width="1.8" />
+        <line x1="0" y1="54" x2="-16" y2="76" stroke="#000" stroke-width="1.8" />
+        <line x1="0" y1="54" x2="16" y2="76" stroke="#000" stroke-width="1.8" />
+        <text x="0" y="100" text-anchor="middle" class="actor-text">Đại lý</text>
+      </g>
+
+      <line x1="106" y1="268" x2="300" y2="268" stroke="#000" stroke-width="1.6" />
+
+      <ellipse cx="430" cy="268" rx="130" ry="38" fill="#fff" stroke="#000" stroke-width="1.8" />
+      <text x="430" y="264" text-anchor="middle" class="uc-text">Tiêu thụ</text>
+      <text x="430" y="282" text-anchor="middle" class="uc-text">thùng hàng</text>
+
+      <ellipse cx="820" cy="95" rx="118" ry="30" fill="#fff" stroke="#000" stroke-width="1.6" />
+      <text x="820" y="100" text-anchor="middle" class="uc-text">Quét mã QR thùng</text>
+
+      <ellipse cx="820" cy="175" rx="130" ry="30" fill="#fff" stroke="#000" stroke-width="1.6" />
+      <text x="820" y="180" text-anchor="middle" class="uc-text">Kiểm tra thùng trong kho</text>
+
+      <ellipse cx="820" cy="255" rx="125" ry="30" fill="#fff" stroke="#000" stroke-width="1.6" />
+      <text x="820" y="260" text-anchor="middle" class="uc-text">Ký giao dịch chuỗi</text>
+
+      <ellipse cx="820" cy="335" rx="140" ry="30" fill="#fff" stroke="#000" stroke-width="1.6" />
+      <text x="820" y="332" text-anchor="middle" class="uc-text">Đánh dấu đã tiêu thụ</text>
+
+      <ellipse cx="820" cy="415" rx="135" ry="30" fill="#fff" stroke="#000" stroke-width="1.6" />
+      <text x="820" y="412" text-anchor="middle" class="uc-text">Ghi nhận tiêu thụ</text>
+
+      <ellipse cx="820" cy="485" rx="145" ry="30" fill="#fff" stroke="#000" stroke-width="1.6" />
+      <text x="820" y="482" text-anchor="middle" class="uc-text">Xóa bản ghi nhập kho</text>
+
+      <line x1="560" y1="252" x2="692" y2="95" stroke="#000" stroke-width="1.2" stroke-dasharray="7,5" marker-end="url(#inc)" />
+      <line x1="560" y1="258" x2="692" y2="175" stroke="#000" stroke-width="1.2" stroke-dasharray="7,5" marker-end="url(#inc)" />
+      <line x1="560" y1="265" x2="692" y2="255" stroke="#000" stroke-width="1.2" stroke-dasharray="7,5" marker-end="url(#inc)" />
+      <line x1="560" y1="272" x2="692" y2="335" stroke="#000" stroke-width="1.2" stroke-dasharray="7,5" marker-end="url(#inc)" />
+      <line x1="560" y1="278" x2="692" y2="415" stroke="#000" stroke-width="1.2" stroke-dasharray="7,5" marker-end="url(#inc)" />
+      <line x1="560" y1="285" x2="692" y2="485" stroke="#000" stroke-width="1.2" stroke-dasharray="7,5" marker-end="url(#inc)" />
+      <text x="600" y="210" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+    </svg>
+  </div>
+  <p class="caption" style="margin-top:12px">Nhập kho đại lý: xem <a href="uc-nhap-xuat-kho.html">Quản lý nhập / xuất kho</a></p>
+</body>
+</html>

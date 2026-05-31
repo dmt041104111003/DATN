@@ -21,8 +21,18 @@ export class ProfileService {
     updatedAt: true,
   } as any;
 
-  private mapProfileRow(account: any) {
+  private async loadWarehouseForAddress(address: string) {
+    const addr = this.getAddress(address);
+    if (!addr) return null;
+    return (this.prisma as any).warehouse.findFirst({
+      where: { registeringCustodianAddress: addr },
+      select: { id: true, name: true, capacity: true, location: true },
+    });
+  }
+
+  private async mapProfileRow(account: any) {
     if (!account) return null;
+    const warehouse = await this.loadWarehouseForAddress(account.address);
     return {
       id: account.id,
       walletAddress: account.address,
@@ -32,6 +42,10 @@ export class ProfileService {
       isActive: account.isActive,
       createdAt: account.createdAt,
       updatedAt: account.updatedAt,
+      warehouseId: warehouse?.id ?? null,
+      name: warehouse?.name ?? '',
+      capacity: warehouse?.capacity ?? '',
+      location: warehouse?.location ?? '',
     };
   }
 
@@ -63,6 +77,11 @@ export class ProfileService {
     roleCode: string;
     displayName: string;
     phoneNumber?: string;
+    warehouse?: {
+      name?: string;
+      capacity?: string;
+      location?: string;
+    };
   }) {
     const addr = this.validatePaymentAddress(custodianAddress);
 
@@ -92,22 +111,51 @@ export class ProfileService {
       select: this.userSelect,
     });
 
+    const warehouseName = (data.warehouse?.name || '').trim();
+    const warehouseCapacity = (data.warehouse?.capacity || '').trim();
+    const warehouseLocation = (data.warehouse?.location || '').trim();
+    if (!warehouseName || !warehouseCapacity || !warehouseLocation) {
+      throw new BadRequestException('Thông tin kho (tên, sức chứa, vị trí) là bắt buộc khi đăng ký.');
+    }
+
+    const existingWarehouse = await (this.prisma as any).warehouse.findFirst({
+      where: { registeringCustodianAddress: addr },
+      select: { id: true },
+    });
+    if (!existingWarehouse) {
+      await (this.prisma as any).warehouse.create({
+        data: {
+          name: warehouseName,
+          capacity: warehouseCapacity,
+          location: warehouseLocation,
+          registeringCustodianAddress: addr,
+        } as any,
+      });
+    }
+
     return {
       token: jwt.sign({
         sub: addr,
         stakeAddress: addr,
+        paymentAddress: addr,
+        walletAddress: addr,
         profileId: account.id,
         role: account.roleCode,
         displayName: account.displayName,
         phoneNumber: account.phoneNumber,
       }, this.getSecret(), { expiresIn: '7d' }),
-      profile: this.mapProfileRow(account),
+      profile: await this.mapProfileRow(account),
     };
   }
 
   async updateProfile(accountId: string, data: {
     displayName?: string;
     phoneNumber?: string;
+    warehouse?: {
+      name?: string;
+      capacity?: string;
+      location?: string;
+    };
   }) {
     const displayName = typeof data.displayName === 'string' ? data.displayName.trim() : '';
     const phoneNumber = typeof data.phoneNumber === 'string' ? data.phoneNumber.trim() || null : undefined;
@@ -125,6 +173,27 @@ export class ProfileService {
       select: this.userSelect,
     });
 
+    const warehousePayload = data.warehouse;
+    if (warehousePayload) {
+      const warehouseName = (warehousePayload.name || '').trim();
+      const warehouseCapacity = (warehousePayload.capacity || '').trim();
+      const warehouseLocation = (warehousePayload.location || '').trim();
+      if (!warehouseName || !warehouseCapacity || !warehouseLocation) {
+        throw new BadRequestException('Thông tin kho (tên, sức chứa, vị trí) là bắt buộc.');
+      }
+      const existingWarehouse = await this.loadWarehouseForAddress(account.address);
+      if (existingWarehouse?.id) {
+        await (this.prisma as any).warehouse.update({
+          where: { id: existingWarehouse.id },
+          data: {
+            name: warehouseName,
+            capacity: warehouseCapacity,
+            location: warehouseLocation,
+          } as any,
+        });
+      }
+    }
+
     return this.mapProfileRow(account);
   }
 
@@ -139,7 +208,7 @@ export class ProfileService {
       select: this.userSelect,
     });
     if (!account || !account.roleCode) return [];
-    return [this.mapProfileRow(account)];
+    return [await this.mapProfileRow(account)];
   }
 
   async getProfileById(accountId: string) {

@@ -1,55 +1,32 @@
 "use client";
 
-import { Edit, required, SimpleForm, TextInput } from "react-admin";
-import { cleanString } from "@/features/core/metadata/share/cleanString";
-import { MilGrid, MilSection } from "@/features/ui/military/MilSection";
+import { Edit, SimpleForm } from "react-admin";
+import { WarehouseEditFormToolbar } from "./WarehouseEditFormToolbar";
+import { WarehouseEditToolbar } from "./WarehouseEditToolbar";
+import {
+  buildWarehouseLocation,
+  stripWarehouseAreaFields,
+} from "@/features/resources/warehouses/warehouseLocation";
 import { EDIT_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
-import { WarehouseAdministrativeAreaFields } from "./WarehouseAdministrativeAreaFields";
+import { WarehouseLocationHydrate } from "./WarehouseLocationHydrate";
 
 export function WarehouseResourceEdit() {
   return (
     <Edit
+      title="Sửa kho"
+      actions={<WarehouseEditToolbar />}
       mutationMode="pessimistic"
       sx={EDIT_PAGE_SX}
-      transform={(data: any) => {
-        const location = [
-          cleanString(data?.warehouseProvinceId),
-          cleanString(data?.warehouseDistrictId),
-          cleanString(data?.warehouseWardId),
-        ].filter(Boolean).join(", ");
-        if (!location) throw new Error("Vị trí kho là bắt buộc.");
+      transform={async (data: any) => {
+        const { id: _id, ...rest } = data || {};
         return {
-          ...data,
-          location,
-          warehouseProvinceId: undefined,
-          warehouseDistrictId: undefined,
-          warehouseWardId: undefined,
+          ...stripWarehouseAreaFields(rest),
+          location: await buildWarehouseLocation(data),
         };
       }}
     >
-      <SimpleForm
-        sx={MIL_FORM_SX}
-        defaultValues={(record: any) => {
-          const parts = cleanString(record?.location).split(",").map((x) => cleanString(x));
-          return {
-            ...record,
-            warehouseProvinceId: parts[0] || "",
-            warehouseDistrictId: parts[1] || "",
-            warehouseWardId: parts[2] || "",
-          };
-        }}
-      >
-        <MilSection index={1} title="Thông tin kho">
-          <MilGrid>
-            <TextInput source="name" label="Tên kho" validate={[required()]} fullWidth />
-            <TextInput source="capacity" label="Sức chứa (kg)" type="number" validate={[required()]} fullWidth />
-          </MilGrid>
-        </MilSection>
-        <MilSection index={2} title="Vị trí kho">
-          <MilGrid>
-            <WarehouseAdministrativeAreaFields />
-          </MilGrid>
-        </MilSection>
+      <SimpleForm sx={MIL_FORM_SX} toolbar={<WarehouseEditFormToolbar />}>
+        <WarehouseLocationHydrate />
       </SimpleForm>
     </Edit>
   );

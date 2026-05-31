@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Use Case — Đăng nhập bằng ví</title>
+  <link rel="stylesheet" href="use-case-shared.css" />
+  <style>
+    .diagram-wrap--large { max-width: 1100px; }
+    .diagram-wrap--large svg { min-width: 980px; min-height: 420px; }
+    .diagram-wrap--large .uc-text { font-size: 13px; }
+    .diagram-wrap--large .actor-text { font-size: 13px; }
+    h1 { font-size: 18px; }
+  </style>
+</head>
+<body>
+  <p class="nav"><a href="index.html">← Danh mục</a></p>
+  <h1>Đăng nhập bằng ví Cardano</h1>
+  <p class="caption">Hình 3.x.1 — Xác thực ví, phân quyền và vào hệ thống · Chưa có tài khoản: <a href="uc-dang-ky-tai-khoan.html">Đăng ký</a></p>
+  <div class="diagram-wrap diagram-wrap--large">
+    <svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="inc" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 Z" fill="#000" />
+        </marker>
+        <marker id="ext" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 Z" fill="#000" />
+        </marker>
+      </defs>
+
+      <g transform="translate(75,165)">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="14" x2="0" y2="50" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="28" x2="-18" y2="42" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="28" x2="18" y2="42" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="50" x2="-14" y2="70" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="50" x2="14" y2="70" stroke="#000" stroke-width="1.6" />
+        <text x="0" y="92" text-anchor="middle" class="actor-text">Người dùng hệ thống</text>
+      </g>
+
+      <line x1="89" y1="235" x2="268" y2="235" stroke="#000" stroke-width="1.5" />
+
+      <ellipse cx="400" cy="235" rx="118" ry="36" fill="#fff" stroke="#000" stroke-width="1.7" />
+      <text x="400" y="228" text-anchor="middle" class="uc-text">Đăng nhập bằng ví</text>
+      <text x="400" y="246" text-anchor="middle" class="uc-text">(kết nối &amp; xác thực)</text>
+
+      <!-- include -->
+      <ellipse cx="780" cy="70" rx="108" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="74" text-anchor="middle" class="uc-text">Chọn và kết nối ví</text>
+
+      <ellipse cx="780" cy="120" rx="88" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="124" text-anchor="middle" class="uc-text">Lấy mã nonce</text>
+
+      <ellipse cx="780" cy="170" rx="88" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="174" text-anchor="middle" class="uc-text">Ký xác thực</text>
+
+      <ellipse cx="780" cy="220" rx="95" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="224" text-anchor="middle" class="uc-text">Xác minh chữ ký</text>
+
+      <ellipse cx="780" cy="270" rx="110" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="274" text-anchor="middle" class="uc-text">Tạo phiên đăng nhập</text>
+
+      <ellipse cx="780" cy="320" rx="105" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="324" text-anchor="middle" class="uc-text">Kiểm tra vai trò</text>
+
+      <ellipse cx="780" cy="370" rx="118" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="780" y="374" text-anchor="middle" class="uc-text">Phân quyền truy cập</text>
+
+      <line x1="518" y1="225" x2="672" y2="70" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="518" y1="228" x2="672" y2="120" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="518" y1="232" x2="672" y2="170" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="518" y1="235" x2="672" y2="220" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="518" y1="238" x2="672" y2="270" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="518" y1="242" x2="672" y2="320" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="518" y1="245" x2="672" y2="370" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <text x="575" y="195" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+
+      <!-- extend: chưa có vai trò → đăng ký -->
+      <ellipse cx="400" cy="395" rx="105" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="400" y="399" text-anchor="middle" class="uc-text">Đăng ký tài khoản</text>
+      <path
+        d="M 400 369 L 400 272"
+        fill="none"
+        stroke="#000"
+        stroke-width="1.1"
+        stroke-dasharray="6,4"
+        marker-end="url(#ext)"
+      />
+      <text x="418" y="358" class="rel-text">&lt;&lt;extend&gt;&gt;</text>
+    </svg>
+  </div>
+</body>
+</html>

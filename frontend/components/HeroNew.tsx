@@ -14,10 +14,10 @@ export function HeroNew() {
       <div className="relative z-10 w-full max-w-5xl mx-auto px-4 min-h-[calc(100vh-5rem)] md:min-h-[calc(100vh-6rem)] flex items-center justify-center pt-24 md:pt-32 pb-12">
         <header className="gov-hero-text text-center space-y-5 max-w-3xl w-full">
           <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight tracking-tight">
-            Truy xuất nguồn gốc sản phẩm
+            Truy xuất nguồn gốc nông sản
           </h1>
-          <p className="text-base md:text-lg text-white leading-relaxed">
-            Quét QR kiểm tra xuất xứ — minh bạch chuỗi cung ứng, xác thực on-chain.
+          <p className="text-base md:text-lg text-white/95 leading-relaxed">
+            Giao diện giới thiệu hệ thống truy xuất nguồn gốc nông sản trên chuỗi khối Cardano.
           </p>
           <div className="mt-4 flex flex-col sm:flex-row justify-center gap-3 w-full max-w-lg mx-auto">
             <button type="button" onClick={() => setShowFlow(true)} className="gov-btn-primary px-8 py-3 text-sm md:text-base">

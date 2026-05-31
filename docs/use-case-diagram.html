@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sơ đồ Use Case — Truy xuất nguồn gốc</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      background: #fff;
+      color: #000;
+      padding: 24px 16px 40px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .caption {
+      text-align: center;
+      font-size: 13px;
+      font-style: italic;
+      margin-bottom: 20px;
+    }
+    .diagram-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-width: 1000px;
+    }
+    .uc-label { font-family: "Times New Roman", Times, serif; font-size: 11px; }
+    .actor-label { font-family: "Times New Roman", Times, serif; font-size: 12px; font-weight: 700; }
+    .rel-label { font-family: "Times New Roman", Times, serif; font-size: 10px; font-style: italic; }
+    .boundary-label { font-family: "Times New Roman", Times, serif; font-size: 12px; font-weight: 700; }
+    @media print {
+      body { padding: 8px; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Sơ đồ Use Case (tổng hợp)</h1>
+  <p class="caption">Hình 3.x — Hệ thống truy xuất nguồn gốc nông sản tích hợp chuỗi khối Cardano</p>
+  <p class="caption" style="margin-bottom:16px"><a href="use-case/index.html">→ Sơ đồ từng use case (style UML include)</a></p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 1100 720" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrowInc" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#000" />
+        </marker>
+      </defs>
+
+      <!-- System boundary -->
+      <rect x="200" y="50" width="700" height="620" fill="none" stroke="#000" stroke-width="2" />
+      <text x="210" y="72" class="boundary-label">Hệ thống truy xuất nguồn gốc</text>
+
+      <!-- Actors (stick figure simplified: head + body + label) -->
+      <g class="actor" transform="translate(70,120)">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="14" x2="0" y2="50" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="-18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="-14" y2="72" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="14" y2="72" stroke="#000" stroke-width="1.5" />
+        <text x="0" y="95" text-anchor="middle" class="actor-label">Doanh nghiệp</text>
+      </g>
+
+      <g class="actor" transform="translate(70,300)">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="14" x2="0" y2="50" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="-18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="-14" y2="72" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="14" y2="72" stroke="#000" stroke-width="1.5" />
+        <text x="0" y="95" text-anchor="middle" class="actor-label">Trung chuyển</text>
+      </g>
+
+      <g class="actor" transform="translate(70,480)">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="14" x2="0" y2="50" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="-18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="-14" y2="72" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="14" y2="72" stroke="#000" stroke-width="1.5" />
+        <text x="0" y="95" text-anchor="middle" class="actor-label">Đại lý</text>
+      </g>
+
+      <g class="actor" transform="translate(1000,280)">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="14" x2="0" y2="50" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="-18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="28" x2="18" y2="42" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="-14" y2="72" stroke="#000" stroke-width="1.5" />
+        <line x1="0" y1="50" x2="14" y2="72" stroke="#000" stroke-width="1.5" />
+        <text x="0" y="95" text-anchor="middle" class="actor-label">Người dùng</text>
+      </g>
+
+      <!-- Use cases: ellipses cx,cy, rx,ry -->
+      <!-- UC positions -->
+      <g id="uc-auth">
+        <ellipse cx="350" cy="130" rx="88" ry="28" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="350" y="134" text-anchor="middle" class="uc-label">Kết nối ví &amp; đăng ký vai trò</text>
+      </g>
+      <g id="uc-profile">
+        <ellipse cx="350" cy="200" rx="72" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="350" y="204" text-anchor="middle" class="uc-label">Quản lý hồ sơ</text>
+      </g>
+      <g id="uc-dash">
+        <ellipse cx="350" cy="265" rx="68" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="350" y="269" text-anchor="middle" class="uc-label">Xem tổng quan</text>
+      </g>
+      <g id="uc-prod">
+        <ellipse cx="520" cy="130" rx="72" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="520" y="134" text-anchor="middle" class="uc-label">Quản lý vụ mùa</text>
+      </g>
+      <g id="uc-cont">
+        <ellipse cx="520" cy="195" rx="78" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="520" y="199" text-anchor="middle" class="uc-label">Quản lý thùng hàng</text>
+      </g>
+      <g id="uc-wh-list">
+        <ellipse cx="480" cy="340" rx="88" ry="28" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="480" y="344" text-anchor="middle" class="uc-label">Quản lý kho lưu trữ</text>
+      </g>
+      <g id="uc-in">
+        <ellipse cx="620" cy="400" rx="78" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="620" y="404" text-anchor="middle" class="uc-label">Nhập kho thùng hàng</text>
+      </g>
+      <g id="uc-out">
+        <ellipse cx="620" cy="460" rx="78" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="620" y="464" text-anchor="middle" class="uc-label">Xuất kho thùng hàng</text>
+      </g>
+      <g id="uc-consume">
+        <ellipse cx="480" cy="520" rx="72" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="480" y="524" text-anchor="middle" class="uc-label">Tiêu thụ thùng hàng</text>
+      </g>
+      <g id="uc-qr">
+        <ellipse cx="620" cy="560" rx="68" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="620" y="564" text-anchor="middle" class="uc-label">Quét mã QR</text>
+      </g>
+
+      <!-- Tra cứu (chung) -->
+      <g id="uc-trace">
+        <ellipse cx="780" cy="300" rx="100" ry="32" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="780" y="296" text-anchor="middle" class="uc-label">Tra cứu thông tin</text>
+        <text x="780" y="312" text-anchor="middle" class="uc-label">sản phẩm / thùng hàng</text>
+      </g>
+
+      <!-- Include sub use cases -->
+      <g id="uc-inc1">
+        <ellipse cx="780" cy="400" rx="88" ry="24" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="780" y="404" text-anchor="middle" class="uc-label">Xem lịch sử giao dịch</text>
+      </g>
+      <g id="uc-inc2">
+        <ellipse cx="780" cy="455" rx="88" ry="24" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="780" y="459" text-anchor="middle" class="uc-label">Xem lộ trình thùng hàng</text>
+      </g>
+      <g id="uc-inc3">
+        <ellipse cx="780" cy="510" rx="95" ry="24" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="780" y="514" text-anchor="middle" class="uc-label">Xem vụ mùa &amp; thông tin liên kết</text>
+      </g>
+      <g id="uc-inc4">
+        <ellipse cx="780" cy="565" rx="88" ry="24" fill="#fff" stroke="#000" stroke-width="1.5" />
+        <text x="780" y="569" text-anchor="middle" class="uc-label">Xem dữ liệu thay đổi on-chain</text>
+      </g>
+
+      <!-- <<include>> dashed arrows -->
+      <line x1="780" y1="332" x2="780" y2="376" stroke="#000" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#arrowInc)" />
+      <text x="795" y="358" class="rel-label">&lt;&lt;include&gt;&gt;</text>
+      <line x1="780" y1="332" x2="780" y2="431" stroke="#000" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#arrowInc)" />
+      <line x1="780" y1="332" x2="780" y2="486" stroke="#000" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#arrowInc)" />
+      <line x1="780" y1="332" x2="780" y2="541" stroke="#000" stroke-width="1.2" stroke-dasharray="6,4" marker-end="url(#arrowInc)" />
+
+      <!-- Associations: actor to use case (solid) -->
+      <!-- Doanh nghiệp -->
+      <line x1="88" y1="195" x2="262" y2="130" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="278" y2="200" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="282" y2="265" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="448" y2="130" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="442" y2="195" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="392" y2="340" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="542" y2="400" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="542" y2="460" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="542" y2="560" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="195" x2="680" y2="300" stroke="#000" stroke-width="1.2" />
+
+      <!-- Trung chuyển -->
+      <line x1="88" y1="375" x2="262" y2="130" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="278" y2="200" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="282" y2="265" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="392" y2="340" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="542" y2="400" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="542" y2="460" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="542" y2="560" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="375" x2="680" y2="300" stroke="#000" stroke-width="1.2" />
+
+      <!-- Đại lý -->
+      <line x1="88" y1="555" x2="262" y2="130" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="278" y2="200" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="282" y2="265" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="392" y2="340" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="542" y2="400" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="408" y2="520" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="542" y2="560" stroke="#000" stroke-width="1.2" />
+      <line x1="88" y1="555" x2="680" y2="300" stroke="#000" stroke-width="1.2" />
+
+      <!-- Người dùng -->
+      <line x1="986" y1="355" x2="880" y2="300" stroke="#000" stroke-width="1.2" />
+
+      <!-- Profile include update warehouse note - optional dashed from profile to boundary text -->
+      <text x="350" y="228" text-anchor="middle" class="uc-label" font-size="9" fill="#333">(gồm cập nhật thông tin kho)</text>
+    </svg>
+  </div>
+</body>
+</html>

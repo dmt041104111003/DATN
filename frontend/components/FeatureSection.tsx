@@ -10,8 +10,9 @@ export function FeatureSection() {
         <div className="gov-section overflow-hidden">
           <GovSectionHeader index="03" title="Tính năng nổi bật" />
           <div className="gov-section-body w-full p-4 md:p-6">
-            <p className="text-sm md:text-base text-gray-700 text-center max-w-2xl mx-auto mb-8 leading-relaxed">
-              Xác thực QR, theo dõi chuỗi cung ứng đầu-cuối, ghi nhận on-chain và quản trị theo vai trò.
+            <p className="text-sm md:text-base text-gray-700 text-center max-w-3xl mx-auto mb-8 leading-relaxed">
+              Đăng nhập ví Cardano; quản lý vụ mùa và thùng hàng; quét QR nhập–xuất kho; cập nhật bảo quản; tra cứu
+              công khai trên mạng Cardano — phân quyền theo doanh nghiệp, trung chuyển và đại lý.
             </p>
             <div className="relative w-full max-w-4xl mx-auto h-64 md:h-96">
               <Image src="/feature.png" alt="Tính năng" fill className="object-contain" priority />

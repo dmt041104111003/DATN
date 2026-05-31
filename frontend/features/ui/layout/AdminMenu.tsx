@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Logout,
   Menu,
   MenuItemLink,
   usePermissions,
@@ -36,7 +37,7 @@ export function AdminMenu() {
       : []),
     <MenuItemLink
       key="warehouse"
-      to="/warehouse"
+      to="/warehouse-storage"
       primaryText="Kho lưu trữ"
       leftIcon={<WarehouseIcon />}
     />,
@@ -50,6 +51,9 @@ export function AdminMenu() {
   ];
 
   return (
-    <Menu>{items}</Menu>
+    <Menu>
+      {items}
+      <Logout />
+    </Menu>
   );
 }

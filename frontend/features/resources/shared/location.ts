@@ -85,7 +85,7 @@ function matchesName(optionName: string, candidate: string) {
   return a.includes(b) || b.includes(a);
 }
 
-function findMatchedOption(options: Option[], rawName: string) {
+export function findMatchedOption(options: Option[], rawName: string) {
   for (let i = 0; i < options.length; i += 1) {
     const row = options[i];
     if (matchesName(row.name, rawName)) return row;

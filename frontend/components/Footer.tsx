@@ -21,7 +21,7 @@ export function Footer() {
           </div>
         </div>
         <div className="border-t border-[#d4af37]/40 mt-8 pt-4 text-center text-xs text-white/80">
-          © {new Date().getFullYear()} Truy xuất nguồn gốc — Hệ thống bảo mật chuỗi cung ứng
+          © {new Date().getFullYear()} Truy xuất nguồn gốc nông sản — Cardano
         </div>
       </div>
     </footer>

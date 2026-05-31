@@ -1,0 +1,411 @@
+<mxfile host="app.diagrams.net" agent="DATN" version="22.1.0">
+  <diagram id="bfd-traceability" name="BFD">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Gốc -->
+        <mxCell id="root" value="Hệ thống truy xuất nguồn gốc nông sản&#xa;tích hợp chuỗi khối Cardano" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="480" y="30" width="360" height="56" as="geometry" />
+        </mxCell>
+
+        <!-- Thanh ngang nối (đường kẻ, không phải hộp) -->
+        <mxCell id="bus" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="80" y="118" as="sourcePoint" />
+            <mxPoint x="1240" y="118" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="busDown" value="" style="endArrow=classic;startArrow=none;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="86" as="sourcePoint" />
+            <mxPoint x="480" y="118" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Module 1 -->
+        <mxCell id="m1" value="1. Quản lý tài khoản" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m1d" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="115" y="118" as="sourcePoint" />
+            <mxPoint x="115" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m1c1" value="1.1 Đăng nhập bằng ví" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="62" y="200" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m1c2" value="1.2 Xác thực chữ ký ví" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="62" y="242" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m1c3" value="1.3 Đăng ký hồ sơ" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="62" y="284" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m1c4" value="1.4 Cập nhật hồ sơ và kho" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="62" y="326" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m1c5" value="1.5 Phân quyền vai trò" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="62" y="368" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m1spine" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="170" as="sourcePoint" />
+            <mxPoint x="52" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m1link" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="170" as="sourcePoint" />
+            <mxPoint x="115" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e111" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="216" as="sourcePoint" />
+            <mxPoint x="62" y="216" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e112" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="258" as="sourcePoint" />
+            <mxPoint x="62" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e113" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="300" as="sourcePoint" />
+            <mxPoint x="62" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e114" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="342" as="sourcePoint" />
+            <mxPoint x="62" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e115" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="52" y="384" as="sourcePoint" />
+            <mxPoint x="62" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Module 2 -->
+        <mxCell id="m2" value="2. Quản lý vụ mùa" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="230" y="130" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m2d" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="305" y="118" as="sourcePoint" />
+            <mxPoint x="305" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2c1" value="2.1 Tạo vụ mùa" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="252" y="200" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m2c2" value="2.2 Cập nhật vụ mùa" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="252" y="242" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m2c3" value="2.3 Đóng vụ mùa" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="252" y="284" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m2c4" value="2.4 Quản lý ảnh chứng nhận" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="252" y="326" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m2c5" value="2.5 Ghi dữ liệu lên chuỗi khối" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="252" y="368" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m2spine" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="170" as="sourcePoint" />
+            <mxPoint x="242" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2link" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="170" as="sourcePoint" />
+            <mxPoint x="305" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e221" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="216" as="sourcePoint" />
+            <mxPoint x="252" y="216" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e222" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="258" as="sourcePoint" />
+            <mxPoint x="252" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e223" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="300" as="sourcePoint" />
+            <mxPoint x="252" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e224" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="342" as="sourcePoint" />
+            <mxPoint x="252" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e225" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="242" y="384" as="sourcePoint" />
+            <mxPoint x="252" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Module 3 -->
+        <mxCell id="m3" value="3. Quản lý thùng hàng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="420" y="130" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m3d" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="495" y="118" as="sourcePoint" />
+            <mxPoint x="495" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3c1" value="3.1 Tạo thùng hàng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="442" y="200" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m3c2" value="3.2 Cập nhật thùng hàng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="442" y="242" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m3c3" value="3.3 Quản lý lô đóng thùng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="442" y="284" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m3c4" value="3.4 Ghi thùng lên chuỗi khối" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="442" y="326" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m3c5" value="3.5 Theo dõi trạng thái thùng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="442" y="368" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m3spine" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="170" as="sourcePoint" />
+            <mxPoint x="432" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3link" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="170" as="sourcePoint" />
+            <mxPoint x="495" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e331" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="216" as="sourcePoint" />
+            <mxPoint x="442" y="216" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e332" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="258" as="sourcePoint" />
+            <mxPoint x="442" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e333" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="300" as="sourcePoint" />
+            <mxPoint x="442" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e334" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="342" as="sourcePoint" />
+            <mxPoint x="442" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e335" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="432" y="384" as="sourcePoint" />
+            <mxPoint x="442" y="384" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Module 4 -->
+        <mxCell id="m4" value="4. Quản lý kho lưu trữ" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="610" y="130" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m4d" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="685" y="118" as="sourcePoint" />
+            <mxPoint x="685" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4c1" value="4.1 Theo dõi thùng trong kho" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="632" y="200" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m4c2" value="4.2 Nhập kho thùng hàng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="632" y="242" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m4c3" value="4.3 Xuất kho và tiêu thụ" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="632" y="284" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m4c4" value="4.4 Kiểm tra sức chứa kho" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="632" y="326" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m4spine" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="622" y="170" as="sourcePoint" />
+            <mxPoint x="622" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4link" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="622" y="170" as="sourcePoint" />
+            <mxPoint x="685" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e441" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="622" y="216" as="sourcePoint" />
+            <mxPoint x="632" y="216" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e442" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="622" y="258" as="sourcePoint" />
+            <mxPoint x="632" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e443" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="622" y="300" as="sourcePoint" />
+            <mxPoint x="632" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e444" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="622" y="342" as="sourcePoint" />
+            <mxPoint x="632" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Module 5 -->
+        <mxCell id="m5" value="5. Xác thực chuỗi khối" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="800" y="130" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m5d" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="875" y="118" as="sourcePoint" />
+            <mxPoint x="875" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5c1" value="5.1 Ghi nhận giao dịch" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="822" y="200" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m5c2" value="5.2 Xác minh trên chuỗi khối" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="822" y="242" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m5c3" value="5.3 Theo dõi chờ xác thực" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="822" y="284" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m5c4" value="5.4 Tra cứu lịch sử giao dịch" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="822" y="326" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m5spine" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="812" y="170" as="sourcePoint" />
+            <mxPoint x="812" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5link" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="812" y="170" as="sourcePoint" />
+            <mxPoint x="875" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e551" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="812" y="216" as="sourcePoint" />
+            <mxPoint x="822" y="216" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e552" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="812" y="258" as="sourcePoint" />
+            <mxPoint x="822" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e553" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="812" y="300" as="sourcePoint" />
+            <mxPoint x="822" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e554" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="812" y="342" as="sourcePoint" />
+            <mxPoint x="822" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Module 6 + bus drops -->
+        <mxCell id="m6" value="6. Quét mã và tổng quan" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="990" y="130" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m6d" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1065" y="118" as="sourcePoint" />
+            <mxPoint x="1065" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6c1" value="6.1 Quét mã QR thùng hàng" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1012" y="200" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m6c2" value="6.2 Tra cứu truy xuất nguồn gốc" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1012" y="242" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m6c3" value="6.3 Xem bảng tổng quan" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1012" y="284" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m6c4" value="6.4 Thống kê hoạt động kho" style="rounded=0;whiteSpace=wrap;html=1;align=center;fontFamily=Times New Roman;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1012" y="326" width="128" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="m6spine" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1002" y="170" as="sourcePoint" />
+            <mxPoint x="1002" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6link" value="" style="endArrow=none;html=1;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1002" y="170" as="sourcePoint" />
+            <mxPoint x="1065" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e661" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1002" y="216" as="sourcePoint" />
+            <mxPoint x="1012" y="216" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e662" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1002" y="258" as="sourcePoint" />
+            <mxPoint x="1012" y="258" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e663" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1002" y="300" as="sourcePoint" />
+            <mxPoint x="1012" y="300" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e664" value="" style="endArrow=classic;html=1;strokeWidth=2;endFill=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1002" y="342" as="sourcePoint" />
+            <mxPoint x="1012" y="342" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

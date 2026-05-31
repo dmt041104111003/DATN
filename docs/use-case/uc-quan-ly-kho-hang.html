@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Use Case — Quản lý kho hàng</title>
+  <link rel="stylesheet" href="use-case-shared.css" />
+</head>
+<body>
+  <p class="nav"><a href="index.html">← Danh mục</a></p>
+  <h1>Quản lý kho hàng</h1>
+  <p class="caption">Hình 3.x.4 — Thông tin kho trong hồ sơ</p>
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 880 480" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="inc" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#000" />
+        </marker>
+      </defs>
+      <g transform="translate(55,60)"><circle cx="0" cy="0" r="12" fill="none" stroke="#000" stroke-width="1.4"/><line x1="0" y1="12" x2="0" y2="42" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="-14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="-12" y2="58" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="12" y2="58" stroke="#000" stroke-width="1.4"/><text x="0" y="78" text-anchor="middle" class="actor-text">Doanh nghiệp</text></g>
+      <g transform="translate(55,200)"><circle cx="0" cy="0" r="12" fill="none" stroke="#000" stroke-width="1.4"/><line x1="0" y1="12" x2="0" y2="42" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="-14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="-12" y2="58" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="12" y2="58" stroke="#000" stroke-width="1.4"/><text x="0" y="78" text-anchor="middle" class="actor-text">Trung chuyển</text></g>
+      <g transform="translate(55,340)"><circle cx="0" cy="0" r="12" fill="none" stroke="#000" stroke-width="1.4"/><line x1="0" y1="12" x2="0" y2="42" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="-14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="-12" y2="58" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="12" y2="58" stroke="#000" stroke-width="1.4"/><text x="0" y="78" text-anchor="middle" class="actor-text">Đại lý</text></g>
+      <line x1="67" y1="130" x2="248" y2="225" stroke="#000" stroke-width="1.2"/>
+      <line x1="67" y1="270" x2="248" y2="235" stroke="#000" stroke-width="1.2"/>
+      <line x1="67" y1="410" x2="248" y2="245" stroke="#000" stroke-width="1.2"/>
+      <ellipse cx="340" cy="235" rx="88" ry="26" fill="#fff" stroke="#000" stroke-width="1.5"/>
+      <text x="340" y="239" text-anchor="middle" class="uc-text">Quản lý kho hàng</text>
+      <ellipse cx="690" cy="175" rx="100" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="179" text-anchor="middle" class="uc-text">Tạo kho (đăng ký)</text>
+      <ellipse cx="690" cy="235" rx="105" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="239" text-anchor="middle" class="uc-text">Cập nhật thông tin kho</text>
+      <ellipse cx="690" cy="295" rx="88" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="299" text-anchor="middle" class="uc-text">Kiểm tra dữ liệu</text>
+      <line x1="428" y1="228" x2="590" y2="175" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="428" y1="235" x2="590" y2="235" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="428" y1="242" x2="590" y2="295" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <text x="500" y="210" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+    </svg>
+  </div>
+</body>
+</html>

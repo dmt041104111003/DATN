@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Use Case — Nhập / xuất kho</title>
+  <link rel="stylesheet" href="use-case-shared.css" />
+</head>
+<body>
+  <p class="nav"><a href="index.html">← Danh mục</a></p>
+  <h1>Quản lý nhập / xuất kho lưu trữ</h1>
+  <p class="caption">Hình 3.x.5 — Quét QR (Doanh nghiệp, Trung chuyển)</p>
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 880 480" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="inc" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#000" />
+        </marker>
+      </defs>
+      <g transform="translate(55,95)"><circle cx="0" cy="0" r="12" fill="none" stroke="#000" stroke-width="1.4"/><line x1="0" y1="12" x2="0" y2="42" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="-14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="-12" y2="58" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="12" y2="58" stroke="#000" stroke-width="1.4"/><text x="0" y="78" text-anchor="middle" class="actor-text">Doanh nghiệp</text></g>
+      <g transform="translate(55,235)"><circle cx="0" cy="0" r="12" fill="none" stroke="#000" stroke-width="1.4"/><line x1="0" y1="12" x2="0" y2="42" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="-14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="24" x2="14" y2="36" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="-12" y2="58" stroke="#000" stroke-width="1.4"/><line x1="0" y1="42" x2="12" y2="58" stroke="#000" stroke-width="1.4"/><text x="0" y="78" text-anchor="middle" class="actor-text">Trung chuyển</text></g>
+      <line x1="67" y1="165" x2="235" y2="228" stroke="#000" stroke-width="1.2"/>
+      <line x1="67" y1="305" x2="235" y2="242" stroke="#000" stroke-width="1.2"/>
+      <ellipse cx="340" cy="235" rx="115" ry="30" fill="#fff" stroke="#000" stroke-width="1.5"/>
+      <text x="340" y="231" text-anchor="middle" class="uc-text">Quản lý nhập / xuất</text>
+      <text x="340" y="245" text-anchor="middle" class="uc-text">kho lưu trữ</text>
+      <ellipse cx="690" cy="80" rx="72" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="84" text-anchor="middle" class="uc-text">Nhập kho (QR)</text>
+      <ellipse cx="690" cy="135" rx="72" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="139" text-anchor="middle" class="uc-text">Xuất kho (QR)</text>
+      <ellipse cx="690" cy="190" rx="88" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="194" text-anchor="middle" class="uc-text">Kiểm tra điều kiện</text>
+      <ellipse cx="690" cy="245" rx="95" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="249" text-anchor="middle" class="uc-text">Cập nhật on-chain</text>
+      <ellipse cx="690" cy="300" rx="100" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="304" text-anchor="middle" class="uc-text">Ghi RecordOperation</text>
+      <ellipse cx="690" cy="355" rx="88" ry="22" fill="#fff" stroke="#000" stroke-width="1.4"/><text x="690" y="359" text-anchor="middle" class="uc-text">Xác thực giao dịch</text>
+      <line x1="455" y1="220" x2="618" y2="80" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="455" y1="228" x2="618" y2="135" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="455" y1="235" x2="618" y2="190" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="455" y1="242" x2="618" y2="245" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="455" y1="248" x2="618" y2="300" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <line x1="455" y1="252" x2="618" y2="355" stroke="#000" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#inc)"/>
+      <text x="510" y="175" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+    </svg>
+  </div>
+  <p class="caption" style="margin-top:12px">Đại lý: nhập kho trong UC này; tiêu thụ → <a href="uc-tieu-thu.html">uc-tieu-thu.html</a></p>
+</body>
+</html>

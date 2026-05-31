@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 function cleanString(v: unknown): string {
@@ -19,6 +19,15 @@ export class WarehouseService {
 
   async create(createdBy: string, data: any) {
     const custodian = cleanString(createdBy);
+    const existing = await (this.prisma as any).warehouse.findFirst({
+      where: { registeringCustodianAddress: custodian },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        'Tài khoản đã có kho. Chỉnh sửa kho hiện có hoặc tạo kho khi đăng ký.',
+      );
+    }
     return await (this.prisma as any).warehouse.create({
       data: {
         name: cleanString(data?.name),

@@ -1,28 +1,32 @@
 "use client";
 
-import { Datagrid, EditButton, TextField } from "react-admin";
-import { MilList } from "@/features/ui/military/MilList";
+import * as React from "react";
+import { Loading, useGetList } from "react-admin";
+import { useNavigate } from "react-router-dom";
+import { Box, Typography } from "@mui/material";
+import { cleanString } from "@/features/core/metadata/share/cleanString";
 
-function warehouseStoragePath(record: { id?: string | number }) {
-  const warehouseId = String(record?.id ?? "").trim();
-  if (!warehouseId) return "/warehouse-storage";
-  const filter = encodeURIComponent(JSON.stringify({ warehouseId }));
-  return `/warehouse-storage?filter=${filter}`;
-}
-
+/** Chuyển sang hồ sơ (kho nằm trong hồ sơ). */
 export function WarehouseResourceList() {
+  const navigate = useNavigate();
+  const { data, isLoading } = useGetList("profile", {
+    pagination: { page: 1, perPage: 1 },
+    sort: { field: "createdAt", order: "DESC" },
+  });
+
+  React.useEffect(() => {
+    if (isLoading || !Array.isArray(data)) return;
+    const id = cleanString(data[0]?.id);
+    if (id) navigate(`/profile/${encodeURIComponent(id)}`, { replace: true });
+  }, [data, isLoading, navigate]);
+
+  if (isLoading) return <Loading />;
+
   return (
-    <MilList exporter={false} actions={false}>
-      <Datagrid
-        rowClick={(_id, _resource, record) => warehouseStoragePath(record)}
-        bulkActionButtons={false}
-      >
-        <TextField source="id" label="Mã kho" />
-        <TextField source="name" label="Tên kho" />
-        <TextField source="location" label="Vị trí kho" />
-        <TextField source="capacity" label="Sức chứa" />
-        <EditButton label="Sửa" />
-      </Datagrid>
-    </MilList>
+    <Box sx={{ p: 3 }}>
+      <Typography color="text.secondary">
+        Chưa có kho gắn với tài khoản này. Đăng xuất và đăng ký lại nếu bạn chưa hoàn tất bước tạo kho.
+      </Typography>
+    </Box>
   );
 }

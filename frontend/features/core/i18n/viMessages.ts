@@ -223,10 +223,10 @@ const vietnameseMessages = merge({}, englishMessages, {
       name: "Thùng hàng |||| Thùng hàng",
     },
     warehouse: {
-      name: "Kho hàng |||| Kho hàng",
+      name: "Kho lưu trữ |||| Kho lưu trữ",
     },
     "warehouse-storage": {
-      name: "Nhập kho |||| Nhập kho",
+      name: "Kho lưu trữ |||| Kho lưu trữ",
     },
     profile: {
       name: "Hồ sơ |||| Hồ sơ",

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Use Case — Cập nhật điều kiện bảo quản</title>
+  <link rel="stylesheet" href="use-case-shared.css" />
+  <style>
+    .diagram-wrap--large { max-width: 1000px; }
+    .diagram-wrap--large svg { min-width: 900px; }
+    .diagram-wrap--large .uc-text { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <p class="nav"><a href="index.html">← Danh mục</a></p>
+  <h1>Cập nhật điều kiện bảo quản thùng</h1>
+  <p class="caption">Hình 3.x — Ghi nhận nhiệt độ, độ ẩm, ghi chú bảo quản khi thùng đang trong kho</p>
+  <div class="diagram-wrap diagram-wrap--large">
+    <svg viewBox="0 0 900 360" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="inc" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+          <path d="M0,0 L9,4.5 L0,9 Z" fill="#000" />
+        </marker>
+      </defs>
+      <g transform="translate(70,130)">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="14" x2="0" y2="50" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="28" x2="-18" y2="42" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="28" x2="18" y2="42" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="50" x2="-14" y2="70" stroke="#000" stroke-width="1.6" />
+        <line x1="0" y1="50" x2="14" y2="70" stroke="#000" stroke-width="1.6" />
+        <text x="0" y="92" text-anchor="middle" class="actor-text">Trung chuyển</text>
+        <text x="0" y="106" text-anchor="middle" class="actor-text" font-size="10">(Đại lý)</text>
+      </g>
+      <line x1="84" y1="200" x2="255" y2="200" stroke="#000" stroke-width="1.5" />
+      <ellipse cx="380" cy="200" rx="125" ry="34" fill="#fff" stroke="#000" stroke-width="1.7" />
+      <text x="380" y="196" text-anchor="middle" class="uc-text">Cập nhật điều kiện</text>
+      <text x="380" y="212" text-anchor="middle" class="uc-text">bảo quản thùng</text>
+      <ellipse cx="720" cy="100" rx="115" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="720" y="104" text-anchor="middle" class="uc-text">Chọn thùng trong kho</text>
+      <ellipse cx="720" cy="165" rx="105" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="720" y="169" text-anchor="middle" class="uc-text">Nhập điều kiện mới</text>
+      <ellipse cx="720" cy="230" rx="110" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="720" y="234" text-anchor="middle" class="uc-text">Đồng bộ chuỗi khối</text>
+      <ellipse cx="720" cy="295" rx="95" ry="26" fill="#fff" stroke="#000" stroke-width="1.5" />
+      <text x="720" y="299" text-anchor="middle" class="uc-text">Lưu bản ghi</text>
+      <line x1="505" y1="192" x2="605" y2="100" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="505" y1="198" x2="605" y2="165" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="505" y1="202" x2="605" y2="230" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <line x1="505" y1="208" x2="605" y2="295" stroke="#000" stroke-width="1.1" stroke-dasharray="6,4" marker-end="url(#inc)" />
+      <text x="545" y="145" class="rel-text">&lt;&lt;include&gt;&gt;</text>
+    </svg>
+  </div>
+</body>
+</html>

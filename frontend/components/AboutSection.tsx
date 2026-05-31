@@ -15,16 +15,18 @@ export function AboutSection() {
             </div>
             <div className="space-y-3 text-sm md:text-base text-gray-800 leading-relaxed text-justify">
               <p>
-                Truy xuất nguồn gốc đầu-cuối giúp mọi bên liên quan kiểm chứng hành trình từng lô hàng, từ nông trại
-                đến người mua cuối. Quét QR cho biết sản phẩm là gì, đã đi qua đâu và ai chịu trách nhiệm từng chặng.
+                Hệ thống hỗ trợ truy xuất nguồn gốc nông sản trên chuỗi khối Cardano: ghi nhận vụ mùa, thùng hàng,
+                nhập–xuất kho và tiêu thụ; mỗi thao tác quan trọng được xác thực bằng ví CIP-30 và lưu metadata
+                on-chain để tra cứu công khai qua mã QR.
               </p>
               <p>
-                Với đội vận hành, cách làm này giảm đối soát thủ công. Kho và đơn vị trung chuyển đồng bộ công suất;
-                mỗi cập nhật có xác thực mật mã để chuỗi truy xuất khớp tồn kho thực tế.
+                Doanh nghiệp sản xuất đóng thùng và quản lý kho; đơn vị trung chuyển luân chuyển hàng giữa các
+                kho; đại lý nhập kho và tiêu thụ tại điểm bán. Cả ba vai trò dùng chung mô hình kho (tên, địa điểm,
+                sức chứa) và cập nhật điều kiện bảo quản theo từng thùng khi cần.
               </p>
               <p>
-                Với người tiêu dùng và đơn vị kiểm toán, cùng một mã QR mở góc nhìn đáng tin về xuất xứ, chất lượng
-                và lịch sử luân chuyển — minh bạch, chống sửa đổi, dễ kiểm tra.
+                Người tiêu dùng không cần đăng nhập: quét QR trên bao bì để xem lịch sử sản xuất, lưu kho và luân
+                chuyển được đồng bộ từ cơ sở dữ liệu và Blockfrost — minh bạch, khó sửa đổi sau khi đã ghi nhận.
               </p>
             </div>
           </div>
