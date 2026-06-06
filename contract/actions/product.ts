@@ -1,11 +1,10 @@
-"use server";
-
+import { BlockfrostProvider, CIP68_100, MeshWallet, stringToHex } from "@meshsdk/core";
 import { Contract } from "@/contract/scripts/offchain";
 import { convertDatum } from "@/lib/utils";
-import { blockfrostProvider } from "@/providers/cardano";
-import { CIP68_100, MeshWallet, stringToHex } from "@meshsdk/core";
 
-export const getProduct = async function ({
+const blockfrostProvider = new BlockfrostProvider(process.env.BLOCKFROST_API_KEY || "");
+
+export async function getProduct({
   owners,
   assetName,
 }: {
@@ -23,8 +22,8 @@ export const getProduct = async function ({
     },
   });
   const contract = new Contract({
-    owners: owners,
-    wallet: wallet,
+    owners,
+    wallet,
     provider: blockfrostProvider,
   });
   const policyId = contract.policyId;
@@ -38,14 +37,14 @@ export const getProduct = async function ({
   )[0];
 
   if (!utxo) {
-    throw new Error("No Asset Not Found From UTxOs.");
+    throw new Error("Không tìm thấy thùng hàng on-chain.");
   }
 
   const metadata = convertDatum(utxo.output.plutusData as string);
 
   return {
-    policyId: policyId,
+    policyId,
     assetName: CIP68_100(stringToHex(assetName)),
-    metadata: metadata,
+    metadata,
   };
-};
+}

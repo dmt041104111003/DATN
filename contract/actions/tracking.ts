@@ -1,5 +1,3 @@
-"use server";
-
 import { convertDatum } from "@/lib/utils";
 import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
 

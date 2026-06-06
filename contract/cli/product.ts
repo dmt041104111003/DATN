@@ -1,3 +1,6 @@
 import { queryProduct } from "@/contract/scripts";
 
-await queryProduct();
+queryProduct().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

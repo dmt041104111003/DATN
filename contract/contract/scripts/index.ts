@@ -1,3 +1,4 @@
+import "dotenv/config";
 import chalk from "chalk";
 import {
   BlockfrostProvider,
@@ -7,6 +8,11 @@ import {
 } from "@meshsdk/core";
 
 import { Contract } from "./offchain";
+import {
+  SAMPLE_CONTAINER_ASSET_NAME,
+  buildContainerMintMetadata,
+  buildContainerUpdateMetadata,
+} from "./agriMetadata";
 import { getTracking } from "@/actions/tracking";
 import { getProduct } from "@/actions/product";
 
@@ -23,21 +29,15 @@ const wallet = new MeshWallet({
   },
 });
 
-/*
-addr_test1qrr879mjnxd3gjqjdgjxkwzfcnvcgsve927scqk5fc3gfs2hs03pn7uhujentyhzq3ays72u4xtfrlahyjalujhxufsqdeezc0,
-addr_test1qp0fadkx80g75f35g5v3pevqganc40hw4vq8r6tq8g447mt0rkz2wztnaf7rkua8g2u59g350daeygnv64u99zsdke9qeyltl6,
-addr_test1qpcfnnmwxhmtu44mzv4y88c6mmzgq9dc7pegdx53j0u4ku2fpl9ex2pe8r74g8twdwgplxgwseqlzctf5m5hfv3r774qk3ths8,
-addr_test1qpvwy8auzdjkqlt9rg0t72dvdv2rrgw94m38um4kwnsgs6hp5j4rzy6jy0wg5cfufja7jetwwl50858nerwkf3sxzucsrxycjw
-*/
 
 const owners: Array<string> = [
+  "addr_test1qqtyewfuqem6h8h4n7u7fpuza4kf8a857wrjxsd0a7lhzuzcd7fe2qt7kw4l9vk5eczsndjdnk5v8zusrmgmc7mjxytqe0txk0",
   "addr_test1qrr879mjnxd3gjqjdgjxkwzfcnvcgsve927scqk5fc3gfs2hs03pn7uhujentyhzq3ays72u4xtfrlahyjalujhxufsqdeezc0",
-  "addr_test1qp0fadkx80g75f35g5v3pevqganc40hw4vq8r6tq8g447mt0rkz2wztnaf7rkua8g2u59g350daeygnv64u99zsdke9qeyltl6",
-  "addr_test1qpcfnnmwxhmtu44mzv4y88c6mmzgq9dc7pegdx53j0u4ku2fpl9ex2pe8r74g8twdwgplxgwseqlzctf5m5hfv3r774qk3ths8",
-  "addr_test1qpvwy8auzdjkqlt9rg0t72dvdv2rrgw94m38um4kwnsgs6hp5j4rzy6jy0wg5cfufja7jetwwl50858nerwkf3sxzucsrxycjw",
+  "addr_test1qzkkuy580f2fgpfrvud4re9m2lut5u4ddksnsq8t3t69vge02ae9qh0rjqdxk9p2ur9dj0xpeejd04fzreqrv35pms2sy2ega2",
+  "addr_test1qqzqsq2wvfnkj809ld3lyf8sayzdgq9m2naahcf9gy76am5uzdmstnrvnru4l0hyzvmru3h2j22lnatgp6407m96nh0sq3w38z",
 ];
 
-const ASSET_NAME_UTF8 = "Huawei Watch GT4 Pro";
+const ASSET_NAME_UTF8 = SAMPLE_CONTAINER_ASSET_NAME;
 const ASSET_NAME_HEX = Buffer.from(ASSET_NAME_UTF8, "utf8").toString("hex");
 
 const printHeader = (title: string) => {
@@ -80,7 +80,7 @@ const waitForConfirmation = (txHash: string): Promise<void> =>
 
 export const mint = async () => {
   const startTime = Date.now();
-  printHeader("MINT NEW PRODUCT NFT");
+  printHeader("MINT THÙNG HÀNG (CIP-68)");
 
   try {
     const contract = new Contract({
@@ -95,22 +95,11 @@ export const mint = async () => {
     console.log("");
 
     console.log(chalk.yellow("Preparing metadata for mint..."));
-    const metadata = {
-      name: "Huawei Watch GT 4 Pro - Premium Titanium Smartwatch",
-      description:
-        "The Huawei Watch GT 4 Pro is a high-end smartwatch featuring an aerospace-grade titanium case, spherical sapphire crystal glass, and a 1.5-inch LTPO AMOLED display (466×466 pixels, ~310 ppi). It offers up to 14 days of battery life (typical usage), HUAWEI TruSense health system (heart rate, SpO2, ECG, stress, sleep, skin temperature), 100+ sports modes, dual-band multi-system GPS, 5 ATM water resistance (50 meters), HarmonyOS, Bluetooth 5.2, NFC, and premium design for active, modern lifestyles.",
-      brand: "Huawei",
-      model: "Watch GT 4 Pro",
-      material: "Aerospace Titanium + Sapphire Glass",
-      battery: "Up to 14 days",
-      image: "ipfs://QmYourIPFSHashhuaweiwatchgt4frontpng",
-      mediaType: "image/png",
-      roadmap: "[Viet Nam, China, American, Russia]",
-      location: "Viet Nam",
-    };
+    const metadata = buildContainerMintMetadata(owners);
 
     console.log(chalk.green("✓ Metadata prepared"));
-    console.log(chalk.dim(`Initial location: ${metadata.location}`));
+    console.log(chalk.dim(`Sản phẩm: ${metadata.product_name}`));
+    console.log(chalk.dim(`Chuỗi: ${metadata.participant_location_labels}`));
     console.log("");
 
     console.log(chalk.yellow("Building mint transaction..."));
@@ -166,7 +155,7 @@ export const mint = async () => {
 
 export const update = async () => {
   const startTime = Date.now();
-  printHeader("UPDATE PRODUCT METADATA");
+  printHeader("CẬP NHẬT METADATA THÙNG HÀNG");
 
   try {
     const contract = new Contract({
@@ -181,22 +170,10 @@ export const update = async () => {
     console.log("");
 
     console.log(chalk.yellow("Preparing updated metadata..."));
-    const newMetadata = {
-      name: "Huawei Watch GT 4 Pro",
-      description:
-        "The Huawei Watch GT 4 Pro is a high-end smartwatch featuring an aerospace-grade titanium case, spherical sapphire crystal glass, and a 1.5-inch LTPO AMOLED display (466×466 pixels, ~310 ppi). It offers up to 14 days of battery life (typical usage), HUAWEI TruSense health system (heart rate, SpO2, ECG, stress, sleep, skin temperature), 100+ sports modes, dual-band multi-system GPS, 5 ATM water resistance (50 meters), HarmonyOS, Bluetooth 5.2, NFC, and premium design for active, modern lifestyles.",
-      brand: "Huawei",
-      model: "Watch GT 4 Pro",
-      material: "Aerospace Titanium + Sapphire Glass",
-      battery: "Up to 14 days",
-      image: "ipfs://QmYourIPFSHashhuaweiwatchgt4frontpng",
-      mediaType: "image/png",
-      roadmap: "[Viet Nam, China, American, Russia]",
-      location: "China",
-    };
+    const newMetadata = buildContainerUpdateMetadata(owners);
 
     console.log(chalk.green("✓ Metadata ready"));
-    console.log(chalk.dim(`New location: ${newMetadata.location}`));
+    console.log(chalk.dim(`Chuỗi mới: ${newMetadata.participant_location_labels}`));
     console.log("");
 
     console.log(chalk.yellow("Building update transaction..."));
@@ -250,7 +227,7 @@ export const update = async () => {
 
 export const burn = async () => {
   const startTime = Date.now();
-  printHeader("BURN PRODUCT NFT");
+  printHeader("BURN THÙNG HÀNG NFT");
 
   try {
     const contract = new Contract({

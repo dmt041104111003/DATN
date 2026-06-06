@@ -1,12 +1,12 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} **/
-
-const jestConfig = {
+module.exports = {
   testTimeout: 60000,
   testEnvironment: "node",
   setupFiles: ["dotenv/config"],
   transform: {
-    "^.+.tsx?$": ["ts-jest", {}],
+    "^.+\\.tsx?$": ["ts-jest", {}],
+  },
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/$1",
   },
 };
-
-export default jestConfig;

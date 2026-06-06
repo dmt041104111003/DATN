@@ -1,3 +1,6 @@
 import { burn } from "@/contract/scripts";
 
-await burn();
+burn().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

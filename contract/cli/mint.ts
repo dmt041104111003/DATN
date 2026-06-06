@@ -1,3 +1,6 @@
 import { mint } from "@/contract/scripts";
 
-await mint();
+mint().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -1,3 +1,6 @@
 import { update } from "@/contract/scripts";
 
-await update();
+update().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

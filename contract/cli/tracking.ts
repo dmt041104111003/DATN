@@ -1,3 +1,6 @@
 import { queryTracking } from "@/contract/scripts";
 
-await queryTracking();
+queryTracking().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
