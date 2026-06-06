@@ -94,7 +94,7 @@ export function WarehouseRoleDashboard({
                   <Cell fill={PRIMARY} />
                   <Cell fill={MUTED} />
                 </Pie>
-                <Tooltip formatter={(v: number) => `${formatKg(v)} kg`} />
+                <Tooltip formatter={(v) => `${formatKg(Number(v ?? 0))} kg`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -125,7 +125,7 @@ export function WarehouseRoleDashboard({
                   <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="name" width={88} tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(v: number) => `${v}%`}
+                    formatter={(v) => `${Number(v ?? 0)}%`}
                     labelFormatter={(_, payload) =>
                       payload?.[0]?.payload?.fullName ? String(payload[0].payload.fullName) : ""
                     }
