@@ -64,10 +64,28 @@ export function AdminLoginPage() {
           embedded
           resource="profile"
           mutationOptions={{
-            onSuccess: (data: any) => {
+            onSuccess: async (data: any) => {
               window.sessionStorage.removeItem("pending_profile_setup");
-              const roleCode = data?.roleCode || data?.role;
-              window.location.assign(homePathForRole(roleCode));
+              const roleCode =
+                data?.roleCode || data?.role || data?.profile?.roleCode;
+              if (roleCode) {
+                window.location.assign(homePathForRole(roleCode));
+                return;
+              }
+              const meRes = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001"}/auth/me`,
+                { credentials: "include", cache: "no-store" },
+              );
+              if (meRes.ok) {
+                const me = await meRes.json();
+                const resolved =
+                  me?.profile?.roleCode || me?.user?.roleCode || me?.user?.role;
+                if (resolved) {
+                  window.location.assign(homePathForRole(resolved));
+                  return;
+                }
+              }
+              notify("Đã tạo hồ sơ. Vui lòng đăng nhập lại bằng ví.", { type: "warning" });
             },
             onError: (e: any) => {
               notify(String(e?.message || "Tạo hồ sơ thất bại"), { type: "error" });

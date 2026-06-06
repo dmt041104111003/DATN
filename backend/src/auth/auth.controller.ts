@@ -70,19 +70,22 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@Req() req: any) {
-    const user = req?.user || null;
-    const roleCode = String(user?.role || '').trim() || null;
-
-    return {
-      user,
-      profile: roleCode ? {
-        id: user?.profileId || null,
-        walletAddress: user?.walletAddress || user?.paymentAddress || user?.sub || null,
-        roleCode,
-        displayName: user?.displayName || null,
-      } : null,
-    };
+  async getProfile(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const me = await this.authService.getMe(req?.user || null);
+    const jwtRole = String(req?.user?.role || req?.user?.roleCode || '').trim();
+    const dbRole = String(me?.user?.roleCode || me?.user?.role || '').trim();
+    if (!jwtRole && dbRole && me?.user?.profileId) {
+      const token = this.authService.buildSessionToken({
+        id: String(me.user.profileId),
+        address: String(me.user.walletAddress || me.user.paymentAddress || me.user.sub),
+        roleCode: dbRole,
+        displayName: me.user.displayName,
+        phoneNumber: me.user.phoneNumber,
+        isActive: me.user.isActive,
+      });
+      this.setAuthCookie(res, token);
+    }
+    return me;
   }
 
   private normalizeAddress(input: any): string | null {

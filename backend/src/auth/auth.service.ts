@@ -246,6 +246,99 @@ export class AuthService {
     return addr;
   }
 
+  private resolveWalletAddress(jwtUser: any): string {
+    return String(
+      jwtUser?.paymentAddress || jwtUser?.walletAddress || jwtUser?.sub || '',
+    ).trim();
+  }
+
+  async getMe(jwtUser: any) {
+    const addr = this.resolveWalletAddress(jwtUser);
+    if (!addr) {
+      return { user: jwtUser ?? null, profile: null };
+    }
+
+    const account = await (this.prisma as any).user.findUnique({
+      where: { address: addr },
+      select: {
+        id: true,
+        address: true,
+        roleCode: true,
+        displayName: true,
+        phoneNumber: true,
+        isActive: true,
+      },
+    });
+
+    if (!account?.roleCode) {
+      return {
+        user: {
+          ...jwtUser,
+          sub: addr,
+          paymentAddress: addr,
+          walletAddress: addr,
+          profileId: null,
+          role: null,
+          roleCode: null,
+        },
+        profile: null,
+      };
+    }
+
+    const user = {
+      sub: addr,
+      stakeAddress: jwtUser?.stakeAddress || addr,
+      paymentAddress: addr,
+      walletAddress: addr,
+      profileId: account.id,
+      role: account.roleCode,
+      roleCode: account.roleCode,
+      displayName: account.displayName,
+      phoneNumber: account.phoneNumber,
+      isActive: account.isActive,
+    };
+
+    return {
+      user,
+      profile: {
+        id: account.id,
+        walletAddress: account.address,
+        roleCode: account.roleCode,
+        displayName: account.displayName,
+        phoneNumber: account.phoneNumber,
+      },
+    };
+  }
+
+  buildSessionToken(account: {
+    id: string;
+    address: string;
+    roleCode: string;
+    displayName?: string | null;
+    phoneNumber?: string | null;
+    isActive?: boolean;
+  }) {
+    const secret = this.config.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new UnauthorizedException('Chưa cấu hình JWT_SECRET trên server.');
+    }
+    return jwt.sign(
+      {
+        sub: account.address,
+        stakeAddress: account.address,
+        paymentAddress: account.address,
+        walletAddress: account.address,
+        profileId: account.id,
+        role: account.roleCode,
+        displayName: account.displayName,
+        phoneNumber: account.phoneNumber,
+        isActive: account.isActive,
+      },
+      secret,
+      { expiresIn: '7d' },
+    );
+  }
+
   private verifyWalletSignature(nonce: string, signature: string, key: string): boolean {
     try {
       if (checkSignature(nonce, { signature, key } as any)) return true;
