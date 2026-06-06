@@ -5,32 +5,46 @@ import {
   DateInput,
   FileField,
   FileInput,
+  maxValue,
   required,
   SelectInput,
   TextInput,
+  useRecordContext,
 } from "react-admin";
 import { useWatch } from "react-hook-form";
+import { EvidenceImage } from "@/features/resources/shared/EvidenceImage";
 import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
 import { MilGrid, MilSection } from "@/features/ui/military/MilSection";
+import {
+  datePickerBounds,
+  seedingDateBounds,
+  todayDateInputValue,
+} from "@/features/resources/shared/dateInputBounds";
 import { positiveNumber } from "@/features/resources/shared/numberHelpers";
 import { CERTIFICATIONS } from "./constants";
 import { ProductionAdministrativeAreaFields } from "./ProductionAdministrativeAreaFields";
+import { ProductionFacilityAutofill } from "./ProductionFacilityAutofill";
 
 export function ProductionFormSections() {
+  const record = useRecordContext();
   const watchedStatus = useWatch({ name: "status" });
   const watchedVarietyId = useWatch({ name: "varietyId" });
   const watchedCertifications = useWatch({ name: "certifications" });
   const status = String(watchedStatus ?? "CREATED");
   const varietyId = String(watchedVarietyId ?? "");
   const certifications = Array.isArray(watchedCertifications) ? watchedCertifications : [];
-  const watchedEvidenceFiles = useWatch({ name: "evidenceFiles" });
-  const evidencePreviews = normalizeEvidenceFilesForForm(watchedEvidenceFiles);
+  const savedEvidence = normalizeEvidenceFilesForForm(
+    record?.evidenceFiles ?? record?.images,
+  );
   const hasOtherCertification = certifications.includes("other");
   const fullyLocked = status === "CLOSED";
   const lockedCore = fullyLocked;
+  const seedingMax = todayDateInputValue();
+  const seedingDateProps = datePickerBounds(seedingDateBounds());
 
   return (
     <>
+      <ProductionFacilityAutofill />
       {fullyLocked ? <span className="mil-badge">Đã thu hoạch</span> : null}
 
       <MilSection index={1} title="Thông tin vụ sản xuất">
@@ -39,11 +53,15 @@ export function ProductionFormSections() {
           <TextInput
             source="facilityId"
             label="Tên cơ sở sản xuất"
-            disabled={lockedCore}
+            disabled
             validate={[required()]}
             fullWidth
+            helperText="Tự lấy từ tên hiển thị trong hồ sơ"
           />
-          <ProductionAdministrativeAreaFields disabled={lockedCore} />
+          <div className="md:col-span-2 text-sm text-neutral-600 -mt-1 mb-1">
+            Địa chỉ tự lấy từ vị trí kho trong hồ sơ
+          </div>
+          <ProductionAdministrativeAreaFields />
           <SelectInput
             source="farmingMethod"
             label="Phương thức canh tác"
@@ -60,8 +78,9 @@ export function ProductionFormSections() {
             source="seedingDate"
             label="Ngày gieo trồng"
             disabled={lockedCore}
-            validate={[required()]}
+            validate={[required(), maxValue(seedingMax, "Không chọn ngày tương lai")]}
             fullWidth
+            {...seedingDateProps}
           />
           {fullyLocked ? (
             <DateInput source="harvestDate" label="Ngày thu hoạch" disabled fullWidth />
@@ -125,34 +144,36 @@ export function ProductionFormSections() {
               fullWidth
             />
           ) : null}
-          {evidencePreviews.length > 0 ? (
-            <div className="md:col-span-2 flex flex-wrap gap-3">
-              {evidencePreviews.map((file) => (
-                <a
-                  key={file.src}
-                  href={file.src}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block overflow-hidden rounded border border-neutral-300"
-                >
-                  <img
-                    src={file.src}
-                    alt={file.title}
-                    className="h-28 w-28 object-cover"
-                    loading="lazy"
-                  />
-                </a>
-              ))}
+          {savedEvidence.length > 0 ? (
+            <div className="md:col-span-2">
+              <p className="mb-2 text-sm font-medium text-neutral-700">Ảnh đã lưu</p>
+              <div className="flex flex-wrap gap-3">
+                {savedEvidence.map((file) => (
+                  <a
+                    key={file.src}
+                    href={file.src}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block overflow-hidden rounded border border-neutral-300"
+                  >
+                    <EvidenceImage
+                      uri={file.uri}
+                      alt={file.title}
+                      className="h-28 w-28 object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
             </div>
           ) : null}
           <div className="md:col-span-2">
             <FileInput
-              source="evidenceFiles"
-              label="Ảnh minh chứng (nhiều ảnh)"
+              source="newEvidenceFiles"
+              label={savedEvidence.length > 0 ? "Thêm ảnh minh chứng" : "Ảnh minh chứng (nhiều ảnh)"}
               multiple
               disabled={fullyLocked}
             >
-              <FileField source="src" title="title" />
+              <FileField source="title" title="title" />
             </FileInput>
           </div>
           <div className="md:col-span-2">

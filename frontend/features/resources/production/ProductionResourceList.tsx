@@ -15,7 +15,7 @@ export function ProductionResourceList() {
     <MilList exporter={false}>
       <ListVerificationPoll entityType="PRODUCTION" />
       <Datagrid rowClick="edit" bulkActionButtons={false}>
-        <TextField source="id" label="Mã vụ" />
+        <TextField source="code" label="Mã vụ mùa" />
         <TextField source="facilityId" label="Cơ sở" />
         <TextField source="cropType" label="Loại cây" />
         <SelectField

@@ -40,7 +40,7 @@ export function ProductionResourceEdit() {
           const parts = cleanString(record?.location).split(",").map((x) => cleanString(x));
           return {
             ...record,
-            evidenceFiles: normalizeEvidenceFilesForForm(record?.evidenceFiles ?? record?.images),
+            newEvidenceFiles: [],
             productionProvinceId: parts[0] || "",
             productionDistrictId: parts[1] || "",
             productionWardId: parts[2] || "",

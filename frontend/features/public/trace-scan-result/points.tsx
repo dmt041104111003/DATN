@@ -8,7 +8,15 @@ type TracePoint = {
   name: string;
   walletAddress: string;
   location: string;
+  locationText: string;
+  roleText: string;
 };
+
+function shortWallet(wallet: string) {
+  const raw = String(wallet || "").trim();
+  if (raw.length <= 16) return raw;
+  return `${raw.slice(0, 10)}...${raw.slice(-6)}`;
+}
 
 export default function TracePoints({ points, matchedIndex }: { points: TracePoint[]; matchedIndex: number }) {
   return (
@@ -36,13 +44,14 @@ export default function TracePoints({ points, matchedIndex }: { points: TracePoi
             </Box>
             <Box sx={{ pl: 1, pb: 0.5 }}>
               <Typography variant="body2" sx={{ fontWeight: 700, color: active ? GOV_RED_DARK : "text.primary" }}>
-                {point.name || "Chưa có tên"}
-              </Typography>
-              <Typography variant="caption" sx={{ display: "block", wordBreak: "break-all", fontFamily: "monospace" }}>
-                {point.walletAddress}
+                {point.name || point.roleText || "Đơn vị tham gia"}
               </Typography>
               <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
-                {point.location || "-"}
+                {point.roleText || "Đơn vị tham gia"}
+                {point.name ? ` · Ví ${shortWallet(point.walletAddress)}` : ""}
+              </Typography>
+              <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+                {point.locationText || "-"}
               </Typography>
             </Box>
           </Box>

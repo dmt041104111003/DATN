@@ -1,6 +1,7 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
 import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
+import { signerContextToApiBody, signerContextToMetadata } from "@/features/core/onchain/signerContext";
 import { formatProductionRefInline } from "@/features/core/metadata/share/formatProductionRefInline";
 
 export async function createWarehouseStorageOnchain(params: any, deps: any) {
@@ -34,17 +35,22 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
   const createPayload: any = { ...(params.data as any) };
   const owners = deps.buildOwnerList(containerRow || createPayload, owner);
   const inventoryKey = containerInventoryKey;
+  const warehouseId = createPayload?.warehouseId || params.previousData?.warehouseId;
+  const signer = await deps.resolveSignerContext(deps, { warehouseId });
+  const storageOp = currentStorageId ? "UPDATE" : "IN";
   const metadata = {
     ...deps.buildMappedMetadata({
       status: "UPDATE",
-      storage_op: currentStorageId ? "UPDATE" : "IN",
-      warehouse_id: createPayload?.warehouseId || params.previousData?.warehouseId,
+      storage_op: storageOp,
+      warehouse_id: warehouseId,
       container_ref_inline: formatProductionRefInline(containerInventoryKey),
       storage_created_at: deps.cleanString(createPayload?.createdAt) || new Date().toISOString(),
       storage_updated_at: new Date().toISOString(),
       storage_conditions: createPayload?.conditions,
+      ...signerContextToMetadata(signer),
     }),
   };
+  const signerBody = { ...signerContextToApiBody(signer), storageOp };
   const unsigned = await saveContractUnsignedTx(
     deps.httpClient,
     deps.BACKEND_URL,
@@ -57,7 +63,7 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
       `${deps.BACKEND_URL}/warehouse-storage/${encodeURIComponent(currentStorageId)}`,
       {
         method: "PATCH",
-        body: JSON.stringify({ ...createPayload, txHash, containerInventoryKey }),
+        body: JSON.stringify({ ...createPayload, txHash, containerInventoryKey, ...signerBody }),
       },
     );
     await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
@@ -66,7 +72,7 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
   }
   const created = await deps.baseProvider.create("warehouse-storage", {
     ...params,
-    data: { ...createPayload, txHash, containerInventoryKey },
+    data: { ...createPayload, txHash, containerInventoryKey, ...signerBody },
   });
   await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
   return created;

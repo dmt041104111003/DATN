@@ -1,5 +1,7 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
 import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
+import { signerContextToApiBody } from "@/features/core/onchain/signerContext";
+import { resolveParticipantLocationTexts } from "@/features/resources/shared/locationHelpers";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 
 export async function updateContainerOnchain(params: any, deps: any) {
@@ -13,8 +15,11 @@ export async function updateContainerOnchain(params: any, deps: any) {
   if (!inventoryKey) throw new Error("inventoryKey is required.");
   const base = params.previousData || {};
   const merged = { ...base, ...(params.data || {}) };
+  const locationTexts = await resolveParticipantLocationTexts(merged?.participantLocationLabels);
+  const mergedForMetadata = { ...merged, participantLocationLabels: locationTexts };
+  const signer = await deps.resolveSignerContext(deps, { participantRows: merged?.participantRows });
   const owners = deps.buildOwnerList(merged, owner);
-  const metadata = deps.buildContainerMetadata(merged, base);
+  const metadata = deps.buildContainerMetadata(mergedForMetadata, base, signer);
   const unsigned = await saveContractUnsignedTx(
     deps.httpClient,
     deps.BACKEND_URL,
@@ -24,7 +29,7 @@ export async function updateContainerOnchain(params: any, deps: any) {
   const txHash = await signAndPublishUnsignedTx(String(unsigned.data));
   const patchRes = await deps.httpClient(`${deps.BACKEND_URL}/container/${encodeURIComponent(inventoryKey)}`, {
     method: "PATCH",
-    body: JSON.stringify({ ...params.data, txHash }),
+    body: JSON.stringify({ ...params.data, txHash, ...signerContextToApiBody(signer) }),
   });
   await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
   const row = patchRes.json as any;

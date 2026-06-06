@@ -16,7 +16,10 @@ export function ProductionResourceCreate() {
           cleanString(data?.productionDistrictId),
           cleanString(data?.productionWardId),
         ].filter(Boolean).join(", ");
-        if (!location) throw new Error("Vị trí là bắt buộc.");
+        if (!location || location.split(",").filter(Boolean).length < 3) {
+          throw new Error("Thiếu địa chỉ từ hồ sơ. Cập nhật vị trí kho trong hồ sơ trước.");
+        }
+        if (!cleanString(data?.facilityId)) throw new Error("Thiếu tên cơ sở sản xuất từ hồ sơ.");
         return {
           ...data,
           location,
@@ -35,7 +38,7 @@ export function ProductionResourceCreate() {
         defaultValues={{
           code: makeDailyCode("VU"),
           status: "CREATED",
-          evidenceFiles: [],
+          newEvidenceFiles: [],
         }}
         toolbar={<ProductionCreateToolbar />}
       >

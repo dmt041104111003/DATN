@@ -1,3 +1,5 @@
+import type { SignerContext } from "@/features/core/onchain/signerContext";
+import { signerContextToMetadata } from "@/features/core/onchain/signerContext";
 import { cleanString } from "./share/cleanString";
 import { parseStringList } from "./share/parseStringList";
 import { buildMappedMetadata } from "./share/buildMappedMetadata";
@@ -11,7 +13,7 @@ function resolveVerifiedWallets(data: any, previousData: any) {
   return parseStringList(raw);
 }
 
-export function buildContainerMetadata(data: any, previousData: any) {
+export function buildContainerMetadata(data: any, previousData: any, signer?: SignerContext | null) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
   let metadataStatus = "CREATE";
   if (rawStatus === "CONSUMED") {
@@ -40,5 +42,6 @@ export function buildContainerMetadata(data: any, previousData: any) {
         : previousData?.participantLocationLabels,
     ).join("; "),
     note: data?.note || previousData?.note,
+    ...(signer ? signerContextToMetadata(signer) : {}),
   });
 }

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { extractSignerPayload } from '../shared/signer-payload';
 
 const ENTITY_TYPE = 'PRODUCTION';
 
@@ -143,6 +144,7 @@ export class ProductionService {
         txHash,
         verified: false,
         verifiedAt: null,
+        payload: extractSignerPayload(data, { location: cleanString(data?.location) }) || undefined,
       } as any,
     });
 
@@ -211,6 +213,8 @@ export class ProductionService {
           txHash,
           verified: false,
           verifiedAt: null,
+          payload:
+            extractSignerPayload(data, { location: cleanString(data?.location || existing?.location) }) || undefined,
         } as any,
       });
     }

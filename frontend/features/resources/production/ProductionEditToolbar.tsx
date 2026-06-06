@@ -9,6 +9,7 @@ import {
   useSaveContext,
 } from "react-admin";
 import { useFormContext, useWatch } from "react-hook-form";
+import { harvestDateBounds, toDateInputValue } from "@/features/resources/shared/dateInputBounds";
 import { type ProductionStatus } from "./constants";
 
 export function ProductionEditToolbar() {
@@ -22,6 +23,8 @@ export function ProductionEditToolbar() {
     (useWatch({ name: "status" }) as ProductionStatus | undefined) ?? "CREATED";
   const verified = Boolean(useWatch({ name: "verified" }));
   const seedingDate = String(useWatch({ name: "seedingDate" }) ?? "");
+  const harvestBounds = React.useMemo(() => harvestDateBounds(seedingDate), [seedingDate]);
+  const canHarvestByDate = Boolean(harvestBounds.min && harvestBounds.min <= harvestBounds.max);
   const [harvestModalOpen, setHarvestModalOpen] = React.useState(false);
   const [harvestInput, setHarvestInput] = React.useState("");
   const [actualYieldInput, setActualYieldInput] = React.useState("");
@@ -45,7 +48,7 @@ export function ProductionEditToolbar() {
   const isClosed = status === "CLOSED";
   const hasNonHarvestChanges = dirtyKeys.some((key) => !excludedDirtyKeys.has(key));
   const canUpdate = !isClosed && verified && hasNonHarvestChanges;
-  const canHarvest = !isClosed && verified && !canUpdate;
+  const canHarvest = !isClosed && verified && !canUpdate && canHarvestByDate;
 
   return (
     <>
@@ -66,7 +69,11 @@ export function ProductionEditToolbar() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setHarvestInput("");
+              if (!canHarvestByDate) {
+                setHarvestError("Ngày gieo trồng phải trước hôm nay mới thu hoạch được.");
+                return;
+              }
+              setHarvestInput(harvestBounds.max || "");
               setActualYieldInput("");
               setHarvestError("");
               setHarvestModalOpen(true);
@@ -86,6 +93,8 @@ export function ProductionEditToolbar() {
               type="date"
               className="w-full rounded border px-3 py-2"
               value={harvestInput}
+              min={harvestBounds.min}
+              max={harvestBounds.max}
               onChange={(e) => setHarvestInput(e.target.value)}
             />
             <label className="mb-2 mt-3 block text-sm">Sản lượng thực tế (kg) *</label>
@@ -125,9 +134,14 @@ export function ProductionEditToolbar() {
                     setHarvestError("Không tìm thấy ngày gieo trồng.");
                     return;
                   }
-                  if (harvest.getTime() <= seed.getTime()) {
+                  const harvestIso = toDateInputValue(harvestInput);
+                  if (
+                    harvest.getTime() <= seed.getTime() ||
+                    (harvestBounds.min && harvestIso < harvestBounds.min) ||
+                    (harvestBounds.max && harvestIso > harvestBounds.max)
+                  ) {
                     e.preventDefault();
-                    setHarvestError("Ngày thu hoạch phải lớn hơn ngày gieo trồng.");
+                    setHarvestError("Ngày thu hoạch phải sau ngày gieo và không vượt hôm nay.");
                     return;
                   }
                   const actualYield = Number(String(actualYieldInput ?? "").trim());

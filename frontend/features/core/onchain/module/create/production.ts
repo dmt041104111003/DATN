@@ -1,14 +1,26 @@
 import { createContractUnsignedTx } from "@/features/core/onchain/contract/createContractUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
+import { signerContextToApiBody } from "@/features/core/onchain/signerContext";
+import { codesToLocationText } from "@/features/resources/shared/locationHelpers";
 import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
 
 export async function createProductionOnchain(params: any, deps: any) {
   const { owner } = await deps.getSessionOwner();
-  const evidenceFiles = deps.pickRawFiles((params.data as any)?.evidenceFiles);
+  const locationText = await codesToLocationText(params.data?.location);
+  const signer = await deps.resolveSignerContext(deps, { location: locationText });
+  const evidenceFiles = deps.pickRawFiles(
+    (params.data as any)?.newEvidenceFiles ?? (params.data as any)?.evidenceFiles,
+  );
   const evidenceFilesIpfs = await deps.uploadMany(evidenceFiles);
   const owners = deps.buildOwnerList(owner);
-  const metadata = deps.buildProductionMetadata(params.data, null, evidenceFilesIpfs, owners);
+  const metadata = deps.buildProductionMetadata(
+    { ...params.data, location: locationText },
+    null,
+    evidenceFilesIpfs,
+    owners,
+    signer,
+  );
 
   const unsigned = await createContractUnsignedTx(
     deps.httpClient,
@@ -29,6 +41,7 @@ export async function createProductionOnchain(params: any, deps: any) {
       inventoryKey: String(unsigned.inventoryKey || "").trim(),
       txHash,
       evidenceFiles: evidenceFilesIpfs,
+      ...signerContextToApiBody(signer),
     }),
   });
   const inventoryKey = String(unsigned.inventoryKey || "").trim();

@@ -3,6 +3,12 @@ import { BlockFrostAPI, BlockfrostServerError } from '@blockfrost/blockfrost-js'
 import * as cbor from 'cbor';
 import { deserializeDatum } from '../utils/deserialize-datum';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  displayLocationText,
+  resolveLocationLabelText,
+  roleLabelVi,
+  storageOpLabelVi,
+} from './location-label.resolver';
 
 const POLICY_ID_HEX_LEN = 56;
 const CIP68_100_PREFIX = '000643b0';
@@ -52,11 +58,33 @@ function isAssetNotFoundError(err: unknown): boolean {
   return false;
 }
 
+export type TraceLatestAction = {
+  signerWallet: string;
+  signerName: string;
+  signerRole: string;
+  signerRoleText: string;
+  signerLocationLabel: string;
+  signerLocationText: string;
+  storageOp: string;
+  storageOpText: string;
+  signedAt: string;
+};
+
+export type TraceHistorySummary = {
+  title: string;
+  signerName: string;
+  signerRoleText: string;
+  signerLocationText: string;
+  storageOpText: string;
+  statusText: string;
+};
+
 export interface TraceResult {
   lotPassport: Record<string, unknown>;
   productionMetadata?: Record<string, unknown> | null;
-  points?: Array<{ name: string; walletAddress: string; location: string }>;
+  points?: Array<{ name: string; walletAddress: string; location: string; locationText: string; roleText: string }>;
   latestSignerWallet?: string | null;
+  latestAction?: TraceLatestAction | null;
   message?: string;
 }
 
@@ -65,6 +93,7 @@ type TraceHistoryItem = {
   txHash: string;
   time: string;
   metadata: Record<string, unknown> | null;
+  summary: TraceHistorySummary | null;
 };
 
 export interface TraceHistoryResult {
@@ -242,9 +271,10 @@ export class TraceService {
         const blockTime = Number((tx as any)?.block_time || 0);
         const time = blockTime > 0 ? new Date(blockTime * 1000).toISOString() : '';
         const metadata = await this.readMetadataByTxHashAndUnit(row.txHash, unit);
-        out.push({ source: row.source, txHash: row.txHash, time, metadata });
+        const summary = await this.buildHistorySummary(row.source, metadata);
+        out.push({ source: row.source, txHash: row.txHash, time, metadata, summary });
       } catch {
-        out.push({ source: row.source, txHash: row.txHash, time: '', metadata: null });
+        out.push({ source: row.source, txHash: row.txHash, time: '', metadata: null, summary: null });
       }
     }
     out.sort((a, b) => {
@@ -296,6 +326,75 @@ export class TraceService {
     });
   }
 
+  private async lookupSignerName(walletRaw: unknown): Promise<string> {
+    const wallet = String(walletRaw || '').trim().toLowerCase();
+    if (!wallet) return '';
+    const user = await (this.prisma as any).user.findUnique({
+      where: { address: wallet },
+      select: { displayName: true },
+    });
+    return String((user as any)?.displayName || '').trim();
+  }
+
+  private async buildLatestAction(
+    lotPassport: Record<string, unknown>,
+    latestSignerWallet: string | null,
+  ): Promise<TraceLatestAction | null> {
+    const signerWallet = String(
+      lotPassport?.signer_wallet || latestSignerWallet || '',
+    )
+      .trim()
+      .toLowerCase();
+    const signerLocationLabel = String(lotPassport?.signer_location_label || '').trim();
+    const signerRole = String(lotPassport?.signer_role || '').trim();
+    const storageOp = String(lotPassport?.storage_op || '').trim();
+    const signedAt = String(
+      lotPassport?.storage_updated_at || lotPassport?.updated_at || lotPassport?.storage_created_at || '',
+    ).trim();
+    if (!signerWallet && !signerLocationLabel && !signerRole && !storageOp) return null;
+
+    const signerName = (await this.lookupSignerName(signerWallet)) || signerWallet;
+    const signerLocationResolved = signerLocationLabel
+      ? await resolveLocationLabelText(signerLocationLabel)
+      : '';
+    return {
+      signerWallet,
+      signerName,
+      signerRole,
+      signerRoleText: roleLabelVi(signerRole),
+      signerLocationLabel,
+      signerLocationText: displayLocationText(signerLocationLabel, signerLocationResolved),
+      storageOp,
+      storageOpText: storageOpLabelVi(storageOp),
+      signedAt,
+    };
+  }
+
+  private async buildHistorySummary(
+    source: 'PRODUCTION' | 'CONTAINER',
+    metadata: Record<string, unknown> | null,
+  ): Promise<TraceHistorySummary | null> {
+    if (!metadata) return null;
+    const signerWallet = String(metadata.signer_wallet || '').trim().toLowerCase();
+    const signerRole = String(metadata.signer_role || '').trim();
+    const signerLocationLabel = String(metadata.signer_location_label || '').trim();
+    const storageOp = String(metadata.storage_op || '').trim();
+    const status = String(metadata.status || '').trim();
+    const signerName = (await this.lookupSignerName(signerWallet)) || signerWallet || 'Chưa rõ';
+    const locationRaw = signerLocationLabel || String(metadata.location || '').trim();
+    const signerLocationResolved = locationRaw ? await resolveLocationLabelText(locationRaw) : '';
+    const signerLocationText = displayLocationText(locationRaw, signerLocationResolved);
+    const title = source === 'PRODUCTION' ? 'Vụ mùa' : storageOp ? 'Kho lưu trữ' : 'Thùng hàng';
+    return {
+      title,
+      signerName,
+      signerRoleText: roleLabelVi(signerRole),
+      signerLocationText,
+      storageOpText: storageOpLabelVi(storageOp),
+      statusText: status || '-',
+    };
+  }
+
   private async buildPointDetails(lotPassport: Record<string, unknown>) {
     const wallets = this.parseParticipantWallets(
       lotPassport?.verified_wallet_addresses || lotPassport?.participant_wallet_addresses,
@@ -315,13 +414,28 @@ export class TraceService {
       const name = String(row?.displayName || '').trim();
       if (address) userNameByAddress.set(address, name);
     }
-    const points: Array<{ name: string; walletAddress: string; location: string }> = [];
+    const points: Array<{
+      name: string;
+      walletAddress: string;
+      location: string;
+      locationText: string;
+      roleText: string;
+    }> = [];
+    const roleByIndex = ['Doanh nghiệp sản xuất', 'Kho trung chuyển', 'Đại lý phân phối'];
     for (let i = 0; i < wallets.length; i += 1) {
       const walletAddress = String(wallets[i] || '').trim().toLowerCase();
       if (!walletAddress) continue;
       const location = String(locations[i] || '').trim();
+      const locationResolved = location ? await resolveLocationLabelText(location) : '';
+      const locationText = displayLocationText(location, locationResolved);
       const name = userNameByAddress.get(walletAddress) || '';
-      points.push({ name, walletAddress, location });
+      points.push({
+        name,
+        walletAddress,
+        location: locationText,
+        locationText,
+        roleText: roleByIndex[i] || 'Đơn vị tham gia',
+      });
     }
     return points;
   }
@@ -412,7 +526,16 @@ export class TraceService {
           }
         }
       }
-      return { lotPassport, productionMetadata, points, latestSignerWallet };
+      if (productionMetadata && productionMetadata.location) {
+        const locationRaw = String(productionMetadata.location || '').trim();
+        const locationResolved = locationRaw ? await resolveLocationLabelText(locationRaw) : '';
+        productionMetadata = {
+          ...productionMetadata,
+          location: displayLocationText(locationRaw, locationResolved),
+        };
+      }
+      const latestAction = await this.buildLatestAction(lotPassport, latestSignerWallet);
+      return { lotPassport, productionMetadata, points, latestSignerWallet, latestAction };
     } catch (err) {
       console.error(`Error processing latest record ${latestTxHash}:`, err);
       return {

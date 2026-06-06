@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { extractSignerPayload } from '../shared/signer-payload';
 const ENTITY_TYPE = 'WAREHOUSE_STORAGE';
 
 function cleanString(v: unknown): string {
@@ -78,7 +79,7 @@ export class WarehouseStorageService {
     const containerInventoryKey = cleanString(data?.containerInventoryKey || data?.productId);
     const warehouse = await (this.prisma as any).warehouse.findFirst({
       where: { id: warehouseId, registeringCustodianAddress: custodian },
-      select: { id: true },
+      select: { id: true, location: true, name: true },
     });
     if (!warehouse) throw new NotFoundException('Không tìm thấy kho.');
     const container = await (this.prisma as any).container.findUnique({
@@ -107,8 +108,11 @@ export class WarehouseStorageService {
     });
     await this.writeOperation('CREATE', data?.txHash, cleanString(row?.id), containerInventoryKey, {
       warehouseId,
+      warehouseName: cleanString((warehouse as any)?.name),
       storageTime: new Date().toISOString(),
       conditions: cleanString(data?.conditions) || null,
+      storageOp: cleanString(data?.storageOp) || 'IN',
+      ...(extractSignerPayload(data, { signerLocationLabel: cleanString((warehouse as any)?.location) }) || {}),
     });
     return row;
   }
@@ -158,15 +162,25 @@ export class WarehouseStorageService {
       where: { id },
       data: patch as any,
     });
+    const warehouseId = cleanString((row as any)?.warehouseId || data?.warehouseId);
+    const warehouse = warehouseId
+      ? await (this.prisma as any).warehouse.findUnique({
+          where: { id: warehouseId },
+          select: { location: true, name: true },
+        })
+      : null;
     await this.writeOperation(
       'UPDATE',
       data?.txHash,
       id,
       cleanString((row as any)?.containerInventoryKey || data?.containerInventoryKey || data?.productId),
       {
-        warehouseId: cleanString((row as any)?.warehouseId || data?.warehouseId),
+        warehouseId,
+        warehouseName: cleanString((warehouse as any)?.name),
         storageTime: new Date().toISOString(),
         conditions: cleanString((row as any)?.conditions),
+        storageOp: cleanString(data?.storageOp) || 'UPDATE',
+        ...(extractSignerPayload(data, { signerLocationLabel: cleanString((warehouse as any)?.location) }) || {}),
       },
     );
     return row;
@@ -193,10 +207,20 @@ export class WarehouseStorageService {
       throw new ConflictException('Thùng hàng đã tiêu thụ trước đó.');
     }
 
+    const warehouseId = cleanString((existing as any)?.warehouseId);
+    const warehouse = warehouseId
+      ? await (this.prisma as any).warehouse.findUnique({
+          where: { id: warehouseId },
+          select: { location: true, name: true },
+        })
+      : null;
     await this.writeOperation(isAgent ? 'CONSUME' : 'DELETE', data?.txHash, id, cleanString((existing as any)?.containerInventoryKey), {
-      warehouseId: cleanString((existing as any)?.warehouseId),
+      warehouseId,
+      warehouseName: cleanString((warehouse as any)?.name),
       storageTime: new Date().toISOString(),
       conditions: cleanString((existing as any)?.conditions),
+      storageOp: cleanString(data?.storageOp) || (isAgent ? 'CONSUMED' : 'OUT'),
+      ...(extractSignerPayload(data, { signerLocationLabel: cleanString((warehouse as any)?.location) }) || {}),
     });
     if (isAgent) {
       await (this.prisma as any).container.update({

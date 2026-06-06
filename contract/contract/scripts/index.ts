@@ -99,7 +99,12 @@ export const mint = async () => {
 
     console.log(chalk.green("✓ Metadata prepared"));
     console.log(chalk.dim(`Sản phẩm: ${metadata.product_name}`));
-    console.log(chalk.dim(`Chuỗi: ${metadata.participant_location_labels}`));
+    console.log(chalk.dim(`Chuỗi địa điểm: ${metadata.participant_location_labels}`));
+    console.log(
+      chalk.dim(
+        `Người ký: ${metadata.signer_location_label || "—"} (${metadata.signer_role || "—"})`,
+      ),
+    );
     console.log("");
 
     console.log(chalk.yellow("Building mint transaction..."));
@@ -173,7 +178,12 @@ export const update = async () => {
     const newMetadata = buildContainerUpdateMetadata(owners);
 
     console.log(chalk.green("✓ Metadata ready"));
-    console.log(chalk.dim(`Chuỗi mới: ${newMetadata.participant_location_labels}`));
+    console.log(chalk.dim(`Chuỗi địa điểm: ${newMetadata.participant_location_labels}`));
+    console.log(
+      chalk.dim(
+        `Người ký: ${newMetadata.signer_location_label || "—"} (${newMetadata.signer_role || "—"})`,
+      ),
+    );
     console.log("");
 
     console.log(chalk.yellow("Building update transaction..."));

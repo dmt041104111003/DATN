@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { extractSignerPayload } from '../shared/signer-payload';
 
 const ENTITY_TYPE = 'CONTAINER';
 
@@ -227,6 +228,7 @@ export class ContainerService {
           participantWalletAddresses: participants.wallets,
           participantLocationLabels: participants.locations,
           verifiedWalletAddresses: participants.wallets,
+          ...(extractSignerPayload(data) || {}),
         },
       } as any,
     });
@@ -274,6 +276,7 @@ export class ContainerService {
             participantWalletAddresses: participants.wallets,
             participantLocationLabels: participants.locations,
             verifiedWalletAddresses: participants.wallets,
+            ...(extractSignerPayload(data) || {}),
           },
         } as any,
       });

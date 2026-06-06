@@ -2,11 +2,15 @@ import { cleanString } from "./share/cleanString";
 import { buildMappedMetadata } from "./share/buildMappedMetadata";
 import { toCip68SafeText } from "./share/toCip68SafeText";
 
+import type { SignerContext } from "@/features/core/onchain/signerContext";
+import { signerContextToMetadata } from "@/features/core/onchain/signerContext";
+
 export function buildProductionMetadata(
   data: any,
   previousData: any,
   evidenceFilesIpfs: string[],
   owners?: string[],
+  signer?: SignerContext | null,
 ) {
   const rawStatus = cleanString(data?.status || previousData?.status).toUpperCase();
   const metadataStatus =
@@ -30,6 +34,7 @@ export function buildProductionMetadata(
     certifications: JSON.stringify(data?.certifications || previousData?.certifications || []),
     image_cids: JSON.stringify(evidenceFilesIpfs),
     owners: JSON.stringify(Array.isArray(owners) ? owners : []),
+    ...(signer ? signerContextToMetadata(signer) : {}),
   });
 }
 
@@ -38,6 +43,7 @@ export function buildProductionMetadataPatch(
   previousData: any,
   uploadedEvidenceFilesIpfs: string[],
   owners: string[],
+  signer?: SignerContext | null,
 ) {
   const patch: Record<string, string> = {};
   const setIfChanged = (key: string, nextValue: unknown, prevValue: unknown) => {
@@ -75,6 +81,12 @@ export function buildProductionMetadataPatch(
 
   if (uploadedEvidenceFilesIpfs.length > 0) {
     patch.image_cids = toCip68SafeText(JSON.stringify(uploadedEvidenceFilesIpfs));
+  }
+
+  if (signer) {
+    patch.signer_wallet = toCip68SafeText(signer.signerWallet);
+    patch.signer_location_label = toCip68SafeText(signer.signerLocationLabel);
+    patch.signer_role = toCip68SafeText(signer.signerRole);
   }
 
   return patch;

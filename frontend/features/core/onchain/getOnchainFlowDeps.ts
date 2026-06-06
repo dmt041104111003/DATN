@@ -7,6 +7,7 @@ import { buildMappedMetadata } from "@/features/core/metadata/share/buildMappedM
 import { cleanString } from "@/features/core/metadata/share/cleanString";
 import { getMe } from "@/features/core/authProvider";
 import { buildOwnerList } from "@/features/core/onchain/owners/buildOwnerList";
+import { resolveSignerContext } from "@/features/core/onchain/signerContext";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
@@ -44,5 +45,6 @@ export function getOnchainFlowDeps() {
     buildProductionMetadataPatch,
     buildContainerMetadata,
     buildMappedMetadata,
+    resolveSignerContext,
   };
 }

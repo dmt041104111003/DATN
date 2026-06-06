@@ -66,12 +66,19 @@ export function buildParticipantPayload(rowsRaw: unknown) {
   };
 }
 
-function ParticipantRow({ disabled = false }: { disabled?: boolean }) {
+function ParticipantRow({
+  disabled = false,
+  creatorRowLocked = false,
+}: {
+  disabled?: boolean;
+  creatorRowLocked?: boolean;
+}) {
   const { index } = useSimpleFormIteratorItem();
+  const rowDisabled = disabled || (creatorRowLocked && index === 0);
   return (
     <>
-      <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} disabled={disabled} fullWidth />
-      <ParticipantAdministrativeAreaFields index={index} disabled={disabled} />
+      <TextInput source="walletAddress" label="Địa chỉ ví" validate={[required()]} disabled={rowDisabled} fullWidth />
+      <ParticipantAdministrativeAreaFields index={index} disabled={rowDisabled} />
     </>
   );
 }
@@ -83,7 +90,7 @@ export function ContainerFormSections({
   participantsReadOnly?: boolean;
   showBoxQuantity?: boolean;
 }) {
-  const { storageLocked, productionChoices } = useContainerFormSections();
+  const { storageLocked, productionChoices, creatorRowLocked } = useContainerFormSections();
   const formLocked = storageLocked;
   const participantLocked = participantsReadOnly || storageLocked;
 
@@ -100,7 +107,9 @@ export function ContainerFormSections({
         <div className="md:col-span-2">
           <ArrayInput source="participantRows" label="Đơn vị tham gia chuỗi">
             <SimpleFormIterator disableReordering disableAdd={participantLocked} disableRemove={participantLocked}>
-              <FormDataConsumer>{() => <ParticipantRow disabled={participantLocked} />}</FormDataConsumer>
+              <FormDataConsumer>
+                {() => <ParticipantRow disabled={participantLocked} creatorRowLocked={creatorRowLocked} />}
+              </FormDataConsumer>
             </SimpleFormIterator>
           </ArrayInput>
         </div>

@@ -1,6 +1,8 @@
 import { createContractBatchUnsignedTx } from "@/features/core/onchain/contract/createContractBatchUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 import { waitForEntityVerified } from "@/features/core/onchain/waitForEntityVerified";
+import { signerContextToApiBody } from "@/features/core/onchain/signerContext";
+import { resolveParticipantLocationTexts } from "@/features/resources/shared/locationHelpers";
 import { makeContainerCode } from "@/features/resources/shared/code";
 
 const BATCH_SIZE = 5;
@@ -19,9 +21,13 @@ export async function createContainerBatchOnchain(
 ) {
   const { owner } = await deps.getSessionOwner();
   const owners = deps.buildOwnerList(params.data, owner);
+  const signer = await deps.resolveSignerContext(deps, { participantRows: params.data?.participantRows });
+  const signerBody = signerContextToApiBody(signer);
   const boxQuantity = parseBoxQuantity(params.data?.boxQuantity);
   const shared = { ...(params.data as any) };
   delete shared.boxQuantity;
+  const locationTexts = await resolveParticipantLocationTexts(shared.participantLocationLabels);
+  const sharedForMetadata = { ...shared, participantLocationLabels: locationTexts };
 
   const batchRes = await deps.httpClient(`${deps.BACKEND_URL}/container/batches`, {
     method: "POST",
@@ -39,10 +45,10 @@ export async function createContainerBatchOnchain(
 
     const items = Array.from({ length: chunkSize }, (_, index) => {
       const code = makeContainerCode(created + index + 1);
-      const itemData = { ...shared, code, status: "CREATE" };
+      const itemData = { ...sharedForMetadata, code, status: "CREATE" };
       return {
         assetName: code,
-        metadata: deps.buildContainerMetadata(itemData, null),
+        metadata: deps.buildContainerMetadata(itemData, null, signer),
       };
     });
 
@@ -75,6 +81,7 @@ export async function createContainerBatchOnchain(
           inventoryKey,
           txHash,
           batchId,
+          ...signerBody,
         }),
       });
       const row = dbRes.json as any;

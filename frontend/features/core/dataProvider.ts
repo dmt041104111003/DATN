@@ -17,7 +17,11 @@ import { deleteContainerOnchain } from "@/features/core/onchain/module/delete/co
 import { deleteProductionOnchain } from "@/features/core/onchain/module/delete/production";
 import { getMe } from "@/features/core/authProvider";
 import { buildOwnerList } from "@/features/core/onchain/owners/buildOwnerList";
-import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
+import { resolveSignerContext } from "@/features/core/onchain/signerContext";
+import {
+  normalizeEvidenceFilesForForm,
+  normalizeIpfsUriList,
+} from "@/features/resources/shared/evidenceFiles";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -83,17 +87,13 @@ function getOnchainFlowDeps() {
       (Array.isArray(input) ? input : [])
         .map((item) => item?.rawFile)
         .filter((f): f is File => f instanceof File),
-    normalizeIpfsUriList: (input: unknown): string[] =>
-      Array.from(new Set(
-        (Array.isArray(input) ? input : [])
-          .map((item: any) => cleanString(typeof item === "string" ? item : item?.src || item?.url))
-          .filter(Boolean),
-      )),
+    normalizeIpfsUriList,
     buildOwnerList,
     buildProductionMetadata,
     buildProductionMetadataPatch,
     buildContainerMetadata,
     buildMappedMetadata,
+    resolveSignerContext,
   };
 }
 

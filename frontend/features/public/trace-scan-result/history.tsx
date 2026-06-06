@@ -16,15 +16,32 @@ import {
 import { GOV_RED, GOV_GOLD } from "@/features/public/shared/govTheme";
 import { TraceSection } from "@/features/public/shared/TracePageShell";
 
+export type HistorySummary = {
+  title: string;
+  signerName: string;
+  signerRoleText: string;
+  signerLocationText: string;
+  storageOpText: string;
+  statusText: string;
+};
+
 export type HistoryItem = {
   source: "PRODUCTION" | "CONTAINER";
   txHash: string;
   time: string;
   metadata: Record<string, unknown> | null;
+  summary: HistorySummary | null;
 };
 
 function cleanString(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function displayLocation(value: unknown) {
+  const text = cleanString(value);
+  if (!text) return "";
+  if (/^\d+\s*,\s*\d+\s*,\s*\d+$/.test(text)) return "";
+  return text;
 }
 
 function formatDateTimeVi(value: unknown) {
@@ -131,7 +148,8 @@ export default function TraceHistory({ inventoryKey }: { inventoryKey: string })
                 <TableRow>
                   <TableCell sx={headCellSx}>Nguồn</TableCell>
                   <TableCell sx={headCellSx}>Thời gian</TableCell>
-                  <TableCell sx={headCellSx}>Tx Hash</TableCell>
+                  <TableCell sx={headCellSx}>Người ký / Địa điểm</TableCell>
+                  <TableCell sx={headCellSx}>Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -149,26 +167,35 @@ export default function TraceHistory({ inventoryKey }: { inventoryKey: string })
                         onClick={() => setActiveHash(isOpen ? "" : item.txHash)}
                       >
                         <TableCell sx={{ fontWeight: 600 }}>
-                          {item.source === "PRODUCTION" ? "Vụ mùa" : "Thùng hàng"}
+                          {item.summary?.title || (item.source === "PRODUCTION" ? "Vụ mùa" : "Thùng hàng")}
                         </TableCell>
                         <TableCell>{formatDateTimeVi(item.time)}</TableCell>
-                        <TableCell
-                          sx={{
-                            wordBreak: "break-all",
-                            color: GOV_RED,
-                            fontWeight: isOpen ? 700 : 500,
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          {item.txHash}
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {item.summary?.signerName || "Chưa rõ"}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                            {item.summary?.signerRoleText || "-"}
+                            {displayLocation(item.summary?.signerLocationText)
+                              ? ` · ${displayLocation(item.summary?.signerLocationText)}`
+                              : ""}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {item.summary?.storageOpText || item.summary?.statusText || "-"}
+                          </Typography>
                         </TableCell>
                       </TableRow>
                       {isOpen ? (
                         <TableRow>
-                          <TableCell colSpan={3} sx={{ bgcolor: "#fdf5f6", py: 1 }}>
-                            <Box component="pre" sx={{ m: 0, fontSize: 12, overflowX: "auto" }}>
-                              {JSON.stringify(item.metadata || {}, null, 2)}
-                            </Box>
+                          <TableCell colSpan={4} sx={{ bgcolor: "#fdf5f6", py: 1 }}>
+                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                              Mã giao dịch:{" "}
+                              <Box component="span" sx={{ color: GOV_RED, wordBreak: "break-all" }}>
+                                {item.txHash}
+                              </Box>
+                            </Typography>
                           </TableCell>
                         </TableRow>
                       ) : null}

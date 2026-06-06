@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { Alert, Box, Stack, Typography } from "@mui/material";
-import { getDistrictOptions, getProvinceOptions, getWardOptions } from "@/features/resources/shared/location";
 import { GOV_RED } from "@/features/public/shared/govTheme";
 import { TracePageShell } from "@/features/public/shared/TracePageShell";
 import TraceHistory from "./history";
+import TraceLatestAction from "./latestAction";
 import TracePoints from "./points";
 import TraceInfo from "./traceInfo";
 
@@ -22,8 +22,21 @@ type TraceView = {
   containerCode: string;
   containerType: string;
   weightPerBoxKg: string;
-  points: Array<{ name: string; walletAddress: string; location: string }>;
+  points: Array<{
+    name: string;
+    walletAddress: string;
+    location: string;
+    locationText: string;
+    roleText: string;
+  }>;
   matchedIndex: number;
+  latestAction: {
+    signerName: string;
+    signerRoleText: string;
+    signerLocationText: string;
+    storageOpText: string;
+    signedAt: string;
+  } | null;
   productionMetadata: Record<string, unknown> | null;
 };
 
@@ -44,35 +57,47 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
         if (!res.ok) throw new Error("Không gọi được API trace.");
         const json = (await res.json()) as any;
         const lotPassport = (json?.lotPassport || {}) as Record<string, unknown>;
-        const pointsRaw: Array<{ name: string; walletAddress: string; location: string }> = Array.isArray(json?.points)
+        const pointsRaw: Array<{
+          name: string;
+          walletAddress: string;
+          location: string;
+          locationText: string;
+          roleText: string;
+        }> = Array.isArray(json?.points)
           ? json.points
               .map((x: any) => ({
                 name: cleanString(x?.name),
                 walletAddress: cleanString(x?.walletAddress).toLowerCase(),
                 location: cleanString(x?.location),
+                locationText: cleanString(x?.locationText || x?.location),
+                roleText: cleanString(x?.roleText),
               }))
               .filter((x: any) => x.walletAddress)
           : [];
-        const points = await Promise.all(
-          pointsRaw.map(async (x) => {
-            const text = cleanString(x.location);
-            const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
-            if (parts.length < 3) return x;
-            const [provinceId, districtId, wardId] = parts;
-            try {
-              const provinces = await getProvinceOptions();
-              const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
-              const districts = await getDistrictOptions(provinceId);
-              const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
-              const wards = await getWardOptions(districtId);
-              const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
-              return { ...x, location: `${wardName}, ${districtName}, ${provinceName}` };
-            } catch {
-              return x;
-            }
-          }),
-        );
-        const latestSignerWallet = cleanString(json?.latestSignerWallet).toLowerCase();
+        const points = pointsRaw.map((x) => ({
+          ...x,
+          locationText: /^\d+\s*,\s*\d+\s*,\s*\d+$/.test(cleanString(x.locationText))
+            ? "Chưa khai báo"
+            : cleanString(x.locationText) || "Chưa khai báo",
+        }));
+        const latestActionRaw = json?.latestAction;
+        const latestAction =
+          latestActionRaw && typeof latestActionRaw === "object"
+            ? {
+                signerName: cleanString((latestActionRaw as any).signerName),
+                signerRoleText: cleanString((latestActionRaw as any).signerRoleText),
+                signerLocationText: /^\d+\s*,\s*\d+\s*,\s*\d+$/.test(
+                  cleanString((latestActionRaw as any).signerLocationText),
+                )
+                  ? "Chưa khai báo"
+                  : cleanString((latestActionRaw as any).signerLocationText) || "Chưa khai báo",
+                storageOpText: cleanString((latestActionRaw as any).storageOpText),
+                signedAt: cleanString((latestActionRaw as any).signedAt),
+              }
+            : null;
+        const latestSignerWallet = cleanString(
+          (latestActionRaw as any)?.signerWallet || json?.latestSignerWallet,
+        ).toLowerCase();
         if (!points.length) throw new Error(cleanString(json?.message) || "Không có dữ liệu point.");
         const signerIndex =
           latestSignerWallet && points.length
@@ -96,25 +121,11 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
             : null;
         let productionMetadata = productionMetadataRaw;
         if (productionMetadataRaw) {
-          const text = cleanString(productionMetadataRaw.location);
-          const parts = text.split(",").map((v) => cleanString(v)).filter(Boolean);
-          if (parts.length >= 3) {
-            const [provinceId, districtId, wardId] = parts;
-            try {
-              const provinces = await getProvinceOptions();
-              const provinceName = provinces.find((v) => cleanString(v.id) === provinceId)?.name || provinceId;
-              const districts = await getDistrictOptions(provinceId);
-              const districtName = districts.find((v) => cleanString(v.id) === districtId)?.name || districtId;
-              const wards = await getWardOptions(districtId);
-              const wardName = wards.find((v) => cleanString(v.id) === wardId)?.name || wardId;
-              productionMetadata = {
-                ...productionMetadataRaw,
-                location: `${wardName}, ${districtName}, ${provinceName}`,
-              };
-            } catch {
-              productionMetadata = productionMetadataRaw;
-            }
-          }
+          const location = cleanString(productionMetadataRaw.location);
+          productionMetadata = {
+            ...productionMetadataRaw,
+            location: /^\d+\s*,\s*\d+\s*,\s*\d+$/.test(location) ? "Chưa khai báo" : location || "Chưa khai báo",
+          };
         }
         if (!mounted) return;
         setTrace({
@@ -126,6 +137,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
           weightPerBoxKg,
           points,
           matchedIndex,
+          latestAction,
           productionMetadata,
         });
       } catch (e) {
@@ -164,6 +176,7 @@ export default function PublicTraceScanResultPage({ inventoryKey }: { inventoryK
             weightPerBoxKg={trace.weightPerBoxKg}
             productionMetadata={trace.productionMetadata}
           />
+          <TraceLatestAction action={trace.latestAction} />
           <TracePoints points={trace.points} matchedIndex={trace.matchedIndex} />
           <TraceHistory inventoryKey={inventoryKey} />
         </Stack>

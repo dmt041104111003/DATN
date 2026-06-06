@@ -3,7 +3,6 @@
 import MuiButton from "@mui/material/Button";
 import { BooleanField, Datagrid, DateField, FunctionField, SelectField, TextField } from "react-admin";
 import { ListVerificationPoll } from "@/features/resources/shared/ListVerificationPoll";
-import { ListVerificationPoll } from "@/features/resources/shared/ListVerificationPoll";
 import { MilList } from "@/features/ui/military/MilList";
 import { downloadContainerQr } from "./downloadContainerQr";
 
