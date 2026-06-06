@@ -10,6 +10,7 @@ import {
   TextInput,
 } from "react-admin";
 import { useWatch } from "react-hook-form";
+import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
 import { MilGrid, MilSection } from "@/features/ui/military/MilSection";
 import { positiveNumber } from "@/features/resources/shared/numberHelpers";
 import { CERTIFICATIONS } from "./constants";
@@ -22,6 +23,8 @@ export function ProductionFormSections() {
   const status = String(watchedStatus ?? "CREATED");
   const varietyId = String(watchedVarietyId ?? "");
   const certifications = Array.isArray(watchedCertifications) ? watchedCertifications : [];
+  const watchedEvidenceFiles = useWatch({ name: "evidenceFiles" });
+  const evidencePreviews = normalizeEvidenceFilesForForm(watchedEvidenceFiles);
   const hasOtherCertification = certifications.includes("other");
   const fullyLocked = status === "CLOSED";
   const lockedCore = fullyLocked;
@@ -122,6 +125,26 @@ export function ProductionFormSections() {
               fullWidth
             />
           ) : null}
+          {evidencePreviews.length > 0 ? (
+            <div className="md:col-span-2 flex flex-wrap gap-3">
+              {evidencePreviews.map((file) => (
+                <a
+                  key={file.src}
+                  href={file.src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block overflow-hidden rounded border border-neutral-300"
+                >
+                  <img
+                    src={file.src}
+                    alt={file.title}
+                    className="h-28 w-28 object-cover"
+                    loading="lazy"
+                  />
+                </a>
+              ))}
+            </div>
+          ) : null}
           <div className="md:col-span-2">
             <FileInput
               source="evidenceFiles"
@@ -129,7 +152,7 @@ export function ProductionFormSections() {
               multiple
               disabled={fullyLocked}
             >
-              <FileField source="title" title="title" />
+              <FileField source="src" title="title" />
             </FileInput>
           </div>
           <div className="md:col-span-2">

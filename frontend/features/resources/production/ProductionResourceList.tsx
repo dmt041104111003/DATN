@@ -7,11 +7,13 @@ import {
   SelectField,
   TextField,
 } from "react-admin";
+import { ListVerificationPoll } from "@/features/resources/shared/ListVerificationPoll";
 import { MilList } from "@/features/ui/military/MilList";
 
 export function ProductionResourceList() {
   return (
     <MilList exporter={false}>
+      <ListVerificationPoll entityType="PRODUCTION" />
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="id" label="Mã vụ" />
         <TextField source="facilityId" label="Cơ sở" />

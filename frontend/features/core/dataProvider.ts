@@ -17,6 +17,7 @@ import { deleteContainerOnchain } from "@/features/core/onchain/module/delete/co
 import { deleteProductionOnchain } from "@/features/core/onchain/module/delete/production";
 import { getMe } from "@/features/core/authProvider";
 import { buildOwnerList } from "@/features/core/onchain/owners/buildOwnerList";
+import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
@@ -46,6 +47,11 @@ const RESOURCES_WITH_LIST_FALLBACK = new Set([
 ]);
 const resolveId = (row: any, fallback: string | number = "1") =>
   row?.id ?? row?.profileId ?? row?.inventoryKey ?? row?.code ?? fallback;
+
+function withProductionEvidence(row: any) {
+  const evidence = normalizeEvidenceFilesForForm(row?.evidenceFiles ?? row?.images);
+  return { ...row, evidenceFiles: evidence, images: evidence.map((f) => f.src) };
+}
 
 function getOnchainFlowDeps() {
   return {
@@ -115,7 +121,10 @@ export const adminDataProvider: DataProvider = {
     const end = start + perPage;
     const pagedRows = rows.slice(start, end);
     return {
-      data: (pagedRows || []).map((row: any) => ({ ...row, id: resolveId(row) })),
+      data: (pagedRows || []).map((row: any) => {
+        const base = { ...row, id: resolveId(row) };
+        return resource === "production" ? withProductionEvidence(base) : base;
+      }),
       total,
     };
   },
@@ -130,11 +139,9 @@ export const adminDataProvider: DataProvider = {
       if (!hit) {
         throw new Error("Record not found");
       }
+      const data = { ...hit, id: resolveId(hit, params.id) };
       return {
-        data: {
-          ...hit,
-          id: resolveId(hit, params.id),
-        },
+        data: resource === "production" ? withProductionEvidence(data) : data,
       };
     }
 

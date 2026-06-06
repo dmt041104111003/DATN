@@ -4,6 +4,7 @@ import * as React from "react";
 import { useDataProvider, useGetList } from "react-admin";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
 import { parsePositiveNumber } from "@/features/resources/shared/numberHelpers";
+import { useListVerificationPoll } from "@/features/resources/shared/useListVerificationPoll";
 
 function getStorageKey(row: any) {
   return cleanString(row?.containerInventoryKey || row?.productId);
@@ -52,6 +53,7 @@ export function useQrScanPage() {
     pagination: { page: 1, perPage: 3000 },
     sort: { field: "createdAt", order: "DESC" },
   });
+  useListVerificationPoll("WAREHOUSE_STORAGE", storageRows, refetchStorageRows);
 
   const warehouseChoices = React.useMemo(() => buildWarehouseChoices(warehouses), [warehouses]);
   const activeWarehouse = warehouseChoices[0] ?? null;

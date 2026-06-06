@@ -53,7 +53,7 @@ export class WarehouseStorageService {
             entityKey: { in: entityKeys },
           },
           orderBy: { createdAt: 'desc' },
-          select: { entityKey: true, verified: true, verifiedAt: true },
+          select: { entityKey: true, verified: true, verifiedAt: true, txHash: true },
         })
       : [];
     const latestOpByEntityKey = new Map<string, any>();
@@ -68,6 +68,7 @@ export class WarehouseStorageService {
       containerCode: cleanString(row?.container?.code),
       verified: Boolean(latestOpByEntityKey.get(cleanString(row?.id))?.verified),
       verifiedAt: latestOpByEntityKey.get(cleanString(row?.id))?.verifiedAt || null,
+      txHash: latestOpByEntityKey.get(cleanString(row?.id))?.txHash || null,
     }));
   }
 

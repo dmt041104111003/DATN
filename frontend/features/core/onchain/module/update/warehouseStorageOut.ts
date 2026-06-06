@@ -1,4 +1,5 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
+import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 import { formatProductionRefInline } from "@/features/core/metadata/share/formatProductionRefInline";
 
@@ -46,6 +47,7 @@ export async function deleteWarehouseStorageViaOutOnchain(params: any, deps: any
       body: JSON.stringify({ txHash }),
     },
   );
+  await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
   const row = json as any;
   return { data: { ...row, id: deps.normalizeId(params.previousData, params.id) } };
 }

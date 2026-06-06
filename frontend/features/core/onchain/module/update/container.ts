@@ -1,4 +1,5 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
+import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 
 export async function updateContainerOnchain(params: any, deps: any) {
@@ -25,6 +26,7 @@ export async function updateContainerOnchain(params: any, deps: any) {
     method: "PATCH",
     body: JSON.stringify({ ...params.data, txHash }),
   });
+  await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
   const row = patchRes.json as any;
   return { data: { ...row, id: deps.normalizeId(row, params.id) } };
 }

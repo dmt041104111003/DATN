@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpException,
@@ -34,9 +35,47 @@ export class RecordOperationController {
   }
 
   @Post('verify-pending')
-  async verifyPending() {
-    await this.verifier.verifyPendingNow();
-    return { ok: true };
+  async verifyPending(@Body() body?: { txHashes?: string[] }) {
+    const txHashes = Array.isArray(body?.txHashes)
+      ? body.txHashes.map((x) => String(x || '').trim()).filter(Boolean)
+      : [];
+    const result = await this.verifier.verifyPendingNow(
+      txHashes.length ? { txHashes } : undefined,
+    );
+    return { ok: true, ...result };
+  }
+
+  @Get('verification-status')
+  async verificationStatus(
+    @Query('entityType') entityTypeParam: string,
+    @Query('entityKeys') entityKeysParam: string,
+  ) {
+    const entityType = String(entityTypeParam || '').trim().toUpperCase();
+    if (entityType !== 'PRODUCTION' && entityType !== 'CONTAINER' && entityType !== 'WAREHOUSE_STORAGE') {
+      throw new HttpException('Thiếu entityType.', HttpStatus.BAD_REQUEST);
+    }
+    const entityKeys = decodeURIComponent(String(entityKeysParam || ''))
+      .split(',')
+      .map((x) => String(x || '').trim())
+      .filter(Boolean);
+    if (!entityKeys.length) {
+      throw new HttpException('Thiếu entityKeys.', HttpStatus.BAD_REQUEST);
+    }
+
+    const ops = await (this.prisma as any).recordOperation.findMany({
+      where: { entityType, entityKey: { in: entityKeys } },
+      orderBy: { createdAt: 'desc' },
+      select: { entityKey: true, verified: true },
+    });
+
+    const out: Record<string, boolean> = {};
+    for (const key of entityKeys) out[key] = false;
+    for (const op of Array.isArray(ops) ? ops : []) {
+      const key = String(op?.entityKey || '').trim();
+      if (!key || out[key]) continue;
+      out[key] = Boolean(op?.verified);
+    }
+    return out;
   }
 
   @Get()

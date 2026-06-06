@@ -1,5 +1,7 @@
 import { createContractUnsignedTx } from "@/features/core/onchain/contract/createContractUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
+import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
+import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
 
 export async function createProductionOnchain(params: any, deps: any) {
   const { owner } = await deps.getSessionOwner();
@@ -29,6 +31,17 @@ export async function createProductionOnchain(params: any, deps: any) {
       evidenceFiles: evidenceFilesIpfs,
     }),
   });
+  const inventoryKey = String(unsigned.inventoryKey || "").trim();
+  await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
+
   const row = dbRes.json as any;
-  return { data: { ...row, id: deps.normalizeId(row, String(unsigned.inventoryKey || txHash)) } };
+  const evidenceFileRecords = normalizeEvidenceFilesForForm(row?.evidenceFiles ?? row?.images);
+  return {
+    data: {
+      ...row,
+      evidenceFiles: evidenceFileRecords,
+      images: evidenceFileRecords.map((f: { src: string }) => f.src),
+      id: deps.normalizeId(row, String(inventoryKey || txHash)),
+    },
+  };
 }

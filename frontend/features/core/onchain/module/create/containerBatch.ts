@@ -1,6 +1,6 @@
 import { createContractBatchUnsignedTx } from "@/features/core/onchain/contract/createContractBatchUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
-import { waitForContainersVerified } from "@/features/core/onchain/container/waitForContainersVerified";
+import { waitForEntityVerified } from "@/features/core/onchain/waitForEntityVerified";
 import { makeContainerCode } from "@/features/resources/shared/code";
 
 const BATCH_SIZE = 5;
@@ -86,10 +86,11 @@ export async function createContainerBatchOnchain(
 
     created += chunkSize;
     onProgress?.(`Đã ghi ${created}/${boxQuantity} thùng. Đang chờ xác thực on-chain...`);
-    try {
-      await deps.httpClient(`${deps.BACKEND_URL}/record-operations/verify-pending`, { method: "POST" });
-    } catch {}
-    await waitForContainersVerified(deps.httpClient, deps.BACKEND_URL, savedKeys);
+    await waitForEntityVerified(deps.httpClient, deps.BACKEND_URL, {
+      entityType: "CONTAINER",
+      entityKeys: savedKeys,
+      txHashes: [txHash],
+    });
 
     await deps.httpClient(`${deps.BACKEND_URL}/container/batches/${encodeURIComponent(batchId)}`, {
       method: "PATCH",

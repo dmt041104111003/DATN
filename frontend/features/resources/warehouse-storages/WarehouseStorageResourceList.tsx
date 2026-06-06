@@ -14,6 +14,7 @@ import {
 } from "react-admin";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cleanString } from "@/features/core/metadata/share/cleanString";
+import { ListVerificationPoll } from "@/features/resources/shared/ListVerificationPoll";
 import { MilList } from "@/features/ui/military/MilList";
 import {
   resolveWarehouseIdFromSearch,
@@ -89,6 +90,7 @@ export function WarehouseStorageResourceList() {
         filter={{ warehouseId }}
         empty={<Empty />}
       >
+        <ListVerificationPoll entityType="WAREHOUSE_STORAGE" />
         <StorageDatagrid />
       </MilList>
     </>

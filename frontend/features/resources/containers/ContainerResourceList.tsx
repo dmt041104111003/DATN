@@ -2,12 +2,15 @@
 
 import MuiButton from "@mui/material/Button";
 import { BooleanField, Datagrid, DateField, FunctionField, SelectField, TextField } from "react-admin";
+import { ListVerificationPoll } from "@/features/resources/shared/ListVerificationPoll";
+import { ListVerificationPoll } from "@/features/resources/shared/ListVerificationPoll";
 import { MilList } from "@/features/ui/military/MilList";
 import { downloadContainerQr } from "./downloadContainerQr";
 
 export function ContainerResourceList() {
   return (
     <MilList exporter={false}>
+      <ListVerificationPoll entityType="CONTAINER" />
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="code" label="Mã thùng" />
         <TextField source="containerType" label="Loại thùng" />

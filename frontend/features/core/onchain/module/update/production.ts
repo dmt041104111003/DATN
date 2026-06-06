@@ -1,5 +1,7 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
+import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
+import { normalizeEvidenceFilesForForm } from "@/features/resources/shared/evidenceFiles";
 
 export async function updateProductionOnchain(params: any, deps: any) {
   const { owner } = await deps.getSessionOwner();
@@ -36,6 +38,15 @@ export async function updateProductionOnchain(params: any, deps: any) {
       evidenceFiles: evidenceFilesIpfs,
     }),
   });
+  await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
   const row = patchRes.json as any;
-  return { data: { ...row, id: deps.normalizeId(row, params.id) } };
+  const evidenceFileRecords = normalizeEvidenceFilesForForm(row?.evidenceFiles ?? row?.images);
+  return {
+    data: {
+      ...row,
+      evidenceFiles: evidenceFileRecords,
+      images: evidenceFileRecords.map((f: { src: string }) => f.src),
+      id: deps.normalizeId(row, params.id),
+    },
+  };
 }

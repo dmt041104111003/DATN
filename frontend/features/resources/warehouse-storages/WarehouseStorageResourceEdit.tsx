@@ -2,7 +2,13 @@
 
 import { Edit, SaveButton, SimpleForm, TextInput, Toolbar } from "react-admin";
 import { EDIT_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
+import { useEntityVerificationPoll } from "@/features/resources/shared/useEntityVerificationPoll";
 import { MilSection } from "@/features/ui/military/MilSection";
+
+function WarehouseStorageVerificationPoll() {
+  useEntityVerificationPoll("WAREHOUSE_STORAGE");
+  return null;
+}
 
 export function WarehouseStorageResourceEdit() {
   return (
@@ -22,6 +28,7 @@ export function WarehouseStorageResourceEdit() {
           </Toolbar>
         }
       >
+        <WarehouseStorageVerificationPoll />
         <MilSection index={1} title="Thùng trong kho">
           <TextInput source="containerCode" label="Mã thùng" disabled fullWidth />
           <TextInput

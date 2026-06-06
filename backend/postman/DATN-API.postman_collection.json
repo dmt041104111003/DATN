@@ -1,0 +1,203 @@
+{
+  "info": {
+    "_postman_id": "datn-traceability-api",
+    "name": "DATN — API chính",
+    "description": "API test nhanh. Dán `auth_token` từ browser (DevTools → Application → Cookies) vào biến `authToken`.\n\nTrace không cần đăng nhập.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "authToken", "value": "" },
+    { "key": "inventoryKey", "value": "THUNG-20260606-RI6-001" },
+    { "key": "warehouseStorageId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Me (phiên hiện tại)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Danh sách vai trò",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/auth/roles"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Hồ sơ của tôi",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/profile"
+          }
+        },
+        {
+          "name": "Cập nhật hồ sơ",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "auth_token={{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Tên hiển thị mới\",\n  \"phoneNumber\": \"0901234567\"\n}"
+            },
+            "url": "{{baseUrl}}/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Production",
+      "item": [
+        {
+          "name": "Danh sách vụ mùa",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/production"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Container",
+      "item": [
+        {
+          "name": "Danh sách thùng hàng",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/container"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Warehouse",
+      "item": [
+        {
+          "name": "Danh sách kho",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/warehouse"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Warehouse Storage",
+      "item": [
+        {
+          "name": "Danh sách thùng trong kho",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/warehouse-storage"
+          }
+        },
+        {
+          "name": "Cập nhật điều kiện bảo quản",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "auth_token={{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conditions\": \"2-8°C, độ ẩm 85%\"\n}"
+            },
+            "url": "{{baseUrl}}/warehouse-storage/{{warehouseStorageId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Thống kê tổng quan",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": "{{baseUrl}}/dashboard/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trace (không cần login)",
+      "item": [
+        {
+          "name": "Tra cứu thùng",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/trace/{{inventoryKey}}"
+          }
+        },
+        {
+          "name": "Lịch sử on-chain",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trace/{{inventoryKey}}/history?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["trace", "{{inventoryKey}}", "history"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Record Operations",
+      "item": [
+        {
+          "name": "Lịch sử thao tác thùng",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "auth_token={{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/record-operations?entityType=CONTAINER&entityKey={{inventoryKey}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["record-operations"],
+              "query": [
+                { "key": "entityType", "value": "CONTAINER" },
+                { "key": "entityKey", "value": "{{inventoryKey}}" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

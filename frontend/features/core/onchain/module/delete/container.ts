@@ -1,4 +1,5 @@
 import { burnContractUnsignedTx } from "@/features/core/onchain/contract/burnContractUnsignedTx";
+import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 
 export async function deleteContainerOnchain(params: any, deps: any) {
@@ -21,6 +22,7 @@ export async function deleteContainerOnchain(params: any, deps: any) {
     method: "DELETE",
     body: JSON.stringify({ txHash }),
   });
+  await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
   const row = json as any;
   return { data: { ...row, id: deps.normalizeId(params.previousData, params.id) } };
 }

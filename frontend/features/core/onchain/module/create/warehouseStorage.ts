@@ -1,4 +1,5 @@
 import { saveContractUnsignedTx } from "@/features/core/onchain/contract/saveContractUnsignedTx";
+import { triggerVerifyPending } from "@/features/core/onchain/triggerVerifyPending";
 import { signAndPublishUnsignedTx } from "@/features/core/onchain/tx/signAndPublishUnsignedTx";
 import { formatProductionRefInline } from "@/features/core/metadata/share/formatProductionRefInline";
 
@@ -59,11 +60,14 @@ export async function createWarehouseStorageOnchain(params: any, deps: any) {
         body: JSON.stringify({ ...createPayload, txHash, containerInventoryKey }),
       },
     );
+    await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
     const row = patchRes.json as any;
     return { data: { ...row, id: deps.normalizeId(row, params.id) } };
   }
-  return deps.baseProvider.create("warehouse-storage", {
+  const created = await deps.baseProvider.create("warehouse-storage", {
     ...params,
     data: { ...createPayload, txHash, containerInventoryKey },
   });
+  await triggerVerifyPending(deps.httpClient, deps.BACKEND_URL, txHash);
+  return created;
 }

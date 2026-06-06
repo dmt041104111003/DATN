@@ -2,8 +2,14 @@
 
 import { Edit, SimpleForm } from "react-admin";
 import { EDIT_PAGE_SX, MIL_FORM_SX } from "@/features/resources/shared/styles";
+import { useEntityVerificationPoll } from "@/features/resources/shared/useEntityVerificationPoll";
 import { buildParticipantPayload, ContainerFormSections, parseParticipantRows } from "./ContainerFormSections";
 import { ContainerEditToolbar } from "./ContainerToolbar";
+
+function ContainerVerificationPoll() {
+  useEntityVerificationPoll("CONTAINER");
+  return null;
+}
 
 export function ContainerResourceEdit() {
   return (
@@ -23,6 +29,7 @@ export function ContainerResourceEdit() {
       }}
     >
       <SimpleForm sx={MIL_FORM_SX} defaultValues={parseParticipantRows} toolbar={<ContainerEditToolbar />}>
+        <ContainerVerificationPoll />
         <ContainerFormSections />
       </SimpleForm>
     </Edit>

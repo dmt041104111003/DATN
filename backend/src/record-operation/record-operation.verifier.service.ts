@@ -25,12 +25,11 @@ export class RecordOperationVerifierService {
     const txHash = String(txHashRaw || '').trim();
     if (!txHash) return false;
     try {
-      const utxos = await this.getBlockfrost().txsUtxos(txHash);
-      const outputs = Array.isArray(utxos?.outputs) ? utxos.outputs : [];
-      for (let i = 0; i < outputs.length; i += 1) {
-        if (String(outputs[i]?.inline_datum || '').trim()) return true;
-      }
-      return false;
+      const tx = await this.getBlockfrost().txs(txHash);
+      const block = String(tx?.block || '').trim();
+      if (block) return true;
+      const blockHeight = Number(tx?.block_height || 0);
+      return Number.isFinite(blockHeight) && blockHeight > 0;
     } catch (e: any) {
       const status = Number(e?.status_code ?? e?.status ?? 0);
       if (status === 404) return false;
@@ -57,20 +56,16 @@ export class RecordOperationVerifierService {
     } catch {}
   }
 
-  private async markUnconfirmed(ids: string[], attemptsById: Map<string, number>) {
+  private async markUnconfirmed(ids: string[]) {
     if (!ids.length) return;
     const now = new Date();
-    await Promise.all(
-      ids.map((id) =>
-        (this.prisma as any).recordOperation.update({
-          where: { id },
-          data: {
-            attempts: (attemptsById.get(id) || 0) + 1,
-            lastCheckedAt: now,
-          } as any,
-        }),
-      ),
-    );
+    await (this.prisma as any).recordOperation.updateMany({
+      where: { id: { in: ids } },
+      data: {
+        attempts: { increment: 1 },
+        lastCheckedAt: now,
+      } as any,
+    });
   }
 
   private async markConfirmed(ops: any[]) {
@@ -111,11 +106,11 @@ export class RecordOperationVerifierService {
     }
   }
 
-  async verifyPendingNow() {
-    await this.tickInternal();
+  async verifyPendingNow(options?: { txHashes?: string[] }) {
+    return this.tickInternal(options);
   }
 
-  @Cron('*/2 * * * * *')
+  @Cron('*/1 * * * * *')
   async tick() {
     const lockKey = BigInt(830101);
     const locked = await this.tryAdvisoryLock(lockKey);
@@ -127,13 +122,21 @@ export class RecordOperationVerifierService {
     }
   }
 
-  private async tickInternal() {
+  private async tickInternal(options?: { txHashes?: string[] }) {
+    const txHashes = Array.from(
+      new Set((options?.txHashes || []).map((x) => String(x || '').trim()).filter(Boolean)),
+    );
+    const where: Record<string, unknown> = { verified: false };
+    if (txHashes.length) where.txHash = { in: txHashes };
+
     const ops = await (this.prisma as any).recordOperation.findMany({
-      where: { verified: false },
-      orderBy: { createdAt: 'asc' },
-      take: 100,
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: txHashes.length ? 50 : 100,
     });
-    if (!Array.isArray(ops) || ops.length === 0) return;
+    if (!Array.isArray(ops) || ops.length === 0) {
+      return { checked: 0, confirmed: 0, txHashes: [] as string[] };
+    }
 
     const byTxHash = new Map<string, any[]>();
     for (let i = 0; i < ops.length; i += 1) {
@@ -145,44 +148,41 @@ export class RecordOperationVerifierService {
       byTxHash.set(txHash, bucket);
     }
 
-    const txHashes = Array.from(byTxHash.keys());
+    const pendingTxHashes = Array.from(byTxHash.keys());
+    let confirmedCount = 0;
     await Promise.all(
-      txHashes.map(async (txHash) => {
+      pendingTxHashes.map(async (txHash) => {
         const txOps = byTxHash.get(txHash) || [];
         if (!txOps.length) return;
-        const attemptsById = new Map<string, number>();
-        for (let i = 0; i < txOps.length; i += 1) {
-          const id = String(txOps[i].id || '').trim();
-          if (id) attemptsById.set(id, Number(txOps[i].attempts || 0));
-        }
+        const ids = txOps.map((op) => String(op.id)).filter(Boolean);
         try {
           const confirmed = await this.isTxConfirmed(txHash);
           if (!confirmed) {
-            await this.markUnconfirmed(
-              txOps.map((op) => String(op.id)).filter(Boolean),
-              attemptsById,
-            );
+            await this.markUnconfirmed(ids);
             return;
           }
           await this.markConfirmed(txOps);
+          confirmedCount += txOps.length;
         } catch (e: any) {
           const msg = e?.message ? String(e.message) : 'verify failed';
           this.logger.debug(`[tx:${txHash}] ${msg}`);
           const now = new Date();
-          await Promise.all(
-            txOps.map((op) =>
-              (this.prisma as any).recordOperation.update({
-                where: { id: String(op.id) },
-                data: {
-                  attempts: Number(op.attempts || 0) + 1,
-                  lastCheckedAt: now,
-                  lastError: msg,
-                } as any,
-              }),
-            ),
-          );
+          await (this.prisma as any).recordOperation.updateMany({
+            where: { id: { in: ids } },
+            data: {
+              attempts: { increment: 1 },
+              lastCheckedAt: now,
+              lastError: msg,
+            } as any,
+          });
         }
       }),
     );
+
+    return {
+      checked: ops.length,
+      confirmed: confirmedCount,
+      txHashes: pendingTxHashes,
+    };
   }
 }
